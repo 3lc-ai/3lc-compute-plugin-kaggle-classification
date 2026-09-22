@@ -82,6 +82,17 @@ def test_retired_keys_are_rejected_and_write_nothing(store, monkeypatch):
     assert store.config_path().read_text(encoding="utf-8") == before
 
 
+@pytest.mark.parametrize("bad", ["../../etc", "Intel Scene", "", None, 7, "a/b", "..", "x\y"])
+def test_competition_id_is_validated_at_the_save_boundary(store, bad):
+    with pytest.raises(ValueError, match="competition.id"):
+        store.save({"competition": {"id": bad}})
+    with pytest.raises(ValueError, match="competition.id"):
+        store.save({"competition": "not-a-mapping"})
+    assert not store.config_path().exists()
+    store.save({"competition": {"id": "intel-scene"}})
+    assert store.load()["competition"] == {"id": "intel-scene"}
+
+
 def test_default_session_derives_from_the_manifest(store, manifest):
     sess = store.default_session(manifest)
     assert sess == {

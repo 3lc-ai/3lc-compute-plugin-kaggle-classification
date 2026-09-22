@@ -64,6 +64,10 @@ _RETIRED_TAB_KEYS: dict[str, tuple[str, ...]] = {}
 _MIGRATIONS_KEY = "_migrations"
 SPLITS = ("train", "val", "test")
 
+# A competition id names files under the plugin home (cache, bundled manifest, kit dir), so
+# it is validated where it enters the store, not only where the resolver reads it.
+_COMPETITION_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+
 
 def default_session(manifest: Manifest) -> dict[str, Any]:
     """The session a fresh install starts from, derived from the manifest.
@@ -206,6 +210,12 @@ def save(update: dict[str, Any]) -> dict[str, Any]:
             "came from the plugin page, the browser is holding a stale fragment — hard-refresh the page."
         )
         raise ValueError(msg)
+    competition = update.get("competition")
+    if competition is not None:
+        cid = competition.get("id") if isinstance(competition, dict) else None
+        if not isinstance(cid, str) or not _COMPETITION_ID_RE.fullmatch(cid):
+            msg = "competition.id must be lowercase letters, digits and hyphens"
+            raise ValueError(msg)
     with _lock:
         data = load()
         _migrate(data)  # fresh store: stamp the markers before first write

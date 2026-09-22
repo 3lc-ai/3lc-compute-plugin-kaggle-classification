@@ -794,7 +794,8 @@ def selected_competition_id() -> str | None:
 
     chosen = session.load().get("competition")
     cid = str((chosen or {}).get("id") or "").strip() if isinstance(chosen, dict) else ""
-    return cid or None
+    # Defensive: the store validates on save, but a hand-edited file must not reach a path.
+    return cid if cid and _ID_RE.fullmatch(cid) else None
 
 
 def select_competition(competition_id: str) -> None:

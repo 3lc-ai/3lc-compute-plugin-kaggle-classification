@@ -305,6 +305,17 @@ def test_background_refresh_settles_and_is_rate_limited(cdn):
     assert m.refresh_in_background(force=True)["state"] == "running"
 
 
+def test_poisoned_selection_in_the_store_never_reaches_a_path(home):
+    """A hand-edited ui_config.json bypasses save(); the reader must still refuse it."""
+    session.config_path().parent.mkdir(parents=True, exist_ok=True)
+    session.config_path().write_text(json.dumps({"competition": {"id": "../../outside"}}), encoding="utf-8")
+    assert m.selected_competition_id() is None
+    res = m.resolve(network=False)
+    assert res.manifest.competition.id == "intel-scene"
+    with pytest.raises(ValueError):
+        m.select_competition("../../outside")
+
+
 def test_cache_lives_under_the_plugin_home(home):
     assert m.cache_dir() == home / "manifest-cache"
     assert session.plugin_home() == home
