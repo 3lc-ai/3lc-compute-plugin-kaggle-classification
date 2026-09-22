@@ -71,12 +71,12 @@ uv sync --extra kaggle-classification --group dev
 uv run pytest
 ```
 
-Folder-source registration on the 1.x Hub (`../3lc-hub-ga/`, compute :5022):
+Folder-source registration on the 1.1.0 Hub (`../3lc-hub-11/`, compute :5023; the run command with the redirected home is in its `SETUP.md`; admin and plugin routes need the Hub JWT, so from a script use the in-process pattern in `../3lc-hub-11/config_probe.py`):
 start the service with `--plugin-dir "<repo>\src"` (or
 `TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS`), then after edits:
 
 ```powershell
-curl -X POST http://localhost:5022/api/admin/plugins/dirs/reload -H "Content-Type: application/json" -d "{\"directory\": \"<repo>\\src\"}"
+curl -X POST http://localhost:5023/api/admin/plugins/dirs/reload -H "Content-Type: application/json" -d "{\"directory\": \"<repo>\\src\"}"
 ```
 
 Manifest against a local mock: set `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`

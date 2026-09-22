@@ -461,6 +461,26 @@ Copied from `3lc-compute-plugin-timm` (already Apache-2.0, header names the orig
 Not ported: `jobs.py` (disk-backed job store; session 2 decides), `importer.py`,
 `trainer.py`, `predictor.py`, `routes.py`, `ui.html` (ExDark-specific or Ultralytics-linked).
 
+### G-5b. SDK friction to flag to the Hub team (observed in session 1)
+
+1. **No public way for plugin code outside a job to learn its state root.** The worker knows it
+   (`ctx.state_dir.parent`) but only exposes it inside `run_job`; routes that need a
+   plugin-managed directory before any job has run must reconstruct the worker's default
+   (`<cwd>/.plugin-state/<id>`), which is `storage.py` rule four. A one-line SDK helper (or an
+   env var the worker sets) would remove that reconstruction. Compute 1.0.1 and 1.1.0 never
+   pass `--state-root`, so today the default is what every plugin gets (verified live on
+   1.1.0, `../3lc-hub-11/config_probe.log`).
+2. **Handler annotations are resolved against the routes module's globals.** With
+   `from __future__ import annotations`, a Litestar type imported inside the handler-building
+   function makes the worker die at startup with a bare `NameError`; the plugin guide does not
+   say the imports must be module-level. A hint in the guide, or a supervisor message naming
+   the plugin module, would save the next author the live debugging.
+3. **`GET /api/plugins` and every plugin route are JWT-only**, so a plugin author has no
+   scripted way to exercise routes on a real host without the in-process `create_app()`
+   pattern the GA and 1.1.0 probes use.
+4. **The worker binds TCP on Windows** (`--host 127.0.0.1 --port <n>`), not a Unix socket; the
+   guide describes the socket path as the supervisor's default.
+
 ### G-6. Smaller defaults I will take unless told otherwise
 
 - `requires-python = ">=3.11"` (the `kaggle` client floors there — same as ExDark).
