@@ -30,7 +30,8 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
 ## Ops & environments
 
-- **hosts** — `../3lc-hub-ga/` (compute 1.0.1 + 3lc 3.3.0 + SDK 0.3.2, :5022/:5016) is where click-through happens today; `min_service_version` is 1.1.0, so the card greys out there until that environment moves to 1.1.x. Compute 1.1.0 is on PyPI and declares SDK `>=0.3.3,<0.4.0`.
+- **hosts** — `../3lc-hub-11/` (compute **1.1.0** + 3lc 3.3.0 + SDK 0.3.3, compute :5023, object :5017 reserved, redirected home; recipe `../3lc-hub-11/SETUP.md`) is the plugin's host: the card reads `compatible: true` there and `GET /config` was verified through the host proxy on 2026-09-22. `../3lc-hub-ga/` (1.0.1, :5022) greys the card out (`min_service_version` 1.1.0) and is untouched.
+- **the storage verdict on 1.1.0** — the host passes no `--state-root`, so `storage.py` rule four fires: the plugin home is `<home>/.3lc-compute/managed-plugins/kaggle-classification/.plugin-state/kaggle-classification` (the SDK worker's default under its cwd), independent of HOME. Verified live (`../3lc-hub-11/config_probe.log` P3/P4).
 - **the SDK window** — `>=0.3.1,<0.4.0`; `test_packaging.py` checks it overlaps the latest 3lc-compute release's declared range (snapshot offline, PyPI live).
 - **folder source vs tag install** — a dev Hub registers `src/` and picks up edits on worker reload; a tester's catalog install pins a tag and never sees the checkout.
 - **the catalog** — `catalog.json`: one entry per released version, newest first, manifest pasted verbatim, `source` pinned to the tag; `HEAD/catalog.json` on the default branch is the URL hubs consume.

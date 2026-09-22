@@ -47,7 +47,9 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
   without the network (cache → bundled) and kicks a background refresh; the fragment
   polls `GET /manifest` until it settles and re-renders.
 - **Cache.** Under the plugin home resolved by `storage.py` (env override → SDK helper →
-  the worker's state root → `<cwd>/.plugin-state/<id>` → `~`), never from HOME first.
+  the worker's state root → `<cwd>/.plugin-state/<id>` → `~`), never from HOME first. On
+  compute 1.1.0 the host passes no `--state-root`, so the fourth rule fires and the home is
+  `<home>/.3lc-compute/managed-plugins/<id>/.plugin-state/<id>` (verified live 2026-09-22).
   `manifest-cache/<id>.manifest.json` holds the validated document,
   `<id>.meta.json` the sidecar `{fetched_at, source_url, sha256}`.
 - **Provenance.** Every job re-resolves at start (`resolve_manifest_for_job()`) and records
