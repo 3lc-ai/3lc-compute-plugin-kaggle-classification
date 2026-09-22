@@ -25,3 +25,6 @@ mapping.csv
 
 # Personal Claude Code settings carry absolute dev paths
 .claude/settings.local.json
+
+# The CDN mirror tools/make_cdn_tree.py produces (uploaded, never committed)
+cdn/

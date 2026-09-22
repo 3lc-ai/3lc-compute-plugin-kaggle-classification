@@ -13,7 +13,7 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | SDK contract | `3lc-compute-plugin-sdk>=0.3.1,<0.4.0` — resolves on 3lc-compute 1.0.1 (`>=0.3.1,<0.4.0`) and 1.1.0 (`>=0.3.3,<0.4.0`); `tests/test_packaging.py` asserts the overlap against the latest 3lc-compute release metadata. timm's `>=0.4.0,<0.5.0` is not mirrored: no 1.x host accepts 0.4 (STUDY G-2). |
 | tlc | `3lc>=3.3,<4.0` (the Compute Service resolves 3LC >= 3.3.0). 3.x API only: `Table.with_transform`, `tlc.integration.torch.samplers.create_sampler`, `tlc.schemas.*`, `run.add_metrics` (STUDY G-1). |
 | Model | `timm.create_model(arch, pretrained=False, num_classes=N)`; `arch` allowlisted to the single manifest value (this event `resnet18`); `timm==1.0.29` pinned; the timm plugin is NOT imported at runtime. `pretrained: true` in a manifest is rejected. |
-| Competition manifest | Remote `<MANIFEST_BASE_URL>/index.json` + `<id>/manifest.json`; base URL is a code constant (`manifest.MANIFEST_BASE_URL`, exact CDN prefix TBC, placeholder in use); env override `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`; on-disk cache with fetched-at stamp; bundled `manifests/intel-scene-v1.yaml` as last resort. Unknown fields warn, never fail. |
+| Competition manifest | Remote `<base>/kaggle/classification-index.json` + `kaggle/<id>/manifest.json` (layout in §A3); base URL is a code constant (`manifest.MANIFEST_BASE_URL` = prod); env override `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL` for dev/local; on-disk cache with fetched-at stamp; bundled `manifests/intel-scene-v1.yaml` as last resort. Unknown fields warn, never fail. |
 | Splits | Unchanged from the Intel kit: 600 seed (100 × 6) + 6,000 `undefined` at weight 0 in `train`; `val` 1,200 (200 × 6) locked; `test` 1,800, flat, never registered. |
 | Labeling | No cap. Undefined rows are filtered out of training regardless of weight. |
 | Kit build | `tools/build_kit.py --salt-file` (never `--salt`); the salt is read from a private file, never printed or written; shards `intel-scene-v1-NN.zip`, deterministic; `kit-manifest-block.yaml` beside the kit dir; `mapping.csv` (original_relpath, new_relpath, split, class with class empty for test and `undefined` for pool rows) to the private dir only. |
@@ -61,6 +61,48 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
   string the fragment renders (display_name, class names, loop_banner_text, help-link
   labels) is refused if it carries markup or control characters, and the fragment assigns
   them only through `textContent`; help-link URLs must be https.
+
+## A3. CDN layout and tiers (session 2 decisions)
+
+- **Two tiers, byte-identical objects.** Dev: bucket `3lc-competitions-dev` at
+  `https://competitions.dev.3lc.ai` (Rishikesh uploads via the console). Prod:
+  `https://competitions.3lc.ai` (Gudbrand promotes by copying keys, only after the plugin is
+  complete). Testing stays on dev; nothing on prod changes in session 2. `COMPETITION_ID`
+  (`intel-scene`) is a stable bucket id decoupled from the Kaggle slug (the ExDark convention).
+- **Layout** under either base: `kaggle/classification-index.json` (mutable),
+  `kaggle/intel-scene/manifest.json` (mutable, hotfixable),
+  `kaggle/intel-scene/starter-kit/v1/<shards>` (immutable once staged; a changed kit is a new
+  version prefix).
+- **Relative URLs only.** The index's `manifest_url` is relative to the index URL; the manifest's
+  `kit.path` (`starter-kit/v1/`) is relative to the manifest's own URL, and shard URLs resolve
+  against the URL the manifest was actually fetched from (`Manifest.document_url`,
+  `Manifest.shard_url`). `kit.base_url` is gone from schema v1 and a document carrying it is
+  rejected. The bundled copy resolves under the base in force (prod, or the override).
+- **Host allowlist.** Release default is `competitions.3lc.ai` only (`RELEASE_HOSTS`).
+  `competitions.dev.3lc.ai` and loopback are admitted only while
+  `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL` is set (`allowed_hosts()`); a cached copy fetched
+  from a dev host is not served once the override is gone.
+  `tests/test_manifest.py::test_host_allowlist_is_prod_only_without_the_override` is the
+  release-audit rule.
+- **Integrity** is sha256 from the manifest (shards) and `files.json` (files), never ETag
+  (multipart uploads make ETags meaningless).
+- **Caching.** The dev distribution is Managed-CachingOptimized with no origin request policy;
+  object `Cache-Control` is honored (min TTL 1 s) and query strings are not in the cache key.
+  Therefore: no query-string cache busting anywhere; mutable objects are uploaded with
+  `Cache-Control: max-age=60`, shards with `public, max-age=31536000, immutable`; every mutable
+  update is followed by a CloudFront invalidation of the two mutable paths (`docs/PROMOTION.md`).
+  `tools/verify_cdn.py` reports served `Content-Type`/`Cache-Control`/`X-Cache` and fails a
+  mutable object without `max-age <= 300`.
+- **Job store.** No separate disk-backed job store. Live progress is the host job panel;
+  durable outcomes are the session store's kit and import records (later the ledger and run
+  history). Compute 1.1.0 keeps job records in memory only (`plugins/job_manager.py`,
+  `_jobs` dict pruned by `_MAX_RECORDS`): they do NOT survive a service restart, which is
+  why the durable record lives in the session store.
+- **Two install paths on `3lc-hub-11`.** `--plugin-dir` for iteration; a private test catalog
+  (`catalog-test.json`, source = this repo at a pushed ref) via `TLC_COMPUTE_PLUGIN_CATALOG_URLS`
+  for gate tests. Compute 1.1.0 reads that variable as the whole operator tier: it REPLACES the
+  baked-in default catalog unless the default URL is listed too, and it accepts `https://`,
+  `file://`, local paths, and `http://` on loopback only (`plugins/catalog.py`).
 
 ## B. The labeling-loop contract (per-sample metrics)
 
@@ -127,7 +169,6 @@ giving it a real class, and it enters the next revision's training set.
 
 ## E. Open items (TBC, placeholders in the bundled manifest)
 
-- `MANIFEST_BASE_URL` exact CDN prefix (`https://competitions.3lc.ai/hackathon` assumed).
 - `competition.slug` (folder name `3-lc-hack-nova-scene-classification-challenge` assumed) and `deadline_utc`.
-- `kit.base_url` prefix: the `kit{}` block is pasted (v1 build of 2026-09-22, five shards, 113,741,154 bytes) but the prefix itself is still the placeholder; the shards under `datasets/intel-scene-kit-v1/shards/` must be staged there before any host resolves this manifest, or the download fails on a 404 (RELEASING.md).
+- The `kit{}` block is pasted (v1 build of 2026-09-22, five shards, 113,741,154 bytes) with `path: starter-kit/v1/`; the shards must be staged under `kaggle/intel-scene/starter-kit/v1/` on the tier in force before any host resolves this manifest, or the download fails on a 404 (docs/PROMOTION.md).
 - The bundled copy ships the shards block; a wheel built before a kit re-publish therefore names a superseded kit until the remote manifest overrides it (remote wins, PLAN §A2).

@@ -21,7 +21,9 @@ classes:
   - {id: 5, name: street}
 
 kit:
-  base_url: "https://competitions.3lc.ai/hackathon/intel-scene/kit/v1"   # TBC: CDN prefix
+  # Relative to this manifest's own URL on the CDN (kaggle/intel-scene/manifest.json), so
+  # dev and prod serve byte-identical documents and promotion is a pure copy (PLAN A3).
+  path: starter-kit/v1/
   version: v1
   # Emitted by tools/build_kit.py from the 2026-09-22 build; the shards live under this
   # prefix on the CDN once staged (RELEASING.md, kit data releases).

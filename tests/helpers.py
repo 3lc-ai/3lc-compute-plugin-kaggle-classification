@@ -25,7 +25,7 @@ from kaggle_classification import manifest as manifest_mod
 from kaggle_classification.kit import FILES_INDEX_NAME, KIT_DIR_NAME
 
 SMALL_SPLITS = {"labeled_per_class": 2, "undefined": 3, "val_per_class": 1, "test": 4}
-BASE_URL = "https://cdn.test/hackathon/intel-scene/kit"
+DOC_URL = "https://cdn.test/kaggle/intel-scene/manifest.json"
 ALLOWED = frozenset({"cdn.test"})
 
 
@@ -37,7 +37,7 @@ def small_manifest_data(kit_version: str = "v1") -> dict[str, Any]:
         "val": {"per_class": SMALL_SPLITS["val_per_class"], "editable": True},
         "test": {"count": SMALL_SPLITS["test"], "ids_from": "sample_submission.csv"},
     }
-    data["kit"] = {"base_url": f"{BASE_URL}/{kit_version}", "version": kit_version, "shards": []}
+    data["kit"] = {"path": f"starter-kit/{kit_version}/", "version": kit_version, "shards": []}
     return data
 
 
@@ -106,8 +106,10 @@ def build_synthetic_kit(
         mutate_after_index(kit)
     cdn = srv / "cdn" / kit_version
     shards = build_kit.shard_kit_tree(kit, cdn, shard_bytes=shard_bytes)
-    data["kit"] = build_kit.kit_block(f"{BASE_URL}/{kit_version}", kit_version, shards)["kit"]
-    return manifest_mod.parse_manifest(data, source="test", source_detail=str(cdn), allowed_kit_hosts=ALLOWED), cdn
+    data["kit"] = build_kit.kit_block(f"starter-kit/{kit_version}/", kit_version, shards)["kit"]
+    return manifest_mod.parse_manifest(
+        data, source="test", source_detail=str(cdn), document_url=DOC_URL, hosts=ALLOWED
+    ), cdn
 
 
 class _Resp(io.BytesIO):
@@ -164,7 +166,7 @@ class FakeCtx:
 
 def bump_version(manifest: manifest_mod.Manifest, version: str) -> manifest_mod.Manifest:
     """The same manifest shipping a newer kit version (the constant moved)."""
-    kit = dataclasses.replace(manifest.kit, version=version, base_url=f"{BASE_URL}/{version}")
+    kit = dataclasses.replace(manifest.kit, version=version, path=f"starter-kit/{version}/")
     return dataclasses.replace(manifest, kit=kit)
 
 

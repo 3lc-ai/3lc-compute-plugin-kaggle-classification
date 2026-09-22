@@ -12,7 +12,7 @@ from pathlib import Path
 
 import build_kit  # tools/ is on sys.path (conftest)
 import pytest
-from helpers import ALLOWED, small_manifest_data
+from helpers import ALLOWED, DOC_URL, small_manifest_data
 
 from kaggle_classification import manifest as manifest_mod
 
@@ -22,7 +22,7 @@ SALT = b"a-test-salt-that-is-long-enough"
 
 
 def _manifest():
-    return manifest_mod.parse_manifest(small_manifest_data(), allowed_kit_hosts=ALLOWED)
+    return manifest_mod.parse_manifest(small_manifest_data(), document_url=DOC_URL, hosts=ALLOWED)
 
 
 def _jpeg(path: Path, seed: int, size=(12, 10)) -> None:
@@ -81,7 +81,7 @@ def _build(ws, **over):
         "private_out": ws["private"],
         "manifest": ws["manifest"],
         "kit_version": "v1",
-        "base_url": "https://cdn.test/hackathon/intel-scene/kit/v1",
+        "kit_path": "starter-kit/v1/",
         "shard_bytes": 4000,
         "log": lambda *a: None,
     }
@@ -141,7 +141,7 @@ def test_build_and_verify_end_to_end(workspace):
     block_path = Path(report["block"])
     assert block_path == ws["kit_out"].parent / "kit-manifest-block.yaml"
     block = manifest_mod.load_yaml_text(block_path.read_text())
-    assert block["kit"]["version"] == "v1" and block["kit"]["base_url"].endswith("/kit/v1")
+    assert block["kit"]["version"] == "v1" and block["kit"]["path"] == "starter-kit/v1/"
     assert [s["name"] for s in block["kit"]["shards"]] == names
     assert block["splits"] == {
         "train": {"labeled_per_class": 2, "undefined": 3},
@@ -151,7 +151,7 @@ def test_build_and_verify_end_to_end(workspace):
     # And it parses as a manifest when spliced in.
     data = small_manifest_data()
     data["kit"], data["splits"] = block["kit"], block["splits"]
-    assert manifest_mod.parse_manifest(data, allowed_kit_hosts=ALLOWED).kit.published
+    assert manifest_mod.parse_manifest(data, document_url=DOC_URL, hosts=ALLOWED).kit.published
 
     result = build_kit.verify_build(
         report,
@@ -171,7 +171,7 @@ def test_build_and_verify_end_to_end(workspace):
     from kaggle_classification import kit as kit_mod
 
     fake = FakeCDN(Path(report["shards_dir"]))
-    manifest_with_kit = manifest_mod.parse_manifest(data, allowed_kit_hosts=ALLOWED)
+    manifest_with_kit = manifest_mod.parse_manifest(data, document_url=DOC_URL, hosts=ALLOWED)
     import os
 
     os.environ["KAGGLE_CLASSIFICATION_HOME"] = str(ws["tmp"] / "home")
@@ -281,7 +281,6 @@ def test_cli_smoke(workspace, tmp_path, capsys):
     import yaml
 
     data = small_manifest_data()
-    data["kit"]["base_url"] = "https://competitions.3lc.ai/hackathon/intel-scene/kit/v1"
     manifest_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
     rc = build_kit.main([
         "--data-dir",

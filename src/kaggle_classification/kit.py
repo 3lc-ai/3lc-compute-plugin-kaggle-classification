@@ -84,8 +84,9 @@ def kit_root_of(version_dir: Path) -> Path:
     return version_dir / KIT_DIR_NAME
 
 
-def shard_url(kit: Kit, name: str) -> str:
-    return f"{kit.base_url}/{name}"
+def shard_url(manifest: Manifest, name: str) -> str:
+    """Resolved against the URL the manifest was fetched from (PLAN A3: relative kit.path)."""
+    return manifest.shard_url(name)
 
 
 # ── Primitives ─────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ def _free_space(version_dir: Path, kit: Kit) -> tuple[bool, str]:
 
 
 def _download_shard(
-    kit: Kit,
+    manifest: Manifest,
     entry: Any,
     version_dir: Path,
     log: Callable[[str], None],
@@ -173,7 +174,7 @@ def _download_shard(
             if start:
                 log(f"{name}: resuming at byte {start:,} of {size:,}")
             received = start
-            with _open(shard_url(kit, name), start or None) as resp, part.open("r+b" if start else "wb") as f:
+            with _open(shard_url(manifest, name), start or None) as resp, part.open("r+b" if start else "wb") as f:
                 if start:
                     if getattr(resp, "status", 200) == 206:
                         f.seek(0, 2)
@@ -444,7 +445,7 @@ def run_download(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
                     "bytes_total": total,
                 })
 
-            _download_shard(kit, entry, version_dir, log, report, is_cancelled)
+            _download_shard(manifest, entry, version_dir, log, report, is_cancelled)
             done += int(entry.bytes)
     except _Cancelled:
         return cancelled_result()

@@ -3,7 +3,18 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] — 0.1.0 (session 1)
+## [Unreleased] — 0.1.0 (sessions 1 and 2)
+
+### Changed (session 2)
+- Manifest schema v1: `kit.base_url` replaced by a relative `kit.path`; shard URLs resolve against the
+  URL the manifest was fetched from; the index's `manifest_url` is relative to the index. Layout
+  `kaggle/classification-index.json`, `kaggle/<id>/manifest.json`, `kaggle/<id>/starter-kit/<v>/`.
+- Host allowlist: prod only by default; the dev CDN and loopback only under the base-URL override.
+
+### Added (session 2)
+- `tools/make_cdn_tree.py` (the bucket mirror + `upload-plan.json`), `tools/verify_cdn.py`
+  (served headers and sha256 verification), `docs/PROMOTION.md`.
+
 
 ### Added
 - Plugin scaffold from the 3LC template: `plugin.toml` (id `kaggle-classification`,

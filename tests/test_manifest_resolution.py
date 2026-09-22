@@ -37,21 +37,21 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
 class LocalCDN:
     def __init__(self, root: Path):
         self.root = root
-        (root / "hackathon").mkdir(parents=True, exist_ok=True)
+        (root / "kaggle").mkdir(parents=True, exist_ok=True)
         handler = lambda *a, **k: _Handler(*a, directory=str(root), **k)  # noqa: E731
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
         self.server.daemon_threads = True
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
-        self.base = f"http://127.0.0.1:{self.server.server_address[1]}/hackathon"
+        self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
 
     def write_index(self, competitions: list[dict]) -> None:
-        (self.root / "hackathon" / "index.json").write_text(
+        (self.root / "kaggle" / "classification-index.json").write_text(
             json.dumps({"schema_version": 1, "competitions": competitions}), encoding="utf-8"
         )
 
     def write_manifest(self, cid: str, data: dict) -> bytes:
-        d = self.root / "hackathon" / cid
+        d = self.root / "kaggle" / cid
         d.mkdir(parents=True, exist_ok=True)
         raw = json.dumps(data).encode("utf-8")
         (d / "manifest.json").write_bytes(raw)
@@ -95,7 +95,13 @@ def _seed_cache(display: str = "CACHED", kit_version: str = "v9", cid: str = "in
     data["competition"]["display_name"] = display
     data["kit"]["version"] = kit_version
     raw = json.dumps(data).encode("utf-8")
-    m.write_cache(cid, data, raw=raw, source_url="https://old/manifest.json", fetched_at="2026-01-01T00:00:00Z")
+    m.write_cache(
+        cid,
+        data,
+        raw=raw,
+        source_url=f"https://competitions.3lc.ai/kaggle/{cid}/manifest.json",
+        fetched_at="2026-01-01T00:00:00Z",
+    )
 
 
 # ── The policy ────────────────────────────────────────────────────────────
@@ -194,17 +200,34 @@ def test_two_active_competitions_surface_a_picker(cdn):
     assert [c["id"] for c in res3.candidates] == ["a-comp", "b-comp"]
 
 
-def test_kit_on_a_non_allowlisted_host_is_rejected_remotely_and_locally(cdn):
+def test_absolute_kit_url_in_a_remote_manifest_is_rejected(cdn):
     _seed_cache()
     data = bundled_data()
-    data["kit"]["base_url"] = "https://evil.example.com/kit/v1"
-    with pytest.raises(m.ManifestError, match="not an allowed kit host"):
+    data["kit"]["path"] = "https://evil.example.com/kit/v1/"
+    with pytest.raises(m.ManifestError, match="must be relative"):
         m.parse_manifest(data)
     cdn.write_index([_entry("intel-scene")])
     cdn.write_manifest("intel-scene", data)
     res = m.resolve()
     assert res.manifest.source == "cache"
-    assert any("not an allowed kit host" in w for w in res.warnings)
+    assert any("must be relative" in w for w in res.warnings)
+
+
+def test_remote_kit_resolves_relative_to_the_fetched_manifest(cdn):
+    _remote(cdn)
+    res = m.resolve()
+    assert res.manifest.document_url == f"{cdn.base}/kaggle/intel-scene/manifest.json"
+    assert res.manifest.kit_base_url == f"{cdn.base}/kaggle/intel-scene/starter-kit/v1/"
+    # And the cached copy remembers where it came from, so its kit resolves the same way.
+    assert m.read_cache("intel-scene").kit_base_url == res.manifest.kit_base_url
+
+
+def test_a_dev_tier_cache_is_not_served_once_the_override_is_gone(cdn, monkeypatch):
+    _remote(cdn)
+    assert m.resolve().manifest.source == "remote"
+    monkeypatch.delenv(m.MANIFEST_BASE_URL_ENV)
+    assert m.read_cache("intel-scene") is None  # loopback host no longer allowed
+    assert m.resolve(network=False).manifest.source == "bundled"
 
 
 def test_timeout_path_returns_within_budget(cdn, monkeypatch):
@@ -242,13 +265,13 @@ def test_fetch_bytes_retries_once_within_the_budget(monkeypatch):
 
 
 def test_index_validation_rejects_offsite_manifest_urls():
-    base = "https://competitions.3lc.ai/hackathon"
+    base = "https://competitions.3lc.ai/kaggle/classification-index.json"
     with pytest.raises(m.ManifestError, match="must stay on"):
         m.parse_index(
             {"schema_version": 1, "competitions": [{**_entry("x"), "manifest_url": "https://evil/m.json"}]}, base
         )
     entries = m.parse_index({"schema_version": 1, "competitions": [_entry("x")]}, base)
-    assert entries[0]["manifest_url"] == "https://competitions.3lc.ai/hackathon/x/manifest.json"
+    assert entries[0]["manifest_url"] == "https://competitions.3lc.ai/kaggle/x/manifest.json"
     with pytest.raises(m.ManifestError, match="schema_version"):
         m.parse_index({"schema_version": 2, "competitions": []}, base)
     with pytest.raises(m.ManifestError, match="unique"):
@@ -279,6 +302,7 @@ def test_resolve_manifest_for_job_returns_provenance(cdn):
         "manifest_source",
         "manifest_source_detail",
         "manifest_fetched_at",
+        "manifest_document_url",
         "competition_id",
         "kit_version",
         "schema_version",
@@ -322,7 +346,11 @@ def test_cache_lives_under_the_plugin_home(home):
     # And the cache sidecar shape is the one the spec names.
     data = bundled_data()
     meta = m.write_cache(
-        "intel-scene", data, raw=b"x", source_url="https://s/m.json", fetched_at="2026-09-22T00:00:00Z"
+        "intel-scene",
+        data,
+        raw=b"x",
+        source_url="https://competitions.3lc.ai/kaggle/intel-scene/manifest.json",
+        fetched_at="2026-09-22T00:00:00Z",
     )
     assert {"fetched_at", "source_url", "sha256"} <= set(meta)
 

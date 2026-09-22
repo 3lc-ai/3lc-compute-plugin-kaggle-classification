@@ -15,11 +15,16 @@ the next load whatever the version fields say. A remote document that fetches
 but fails validation is logged, falls to the cache, and surfaces a warning the
 UI shows; a bad hotfix must never brick a participant.
 
-The remote index ``<base>/index.json`` is
-``{schema_version, competitions: [{id, display_name, manifest_url, active}]}``.
-The plugin uses the single active competition; with more than one active the
-UI shows a picker (``select_competition``); with none it falls to the bundled
-manifest with a visible warning.
+The CDN layout is fixed under either tier's base URL (docs/PLAN.md §A3):
+``kaggle/classification-index.json`` (mutable) lists competitions as
+``{schema_version, competitions: [{id, display_name, manifest_url, active}]}``
+with ``manifest_url`` relative to the index; ``kaggle/<id>/manifest.json``
+(mutable, hotfixable) carries ``kit.path`` relative to ITSELF (``starter-kit/v1/``),
+and the shards under that prefix are immutable. Shard URLs are resolved against
+the URL the manifest was actually fetched from, so dev and prod serve
+byte-identical documents. The plugin uses the single active competition; with
+more than one active the UI shows a picker (``select_competition``); with none
+it falls to the bundled manifest with a visible warning.
 
 Fetching is server-side only (routes / worker), never from the browser:
 connect+read budget ``FETCH_BUDGET_S`` in total with one retry. The UI renders
@@ -54,18 +59,37 @@ _log = logging.getLogger(__name__)
 SCHEMA_VERSION = 1
 INDEX_SCHEMA_VERSION = 1
 
-# The remote base URL is a CODE CONSTANT (locked decision). The exact CDN prefix is still to be
-# confirmed with the Hub team; the env override exists for dev and for the mock server.
-MANIFEST_BASE_URL = "https://competitions.3lc.ai/hackathon"
+# Two CDN tiers serving byte-identical objects (docs/PLAN.md §A3). Prod is the release default,
+# a CODE CONSTANT; the dev tier (and a local mock) is reached ONLY through the env override.
+MANIFEST_BASE_URL = "https://competitions.3lc.ai"
+DEV_MANIFEST_BASE_URL = "https://competitions.dev.3lc.ai"
 MANIFEST_BASE_URL_ENV = "KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL"
-INDEX_NAME = "index.json"
+# The layout under a base URL. Never query strings (the CDN's cache key ignores them).
+INDEX_PATH = "kaggle/classification-index.json"
 MANIFEST_NAME = "manifest.json"
 
-# Hosts a manifest may point the kit at. A manifest whose kit lives anywhere else is rejected
-# at validation — a compromised or mistyped manifest must not make participants download from
-# an arbitrary server. Loopback is accepted over plain http for the local mock only.
-ALLOWED_KIT_HOSTS = frozenset({"competitions.3lc.ai"})
+
+def manifest_path(competition_id: str) -> str:
+    return f"kaggle/{competition_id}/{MANIFEST_NAME}"
+
+
+# Hosts a manifest may be served from — and therefore point the kit at, since shard URLs
+# resolve against the manifest's own URL. The release default is the prod CDN alone; the dev CDN
+# and loopback are allowed ONLY while the base-URL override is set (tests/test_packaging.py
+# fails the release if the dev host is reachable without it). Loopback may use plain http.
+RELEASE_HOSTS = frozenset({"competitions.3lc.ai"})
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+DEV_HOSTS = frozenset({"competitions.dev.3lc.ai"}) | _LOOPBACK_HOSTS
+
+
+def override_active() -> bool:
+    return bool(os.environ.get(MANIFEST_BASE_URL_ENV, "").strip())
+
+
+def allowed_hosts() -> frozenset[str]:
+    """The manifest/kit host allowlist in force: prod only, plus dev and loopback under the override."""
+    return RELEASE_HOSTS | DEV_HOSTS if override_active() else RELEASE_HOSTS
+
 
 # Which competition this build serves when the index does not decide (offline, or as the
 # preferred one among several active). The manifest for that id is what gets resolved.
@@ -123,7 +147,8 @@ class Shard:
 
 @dataclass(frozen=True)
 class Kit:
-    base_url: str
+    # Relative to the manifest's own URL, always ending in "/" (e.g. "starter-kit/v1/").
+    path: str
     version: str
     shards: tuple[Shard, ...]
 
@@ -222,8 +247,20 @@ class Manifest:
     source_detail: str = ""
     sha256: str = ""
     fetched_at: str | None = None
+    # The URL this document lives at on the CDN tier in force: the fetched URL for a remote
+    # copy, the recorded one for a cached copy, the canonical layout URL for the bundled copy.
+    # Every kit URL resolves against it.
+    document_url: str = ""
     # Unknown fields seen while parsing (warned, never fatal).
     warnings: tuple[str, ...] = field(default=())
+
+    @property
+    def kit_base_url(self) -> str:
+        """Absolute prefix the shards live under: ``document_url`` joined with ``kit.path``."""
+        return urllib.parse.urljoin(self.document_url, self.kit.path)
+
+    def shard_url(self, name: str) -> str:
+        return urllib.parse.urljoin(self.kit_base_url, name)
 
     # ── derived facts every other module asks for ────────────────────────
     @property
@@ -269,6 +306,7 @@ class Manifest:
             "manifest_source": self.source,
             "manifest_source_detail": self.source_detail,
             "manifest_fetched_at": self.fetched_at,
+            "manifest_document_url": self.document_url,
             "competition_id": self.competition.id,
             "kit_version": self.kit.version,
             "schema_version": self.schema_version,
@@ -341,7 +379,8 @@ def _warn_unknown(section: dict[str, Any], known: set[str], where: str, warnings
             _log.warning("manifest: %s", note)
 
 
-def _check_kit_url(url: str, allowed_hosts: frozenset[str] | set[str], where: str) -> str:
+def _check_document_url(url: str, hosts: frozenset[str] | set[str], where: str) -> str:
+    """An absolute https URL on an allowed host (plain http only for loopback), no query/fragment."""
     parts = urllib.parse.urlsplit(url)
     host = (parts.hostname or "").lower()
     if not host:
@@ -350,13 +389,25 @@ def _check_kit_url(url: str, allowed_hosts: frozenset[str] | set[str], where: st
     if parts.scheme != "https" and not (parts.scheme == "http" and host in _LOOPBACK_HOSTS):
         msg = f"{where}: must use https (got {parts.scheme!r})"
         raise ManifestError(msg)
-    if host not in {h.lower() for h in allowed_hosts}:
-        msg = f"{where}: host {host!r} is not an allowed kit host ({', '.join(sorted(allowed_hosts))})"
+    if host not in {h.lower() for h in hosts}:
+        msg = f"{where}: host {host!r} is not an allowed host ({', '.join(sorted(hosts))})"
         raise ManifestError(msg)
     if parts.query or parts.fragment:
         msg = f"{where}: must not carry a query or fragment"
         raise ManifestError(msg)
-    return url.rstrip("/")
+    return url
+
+
+def _check_kit_path(path: str, where: str) -> str:
+    """A RELATIVE prefix under the manifest's own directory: no scheme, no leading slash, no
+    parent steps, no query. Normalised to end with "/"."""
+    if "://" in path or path.startswith(("/", "\\")) or ":" in path.split("/")[0]:
+        msg = f"{where}: must be relative to the manifest (got {path!r}); absolute URLs are not allowed"
+        raise ManifestError(msg)
+    if any(seg in ("..", "") for seg in path.strip("/").split("/")) or "?" in path or "#" in path:
+        msg = f"{where}: must be a plain relative prefix like 'starter-kit/v1/', got {path!r}"
+        raise ManifestError(msg)
+    return path.rstrip("/") + "/"
 
 
 def parse_manifest(
@@ -366,15 +417,18 @@ def parse_manifest(
     source_detail: str = "",
     sha256: str = "",
     fetched_at: str | None = None,
-    allowed_kit_hosts: frozenset[str] | set[str] | None = None,
+    document_url: str = "",
+    hosts: frozenset[str] | set[str] | None = None,
 ) -> Manifest:
     """Validate a decoded manifest document and return the typed ``Manifest``.
 
-    Raises ``ManifestError`` naming the offending field. Unknown fields are
-    recorded on ``Manifest.warnings`` and logged, never fatal — a newer
-    manifest must still load on an older plugin.
+    ``document_url`` is where this document lives (defaults to the canonical layout URL under
+    the base in force); its host must be allowed, and every kit URL resolves against it.
+    Raises ``ManifestError`` naming the offending field. Unknown fields are recorded on
+    ``Manifest.warnings`` and logged, never fatal — a newer manifest must still load on an
+    older plugin.
     """
-    hosts = ALLOWED_KIT_HOSTS if allowed_kit_hosts is None else allowed_kit_hosts
+    hosts = allowed_hosts() if hosts is None else hosts
     warnings: list[str] = []
     if not isinstance(data, dict):
         msg = "manifest: top level must be a mapping"
@@ -436,9 +490,16 @@ def parse_manifest(
         raise ManifestError(msg)
     classes.sort(key=lambda c: c.id)
 
-    # kit — base URL on an allowed host, shard names plain filenames
+    # The document's own URL: where the kit resolves from, and the host check.
+    doc_url = document_url or f"{base_url()}/{manifest_path(competition.id)}"
+    doc_url = _check_document_url(doc_url, hosts, "manifest url")
+
+    # kit — a relative prefix, shard names plain filenames
     raw_kit = _require(data, "kit", "manifest")
-    _warn_unknown(raw_kit, {"base_url", "version", "shards"}, "kit", warnings)
+    if "base_url" in raw_kit:
+        msg = "kit.base_url: absolute kit URLs are not allowed; use kit.path relative to the manifest"
+        raise ManifestError(msg)
+    _warn_unknown(raw_kit, {"path", "version", "shards"}, "kit", warnings)
     raw_shards = _require(raw_kit, "shards", "kit")
     if not isinstance(raw_shards, list):
         msg = "kit.shards: expected a list"
@@ -462,7 +523,7 @@ def parse_manifest(
         msg = "kit.shards: shard names must be unique"
         raise ManifestError(msg)
     kit = Kit(
-        base_url=_check_kit_url(_str(_require(raw_kit, "base_url", "kit"), "kit.base_url"), hosts, "kit.base_url"),
+        path=_check_kit_path(_str(_require(raw_kit, "path", "kit"), "kit.path"), "kit.path"),
         version=_str(_require(raw_kit, "version", "kit"), "kit.version"),
         shards=tuple(shards),
     )
@@ -610,16 +671,20 @@ def parse_manifest(
         source_detail=source_detail,
         sha256=sha256,
         fetched_at=fetched_at,
+        document_url=doc_url,
         warnings=tuple(warnings),
     )
 
 
-def parse_index(data: Any, base: str) -> list[dict[str, Any]]:
-    """Validate ``index.json`` and return its competition entries with absolute ``manifest_url``.
+def parse_index(data: Any, index_url_: str) -> list[dict[str, Any]]:
+    """Validate the index and return its competition entries with absolute ``manifest_url``.
 
-    A manifest URL may be relative to the base (``intel-scene/manifest.json``) or absolute,
-    but must stay on the base URL's host — the index must not send the plugin elsewhere.
+    ``manifest_url`` is relative to the INDEX's own URL (``intel-scene/manifest.json`` beside
+    ``kaggle/classification-index.json`` resolves to ``kaggle/intel-scene/manifest.json``); an
+    absolute value is accepted only on the index's host — the index must not send the plugin
+    elsewhere.
     """
+    base = index_url_
     if not isinstance(data, dict):
         msg = "index: top level must be a mapping"
         raise ManifestError(msg)
@@ -639,9 +704,7 @@ def parse_index(data: Any, base: str) -> list[dict[str, Any]]:
         if not _ID_RE.fullmatch(cid):
             msg = f"{where}.id: must be lowercase letters, digits and hyphens, got {cid!r}"
             raise ManifestError(msg)
-        url = urllib.parse.urljoin(
-            base.rstrip("/") + "/", _str(_require(entry, "manifest_url", where), f"{where}.manifest_url")
-        )
+        url = urllib.parse.urljoin(base, _str(_require(entry, "manifest_url", where), f"{where}.manifest_url"))
         parts = urllib.parse.urlsplit(url)
         if parts.scheme not in ("http", "https") or (parts.hostname or "").lower() != base_host:
             msg = f"{where}.manifest_url: must stay on {base_host!r}, got {url!r}"
@@ -689,21 +752,26 @@ def _now_iso() -> str:
 
 
 def load_bundled(competition_id: str = DEFAULT_COMPETITION_ID) -> Manifest:
-    """The manifest shipped inside the wheel — always available, possibly stale."""
+    """The manifest shipped inside the wheel — always available, possibly stale. Its kit resolves
+    against the canonical layout URL under the base in force (prod, or the override)."""
     path = bundled_path(competition_id)
     raw = path.read_bytes()
     return parse_manifest(
-        load_yaml_text(raw.decode("utf-8")), source="bundled", source_detail=str(path), sha256=_sha256_bytes(raw)
+        load_yaml_text(raw.decode("utf-8")),
+        source="bundled",
+        source_detail=str(path),
+        sha256=_sha256_bytes(raw),
+        document_url=f"{base_url()}/{manifest_path(competition_id)}",
     )
 
 
 def base_url() -> str:
-    """The remote base URL: the env override for dev, else the code constant."""
+    """The CDN base URL: the env override for dev/local, else the prod constant."""
     return (os.environ.get(MANIFEST_BASE_URL_ENV) or MANIFEST_BASE_URL).rstrip("/")
 
 
 def index_url() -> str:
-    return f"{base_url()}/{INDEX_NAME}"
+    return f"{base_url()}/{INDEX_PATH}"
 
 
 def _http_get(url: str, timeout: float) -> bytes:
@@ -757,8 +825,10 @@ def write_cache(competition_id: str, data: Any, *, raw: bytes, source_url: str, 
     return meta
 
 
-def read_cache(competition_id: str, *, allowed_kit_hosts: frozenset[str] | set[str] | None = None) -> Manifest | None:
-    """The last remote document that validated, or None (missing, unreadable, or no longer valid)."""
+def read_cache(competition_id: str, *, hosts: frozenset[str] | set[str] | None = None) -> Manifest | None:
+    """The last remote document that validated, or None (missing, unreadable, no longer valid, or
+    fetched from a host the allowlist in force no longer admits — a dev-tier cache is not served
+    once the override is gone)."""
     doc_path, meta_path = _cache_paths(competition_id)
     if not (doc_path.is_file() and meta_path.is_file()):
         return None
@@ -771,7 +841,8 @@ def read_cache(competition_id: str, *, allowed_kit_hosts: frozenset[str] | set[s
             source_detail=str(doc_path),
             sha256=str(meta.get("sha256") or ""),
             fetched_at=meta.get("fetched_at"),
-            allowed_kit_hosts=allowed_kit_hosts,
+            document_url=str(meta.get("source_url") or ""),
+            hosts=hosts,
         )
     except (OSError, ValueError) as exc:  # ManifestError is a ValueError
         _log.warning("manifest cache for %s unusable: %s", competition_id, exc)
@@ -827,7 +898,7 @@ class Resolution:
 
 
 def _local(competition_id: str, warnings: list[str], candidates: tuple[dict[str, Any], ...], *, allowed) -> Resolution:
-    cached = read_cache(competition_id, allowed_kit_hosts=allowed)
+    cached = read_cache(competition_id, hosts=allowed)
     if cached is not None:
         return Resolution(cached, tuple(warnings), candidates)
     if bundled_path(competition_id).is_file():
@@ -849,7 +920,7 @@ def resolve(
     *,
     network: bool = True,
     competition_id: str | None = None,
-    allowed_kit_hosts: frozenset[str] | set[str] | None = None,
+    hosts: frozenset[str] | set[str] | None = None,
 ) -> Resolution:
     """Resolve the competition manifest: remote (when reachable and valid) -> cache -> bundled.
 
@@ -863,7 +934,7 @@ def resolve(
     if network:
         chosen: dict[str, Any] | None = None
         try:
-            entries = parse_index(json.loads(fetch_bytes(index_url()).decode("utf-8")), base_url())
+            entries = parse_index(json.loads(fetch_bytes(index_url()).decode("utf-8")), index_url())
         except FetchError as exc:
             _log.info("manifest index unreachable: %s", exc)
             warnings.append(f"The competition index could not be reached; {_fallback_note(cid)}.")
@@ -904,7 +975,8 @@ def resolve(
                         source_detail=url,
                         sha256=_sha256_bytes(raw),
                         fetched_at=fetched_at,
-                        allowed_kit_hosts=allowed_kit_hosts,
+                        document_url=url,
+                        hosts=hosts,
                     )
                 except (ManifestError, ValueError, UnicodeDecodeError) as exc:
                     _log.warning("remote manifest %s failed validation: %s", url, exc)
@@ -917,7 +989,7 @@ def resolve(
                     )
                     return Resolution(manifest, tuple(warnings), candidates)
 
-    resolution = _local(cid, warnings, candidates, allowed=allowed_kit_hosts)
+    resolution = _local(cid, warnings, candidates, allowed=hosts)
     m = resolution.manifest
     _log.info("manifest: %s source (%s), kit %s", m.source, m.source_detail, m.kit.version)
     return resolution

@@ -7,7 +7,7 @@
 
     python tools/build_kit.py --data-dir <raw data> --salt-file <file> \
         --kit-out <kit dir> --private-out <judge dir> [--shard-mb 50] [--kit-version v1]
-        [--base-url <cdn prefix>] [--manifest <bundled yaml>] [--force]
+        [--kit-path starter-kit/v1/] [--manifest <bundled yaml>] [--force]
 
 Pipeline:
 
@@ -219,11 +219,11 @@ def shard_kit_tree(
     return entries
 
 
-def kit_block(base_url: str, version: str, shards: list[dict[str, Any]]) -> dict[str, Any]:
+def kit_block(kit_path: str, version: str, shards: list[dict[str, Any]]) -> dict[str, Any]:
     """The ``kit{}`` mapping to paste into the competition manifest."""
     return {
         "kit": {
-            "base_url": base_url,
+            "path": kit_path,
             "version": version,
             "shards": [{"name": s["name"], "sha256": s["sha256"], "bytes": s["bytes"]} for s in shards],
         }
@@ -366,13 +366,13 @@ def write_mapping(private_dir: Path, planned: list[Planned]) -> Path:
 
 
 def write_manifest_block(
-    path: Path, *, base_url: str, version: str, shards: list[dict[str, Any]], counts: dict[str, int], manifest
+    path: Path, *, kit_path: str, version: str, shards: list[dict[str, Any]], counts: dict[str, int], manifest
 ) -> dict[str, Any]:
     import yaml
 
     n = manifest.num_classes
     block = {
-        **kit_block(base_url, version, shards),
+        **kit_block(kit_path, version, shards),
         "splits": {
             "train": {"labeled_per_class": counts["train_labeled"] // n, "undefined": counts["train_undefined"]},
             "val": {"per_class": counts["val"] // n, "editable": manifest.splits.val.editable},
@@ -396,7 +396,7 @@ def build(
     private_out: Path,
     manifest: manifest_mod.Manifest,
     kit_version: str,
-    base_url: str,
+    kit_path: str,
     shard_bytes: int = DEFAULT_SHARD_MB * 1024 * 1024,
     force: bool = False,
     log=print,
@@ -431,7 +431,7 @@ def build(
     shards = shard_kit_tree(kit_root, shards_dir, shard_bytes=shard_bytes, name_prefix=prefix)
     block_path = kit_out.parent / "kit-manifest-block.yaml"
     block = write_manifest_block(
-        block_path, base_url=base_url, version=kit_version, shards=shards, counts=counts, manifest=manifest
+        block_path, kit_path=kit_path, version=kit_version, shards=shards, counts=counts, manifest=manifest
     )
     elapsed = time.monotonic() - t0
     log(f"built {len(shards)} shards, {sum(s['bytes'] for s in shards):,} bytes, in {elapsed:.1f}s")
@@ -588,7 +588,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--private-out", required=True, type=Path, help="mapping.csv goes here and nowhere else")
     parser.add_argument("--shard-mb", type=int, default=DEFAULT_SHARD_MB)
     parser.add_argument("--kit-version", default=None, help="default: the bundled manifest's kit.version")
-    parser.add_argument("--base-url", default=None, help="default: the bundled manifest's kit.base_url")
+    parser.add_argument(
+        "--kit-path", default=None, help="kit.path relative to the manifest (default: starter-kit/<version>/)"
+    )
     parser.add_argument(
         "--manifest", type=Path, default=None, help="manifest YAML for the splits gate (default: bundled)"
     )
@@ -605,7 +607,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         manifest = manifest_mod.load_bundled()
     version = args.kit_version or manifest.kit.version
-    base_url = (args.base_url or manifest.kit.base_url).rstrip("/")
+    kit_path = (args.kit_path or f"starter-kit/{version}/").rstrip("/") + "/"
 
     try:
         report = build(
@@ -615,7 +617,7 @@ def main(argv: list[str] | None = None) -> int:
             private_out=args.private_out,
             manifest=manifest,
             kit_version=version,
-            base_url=base_url,
+            kit_path=kit_path,
             shard_bytes=args.shard_mb * 1024 * 1024,
             force=args.force,
         )

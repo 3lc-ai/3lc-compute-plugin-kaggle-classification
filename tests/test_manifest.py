@@ -65,8 +65,13 @@ def test_to_dict_is_json_serializable(manifest):
         (lambda d: d["training"]["embeddings"].__setitem__("n_components", 5), "n_components"),
         (lambda d: d["competition"].__setitem__("id", "Intel Scene"), "competition.id"),
         (lambda d: d.pop("submission"), "submission"),
-        (lambda d: d["kit"].__setitem__("base_url", "https://evil.example.com/kit/v1"), "not an allowed kit host"),
-        (lambda d: d["kit"].__setitem__("base_url", "http://competitions.3lc.ai/kit/v1"), "must use https"),
+        (
+            lambda d: d["kit"].__setitem__("base_url", "https://competitions.3lc.ai/kit/v1"),
+            "absolute kit URLs are not allowed",
+        ),
+        (lambda d: d["kit"].__setitem__("path", "https://evil.example.com/kit/v1/"), "must be relative"),
+        (lambda d: d["kit"].__setitem__("path", "/starter-kit/v1/"), "must be relative"),
+        (lambda d: d["kit"].__setitem__("path", "../other/v1/"), "plain relative prefix"),
         (
             lambda d: d["kit"].__setitem__("shards", [{"name": "../x.zip", "sha256": "a" * 64, "bytes": 1}]),
             "plain file name",
@@ -95,13 +100,46 @@ def test_unknown_fields_warn_but_load(caplog):
     assert "future_section" in caplog.text
 
 
-def test_loopback_kit_hosts_are_allowed_over_http_when_allowlisted():
+def test_kit_urls_resolve_against_the_document_url(monkeypatch):
     data = _data()
-    data["kit"]["base_url"] = "http://127.0.0.1:8765/kit/v1/"
-    parsed = m.parse_manifest(data, allowed_kit_hosts={"127.0.0.1"})
-    assert parsed.kit.base_url == "http://127.0.0.1:8765/kit/v1"
-    with pytest.raises(m.ManifestError, match="not an allowed kit host"):
-        m.parse_manifest(data)
+    data["kit"]["shards"] = [{"name": "intel-scene-v1-00.zip", "sha256": "a" * 64, "bytes": 1}]
+    parsed = m.parse_manifest(data, document_url="https://competitions.3lc.ai/kaggle/intel-scene/manifest.json")
+    assert parsed.kit.path == "starter-kit/v1/"
+    assert parsed.kit_base_url == "https://competitions.3lc.ai/kaggle/intel-scene/starter-kit/v1/"
+    assert parsed.shard_url("intel-scene-v1-00.zip") == (
+        "https://competitions.3lc.ai/kaggle/intel-scene/starter-kit/v1/intel-scene-v1-00.zip"
+    )
+    # A trailing slash is normalised on; the bundled copy resolves under the base in force.
+    data["kit"]["path"] = "starter-kit/v1"
+    assert m.parse_manifest(data).kit.path == "starter-kit/v1/"
+    monkeypatch.delenv(m.MANIFEST_BASE_URL_ENV, raising=False)
+    assert m.load_bundled().document_url == "https://competitions.3lc.ai/kaggle/intel-scene/manifest.json"
+    monkeypatch.setenv(m.MANIFEST_BASE_URL_ENV, "http://127.0.0.1:8000")
+    assert m.load_bundled().kit_base_url == "http://127.0.0.1:8000/kaggle/intel-scene/starter-kit/v1/"
+
+
+def test_host_allowlist_is_prod_only_without_the_override(monkeypatch):
+    """The release-audit rule: the dev CDN and loopback are reachable ONLY under the override."""
+    monkeypatch.delenv(m.MANIFEST_BASE_URL_ENV, raising=False)
+    assert m.allowed_hosts() == frozenset({"competitions.3lc.ai"})
+    assert m.MANIFEST_BASE_URL == "https://competitions.3lc.ai"
+    assert "competitions.dev.3lc.ai" not in m.RELEASE_HOSTS
+    data = _data()
+    dev_docs = (
+        "https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json",
+        "http://127.0.0.1:8000/kaggle/intel-scene/manifest.json",
+    )
+    for doc in dev_docs:
+        with pytest.raises(m.ManifestError, match="not an allowed host"):
+            m.parse_manifest(data, document_url=doc)
+    with pytest.raises(m.ManifestError, match="must use https"):
+        m.parse_manifest(data, document_url="http://competitions.3lc.ai/kaggle/intel-scene/manifest.json")
+    monkeypatch.setenv(m.MANIFEST_BASE_URL_ENV, m.DEV_MANIFEST_BASE_URL)
+    assert m.allowed_hosts() >= {"competitions.3lc.ai", "competitions.dev.3lc.ai", "127.0.0.1", "localhost"}
+    for doc in dev_docs:
+        assert m.parse_manifest(data, document_url=doc).document_url == doc
+    with pytest.raises(m.ManifestError, match="not an allowed host"):
+        m.parse_manifest(data, document_url="https://evil.example.com/kaggle/intel-scene/manifest.json")
 
 
 def test_shards_validate_and_total(manifest):
@@ -121,8 +159,11 @@ def test_shards_validate_and_total(manifest):
 def test_base_url_env_override(monkeypatch):
     monkeypatch.delenv(m.MANIFEST_BASE_URL_ENV, raising=False)
     assert m.base_url() == m.MANIFEST_BASE_URL
-    monkeypatch.setenv(m.MANIFEST_BASE_URL_ENV, "http://127.0.0.1:8765/hackathon/")
-    assert m.base_url() == "http://127.0.0.1:8765/hackathon"
+    assert m.index_url() == "https://competitions.3lc.ai/kaggle/classification-index.json"
+    monkeypatch.setenv(m.MANIFEST_BASE_URL_ENV, "http://127.0.0.1:8765/")
+    assert m.base_url() == "http://127.0.0.1:8765"
+    assert m.index_url() == "http://127.0.0.1:8765/kaggle/classification-index.json"
+    assert m.manifest_path("intel-scene") == "kaggle/intel-scene/manifest.json"
 
 
 def test_no_competition_literal_outside_the_manifest():

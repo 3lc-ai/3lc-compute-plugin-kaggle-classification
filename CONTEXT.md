@@ -10,7 +10,8 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 ## Competition & contract
 
 - **the manifest** — the remote competition document (schema v1) every competition fact comes from; resolved remote → cache → bundled; `manifest.py`. "Bundled" is the copy inside the wheel, "cache" the last good remote copy on disk.
-- **the index** — `<base>/index.json` listing competitions with an `active` flag; one active → used, several → picker, none → bundled + warning.
+- **the two tiers** — dev `https://competitions.dev.3lc.ai` (bucket `3lc-competitions-dev`, console uploads) and prod `https://competitions.3lc.ai` (promoted copy); byte-identical objects, relative URLs throughout (PLAN §A3).
+- **the index** — `<base>/kaggle/classification-index.json` listing competitions with an `active` flag; one active → used, several → picker, none → bundled + warning.
 - **resolution** — remote (reachable and valid) → cache (last valid remote) → bundled; no version ordering; `resolve(network=False)` is what the page renders first, the background refresh brings the remote result.
 - **provenance** — `{manifest_sha256, manifest_source, …, competition_id, kit_version}` every job records at start (`resolve_manifest_for_job`); the ledger's input.
 - **the plugin home** — resolved by `storage.py` (env → SDK helper → worker state root → `<cwd>/.plugin-state/<id>` → `~`), reported in `_meta.plugin_home`; holds `ui_config.json`, `kit/<id>.json`, `data/<id>/<kit version>/`, `manifest-cache/`.
@@ -21,7 +22,7 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **the labeling loop / loop contract** — the per-sample metrics a run writes back (PLAN §B): predicted, confidence, per-class probabilities, loss (masked for undefined), 3D embeddings with UMAP fit on train (labeled + undefined), val transformed into the same space.
 - **starter kit** — `starter_kit/data/{train/<class>,train/undefined,val/<class>,test}` + `sample_submission.csv` + `files.json`; images renamed to salted opaque ids and re-encoded; the judge's `mapping.csv` never ships.
 - **files.json** — the per-file index inside the kit (relpath, sha256, bytes, kit_version); the download stage verifies every file against it.
-- **kit{} block** — the manifest's `kit{base_url, version, shards[{name, sha256, bytes}]}`; emitted by `tools/build_kit.py`, pasted into the manifest; an empty `shards` list means "not published" and the download refuses.
+- **kit{} block** — the manifest's `kit{path, version, shards[{name, sha256, bytes}]}`, `path` relative to the manifest's own URL; emitted by `tools/build_kit.py`, pasted into the manifest; an empty `shards` list means "not published" and the download refuses.
 - **download_kit** — the job kind: shards (sha256, Range resume, .part files) → extract → per-file verify → split counts vs manifest → record + `session.kit_dir`; states `empty / success / superseded / stale`.
 - **the session object** — `{project_name, table_name, kit_dir, device, overrides}` in `~/.3lc-kaggle-classification/ui_config.json`; tabs render projections; defaults derive from the manifest; retired keys 400.
 - **REUSED vs CREATED** — per-split import outcome (session 2): identical existing table reused, else created.
