@@ -20,6 +20,23 @@ def test_config_payload_is_populated_and_served_not_restated(home, manifest):
     assert [c["name"] for c in meta["manifest"]["classes"]] == manifest.class_names
     assert meta["kit_dest"] == str(home / "data" / manifest.competition.id)
     assert meta["kit_state"] == {"state": "empty"}
+    assert meta["plugin_home"] == {"path": str(home), "resolved_by": "env"}
+    assert meta["manifest_provenance"]["manifest_source"] == "bundled"
+    assert meta["manifest_candidates"] == []
+    # The config path never blocks on the network: it kicks the refresh and reports its state.
+    assert meta["manifest_refresh"]["state"] in ("running", "done", "failed")
+
+
+def test_config_path_never_fetches(home, monkeypatch):
+    from kaggle_classification import manifest as manifest_mod
+
+    def boom(*a, **k):
+        raise AssertionError("GET /config fetched the network synchronously")
+
+    monkeypatch.setattr(manifest_mod, "_http_get", boom)
+    monkeypatch.setattr(manifest_mod, "refresh_in_background", lambda **kw: {"state": "skipped"})
+    out = routes.config_payload()
+    assert out["_meta"]["manifest_refresh"] == {"state": "skipped"}
 
 
 def test_config_payload_reflects_a_saved_session(home, manifest):
@@ -35,7 +52,7 @@ def test_route_handlers_build_when_litestar_is_present():
     pytest.importorskip("litestar")
     handlers = routes.get_route_handlers()
     paths = {p for h in handlers for p in h.paths}
-    assert paths == {"/config"}
+    assert paths == {"/config", "/manifest", "/manifest/select"}
 
 
 def test_plugin_compute_and_fragment():
@@ -46,3 +63,15 @@ def test_plugin_compute_and_fragment():
     assert 'class="kgc"' in html and "kaggle-classification" in html
     for needle in ("buildings", "resnet18", "6000"):
         assert needle not in html, f"competition literal {needle!r} in the fragment"
+
+
+def test_fragment_renders_manifest_strings_only_through_textcontent():
+    """Escaped at both ends: the server refuses markup in display strings, and the fragment never
+    interprets HTML — no innerHTML, insertAdjacentHTML, outerHTML or document.write anywhere."""
+    from pathlib import Path
+
+    html = (Path(kaggle_classification.__file__).parent / "ui" / "ui.html").read_text(encoding="utf-8")
+    for forbidden in ("innerHTML", "insertAdjacentHTML", "outerHTML", "document.write", "eval("):
+        assert forbidden not in html, forbidden
+    assert "textContent" in html
+    assert "/manifest/select" in html and "/manifest'" in html  # the picker and the poll

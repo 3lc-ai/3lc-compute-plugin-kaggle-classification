@@ -44,6 +44,9 @@ environments, credential locations); it points here at the repo boundary.
   session / kit modules import nothing heavy at module level (torch, timm,
   tlc, yaml, litestar, PIL, numpy live inside functions).
   `test_packaging.py::test_package_import_is_light` enforces it.
+- **Never derive a path from HOME first.** Everything the plugin writes goes under
+  `storage.plugin_home()` (the redirected-home lesson). `Path.home()` appears only as
+  the last rule in `storage.py`.
 - **`workers=0` anywhere data loads.** Windows host. Device-aware in session 3.
 - **Fragment rule.** Any change to `ui/ui.html` or `plugin.toml` means the
   running install is stale. End the task by stating which applies: worker

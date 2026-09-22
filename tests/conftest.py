@@ -45,8 +45,9 @@ def manifest():
 def home(tmp_path, monkeypatch):
     """An isolated plugin home: session store, kit record and kit data all under tmp_path."""
     root = tmp_path / "home" / ".3lc-kaggle-classification"
-    monkeypatch.setattr(session, "PLUGIN_HOME", root)
-    monkeypatch.setattr(session, "CONFIG_PATH", root / "ui_config.json")
+    monkeypatch.setenv("KAGGLE_CLASSIFICATION_HOME", str(root))
+    monkeypatch.setattr(manifest_mod, "_refresh", dict(manifest_mod._refresh))
+    manifest_mod.reset_refresh_state()
     return root
 
 

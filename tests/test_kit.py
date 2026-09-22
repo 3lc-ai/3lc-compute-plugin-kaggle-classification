@@ -16,7 +16,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from helpers import FakeCDN, FakeCtx, build_synthetic_kit, bump_version, read_index, small_manifest_data
+from helpers import ALLOWED, FakeCDN, FakeCtx, build_synthetic_kit, bump_version, read_index, small_manifest_data
 
 from kaggle_classification import kit, session
 from kaggle_classification import manifest as manifest_mod
@@ -69,7 +69,7 @@ def test_fresh_download_end_to_end(served, tmp_path):
 
 
 def test_unpublished_kit_refuses_with_a_clear_message(home, tmp_path):
-    manifest = manifest_mod.parse_manifest(small_manifest_data())
+    manifest = manifest_mod.parse_manifest(small_manifest_data(), allowed_kit_hosts=ALLOWED)
     assert manifest.kit.published is False
     with pytest.raises(RuntimeError, match="not been published"):
         _run(tmp_path, manifest)
@@ -195,7 +195,7 @@ def test_cancel_between_shards_stays_resumable(served, tmp_path):
     assert result["cancelled"] is True and result["resumable"] is True
     assert (version_dir / names[0]).is_file()  # kept for resume
     assert not (version_dir / KIT_DIR_NAME).exists()  # never extracted
-    assert not session.CONFIG_PATH.exists()  # session untouched
+    assert not session.config_path().exists()  # session untouched
     assert kit.download_state(manifest)["state"] == "empty"
 
 

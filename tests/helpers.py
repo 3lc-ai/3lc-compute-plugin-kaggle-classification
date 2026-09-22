@@ -25,7 +25,8 @@ from kaggle_classification import manifest as manifest_mod
 from kaggle_classification.kit import FILES_INDEX_NAME, KIT_DIR_NAME
 
 SMALL_SPLITS = {"labeled_per_class": 2, "undefined": 3, "val_per_class": 1, "test": 4}
-BASE_URL = "http://cdn.test/hackathon/intel-scene/kit"
+BASE_URL = "https://cdn.test/hackathon/intel-scene/kit"
+ALLOWED = frozenset({"cdn.test"})
 
 
 def small_manifest_data(kit_version: str = "v1") -> dict[str, Any]:
@@ -106,7 +107,7 @@ def build_synthetic_kit(
     cdn = srv / "cdn" / kit_version
     shards = build_kit.shard_kit_tree(kit, cdn, shard_bytes=shard_bytes)
     data["kit"] = build_kit.kit_block(f"{BASE_URL}/{kit_version}", kit_version, shards)["kit"]
-    return manifest_mod.parse_manifest(data, source="test", source_detail=str(cdn)), cdn
+    return manifest_mod.parse_manifest(data, source="test", source_detail=str(cdn), allowed_kit_hosts=ALLOWED), cdn
 
 
 class _Resp(io.BytesIO):

@@ -10,6 +10,10 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 ## Competition & contract
 
 - **the manifest** — the remote competition document (schema v1) every competition fact comes from; resolved remote → cache → bundled; `manifest.py`. "Bundled" is the copy inside the wheel, "cache" the last good remote copy on disk.
+- **the index** — `<base>/index.json` listing competitions with an `active` flag; one active → used, several → picker, none → bundled + warning.
+- **resolution** — remote (reachable and valid) → cache (last valid remote) → bundled; no version ordering; `resolve(network=False)` is what the page renders first, the background refresh brings the remote result.
+- **provenance** — `{manifest_sha256, manifest_source, …, competition_id, kit_version}` every job records at start (`resolve_manifest_for_job`); the ledger's input.
+- **the plugin home** — resolved by `storage.py` (env → SDK helper → worker state root → `<cwd>/.plugin-state/<id>` → `~`), reported in `_meta.plugin_home`; holds `ui_config.json`, `kit/<id>.json`, `data/<id>/<kit version>/`, `manifest-cache/`.
 - **competition id** — the stable CDN id (`intel-scene`), never the Kaggle slug; names the manifest path, the default project, the dataset prefix and the kit directory.
 - **the slug** — the Kaggle URL slug (`competition.slug`); used only by Submit/Status.
 - **the contract (locked)** — `arch` from the manifest (`resnet18`), `pretrained=false`, `image_size` from the manifest, `timm==1.0.29`; identical init for every participant; `pretrained: true` is rejected at manifest load.
@@ -26,7 +30,6 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
 ## Ops & environments
 
-- **the plugin home** — `~/.3lc-kaggle-classification/`: `ui_config.json`, `kit/<id>.json` (the download record), `data/<id>/<kit version>/` (the kit).
 - **hosts** — `../3lc-hub-ga/` (compute 1.0.1 + 3lc 3.3.0 + SDK 0.3.2, :5022/:5016) is where click-through happens today; `min_service_version` is 1.1.0, so the card greys out there until that environment moves to 1.1.x. Compute 1.1.0 is on PyPI and declares SDK `>=0.3.3,<0.4.0`.
 - **the SDK window** — `>=0.3.1,<0.4.0`; `test_packaging.py` checks it overlaps the latest 3lc-compute release's declared range (snapshot offline, PyPI live).
 - **folder source vs tag install** — a dev Hub registers `src/` and picks up edits on worker reload; a tester's catalog install pins a tag and never sees the checkout.

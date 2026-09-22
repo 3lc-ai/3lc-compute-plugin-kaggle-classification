@@ -201,7 +201,8 @@ def test_package_import_is_light():
     imports the entrypoint in a fresh worker and validation routes must stay cheap."""
     code = (
         "import sys; sys.path.insert(0, 'src'); import kaggle_classification, kaggle_classification.manifest, "
-        "kaggle_classification.session, kaggle_classification.kit; "
+        "kaggle_classification.session, kaggle_classification.kit, kaggle_classification.storage, "
+        "kaggle_classification.routes; "
         "heavy = [m for m in ('torch', 'timm', 'yaml', 'tlc', 'litestar', 'PIL', 'numpy') if m in sys.modules]; "
         "print(heavy); sys.exit(1 if heavy else 0)"
     )

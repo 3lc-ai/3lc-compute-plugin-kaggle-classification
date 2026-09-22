@@ -16,8 +16,8 @@ from kaggle_classification.session import classify_override, url_dataset, url_pr
 
 
 def _write(store, data: dict) -> None:
-    store.CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    store.CONFIG_PATH.write_text(json.dumps(data, indent=1), encoding="utf-8")
+    store.config_path().parent.mkdir(parents=True, exist_ok=True)
+    store.config_path().write_text(json.dumps(data, indent=1), encoding="utf-8")
 
 
 def test_load_missing_file_is_empty(store):
@@ -53,20 +53,20 @@ def test_fresh_save_stamps_markers(store):
 def test_load_stamps_markers_once_and_is_idempotent(store):
     _write(store, {"train": {"epochs": "3"}})
     store.load()
-    first = store.CONFIG_PATH.read_text(encoding="utf-8")
+    first = store.config_path().read_text(encoding="utf-8")
     assert '"session_v1": "fresh"' in first
     store.load()
-    assert store.CONFIG_PATH.read_text(encoding="utf-8") == first
+    assert store.config_path().read_text(encoding="utf-8") == first
 
 
 def test_no_tmp_file_left_behind(store):
     store.save({"train": {"epochs": "5"}})
-    assert not store.CONFIG_PATH.with_suffix(".json.tmp").exists()
+    assert not store.config_path().with_suffix(".json.tmp").exists()
 
 
 def test_corrupt_file_reads_as_empty(store):
     _write(store, {"x": 1})
-    store.CONFIG_PATH.write_text("{not json", encoding="utf-8")
+    store.config_path().write_text("{not json", encoding="utf-8")
     assert store.load() == {}
 
 
@@ -74,12 +74,12 @@ def test_retired_keys_are_rejected_and_write_nothing(store, monkeypatch):
     monkeypatch.setattr(store, "_RETIRED_TABS", ("import",))
     monkeypatch.setattr(store, "_RETIRED_TAB_KEYS", {"train": ("project_name",)})
     _write(store, {"train": {"epochs": "3"}, "_migrations": {"session_v1": "fresh"}})
-    before = store.CONFIG_PATH.read_text(encoding="utf-8")
+    before = store.config_path().read_text(encoding="utf-8")
     with pytest.raises(ValueError, match=r"train\.project_name"):
         store.save({"train": {"epochs": "9", "project_name": "x"}})
     with pytest.raises(ValueError, match="import"):
         store.save({"import": {"project_name": "x"}})
-    assert store.CONFIG_PATH.read_text(encoding="utf-8") == before
+    assert store.config_path().read_text(encoding="utf-8") == before
 
 
 def test_default_session_derives_from_the_manifest(store, manifest):

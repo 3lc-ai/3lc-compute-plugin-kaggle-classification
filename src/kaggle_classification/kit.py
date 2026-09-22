@@ -39,7 +39,7 @@ from collections.abc import Callable
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
-from kaggle_classification import session
+from kaggle_classification import session, storage
 
 if TYPE_CHECKING:
     from kaggle_classification.manifest import Kit, Manifest
@@ -72,12 +72,12 @@ class _Cancelled(Exception):
 
 def default_dest(manifest: Manifest) -> Path:
     """``<plugin home>/data/<competition id>`` — the kit lives with everything else the plugin owns."""
-    return session.PLUGIN_HOME / "data" / manifest.competition.id
+    return storage.plugin_home() / "data" / manifest.competition.id
 
 
 def record_path(manifest: Manifest) -> Path:
     """Where a completed download records its facts (dest, kit dir, version, file count)."""
-    return session.PLUGIN_HOME / "kit" / f"{manifest.competition.id}.json"
+    return storage.plugin_home() / "kit" / f"{manifest.competition.id}.json"
 
 
 def kit_root_of(version_dir: Path) -> Path:

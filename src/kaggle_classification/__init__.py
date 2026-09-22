@@ -122,12 +122,23 @@ class KaggleClassificationPlugin(ComputePlugin):
         "submit", ...job params}``. Session 1 implements ``download_kit``; the other kinds
         fail cleanly through ``ctx.fail`` until their session lands.
         """
-        from kaggle_classification import kit, manifest
+        from kaggle_classification import kit, manifest, storage
+
+        # The worker's state root is the plugin's home from here on (storage.py rule 3).
+        state_dir = getattr(ctx, "state_dir", None)
+        if state_dir:
+            storage.remember_state_root(Path(state_dir).parent)
 
         kind = str(ctx.params.get("kind", "")).strip()
         params = {k: v for k, v in ctx.params.items() if k != "kind"}
-        current = manifest.load_manifest()
         adapter = _JobCtxAdapter(ctx)
+        # Every job re-resolves the manifest at start and records what it ran under.
+        current, provenance = manifest.resolve_manifest_for_job()
+        adapter.set_field("manifest", provenance)
+        ctx.log(
+            f"Manifest: {provenance['manifest_source']} ({provenance['competition_id']}, kit "
+            f"{provenance['kit_version']}, sha256 {str(provenance['manifest_sha256'])[:12]})"
+        )
 
         if kind == "download_kit":
             result = kit.run_download(params, adapter, current)

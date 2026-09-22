@@ -17,6 +17,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Kit download stage (`kit.py`): sha256 + Range-resumable shards, zip-slip guard, per-file
   verification against `files.json`, split counts checked against the manifest, revisit states.
 - `tools/build_kit.py` format functions (`files.json`, deterministic shards, the `kit{}` block).
+- Manifest resolution: remote index + manifest (5 s budget, one retry, server-side only) →
+  cache with `{fetched_at, source_url, sha256}` sidecar → bundled; invalid remote falls back
+  with a visible warning; competition picker when several are active; job-start provenance
+  (`resolve_manifest_for_job`); kit host allowlist, https-only help links, markup-free display
+  strings; background refresh so the fragment never waits on the network.
+- `storage.py`: the plugin home resolved env → SDK helper → worker state root →
+  `<cwd>/.plugin-state/<id>` → `~`, reported on `GET /config`.
 - Four-tab fragment shell, `GET/POST /config`, the `download_kit` job kind.
 - Test suite: manifest, session, kit stage, packaging + SDK-window overlap + import weight +
   license lineage, the ctx adapter, the timm offline model check, the release-version script.

@@ -33,18 +33,28 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from kaggle_classification.manifest import Manifest
 
+from kaggle_classification import storage
+
 _log = logging.getLogger(__name__)
 
-# Everything the plugin owns lives under one home (ui_config.json, the kit record, the kit data):
-# one directory to document, one to delete, and the redirected-home caveat stays a single caveat.
-PLUGIN_HOME = Path.home() / ".3lc-kaggle-classification"
-CONFIG_PATH = PLUGIN_HOME / "ui_config.json"
+# Everything the plugin owns lives under one home (ui_config.json, the kit record, the kit data,
+# the manifest cache): one directory to document, one to delete. Resolved by storage.py — never
+# from HOME first (the redirected-home bug the ExDark plugin shipped).
+
+
+def plugin_home() -> Path:
+    return storage.plugin_home()
+
+
+def config_path() -> Path:
+    return plugin_home() / "ui_config.json"
+
 
 # Reentrant: save() holds it while load() may persist a migration.
 _lock = threading.RLock()
 
 # Keys the UI/backend may persist; anything else is dropped.
-_ALLOWED_TABS = ("session", "train", "predict", "import_state", "predict_state", "submit_state")
+_ALLOWED_TABS = ("session", "competition", "train", "predict", "import_state", "predict_state", "submit_state")
 
 # Retired keys — one logical fact must not reappear under a second key. Kept as data so save()
 # can enforce it; empty until a migration retires something.
@@ -153,7 +163,7 @@ def _migrate(data: dict[str, Any]) -> bool:
 
 def load() -> dict[str, Any]:
     try:
-        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        data = json.loads(config_path().read_text(encoding="utf-8"))
     except Exception:
         return {}
     if not isinstance(data, dict):
@@ -166,10 +176,11 @@ def load() -> dict[str, Any]:
 
 
 def _write(data: dict[str, Any]) -> None:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = CONFIG_PATH.with_suffix(".json.tmp")
+    path = config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
-    os.replace(tmp, CONFIG_PATH)
+    os.replace(tmp, path)
 
 
 def _retired_keys_in(update: dict[str, Any]) -> list[str]:

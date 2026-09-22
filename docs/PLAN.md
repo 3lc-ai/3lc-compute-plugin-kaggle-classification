@@ -28,6 +28,37 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | DataLoader workers | `num_workers=0` everywhere data loads (Windows). Device-aware in session 3. |
 | Paths | Windows host, every path may contain spaces: quote everything. |
 
+## A2. Manifest resolution (Phase 2 decisions)
+
+- **Policy.** Remote wins whenever it is reachable AND the fetched document validates. The
+  cache is the last remote document that validated; bundled is the last resort. **No
+  "newer than" comparison** on version fields: a hotfix or rollback on the CDN takes effect
+  on the next load regardless of ordering. Remote fetched but invalid → log the validation
+  error, fall to cache, surface "manifest on CDN is invalid, using cached copy from
+  <fetched-at>" in the UI. A bad hotfix never bricks a participant.
+- **Index.** `<base>/index.json` = `{schema_version, competitions: [{id, display_name,
+  manifest_url, active}]}`. One active competition → used. More than one → the UI shows a
+  picker (`POST /manifest/select`, stored under the session store's `competition` key; the
+  default id is used meanwhile if it is among the active ones). None → bundled with a
+  visible warning. `manifest_url` may be relative but must stay on the index's host.
+- **Fetching.** Server-side only (routes and worker), never from the browser. Connect+read
+  budget 5 s total with one retry inside it (`FETCH_BUDGET_S`). `GET /config` resolves
+  without the network (cache → bundled) and kicks a background refresh; the fragment
+  polls `GET /manifest` until it settles and re-renders.
+- **Cache.** Under the plugin home resolved by `storage.py` (env override → SDK helper →
+  the worker's state root → `<cwd>/.plugin-state/<id>` → `~`), never from HOME first.
+  `manifest-cache/<id>.manifest.json` holds the validated document,
+  `<id>.meta.json` the sidecar `{fetched_at, source_url, sha256}`.
+- **Provenance.** Every job re-resolves at start (`resolve_manifest_for_job()`) and records
+  `{manifest_sha256, manifest_source, manifest_source_detail, manifest_fetched_at,
+  competition_id, kit_version, schema_version}` into its outputs — the ledger's input.
+- **Hardening.** `kit.base_url` must be https on an allowlisted host (`ALLOWED_KIT_HOSTS`,
+  a code constant, initially the placeholder CDN host; loopback over http for the local
+  mock only) and shard names must be plain file names, or the manifest is rejected. Every
+  string the fragment renders (display_name, class names, loop_banner_text, help-link
+  labels) is refused if it carries markup or control characters, and the fragment assigns
+  them only through `textContent`; help-link URLs must be https.
+
 ## B. The labeling-loop contract (per-sample metrics)
 
 What every plugin-trained run writes back onto the train and val tables, so the Dashboard
@@ -58,7 +89,7 @@ giving it a real class, and it enters the next revision's training set.
 
 - **Manifest (`manifest.py`)** — schema v1 dataclasses; `Manifest.num_classes`,
   `class_names`, `undefined_label_id`, `dataset_name(split)`, `expected_rows(split)`,
-  `default_project`. Resolution order and the cache land in Phase 2 of session 1.
+  `default_project`, `provenance`; `resolve()` / `resolve_manifest_for_job()` per §A2.
 - **Session (`session.py`)** — `{project_name, table_name, kit_dir, device, overrides}` in
   `~/.3lc-kaggle-classification/ui_config.json`; retired keys 400; `classify_override`
   (drop / suppress / keep) mirrored in the fragment once pickers exist.
