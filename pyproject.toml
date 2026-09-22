@@ -1,0 +1,117 @@
+# 3lc-compute-plugin-kaggle-classification — the image-classification Kaggle hackathon plugin
+# for the 3LC compute service. Sibling of 3lc-compute-plugin-kaggle (ExDark, detection, AGPL);
+# this one is Apache-2.0 and links no Ultralytics code.
+#
+# Isolation contract (same as every 3LC plugin): this distribution is NEVER installed into the
+# host venv. The host reads src/kaggle_classification/plugin.toml without importing, provisions
+# the plugin its own venv, and installs the heavy stack ONLY there via the extra named by
+# runtime.provision_extra. Base `dependencies` is the SDK floor only.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "3lc-compute-plugin-kaggle-classification"
+version = "0.1.0"
+description = "Image-classification Kaggle hackathon workflow for the 3LC Hub: import the kit, train the fixed baseline, predict, submit."
+readme = "README.md"
+# >=3.11, NOT the timm plugin's >=3.10: the `kaggle` client (>=2.2.3) and scikit-learn (1.9.x)
+# both floor at 3.11, and uv resolves the lock for the whole requires-python range, so a 3.10
+# floor is unsatisfiable. The ExDark plugin hit the same wall (its pyproject says so).
+requires-python = ">=3.11"
+# Apache-2.0, matching 3lc-compute-plugin-sdk and 3lc-compute-plugin-timm. Full text in ./LICENSE.
+license = "Apache-2.0"
+# The SDK contract window. 3lc-compute 1.0.1 declares `>=0.3.1,<0.4.0` and 1.1.0 (PyPI latest,
+# 2026-09-22) declares `>=0.3.3,<0.4.0`; contract compatibility is compared on MAJOR.MINOR, so
+# this pin resolves on both. tests/test_packaging.py asserts the overlap against the latest
+# 3lc-compute release metadata. The timm plugin's `>=0.4.0,<0.5.0` is deliberately NOT mirrored:
+# no 1.x host accepts 0.4 yet (docs/STUDY.md G-2).
+dependencies = [
+    "3lc-compute-plugin-sdk>=0.3.1,<0.4.0",
+]
+
+# The plugin's heavy stack — installed ONLY into the provisioned venv (uv sync --extra
+# kaggle-classification, or 3lc-compute-plugin-kaggle-classification[kaggle-classification]==<ver>
+# from a catalog install). Named by runtime.provision_extra in plugin.toml.
+[project.optional-dependencies]
+kaggle-classification = [
+    # The SDK already brings 3lc[pandas]>=3.3.0; stated again because the Compute Service resolves
+    # 3LC >= 3.3.0 for this plugin (docs/PLAN.md) and the floor must be visible here, not inherited.
+    "3lc>=3.3,<4.0",
+    "torch",
+    "torchvision",
+    # Exact pin: the trainer is a per-participant input in a competition with prizes. The timm
+    # plugin only floors this (>=1.0); 1.0.29 is what its lockfile resolves and PyPI's latest.
+    "timm==1.0.29",
+    # Embedding reduction: UMAP fit on train, transformed onto val; PCA is the fallback.
+    "umap-learn",
+    "scikit-learn",
+    # Kaggle API client for the entered-check, submission upload, and status (session 4+).
+    "kaggle>=2.2.3,<3",
+    # The competition manifest is YAML.
+    "pyyaml>=6",
+]
+
+# Advertised for the installed-package / catalog discovery path. Value = the import package; its
+# bundled plugin.toml drives id/ui/runtime + the extra. Key MUST equal the plugin id (the host
+# dedups discovery on ep.name).
+[project.entry-points."tlc_compute.plugins"]
+kaggle-classification = "kaggle_classification"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kaggle_classification"]
+
+# The sdist is an ALLOWLIST (the ExDark lesson: an exclude list once shipped an untracked
+# .claude/settings.local.json). tools/ is dev-only (the kit builder) and never ships; tests/ and
+# scripts/ travel together because tests exercise scripts/release_version.py.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/kaggle_classification",
+    "/tests",
+    "/scripts",
+    "/README.md",
+    "/LICENSE",
+]
+
+# torch/torchvision index — MIRRORS THE TIMM PLUGIN EXACTLY (decision at Gate 0): the CUDA 12.6
+# index on Linux AND Windows, used only when the extra is selected during venv provisioning.
+# Windows needs the explicit index because default-PyPI torch on Windows is CPU-only. macOS
+# falls through to PyPI (no CUDA there).
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
+torchvision = { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
+
+# Dev-only tooling (PEP 735). Never part of the wheel or the provision extra. hatchling is a TEST
+# input (tests/test_packaging.py builds the real wheel with `python -m hatchling build`);
+# packaging parses version specifiers for the SDK-overlap test.
+[dependency-groups]
+dev = ["pytest>=8,<9", "hatchling>=1.24", "packaging>=23"]
+
+# The test layer imports the plugin modules straight from src/ (stdlib-light at module level by
+# design — heavy imports live in functions).
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+# Ruff config mirrors 3lc-compute-plugin-sdk for a consistent house style. CI runs ruff
+# standalone (uvx) — linting must not require resolving the heavy ML stack.
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [".git", ".mypy_cache", ".ruff_cache", ".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["A", "C4", "E", "EM", "F", "I", "N", "PIE", "RUF", "SIM", "UP", "W"]
+ignore = ["N806", "N818", "SIM105", "SIM108", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+preview = true
+docstring-code-format = true

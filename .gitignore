@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
+
+# Kaggle credentials never live here
+kaggle.json
+.kaggle/
+*.token
+.env
+
+# Kit build outputs and the private judge key are never committed
+kit-out/
+kit-private/
+mapping.csv
+
+# Personal Claude Code settings carry absolute dev paths
+.claude/settings.local.json

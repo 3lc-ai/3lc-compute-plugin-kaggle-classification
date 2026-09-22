@@ -1,0 +1,7 @@
+{
+  "_comment": "Snapshot of the latest 3lc-compute release metadata on public PyPI, for the offline half of the SDK-overlap test. Refresh with tests/test_packaging.py::test_sdk_pin_overlaps_latest_compute_live (it prints the current values when they drift).",
+  "fetched_at": "2026-09-22",
+  "compute_version": "1.1.0",
+  "sdk_requirement": "3lc-compute-plugin-sdk<0.4.0,>=0.3.3",
+  "sdk_released_versions": ["0.2.3", "0.3.0", "0.3.1", "0.3.2", "0.3.3", "0.4.0"]
+}

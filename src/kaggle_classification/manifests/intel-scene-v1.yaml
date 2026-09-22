@@ -1,0 +1,77 @@
+# Bundled competition manifest — the LAST resort in the resolution order
+# (remote -> on-disk cache -> this file). Schema v1; see manifest.py for the
+# validation rules and docs/PLAN.md for the field contract.
+#
+# Values marked TBC are placeholders to be confirmed with the organizer before
+# the competition opens; the kit{} block is pasted from tools/build_kit.py.
+schema_version: 1
+
+competition:
+  id: intel-scene                      # stable CDN id; never the Kaggle slug
+  slug: 3-lc-hack-nova-scene-classification-challenge   # TBC: Kaggle URL slug
+  display_name: "3LC HackNova: Scene Classification Challenge"
+  deadline_utc: "2026-12-31T23:59:59Z"  # TBC
+
+classes:
+  - {id: 0, name: buildings}
+  - {id: 1, name: forest}
+  - {id: 2, name: glacier}
+  - {id: 3, name: mountain}
+  - {id: 4, name: sea}
+  - {id: 5, name: street}
+
+kit:
+  base_url: "https://competitions.3lc.ai/hackathon/intel-scene/kit/v1"   # TBC: CDN prefix
+  version: v1
+  # Empty until tools/build_kit.py has run for real (Phase 3); the download
+  # stage refuses to start on an empty shard list and says why.
+  shards: []
+
+splits:
+  train:
+    labeled_per_class: 100
+    undefined: 6000
+  val:
+    per_class: 200
+    editable: true
+  test:
+    count: 1800
+    ids_from: sample_submission.csv
+
+model:
+  arch: resnet18
+  pretrained: false
+  image_size: 150
+
+training:
+  defaults:
+    epochs: 10
+    batch_size: 16
+    lr: 0.0001
+    weight_decay: 0.0
+    optimizer: adam
+    seed: 42
+  bounds:
+    epochs: [1, 50]
+    batch_size: [8, 128]
+    lr: [0.00001, 0.01]
+    weight_decay: [0.0, 0.1]
+  presets:
+    quick: {epochs: 2}
+    standard: {epochs: 10}
+    long: {epochs: 25}
+  embeddings:
+    method: umap
+    fallback: pca
+    n_components: 3
+
+submission:
+  columns: [image_id, prediction, confidence]
+  metric: accuracy
+  daily_limit: 3
+
+ui:
+  loop_banner_text: "Import the kit, train, inspect and label in the Dashboard, retrain on the latest revision, predict, submit."
+  help_links:
+    - {label: "Competition page", url: "https://www.kaggle.com/competitions/3-lc-hack-nova-scene-classification-challenge"}
+    - {label: "3LC documentation", url: "https://docs.3lc.ai"}

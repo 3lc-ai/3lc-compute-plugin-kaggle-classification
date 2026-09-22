@@ -1,0 +1,30 @@
+# 3LC Compute plugin manifest — the single source of truth for this plugin's metadata, read
+# import-free by the host. `version` must equal pyproject's (scripts/release_version.py and
+# tests/test_packaging.py enforce it). Competition facts do NOT live here: they come from the
+# competition manifest (manifest.py) so one plugin build serves any classification hackathon.
+id = "kaggle-classification"
+name = "Kaggle Classification"
+description = "Run a 3LC image-classification hackathon end to end: import the starter kit, train the fixed baseline, predict and submit."
+version = "0.1.0"
+# 1.1.0, not 1.0.x: the 1.1.0 torch-backend fix is required for a clean Windows install (Gate 0).
+min_service_version = "1.1.0"
+icon = "▦"
+# Four tiles: classification as sorting into bins. 16px grid, 1.5px stroke, currentColor.
+icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><path d="M9 11.5h5M11.5 9v5"/></svg>'
+repository_url = "https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification"
+
+[ui]
+display_mode = "sidebar"
+section = "AI Tools"
+priority = 40
+compatible_with = ["table"]
+output_types = ["run"]
+
+[runtime]
+isolation = "venv"
+entrypoint = "kaggle_classification:KaggleClassificationPlugin"
+provision_extra = "kaggle-classification"
+# Training runs in the worker on the participant's GPU; Import is CPU-only but the plugin as a
+# whole is GPU-classified (the host classifies per plugin, not per job).
+requires_gpu = true
+training = true

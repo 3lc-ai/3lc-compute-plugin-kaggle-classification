@@ -429,15 +429,37 @@ also emit `files.json` (path, bytes, sha256) uploaded beside the shards and refe
 optional `kit.files_url`. Recommend (ii) as an additive optional field; Phase 3 emits it
 either way.
 
-### G-5. Copying from an AGPL-3.0 repo into an Apache-2.0 repo
+### G-5. Relicensing record — modules adapted from `3lc-compute-plugin-kaggle` (for sign-off)
 
-The session object, tests, downloader and `resolve_device` come from
-`3lc-compute-plugin-kaggle`, licensed **AGPL-3.0-only** (because it links Ultralytics).
-Its code is `Copyright 2026 3LC Inc.`, so 3LC as copyright holder can relicense its own
-text, but an "origin + license" header that says AGPL inside an Apache repo is
-contradictory. Proposed header on every adapted file:
-`Adapted from 3lc-compute-plugin-kaggle (Copyright 2026 3LC Inc., distributed there under AGPL-3.0-only); relicensed here by the copyright holder under Apache-2.0.`
-Confirm this wording (or tell me to rewrite those parts from scratch instead).
+Decision (Gate 0): no AGPL headers travel into this repo. The ExDark plugin's session store,
+downloader, tests and release-audit code are 3LC-authored and contain no Ultralytics-derived
+code; 3LC as copyright holder relicenses those modules under Apache-2.0 for this project.
+Each adapted file carries, verbatim:
+
+`# Adapted from 3lc-compute-plugin-kaggle (Copyright 3LC AI), relicensed by the copyright holder under Apache-2.0 for this project.`
+
+Audit before porting: each source module below was grepped for `ultralytics` / `yolo`
+(case-insensitive) and read for derived logic. `predictor.py` (the source of
+`resolve_device`) imports the kaggle client and ultralytics elsewhere in the module; only the
+15-line device cascade was carried, rewritten to return a `torch.device` string.
+
+| Adapted file here | Source in 3lc-compute-plugin-kaggle | Ultralytics hits | What was carried |
+|---|---|---|---|
+| `src/kaggle_classification/session.py` | `src/tlc_plugin_kaggle/config_store.py` | 0 | one-file store, allowlist, retired-key 400, marker migrations, atomic write, `URL_SEG_PATTERNS` + `classify_override` (defaults now manifest-derived; slug / dataset_yaml dropped) |
+| `src/kaggle_classification/kit.py` | `src/tlc_plugin_kaggle/downloader.py` | 0 | the download / extract / verify stage machine (manifest `kit{}` + `files.json` replace the CDN manifest; job record replaces the jobs store; top-up not carried) |
+| `src/kaggle_classification/trainer.py` (`resolve_device` only) | `src/tlc_plugin_kaggle/predictor.py:367-390` | 0 in the function (module imports ultralytics elsewhere) | the CUDA → MPS → CPU cascade |
+| `tools/build_kit.py` (sharding + `files.json`) | `scripts/make_kit_manifest.py` | 0 | deterministic zip writing (fixed timestamps/attrs, stored JPEGs, size-cut groups) |
+| `tests/conftest.py` | `tests/conftest.py` | 0 (two `from_yolo_url` mentions in the dropped `tlc_stub` fixture) | SDK stub, isolated-home fixtures, `ROOT_SHAPES` |
+| `tests/test_session.py` | `tests/test_config_store.py`, `tests/test_url_regex_parity.py` (idea) | 0 | store semantics, retired-key rejection, URL parse across root shapes |
+| `tests/test_kit.py` | `tests/test_downloader.py` | 0 | FakeCDN / FakeCtx pattern and the network-behaviour cases |
+| `tests/test_packaging.py` | `tests/test_packaging.py` | 0 | wheel build, version parity, catalog consistency (extended: SDK overlap, import weight, licence lineage) |
+| `tests/test_ctx_adapter.py` | `tests/test_jobs_bridge.py` | 0 | real-signature fake ctx |
+
+Copied from `3lc-compute-plugin-timm` (already Apache-2.0, header names the origin):
+`scripts/release_version.py`, `tests/test_release_version.py`.
+
+Not ported: `jobs.py` (disk-backed job store; session 2 decides), `importer.py`,
+`trainer.py`, `predictor.py`, `routes.py`, `ui.html` (ExDark-specific or Ultralytics-linked).
 
 ### G-6. Smaller defaults I will take unless told otherwise
 

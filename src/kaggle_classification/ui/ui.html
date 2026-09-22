@@ -1,0 +1,119 @@
+<!--
+  Copyright 2026 3LC Inc.
+  SPDX-License-Identifier: Apache-2.0
+
+  kaggle-classification fragment, session 1: the four-tab shell. Every value on this page
+  comes from GET /config (the session and the _meta block); the fragment defines no
+  competition literal of its own. Tabs fill in over sessions 2 to 5.
+-->
+<div class="kgc">
+  <style>
+    .kgc { color: var(--text); padding: 20px 24px; max-width: 980px; font-size: 13px; }
+    .kgc h1 { margin: 0 0 2px; font-size: 20px; font-weight: 600; }
+    .kgc .kgc-sub { color: var(--text-muted); margin: 0 0 16px; }
+    .kgc .kgc-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .kgc .kgc-tab { font: inherit; padding: 8px 14px; border: 1px solid transparent; border-bottom: none; border-radius: var(--radius-sm, 4px) var(--radius-sm, 4px) 0 0; background: transparent; color: var(--text-muted); cursor: pointer; }
+    .kgc .kgc-tab[aria-selected="true"] { color: var(--text); border-color: var(--border); background: var(--bg-card); }
+    .kgc .kgc-panel[hidden] { display: none; }
+    .kgc .kgc-card { border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg-card); padding: 14px 16px; margin-bottom: 12px; }
+    .kgc .kgc-card h2 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+    .kgc .kgc-muted { color: var(--text-muted); }
+    .kgc .kgc-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .kgc .kgc-kv { min-width: 160px; }
+    .kgc .kgc-kv .k { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    .kgc .kgc-kv .v { font-variant-numeric: tabular-nums; }
+    .kgc .kgc-classes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .kgc .kgc-class { border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+    .kgc .kgc-footer { color: var(--text-muted); font-size: 11px; margin-top: 20px; display: flex; gap: 12px; }
+    .kgc a { color: var(--accent); }
+  </style>
+
+  <h1>Kaggle Classification</h1>
+  <p class="kgc-sub" id="kgc-banner">Loading the competition manifest.</p>
+
+  <div class="kgc-tabs" role="tablist">
+    <button class="kgc-tab" role="tab" data-tab="import" aria-selected="true">Import</button>
+    <button class="kgc-tab" role="tab" data-tab="train" aria-selected="false">Train</button>
+    <button class="kgc-tab" role="tab" data-tab="predict" aria-selected="false">Predict + Submit</button>
+    <button class="kgc-tab" role="tab" data-tab="status" aria-selected="false">Status</button>
+  </div>
+
+  <section class="kgc-panel" data-panel="import">
+    <div class="kgc-card">
+      <h2>Competition</h2>
+      <div class="kgc-row">
+        <div class="kgc-kv"><div class="k">Name</div><div class="v" id="kgc-comp-name"></div></div>
+        <div class="kgc-kv"><div class="k">Model</div><div class="v" id="kgc-model"></div></div>
+        <div class="kgc-kv"><div class="k">Kit</div><div class="v" id="kgc-kit"></div></div>
+        <div class="kgc-kv"><div class="k">Manifest source</div><div class="v" id="kgc-source"></div></div>
+      </div>
+      <div class="kgc-classes" id="kgc-classes"></div>
+    </div>
+    <div class="kgc-card">
+      <h2>Starter kit</h2>
+      <p class="kgc-muted" id="kgc-kit-state">The download section arrives in session 2.</p>
+    </div>
+  </section>
+
+  <section class="kgc-panel" data-panel="train" hidden>
+    <div class="kgc-card"><h2>Train</h2><p class="kgc-muted">The Train tab arrives in session 3.</p></div>
+  </section>
+
+  <section class="kgc-panel" data-panel="predict" hidden>
+    <div class="kgc-card"><h2>Predict + Submit</h2><p class="kgc-muted">The Predict and Submit tab arrives in sessions 4 and 5.</p></div>
+  </section>
+
+  <section class="kgc-panel" data-panel="status" hidden>
+    <div class="kgc-card"><h2>Status</h2><p class="kgc-muted">The Status tab arrives in session 6.</p></div>
+  </section>
+
+  <div class="kgc-footer">
+    <span id="kgc-version"></span>
+    <a id="kgc-repo" href="#" target="_blank" rel="noopener">Source</a>
+  </div>
+
+  <script>
+  (function () {
+    var API = window.PLUGIN_API;
+    var EL = document.currentScript.closest('.kgc');
+    var base = API.getConfig('compute_service_url');
+    var PLUGIN_ID = 'kaggle-classification';
+
+    function $(id) { return EL.querySelector('#' + id); }
+    function text(id, value) { var n = $(id); if (n) { n.textContent = value == null ? '' : String(value); } }
+
+    EL.querySelectorAll('.kgc-tab').forEach(function (btn) {
+      btn.onclick = function () {
+        EL.querySelectorAll('.kgc-tab').forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
+        EL.querySelectorAll('.kgc-panel').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== btn.getAttribute('data-tab'); });
+      };
+    });
+
+    API.authFetch(base + '/api/plugins/' + PLUGIN_ID + '/config')
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+        var meta = cfg._meta || {};
+        var m = meta.manifest || {};
+        text('kgc-banner', (m.ui && m.ui.loop_banner_text) || '');
+        text('kgc-comp-name', m.competition && m.competition.display_name);
+        text('kgc-model', m.model ? (m.model.arch + ' at ' + m.model.image_size + ' px, from scratch') : '');
+        text('kgc-kit', m.kit ? m.kit.version : '');
+        text('kgc-source', meta.manifest_source);
+        var classes = $('kgc-classes');
+        (m.classes || []).forEach(function (c) {
+          var span = document.createElement('span');
+          span.className = 'kgc-class';
+          span.textContent = c.id + ' ' + c.name;
+          classes.appendChild(span);
+        });
+        var ks = meta.kit_state || {};
+        text('kgc-kit-state', ks.state === 'success' ? 'Kit ' + ks.kit_version + ' on disk at ' + ks.kit_dir
+          : ks.state === 'superseded' ? 'Kit ' + ks.kit_version + ' on disk; ' + ks.current_version + ' is available'
+          : 'No kit on this machine yet. The download section arrives in session 2.');
+        text('kgc-version', 'kaggle-classification ' + (meta.version || ''));
+        var repo = $('kgc-repo'); if (meta.repository_url) { repo.href = meta.repository_url; }
+      })
+      .catch(function (err) { text('kgc-banner', 'Could not load the plugin config: ' + err); });
+  })();
+  </script>
+</div>
