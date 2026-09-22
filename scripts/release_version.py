@@ -8,12 +8,10 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
+import tomllib
 from email.parser import Parser
 from pathlib import Path
 from zipfile import ZipFile
-
-import tomllib
 
 
 def check_sources(root: Path) -> str:
