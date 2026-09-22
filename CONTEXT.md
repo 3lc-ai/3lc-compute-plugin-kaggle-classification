@@ -2,10 +2,28 @@
 
 One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
-## Where we are (2026-09-22)
+## Resume point (2026-09-22, end of day)
 
-- **Session 1 of 6** — scaffold, manifest schema and loader, session store, kit download stage, kit builder. No release yet; `develop` only.
-- **Next:** session 2 = Import tab (download UI, table registration, revisit view).
+- **Session 2, Gate A PASSED at `dcdf20b`** (`develop`, pushed): relative kit paths, tiered
+  host allowlist, `tools/make_cdn_tree.py`, `tools/verify_cdn.py`, `docs/PROMOTION.md`,
+  PLAN A3. 146 tests green. `cdn/` is built locally and gitignored.
+- **Phase B/C (importer + Import tab) is NEXT and has NOT started.** No importer code, no
+  Import tab beyond the session-1 shell.
+- **`starter-kit/v1` is NOT uploaded to the dev bucket** and must not be until Gate B/C
+  passes on `3lc-hub-11`.
+- **The Phase B/C go carries two additions:** (1) on `3lc-hub-11`, list BOTH the default
+  catalog (`https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json`) and
+  `catalog-test.json` in `TLC_COMPUTE_PLUGIN_CATALOG_URLS` (the variable replaces the default
+  unless it is listed); (2) if the import reveals ANY kit defect, stop and report before
+  changing anything: a fix before staging is a v1 rebuild and needs Rishikesh's go.
+- **Open items:** relicensing sign-off for the modules in `docs/STUDY.md` G-5 pending from
+  Paul / Gudbrand · `solution.csv` (Kaggle answer key: `image_id, Usage, label` over the new
+  test ids) not started, and cannot start from this repo alone: `mapping.csv` maps the new
+  test ids back to the original test filenames only, so the test ground truth must come from
+  the organizer · Kaggle sandbox competition not yet created (slug and deadline in the
+  bundled manifest are still TBC placeholders).
+- **Hosts:** nothing is running on `3lc-hub-11` (:5023) or any other Hub port at close;
+  start commands are in `../3lc-hub-11/SETUP.md`.
 
 ## Competition & contract
 
