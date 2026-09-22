@@ -82,7 +82,7 @@ def test_retired_keys_are_rejected_and_write_nothing(store, monkeypatch):
     assert store.config_path().read_text(encoding="utf-8") == before
 
 
-@pytest.mark.parametrize("bad", ["../../etc", "Intel Scene", "", None, 7, "a/b", "..", "x\y"])
+@pytest.mark.parametrize("bad", ["../../etc", "Intel Scene", "", None, 7, "a/b", "..", r"x\y"])
 def test_competition_id_is_validated_at_the_save_boundary(store, bad):
     with pytest.raises(ValueError, match="competition.id"):
         store.save({"competition": {"id": bad}})
