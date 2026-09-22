@@ -23,9 +23,14 @@ classes:
 kit:
   base_url: "https://competitions.3lc.ai/hackathon/intel-scene/kit/v1"   # TBC: CDN prefix
   version: v1
-  # Empty until tools/build_kit.py has run for real (Phase 3); the download
-  # stage refuses to start on an empty shard list and says why.
-  shards: []
+  # Emitted by tools/build_kit.py from the 2026-09-22 build; the shards live under this
+  # prefix on the CDN once staged (RELEASING.md, kit data releases).
+  shards:
+    - {name: intel-scene-v1-00.zip, sha256: 70ca233f308f4bf80208bdef26f94b6eeac52e8e0a4c96c99b0f58d79f4c7072, bytes: 547781}
+    - {name: intel-scene-v1-01.zip, sha256: ed72903f953a811203d1ddcc2cf7e26ffc1336a5272116f32b2e421d942b0073, bytes: 21235172}
+    - {name: intel-scene-v1-02.zip, sha256: 908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721, bytes: 53237641}
+    - {name: intel-scene-v1-03.zip, sha256: ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039, bytes: 24511747}
+    - {name: intel-scene-v1-04.zip, sha256: 4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2, bytes: 14208813}
 
 splits:
   train:

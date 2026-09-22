@@ -16,6 +16,7 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | Competition manifest | Remote `<MANIFEST_BASE_URL>/index.json` + `<id>/manifest.json`; base URL is a code constant (`manifest.MANIFEST_BASE_URL`, exact CDN prefix TBC, placeholder in use); env override `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`; on-disk cache with fetched-at stamp; bundled `manifests/intel-scene-v1.yaml` as last resort. Unknown fields warn, never fail. |
 | Splits | Unchanged from the Intel kit: 600 seed (100 × 6) + 6,000 `undefined` at weight 0 in `train`; `val` 1,200 (200 × 6) locked; `test` 1,800, flat, never registered. |
 | Labeling | No cap. Undefined rows are filtered out of training regardless of weight. |
+| Kit build | `tools/build_kit.py --salt-file` (never `--salt`); the salt is read from a private file, never printed or written; shards `intel-scene-v1-NN.zip`, deterministic; `kit-manifest-block.yaml` beside the kit dir; `mapping.csv` (original_relpath, new_relpath, split, class with class empty for test and `undefined` for pool rows) to the private dir only. |
 | Kit | Images renamed to salted opaque ids (`sha256(salt + original_relpath)[:16]`) and re-encoded (JPEG q92, RGB, EXIF stripped). `mapping.csv` (the judge's key) lives ONLY in the private output dir. |
 | Kit integrity | `files.json` (relpath, sha256, bytes) INSIDE the kit beside the data; the download stage verifies **per file** against it, not shard-only, then checks per-split counts against `manifest.splits`. Shards are sha256-verified from the manifest's `kit{}` block. |
 | Predict | Only from plugin-created runs. |
@@ -126,5 +127,5 @@ giving it a real class, and it enters the next revision's training set.
 
 - `MANIFEST_BASE_URL` exact CDN prefix (`https://competitions.3lc.ai/hackathon` assumed).
 - `competition.slug` (folder name `3-lc-hack-nova-scene-classification-challenge` assumed) and `deadline_utc`.
-- `kit.base_url` and the `kit.shards[]` block: pasted after the Phase 3 build is staged.
-- Whether the bundled manifest should ship with the shards block at all, or stay empty so an unpublished kit can never be downloaded from a stale wheel.
+- `kit.base_url` prefix: the `kit{}` block is pasted (v1 build of 2026-09-22, five shards, 113,741,154 bytes) but the prefix itself is still the placeholder; the shards under `datasets/intel-scene-kit-v1/shards/` must be staged there before any host resolves this manifest, or the download fails on a 404 (RELEASING.md).
+- The bundled copy ships the shards block; a wheel built before a kit re-publish therefore names a superseded kit until the remote manifest overrides it (remote wins, PLAN §A2).

@@ -16,7 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   rejection, atomic writes, URL parsing by position in the layout tail.
 - Kit download stage (`kit.py`): sha256 + Range-resumable shards, zip-slip guard, per-file
   verification against `files.json`, split counts checked against the manifest, revisit states.
-- `tools/build_kit.py` format functions (`files.json`, deterministic shards, the `kit{}` block).
+- `tools/build_kit.py`: the kit build pipeline (salted opaque ids from `--salt-file`, RGB JPEG q92 re-encode with EXIF/ICC stripped, `files.json`, `sample_submission.csv`, deterministic `intel-scene-v1-NN.zip` shards, `kit-manifest-block.yaml`, judge-only `mapping.csv`) and a participant-side verification pass; the bundled manifest carries the v1 build's `kit{}` block.
 - Manifest resolution: remote index + manifest (5 s budget, one retry, server-side only) →
   cache with `{fetched_at, source_url, sha256}` sidecar → bundled; invalid remote falls back
   with a visible warning; competition picker when several are active; job-start provenance

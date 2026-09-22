@@ -39,7 +39,7 @@ def test_bundled_manifest_loads_with_the_locked_facts(manifest):
     assert manifest.expected_rows("test") == 1800
     assert manifest.dataset_name("val") == "intel-scene_val"
     assert manifest.default_project == "intel-scene"
-    assert manifest.kit.published is False  # until the kit builder's block is pasted
+    assert manifest.kit.published is True and len(manifest.kit.shards) == 5  # the v1 build
     assert manifest.training.embeddings.n_components == 3
     assert manifest.submission.columns == ("image_id", "prediction", "confidence")
     assert manifest.warnings == ()
