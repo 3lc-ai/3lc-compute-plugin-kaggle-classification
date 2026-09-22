@@ -55,6 +55,20 @@ def test_route_handlers_build_when_litestar_is_present():
     assert paths == {"/config", "/manifest", "/manifest/select"}
 
 
+def test_route_handler_annotations_resolve_like_litestar_does():
+    """The compute 1.1.0 worker died at startup because a handler's string return annotation
+    (``from __future__ import annotations``) named a ``Response`` that was not in the routes
+    module's globals. Litestar resolves hints with ``typing.get_type_hints``; so do we."""
+    import typing
+
+    import pytest
+
+    pytest.importorskip("litestar")
+    for handler in routes.get_route_handlers():
+        hints = typing.get_type_hints(handler.fn, globalns=vars(routes))
+        assert "return" in hints, handler.fn.__name__
+
+
 def test_plugin_compute_and_fragment():
     plugin = kaggle_classification.KaggleClassificationPlugin()
     info = plugin.compute({})

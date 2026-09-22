@@ -198,11 +198,12 @@ def test_sdk_pin_overlaps_latest_compute_live():
 
 def test_package_import_is_light():
     """`import kaggle_classification` must not pull torch, timm, yaml, tlc or litestar: the host
-    imports the entrypoint in a fresh worker and validation routes must stay cheap."""
+    imports the entrypoint in a fresh worker and validation routes must stay cheap. ``routes``
+    is the one module that imports litestar at module level (its handlers' annotations must
+    resolve in its globals); ``__init__`` loads it lazily, so it is deliberately not in this list."""
     code = (
         "import sys; sys.path.insert(0, 'src'); import kaggle_classification, kaggle_classification.manifest, "
-        "kaggle_classification.session, kaggle_classification.kit, kaggle_classification.storage, "
-        "kaggle_classification.routes; "
+        "kaggle_classification.session, kaggle_classification.kit, kaggle_classification.storage; "
         "heavy = [m for m in ('torch', 'timm', 'yaml', 'tlc', 'litestar', 'PIL', 'numpy') if m in sys.modules]; "
         "print(heavy); sys.exit(1 if heavy else 0)"
     )

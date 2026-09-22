@@ -14,11 +14,22 @@
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
+
+Litestar is imported at MODULE level on purpose, like the timm and ExDark plugins' routes
+modules: with ``from __future__ import annotations`` the handlers' return annotations are
+strings that Litestar resolves against this module's globals when the worker mounts them,
+and a ``Response`` imported inside ``get_route_handlers`` is not in those globals — the
+worker then dies at startup with ``NameError: name 'Response' is not defined`` (found live on
+compute 1.1.0). This module is imported lazily by ``get_route_handlers`` in ``__init__``, so
+the package import stays light.
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+from litestar import Response, get, post
+from litestar.status_codes import HTTP_400_BAD_REQUEST
 
 
 def manifest_payload(*, kick_refresh: bool = True) -> dict[str, Any]:
@@ -58,9 +69,6 @@ def config_payload() -> dict[str, Any]:
 
 
 def get_route_handlers() -> list[Any]:
-    from litestar import Response, get, post
-    from litestar.status_codes import HTTP_400_BAD_REQUEST
-
     @get("/config", sync_to_thread=True)
     def get_config() -> dict[str, Any]:
         return config_payload()
