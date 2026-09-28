@@ -12,6 +12,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Host allowlist: prod only by default; the dev CDN and loopback only under the base-URL override.
 
 ### Added (session 2)
+- Importer (`importer.py`, job kind `import`): kit validated against the manifest (structure,
+  counts, `sample_submission.csv` ids, every image decodes), `train`/`val` tables on tlc 3.3 with a
+  distinct `undefined` label value and per-row weights, collision refusal with explicit re-import
+  to fresh `<table>-N` tables, no partial tables on failure or cancel, the import record with
+  lineage root, locked val, checks, timings and manifest provenance. Routes `GET /import/preflight`
+  and `GET /import/state`.
+- Import tab: one stepper for download + import, preflight gate with the collision callout,
+  per-check pass/fail, table links into the Hub, revisit from the import record, first-run
+  provisioning rendered as an expected state.
+- Line endings normalized to LF (`.gitattributes`).
 - `tools/make_cdn_tree.py` (the bucket mirror + `upload-plan.json`), `tools/verify_cdn.py`
   (served headers and sha256 verification), `docs/PROMOTION.md`.
 

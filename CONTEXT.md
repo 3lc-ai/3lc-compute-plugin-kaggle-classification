@@ -4,11 +4,11 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
 ## Resume point (2026-09-22, end of day)
 
+- **Session 2, Gate B/C PASSED on 2026-09-28** on the laptop through the catalog install path (`../3lc-hub-11/SETUP.md` § Gate B/C): importer + Import tab shipped (`79f553f`, `3fb8e33`, `28e0034`); Phase D (dev-bucket verification) awaits Rishikesh's go after the `cdn/` upload.
 - **Session 2, Gate A PASSED at `dcdf20b`** (`develop`, pushed): relative kit paths, tiered
   host allowlist, `tools/make_cdn_tree.py`, `tools/verify_cdn.py`, `docs/PROMOTION.md`,
   PLAN A3. 146 tests green. `cdn/` is built locally and gitignored.
-- **Phase B/C (importer + Import tab) is NEXT and has NOT started.** No importer code, no
-  Import tab beyond the session-1 shell.
+- **Phase B/C is DONE; Phase D is next** (`tools/verify_cdn.py` against `https://competitions.dev.3lc.ai`, then the full Import on `3lc-hub-11` with the override pointed at dev, then PROMOTION.md's sha256 table).
 - **`starter-kit/v1` is NOT uploaded to the dev bucket** and must not be until Gate B/C
   passes on `3lc-hub-11`.
 - **The Phase B/C go carries two additions:** (1) on `3lc-hub-11`, list BOTH the default
@@ -43,7 +43,11 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **kit{} block** — the manifest's `kit{path, version, shards[{name, sha256, bytes}]}`, `path` relative to the manifest's own URL; emitted by `tools/build_kit.py`, pasted into the manifest; an empty `shards` list means "not published" and the download refuses.
 - **download_kit** — the job kind: shards (sha256, Range resume, .part files) → extract → per-file verify → split counts vs manifest → record + `session.kit_dir`; states `empty / success / superseded / stale`.
 - **the session object** — `{project_name, table_name, kit_dir, device, overrides}` in `~/.3lc-kaggle-classification/ui_config.json`; tabs render projections; defaults derive from the manifest; retired keys 400.
-- **REUSED vs CREATED** — per-split import outcome (session 2): identical existing table reused, else created.
+- **the collision rule** — the importer never reuses and never overwrites (`if_exists="raise"`): tables already under the project + table name REFUSE the job; the preflight shows them and an explicit **re-import** writes FRESH tables for both splits under the next free name (`initial-2`, `initial-3`, …). Replaces the session-1 "REUSED vs CREATED" wording (decision 2026-09-28).
+- **the import record** — `import_state` in the session store: project, actual table name, kit facts, `tables{train,val}` with row counts, the **lineage root** (`{train_url, val_url}`, the seed both later revisions descend from), the **locked val** URL, the label map, every check, per-stage timings, the manifest provenance and the job id. `importer.import_state()` re-verifies it against disk (`empty / success / stale`).
+- **first-run provisioning** — on compute 1.1.0 the first plugin route builds the venv and answers `201 {status: "provisioning"}`; the fragment renders "Setting up the plugin environment. The first run takes a few minutes.", polls `/config` every 5 s and then continues — never an error. While the venv is missing the host itself serves a placeholder for `/ui`, so the fragment is not even shown in that window.
+- **the test catalog** — `../3lc-hub-11/catalog-test.json`: this repo at a pushed ref, listed beside the default catalog in `TLC_COMPUTE_PLUGIN_CATALOG_URLS`; gates run through the catalog install path, not only `--plugin-dir`.
+- **dev host / harness** — `../3lc-hub-11/dev_host.py` (the in-process app on :5023 with auth bypass) and `../3lc-hub-11/harness/index.html` (the fragment with a stubbed `PLUGIN_API`) stand in for the Hub frontend on the laptop.
 - **plugin-run-only** — participants predict only from runs this plugin trained (session 4).
 - **the ledger / verification bundle** — the append-only record of every step and the per-run zip an organizer verifies a leaderboard entry against (session 5).
 
@@ -64,7 +68,7 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **the SDK window** — `>=0.3.1,<0.4.0`; `test_packaging.py` checks it overlaps the latest 3lc-compute release's declared range (snapshot offline, PyPI live).
 - **folder source vs tag install** — a dev Hub registers `src/` and picks up edits on worker reload; a tester's catalog install pins a tag and never sees the checkout.
 - **the catalog** — `catalog.json`: one entry per released version, newest first, manifest pasted verbatim, `source` pinned to the tag; `HEAD/catalog.json` on the default branch is the URL hubs consume.
-- **the four tabs** — Import · Train · Predict + Submit · Status; the tab bar is the stepper.
+- **the four tabs** — Import · Train · Predict + Submit · Status; the tab bar is the stepper. The Import tab's own stepper is Manifest · Disk space · Download · Verify · Extract · Register · Validate, one list for the download_kit and import jobs.
 - **?kgdev fixtures, six-state machine, motion tokens, glance card, verdict line** — the UI playbook vocabulary, inherited from the ExDark plugin's docs/ui-notes.md from session 2 onward.
 
 ## Naming

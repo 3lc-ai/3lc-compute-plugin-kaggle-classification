@@ -144,9 +144,18 @@ giving it a real class, and it enters the next revision's training set.
   vs manifest → `ids_from` present → record + `session.kit_dir` → shards deleted. Revisit
   states `empty / success / superseded / stale`; `verify_now`. In-place top-up is deferred
   (the kit is small enough to re-download).
-- **Importer (session 2)** — `train` (labeled weight 1.0 + undefined label N weight 0.0) and
-  `val` tables under `<root>/<project>/datasets/<manifest.dataset_name(split)>/tables/<table>`;
-  `test` never registered; REUSED vs CREATED per split; row counts vs `expected_rows`.
+- **Importer (session 2, shipped)** — `train` (labeled weight 1.0 + `undefined` = label N at
+  weight 0.0) and `val` (all weights 1.0, URL recorded as the locked revision) via
+  `Table.from_dict` with an explicit schema (`ImageSchema(url)`, `CategoricalLabelSchema(classes +
+  undefined)`, `SampleWeightSchema`) at `<tlc.config.project_root_url>/<project>/datasets/<manifest.dataset_name(split)>/tables/<table>`,
+  `if_exists="raise"`; `test` never registered. The kit is validated against the manifest first
+  (class dirs, per-class and pool counts, val counts, test count == `sample_submission.csv` rows
+  and ids, header, kit version, every image decodes) and any mismatch fails with one message
+  naming every defect, before any table exists. Collisions REFUSE; an explicit `mode=reimport`
+  writes fresh `<table>-N` tables for both splits and never touches the existing ones. The second
+  table failing, a post-write verification failing, or a cancel deletes what the job wrote (no
+  partial tables). The record (`import_state`) carries the lineage root, the locked val URL,
+  checks, timings and the manifest provenance from `resolve_manifest_for_job`.
 - **Trainer (session 3)** — see §B; params = manifest defaults ⊕ form, bounded on the merged
   kwargs; presets are named partial overrides; run records the contract (arch, image_size,
   pretrained=false, timm version, seed, table revisions).
