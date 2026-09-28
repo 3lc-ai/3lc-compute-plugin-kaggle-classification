@@ -141,7 +141,13 @@ class KaggleClassificationPlugin(ComputePlugin):
         )
 
         if kind == "download_kit":
-            result = kit.run_download(params, adapter, current)
+            try:
+                result = kit.run_download(params, adapter, current)
+            except (RuntimeError, ValueError) as exc:
+                # kit.py raises participant-facing messages (sha mismatch, disk space, kit
+                # defects, resume hints); ctx.fail reports them verbatim, without the type
+                # prefix and worker traceback an uncaught exception carries (seen live).
+                ctx.fail(str(exc))
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
             return

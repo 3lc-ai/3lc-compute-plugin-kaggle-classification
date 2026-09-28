@@ -319,8 +319,9 @@
       if (l.indexOf('kit listed') >= 0) { return 'manifest'; }
       if (l.indexOf('disk space') >= 0) { return 'space'; }
       if (l.indexOf('shards downloaded') >= 0) { return 'download'; }
-      if (l.indexOf('extracted') >= 0) { return 'extract'; }
+      // "extracted kit matches files.json" is a VERIFY result; the extract row is "shards extracted".
       if (l.indexOf('files.json') >= 0 || l.indexOf('split counts') >= 0 || l.indexOf('kit root') >= 0 || l.indexOf('kit version') >= 0) { return 'verify'; }
+      if (l.indexOf('extracted') >= 0) { return 'extract'; }
       if (l.indexOf('table names') >= 0 || l.indexOf('no tables') >= 0) { return 'register'; }
       if (l.indexOf('row count') >= 0 || l.indexOf('label map') >= 0 || l.indexOf('zero-weight') >= 0) { return 'validate'; }
       return 'verify'; // kit-vs-manifest checks of the import job
@@ -357,7 +358,11 @@
       } else if (phase === 'record') {
         step('validate', 'running', p.label || '');
       } else if (phase === 'done') {
-        if (state.job && state.job.kind === 'download') { step('verify', 'done'); } else { step('register', 'done'); step('validate', 'done'); }
+        if (state.job && state.job.kind === 'download') { step('verify', 'done'); }
+        else {
+          var n = state.checks.length, bad = state.checks.filter(function (c) { return !c.ok; }).length;
+          step('register', 'done'); step('validate', 'done', n ? (n - bad) + '/' + n + ' checks passed' : '');
+        }
       }
     }
     function renderChecks(listId, verdictId, checks) {
@@ -401,7 +406,10 @@
       if (!state.job.kind) { state.job.kind = inferKind(job); }
       state.job.status = job.status;
       if (job.progress && job.progress.percent != null && job.progress.percent >= 0) { bar(job.progress.percent); }
-      if (job.progress && job.progress.label) { text('kgc-pipeline-sub', job.progress.label); }
+      // The host mirrors the last log line into the generic label ("PASS …"); the stepper rows
+      // already carry the checks, so the subtitle keeps the stage labels (stage_progress) only.
+      var lbl = (job.progress && job.progress.label) || '';
+      if (lbl && lbl.indexOf('PASS ') !== 0 && lbl.indexOf('FAIL ') !== 0) { text('kgc-pipeline-sub', lbl); }
       if (job.error) { state.job.error = job.error; }
     }
     function onDone(job) {
@@ -421,7 +429,12 @@
     }
     function onError(job) {
       var kind = state.job ? state.job.kind : 'import';
-      var msg = (job && (job.error || job.subtitle)) || 'The job failed.';
+      var raw = (job && (job.error || job.subtitle)) || 'The job failed.';
+      // The host appends the worker's stderr to an uncaught error; the participant-facing
+      // sentence is the first line — the rest goes to the log accordion, never the banner.
+      var cut = raw.indexOf('\nworker stderr:');
+      var msg = (cut >= 0 ? raw.slice(0, cut) : raw).split('\n')[0].replace(/^[A-Za-z]+Error: /, '');
+      if (cut >= 0) { appendLog(raw.slice(cut + 1)); }
       detach();
       bar(null);
       STEPS.forEach(function (s) { var li = EL.querySelector('.kgc-step[data-step="' + s + '"]'); if (li.getAttribute('data-state') === 'running') { step(s, 'failed'); } });
@@ -634,9 +647,10 @@
         if (!state.job) { STEPS.forEach(function (s) { step(s, 'done'); }); text('kgc-pipeline-sub', 'Kit imported. Continue on the Train tab.'); }
       } else {
         show('kgc-import-revisit', false); show('kgc-import-form', true);
-        if (st.state === 'stale') {
-          var box = $('kgc-import-gate'); clear(box);
-          box.appendChild(callout('warn', ['A recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing). Import again.']));
+        if (st.state === 'stale' && !running) {
+          // The gate box is the preflight's; the stale fact goes on the pipeline line so both show.
+          text('kgc-pipeline-sub', 'The recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing). Import again.');
+          resetSteps('register');
         }
         if (!running) { gate(); }
       }
