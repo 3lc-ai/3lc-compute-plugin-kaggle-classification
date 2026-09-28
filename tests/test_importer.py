@@ -91,23 +91,28 @@ def test_import_registers_train_and_val_with_undefined_and_weights(project_root,
     assert "3LC Scene Classification Challenge" in tlc.Table.from_url(tlc.Url(result["tables"]["train"]["url"])).description
 
 
-def test_collision_refuses_then_reimport_writes_fresh_tables(project_root, kit_and_manifest):
+def test_existing_tables_are_reused_and_revalidated_like_exdark(project_root, kit_and_manifest):
+    """The ExDark mirror (docs/EXDARK_MIRROR.md #25): a table already at the target URL is REUSED,
+    never rewritten, and the post-write checks run on it. ``mode=reimport`` (fresh ``-2`` names)
+    stays available for the pending re-import decision (#26)."""
     kit_root, manifest = kit_and_manifest
     first, _ = _run(manifest)
-    with pytest.raises(importer.ImportRefused, match="already exist"):
-        _run(manifest)
-    # the existing tables are untouched
-    assert tlc.Url(first["tables"]["train"]["url"]).exists()
+    assert all(not t["reused"] for t in first["tables"].values())
+    mtime = Path(first["tables"]["train"]["url"]).stat().st_mtime_ns
+    second, ctx = _run(manifest)
+    assert second["table_name"] == "initial"
+    assert all(t["reused"] for t in second["tables"].values())
+    assert second["tables"]["train"]["url"] == first["tables"]["train"]["url"]
+    assert second["tables"]["train"]["rows"] == manifest.expected_rows("train")
+    assert Path(first["tables"]["train"]["url"]).stat().st_mtime_ns == mtime  # untouched on disk
+    assert any(c["label"] == "existing tables reused" and c["ok"] for c in ctx.checks)
+    assert any(c["label"].startswith("train row count") and c["ok"] for c in ctx.checks)  # re-validated
     pre = importer.preflight({}, manifest)
-    assert pre["ok"] is False and pre["collision"] and pre["fresh_table_name"] == "initial-2"
-    second, _ = _run(manifest, mode="reimport")
-    assert second["table_name"] == "initial-2"
-    assert second["tables"]["train"]["url"] != first["tables"]["train"]["url"]
-    assert tlc.Url(first["tables"]["train"]["url"]).exists()
-    assert tlc.Url(second["tables"]["val"]["url"]).exists()
-    # the session follows the fresh name so the next tab derives the right tables
+    assert pre["all_ok"] is True and pre["existing"]["train"]["exists"] is True
+    third, _ = _run(manifest, mode="reimport")
+    assert third["table_name"] == "initial-2"
+    assert tlc.Url(first["tables"]["train"]["url"]).exists() and tlc.Url(third["tables"]["val"]["url"]).exists()
     assert session.populated_session(manifest)["table_name"] == "initial-2"
-    assert importer.fresh_table_name(manifest, "intel-scene", "initial") == "initial-3"
 
 
 def test_kit_defect_fails_before_any_table_and_names_every_problem(project_root, kit_and_manifest):
@@ -165,7 +170,8 @@ def test_cancel_after_the_first_table_removes_it(project_root, kit_and_manifest)
 
 def test_preflight_without_a_kit_and_with_bad_params(home, manifest):
     pre = importer.preflight({}, manifest)
-    assert pre["ok"] is False and "Download the starter kit" in pre["error"]
+    assert pre["all_ok"] is False and "Download the starter kit" in pre["error"]
+    assert pre["kit"] == {"state": "empty"} and pre["plugin_version"]
     with pytest.raises(importer.ImportRefused, match="plain name"):
         importer.resolve_params({"project_name": "a/b", "kit_dir": "x"}, manifest)
     with pytest.raises(importer.ImportRefused, match="mode"):

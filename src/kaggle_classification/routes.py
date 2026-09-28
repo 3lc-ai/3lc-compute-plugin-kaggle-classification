@@ -132,4 +132,11 @@ def get_route_handlers() -> list[Any]:
     def import_state() -> dict[str, Any]:
         return _import_state_safe()
 
-    return [get_config, save_config, get_manifest, select_manifest, import_preflight, import_state]
+    @get("/download/verify", sync_to_thread=True)
+    def download_verify() -> dict[str, Any]:
+        """The kit section's Verify action (ExDark's ``/download/verify``): the full files.json pass."""
+        from kaggle_classification import kit, manifest
+
+        return kit.verify_now(manifest.resolve(network=False).manifest)
+
+    return [get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify]

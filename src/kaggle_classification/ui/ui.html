@@ -1,1232 +1,1983 @@
 <!--
   Copyright 2026 3LC Inc.
   SPDX-License-Identifier: Apache-2.0
+  Adapted from 3lc-compute-plugin-kaggle (Copyright 3LC AI), relicensed by the copyright holder
+  under Apache-2.0 for this project.
 
-  kaggle-classification fragment, session 2.5: the shell and the Import tab at the ExDark
-  plugin's presentation standard (docs/UI_PARITY.md), built from reusable components the later
-  tabs use. Every value on this page comes from GET /config (the session and the _meta block) or
-  from the job channel; the fragment defines no competition literal of its own, and every string
-  reaches the DOM through element builders and textContent, never by injecting markup
-  (tests/test_routes.py enforces it). The page renders at once from the cached or bundled
-  manifest and re-renders when the background refresh settles; the browser never talks to the
-  CDN.
+  kaggle-classification fragment: a port of the ExDark plugin's fragment (3lc-compute-plugin-kaggle
+  v1.2.15, src/tlc_plugin_kaggle/ui.html) — the shell and the Import tab — as close to verbatim as
+  the allowed differences permit (docs/EXDARK_MIRROR.md). Markup is built the ExDark way: innerHTML
+  templates with every interpolated value through esc() (tests/test_routes.py census). Every
+  competition fact comes from GET /config (the manifest, the session, _meta); the fragment defines
+  no competition literal of its own.
 
-  Jobs run through the host dispatch channel (window.PluginJobs, injected by the SDK): generic
-  job_update for status/progress, and the plugin's own events (checks, stage_progress, fact)
-  relayed on the /kaggle-classification namespace. First-run provisioning (a 201 with
-  status=provisioning from any plugin route) is an expected state, never an error. Network-level
-  failures belong to the connection guard, which resumes polls and gates but never restarts work.
+  Plumbing that differs from ExDark stays invisible: jobs run through the host dispatch channel
+  (window.PluginJobs, injected by the SDK) and their progress arrives as events on the
+  /kaggle-classification namespace instead of a polled job store; first-use provisioning (a 201
+  with status=provisioning) renders as an expected state; the manifest is resolved remote → cache →
+  bundled and every manifest fact on this page renders from the latest resolution.
 -->
 <div class="kgc">
 <div class="plugin-page-narrow" style="padding: 24px; max-width: 900px; margin: 0 auto;">
-  <style>
-    /* ── Tokens: the Hub's, and ExDark's motion vocabulary (docs/UI_PARITY.md #11) ── */
-    .kgc .plugin-page-narrow {
-      --kgl-motion-fast: 120ms; --kgl-motion-base: 180ms; --kgl-motion-slow: 300ms; --kgl-motion-spin: 800ms;
-      --kgl-stagger: 30ms; --kgl-ease-out: cubic-bezier(0.16, 1, 0.3, 1); --kgl-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
-      color: var(--text); font-size: 13px;
-    }
-    .kgc [hidden] { display: none !important; }
-    /* Icons: 16px grid, 1.5px stroke, currentColor (ui-notes §3) */
-    .kgc .kgi { width: 14px; height: 14px; flex-shrink: 0; display: inline-block; vertical-align: -2px; }
-    .kgc .kgi-12 { width: 12px; height: 12px; } .kgc .kgi-16 { width: 16px; height: 16px; } .kgc .kgi-20 { width: 20px; height: 20px; }
-    .kgc .kgi-muted { color: var(--text-muted); }
-    .kgc .kgi-btn { display: inline-flex; align-items: center; gap: 6px; }
-    /* Header identity */
-    .kgc .kg-id-row { display: flex; gap: 10px; align-items: flex-start; }
-    .kgc .kg-id-icon { display: flex; margin-top: 2px; color: var(--accent); }
-    .kgc .kg-id-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.25; }
-    .kgc .kg-id-sub { margin: 2px 0 0; font-size: 12.5px; color: var(--text-secondary); }
-    .kgc .kg-constraints { margin-top: 14px; }
-    .kgc .kg-micro-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 6px; }
-    .kgc .kg-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-    .kgc .kg-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; font-size: 11px; font-weight: 500; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); white-space: nowrap; }
-    .kgc .kg-chip .kgi { color: var(--text-muted); }
-    .kgc .kg-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-    .kgc .kg-tag { font-size: 10.5px; padding: 1px 7px; border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 999px; color: var(--text-muted); white-space: nowrap; }
-    /* The Loop */
-    .kgc .kg-loop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 7px 12px; font-size: 12px; border: 1px solid var(--border-light, rgba(0,0,0,.06)); border-radius: 6px; color: var(--text-secondary); }
-    .kgc .kg-loop-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-right: 2px; }
-    .kgc .kg-loop a { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); font-weight: 500; text-decoration: none; cursor: pointer; }
-    .kgc .kg-loop a:hover { color: var(--accent); }
-    .kgc .kg-loop a.kg-loop-active { color: var(--text); font-weight: 600; }
-    .kgc .kg-loop a[aria-disabled="true"] { opacity: .55; cursor: default; }
-    .kgc .kg-loop-sep { display: flex; color: var(--text-muted); opacity: .6; }
-    /* Tab bar is the stepper */
-    .kgc .kg-tabs { display: flex; gap: 0; margin: 16px 0 20px; border-bottom: 1px solid var(--border); }
-    .kgc .kg-tab { flex: 1; text-align: center; padding: 10px 6px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; user-select: none; background: none; border-top: 0; border-left: 0; border-right: 0; font: inherit; }
-    .kgc .kg-tab:hover { background: var(--accent-light, rgba(42,74,97,.04)); }
-    .kgc .kg-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-    .kgc .kg-tab.active { border-bottom-color: var(--accent); }
-    .kgc .kg-tab-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 5px; }
-    .kgc .kg-tab.active .kg-tab-title { color: var(--accent); }
-    .kgc .kg-tab-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-    .kgc .kg-tab-state { display: inline-flex; min-width: 14px; }
-    .kgc .kg-tab-state.done { color: var(--success); } .kgc .kg-tab-state.current { color: var(--accent); } .kgc .kg-tab-state.pending { color: var(--text-muted); }
-    .kgc .kg-panel { display: none; } .kgc .kg-panel.active { display: block; }
-    /* Cards: Hub .card classes carry the geometry; these are the fallbacks when a class is absent */
-    .kgc .card { min-width: 0; margin-bottom: 16px; }
-    .kgc .card-body { min-width: 0; }
-    .kgc .kg-sec-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); margin: 0 0 10px; }
-    /* The one status line + one primary action every tab leads with (UI_PARITY #3b) */
-    .kgc .kg-status-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .kgc .kg-status { flex: 1 1 260px; min-width: 0; font-size: 13px; color: var(--text); line-height: 1.5; }
-    .kgc .kg-status .kg-quiet { display: block; }
-    .kgc .kg-status-actions { margin-top: 0; }
-    .kgc .kg-progress-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-    .kgc .kg-eta { color: var(--text-muted); white-space: nowrap; margin-left: auto; }
-    .kgc .kg-sec + .kg-sec { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light, rgba(0,0,0,.06)); }
-    .kgc .kg-blurb { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; line-height: 1.55; }
-    .kgc .kg-quiet { font-size: 12px; color: var(--text-muted); }
-    .kgc code { word-break: break-all; }
-    .kgc pre { white-space: pre-wrap; word-break: break-all; overflow-x: auto; max-width: 100%; }
-    /* Job rows (stock queue-panel anatomy) */
-    .kgc .kg-job-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); }
-    .kgc .kg-job-row .kg-job-label { font-size: 13px; font-weight: 500; color: var(--text); min-width: 96px; }
-    .kgc .kg-job-row .kg-job-detail { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text-muted); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-    .kgc .kg-job-elapsed { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
-    .kgc .kg-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; min-width: 58px; text-align: center; }
-    .kgc .kg-badge.pending { background: var(--bg-secondary, rgba(0,0,0,.06)); color: var(--text-muted); }
-    .kgc .kg-badge.running { background: var(--accent-light, rgba(42,74,97,.08)); color: var(--accent); }
-    .kgc .kg-badge.done { background: rgba(5,150,105,.1); color: var(--success); }
-    .kgc .kg-badge.failed { background: rgba(239,68,68,.08); color: var(--danger, #ef4444); }
-    .kgc .kg-badge-created { background: rgba(5,150,105,.1); color: var(--success); }
-    .kgc .kg-progress { height: 6px; border-radius: 3px; background: var(--bg-secondary, rgba(0,0,0,.08)); overflow: hidden; margin: 8px 0 2px; }
-    .kgc .kg-progress > div { height: 100%; width: 0; background: var(--accent); }
-    /* Table rows */
-    .kgc .kg-table-rows { margin-top: 10px; }
-    .kgc .kg-table-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); font-size: 12.5px; }
-    .kgc .kg-table-row .split { font-weight: 600; min-width: 42px; }
-    .kgc .kg-table-row .rows { color: var(--text-secondary); white-space: nowrap; min-width: 76px; }
-    .kgc .kg-path { flex: 1; min-width: 0; font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .kgc .kg-row-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
-    /* Checks */
-    .kgc .kg-verdict { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); margin: 12px 0 0; }
-    .kgc .kg-verdict .ok { color: var(--success); display: flex; } .kgc .kg-verdict .bad { color: var(--danger, #ef4444); display: flex; }
-    .kgc .kg-checks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 8px; }
-    .kgc .kg-checks-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); margin-bottom: 6px; }
-    .kgc .kg-check { display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: var(--text); padding: 2px 0; line-height: 1.45; }
-    .kgc .kg-check .kgi { margin-top: 2px; } .kgc .kg-check .ok { color: var(--success); display: flex; } .kgc .kg-check .bad { color: var(--danger, #ef4444); display: flex; }
-    .kgc .kg-check .detail { color: var(--text-muted); font-size: 11px; }
-    .kgc .kg-check-body { flex: 1; min-width: 0; }
-    .kgc .kg-check .remedy { display: block; font-size: 11px; color: var(--text-muted); font-style: italic; margin: 1px 0 3px; }
-    /* Accordion (button + region) */
-    .kgc .kg-acc-wrap { margin-top: 12px; }
-    .kgc .kgl-acc-summary { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 5px; }
-    .kgc .kgl-acc-summary:hover { color: var(--text-secondary); }
-    .kgc .kgl-acc-caret { display: inline-flex; align-items: center; }
-    .kgc .kgl-acc-summary[aria-expanded="true"] .kgl-acc-caret { transform: rotate(90deg); }
-    .kgc .kgl-acc { display: grid; grid-template-rows: 0fr; } .kgc .kgl-acc.open { grid-template-rows: 1fr; }
-    .kgc .kgl-acc-inner { overflow: hidden; min-height: 0; }
-    .kgc .kg-log { margin: 8px 0 0; max-height: 260px; overflow: auto; font-size: 11px; line-height: 1.5; padding: 10px; border-radius: 6px; background: var(--bg-secondary, rgba(0,0,0,.04)); border: 1px solid var(--border-light, rgba(0,0,0,.06)); }
-    .kgc .kg-tech { margin-top: 8px; }
-    .kgc .kg-tech-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); font-size: 12px; }
-    .kgc .kg-tech-row .lbl { color: var(--text-muted); font-size: 11px; min-width: 110px; }
-    .kgc .kg-tech-row .kg-path { font-size: 11.5px; color: var(--text-secondary); }
-    /* Callouts: one geometry, four tints */
-    .kgc .kg-callout { display: flex; gap: 8px; align-items: flex-start; padding: 9px 12px; border-radius: var(--radius-lg, 8px); margin-top: 8px; font-size: 12px; line-height: 1.55; }
-    .kgc .kg-callout > .kgi { margin-top: 2px; }
-    .kgc .kg-callout p { margin: 0; } .kgc .kg-callout p + p { margin-top: 3px; }
-    .kgc .kg-callout.warn { background: rgba(217,119,6,.08); border: 1px solid rgba(217,119,6,.3); } .kgc .kg-callout.warn > .kgi { color: var(--warning, #d97706); }
-    .kgc .kg-callout.err { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); } .kgc .kg-callout.err > .kgi { color: var(--danger, #ef4444); }
-    .kgc .kg-callout.info { background: var(--accent-light, rgba(42,74,97,.05)); border: 1px solid var(--border); color: var(--text-secondary); } .kgc .kg-callout.info > .kgi { color: var(--text-muted); }
-    .kgc .kg-callout.ok { background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.25); } .kgc .kg-callout.ok > .kgi { color: var(--success); }
-    .kgc .kg-preflight-ok { display: flex; gap: 7px; align-items: flex-start; color: var(--success); font-size: 12px; margin-top: 6px; line-height: 1.5; }
-    .kgc .kg-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
-    /* Forms (Hub form-* classes plus fallbacks) */
-    .kgc .kg-form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-    .kgc .form-group { margin: 0; }
-    .kgc .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-    .kgc .form-help { display: block; font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
-    .kgc .form-control { font: inherit; font-size: 12.5px; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px); background: var(--bg-card); color: var(--text); }
-    .kgc .form-control[readonly] { color: var(--text-muted); }
-    .kgc .form-control.guide-next { border-color: var(--warning, #d97706); }
-    .kgc .kg-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-    .kgc .kg-check-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; }
-    .kgc .kg-step-muted { opacity: .55; }
-    .kgc .btn { font: inherit; font-size: 12.5px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px); background: var(--bg-card); color: var(--text); cursor: pointer; }
-    .kgc .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .kgc .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-    .kgc .btn-lg { padding: 8px 16px; font-size: 13px; }
-    .kgc .btn-sm { padding: 4px 9px; font-size: 12px; }
-    .kgc .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
-    .kgc .btn-ghost:hover { color: var(--text-secondary); border-color: var(--border); }
-    .kgc .btn-secondary { background: transparent; }
-    .kgc .kg-btn-danger-hover:hover { color: var(--danger, #ef4444) !important; border-color: rgba(239,68,68,.35) !important; background: rgba(239,68,68,.06) !important; }
-    .kgc .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; }
-    .kgc .kg-footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); margin: 8px 2px 4px; }
-    .kgc .kg-footer a { color: inherit; text-decoration: none; } .kgc .kg-footer a:hover { color: var(--text-secondary); }
-    .kgc a { color: var(--accent); }
-    .kgc .kg-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    /* Motion: every animated rule lives inside this gate; under reduce everything is instant */
-    @media (prefers-reduced-motion: no-preference) {
-      .kgc { --kgc-anim: 1; }
-      @keyframes kgl-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-      @keyframes kgl-fade { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes kg-rot { to { transform: rotate(360deg); } }
-      @keyframes guide-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,0); } 50% { box-shadow: 0 0 0 3px rgba(217,119,6,.25); } }
-      .kgc .kgl-enter { animation: kgl-in var(--kgl-motion-base) var(--kgl-ease-out) both; }
-      .kgc .kgl-badge-in { animation: kgl-fade var(--kgl-motion-fast) var(--kgl-ease-out) both; }
-      .kgc .kg-checks-grid.kgl-cascade .kg-check { animation: kgl-in var(--kgl-motion-base) var(--kgl-ease-out) both; animation-delay: calc(var(--kgl-stagger) * var(--kgl-i, 0)); }
-      .kgc .btn { transition: background-color var(--kgl-motion-fast) var(--kgl-ease-out), border-color var(--kgl-motion-fast) var(--kgl-ease-out), color var(--kgl-motion-fast) var(--kgl-ease-out), opacity var(--kgl-motion-fast) var(--kgl-ease-out); }
-      .kgc .kg-loop a, .kgc .kg-tab { transition: color var(--kgl-motion-fast) var(--kgl-ease-out), background-color var(--kgl-motion-fast) var(--kgl-ease-out), border-color var(--kgl-motion-fast) var(--kgl-ease-out); }
-      .kgc .spinner { animation: kg-rot var(--kgl-motion-spin) linear infinite; }
-      .kgc .kg-progress > div { transition: width var(--kgl-motion-base) var(--kgl-ease-out); }
-      .kgc .kg-conn-fade { opacity: 0; transition: opacity var(--kgl-motion-slow) var(--kgl-ease-out); }
-      .kgc .kgl-acc { transition: grid-template-rows var(--kgl-motion-slow) var(--kgl-ease-inout); }
-      .kgc .kgl-acc-caret { transition: transform var(--kgl-motion-slow) var(--kgl-ease-inout); }
-      .kgc .btn.guide-next, .kgc .form-control.guide-next { animation: guide-pulse 2s ease-in-out infinite; }
-    }
-    @media (max-width: 720px) {
-      .kgc .kg-form-cols { grid-template-columns: 1fr; }
-      .kgc .kg-checks-grid { grid-template-columns: 1fr; }
-      .kgc .kg-table-row { flex-wrap: wrap; row-gap: 4px; } .kgc .kg-table-row .kg-path { flex-basis: 100%; order: 10; }
-    }
-  </style>
+<style>
+/* ── Kaggle plugin styles (shared tokens from main.css / plugin-common.css) — ExDark's, verbatim where used ── */
+.plugin-page-narrow {
+  --kgl-motion-fast: 120ms;   /* button/hover feedback, badge swaps */
+  --kgl-motion-tab: 150ms;    /* tab-switch crossfade (View Transitions) */
+  --kgl-motion-base: 180ms;   /* content entrances */
+  --kgl-motion-slow: 300ms;   /* accordion, checkmark draw */
+  --kgl-motion-spin: 800ms;   /* refresh-button rotation period (in flight) */
+  --kgl-stagger: 30ms;        /* per-item cascade offset */
+  --kgl-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --kgl-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+}
+.kgi { width: 14px; height: 14px; flex-shrink: 0; display: inline-block; vertical-align: -2px; }
+.kgi-12 { width: 12px; height: 12px; }
+.kgi-16 { width: 16px; height: 16px; }
+.kgi-20 { width: 20px; height: 20px; }
+.kgi-muted { color: var(--text-muted); }
+.kgi-btn { display: inline-flex; align-items: center; gap: 6px; }
+.kg-id-row { display: flex; gap: 10px; align-items: flex-start; }
+.kg-id-icon { display: flex; margin-top: 2px; color: var(--accent); }
+.kg-id-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.25; }
+.kg-id-sub { margin: 2px 0 0; font-size: 12.5px; color: var(--text-secondary); }
+.kg-constraints { margin-top: 14px; }
+.kg-micro-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 6px; }
+.kg-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.kg-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; font-size: 11px; font-weight: 500; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); white-space: nowrap; }
+.kg-chip .kgi { color: var(--text-muted); }
+.kg-tabs { display: flex; gap: 0; margin: 16px 0 20px; border-bottom: 1px solid var(--border); }
+.kg-tab { flex: 1; text-align: center; padding: 10px 6px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; user-select: none; }
+.kg-tab:hover { background: var(--accent-light, rgba(42,74,97,.04)); }
+.kg-tab.active { border-bottom-color: var(--accent); }
+.kg-tab-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.kg-tab.active .kg-tab-title { color: var(--accent); }
+.kg-tab-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.kg-tab-state { display: inline-flex; min-width: 14px; vertical-align: -1px; }
+.kg-tab-state.done { color: var(--success); }
+.kg-tab-state.current { color: var(--accent); }
+.kg-tab-state.pending { color: var(--text-muted); }
+.kg-panel { display: none; }
+.kg-panel.active { display: block; }
+.kg-loop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 7px 12px; font-size: 12px; border: 1px solid var(--border-light, rgba(0,0,0,.06)); border-radius: 6px; color: var(--text-secondary); }
+.kg-loop-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-right: 2px; }
+.kg-loop a { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); font-weight: 500; text-decoration: none; cursor: pointer; }
+.kg-loop a:hover { color: var(--accent); }
+.kg-loop a.kg-loop-active { color: var(--text); font-weight: 600; }
+.kg-loop-sep { display: flex; color: var(--text-muted); opacity: .6; }
+.form-control.guide-next { border-color: var(--warning, #d97706); }
+.kg-panel .card { min-width: 0; }
+.kg-panel .card-body { min-width: 0; }
+.kg-panel code { word-break: break-all; }
+.kg-panel pre { white-space: pre-wrap; word-break: break-all; overflow-x: auto; max-width: 100%; }
+.kg-job-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); }
+.kg-job-row .kg-job-label { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+.kg-job-elapsed { font-size: 11px; color: var(--text-muted); }
+.kg-checks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 8px; }
+.kg-checks-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); margin-bottom: 6px; }
+.kg-check { display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: var(--text); padding: 2px 0; line-height: 1.45; }
+.kg-check .kgi { margin-top: 2px; }
+.kg-check .ok { color: var(--success); display: flex; }
+.kg-check .bad { color: var(--danger, #ef4444); display: flex; }
+.kg-check .detail { color: var(--text-muted); font-size: 11px; }
+.kg-check-body { flex: 1; min-width: 0; }
+.kg-check .remedy { display: block; font-size: 11px; color: var(--text-muted); font-style: italic; margin: 1px 0 3px; }
+.kg-verdict { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); margin: 14px 0 0; }
+.kg-verdict .ok { color: var(--success); display: flex; }
+.kg-verdict .bad { color: var(--danger, #ef4444); display: flex; }
+#kg-preflight .kg-verdict { margin-top: 6px; }
+.kg-table-rows { margin-top: 14px; }
+.kg-table-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); font-size: 12.5px; }
+.kg-table-row .split { font-weight: 600; min-width: 42px; }
+.kg-table-row .rows { color: var(--text-secondary); white-space: nowrap; min-width: 76px; }
+.kg-table-row .path { flex: 1; min-width: 0; font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
+.kg-row-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.kg-reimport-slot { min-width: 134px; display: flex; justify-content: flex-end; }
+.kg-btn-danger-hover:hover { color: var(--danger, #ef4444) !important; border-color: rgba(239,68,68,.35) !important; background: rgba(239,68,68,.06) !important; }
+.kg-badge-created { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; min-width: 58px; text-align: center; }
+.kg-badge-reused { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--bg-secondary, rgba(0,0,0,.06)); color: var(--text-muted); white-space: nowrap; min-width: 58px; text-align: center; }
+.kg-log-details { margin-top: 14px; }
+.kgl-acc-summary { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 5px; }
+.kgl-acc-summary:hover { color: var(--text-secondary); }
+.kgl-acc-caret { display: inline-flex; align-items: center; }
+.kgl-acc-summary[aria-expanded="true"] .kgl-acc-caret { transform: rotate(90deg); }
+.kgl-acc { display: grid; grid-template-rows: 0fr; }
+.kgl-acc.open { grid-template-rows: 1fr; }
+.kgl-acc-inner { overflow: hidden; min-height: 0; }
+.kg-log-details pre { margin: 8px 0 0; max-height: 260px; overflow: auto; font-size: 11px; line-height: 1.5; padding: 10px; border-radius: 6px; background: var(--bg-secondary, rgba(0,0,0,.04)); border: 1px solid var(--border-light, rgba(0,0,0,.06)); }
+.kgl-check-svg { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; }
+.kgl-check-svg path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes kgl-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @keyframes kgl-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes kgl-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes guide-pulse {
+    0%, 100% { background: var(--bg-card); box-shadow: 0 0 0 0 rgba(217,119,6,0); }
+    50% { background: rgba(217,119,6,0.1); box-shadow: 0 0 0 3px rgba(217,119,6,0.25); }
+  }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--kgl-motion-tab); animation-timing-function: var(--kgl-ease-out); }
+  .kgl-enter { animation: kgl-in var(--kgl-motion-base) var(--kgl-ease-out) both; }
+  .kgl-badge-in { animation: kgl-fade var(--kgl-motion-fast) var(--kgl-ease-out) both; }
+  .kg-checks-grid.kgl-cascade .kg-check { animation: kgl-in var(--kgl-motion-base) var(--kgl-ease-out) both; animation-delay: calc(var(--kgl-stagger) * var(--kgl-i, 0)); }
+  .kgl-check-svg.kgl-draw path { animation: kgl-draw var(--kgl-motion-slow) var(--kgl-ease-out) var(--kgl-motion-fast) both; }
+  #kg-panel-import .btn, #kg-panel-train .btn, #kg-panel-submit .btn, #kg-panel-status .btn { transition: background-color var(--kgl-motion-fast) var(--kgl-ease-out), border-color var(--kgl-motion-fast) var(--kgl-ease-out), color var(--kgl-motion-fast) var(--kgl-ease-out), opacity var(--kgl-motion-fast) var(--kgl-ease-out), filter var(--kgl-motion-fast) var(--kgl-ease-out); }
+  .kg-loop a { transition: color var(--kgl-motion-fast) var(--kgl-ease-out); }
+  .kg-tab { transition: background-color var(--kgl-motion-fast) var(--kgl-ease-out), border-color var(--kgl-motion-fast) var(--kgl-ease-out); }
+  .kg-stat .val { transition: opacity var(--kgl-motion-fast) var(--kgl-ease-out); }
+  @keyframes kg-rot { to { transform: rotate(360deg); } }
+  .kg-spin .kgi { animation: kg-rot var(--kgl-motion-spin) linear infinite; }
+  .kg-conn-fade { opacity: 0; transition: opacity var(--kgl-motion-slow) var(--kgl-ease-out); }
+  .kgl-acc { transition: grid-template-rows var(--kgl-motion-slow) var(--kgl-ease-inout); }
+  .kgl-acc-caret { transition: transform var(--kgl-motion-slow) var(--kgl-ease-inout); }
+  .form-control.guide-next { animation: guide-pulse 2s ease-in-out infinite; }
+}
+#kg-continue-train:hover { filter: brightness(1.06); }
+@media (max-width: 720px) {
+  .kg-form-cols { grid-template-columns: 1fr !important; }
+  .kg-checks-grid { grid-template-columns: 1fr; }
+  .kg-table-row { flex-wrap: wrap; row-gap: 4px; }
+  .kg-table-row .path { flex-basis: 100%; order: 10; }
+}
+.kg-glance { margin-top: 14px; }
+.kg-glance-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.kg-stat { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 6px; }
+.kg-stat .lbl { font-size: 10.5px; color: var(--text-muted); }
+.kg-stat .val { font-size: 12px; font-weight: 600; color: var(--text); }
+.kg-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.kg-tag { font-size: 10.5px; padding: 1px 7px; border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 999px; color: var(--text-muted); white-space: nowrap; }
+.kg-sec-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); margin: 0 0 10px; }
+.kg-run-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 0 6px; }
+.kg-run-head .name { font-size: 13px; font-weight: 600; color: var(--text); }
+.kg-run-meta { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.kg-run-meta .epoch { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.kg-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.kg-footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); margin: -6px 2px 16px; }
+.kg-footer a { color: inherit; text-decoration: none; }
+.kg-footer a:hover { color: var(--text-secondary); }
+.kg-preflight-ok { display: flex; gap: 7px; align-items: flex-start; color: var(--success); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.kg-preflight-ok .kgi { margin-top: 2px; }
+.kg-callout { display: flex; gap: 8px; align-items: flex-start; padding: 9px 12px; border-radius: var(--radius-lg, 8px); margin-top: 6px; font-size: 12px; line-height: 1.55; }
+.kg-callout > .kgi { margin-top: 2px; }
+.kg-callout.warn { background: rgba(217,119,6,.08); border: 1px solid rgba(217,119,6,.3); }
+.kg-callout.warn > .kgi { color: var(--warning, #d97706); }
+.kg-callout.err { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); }
+.kg-callout.err > .kgi { color: var(--danger, #ef4444); }
+.kg-callout.info { background: var(--accent-light, rgba(42,74,97,.05)); border: 1px solid var(--border); color: var(--text-secondary); }
+.kg-callout.info > .kgi { color: var(--text-muted); }
+.kg-callout.ok { background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.25); }
+.kg-callout.ok > .kgi { color: var(--success); }
+/* Fallbacks for the Hub's shared classes, so the fragment also reads outside the Hub theme */
+.kgc .card { border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); background: var(--bg-card); }
+.kgc .card-header { padding: 12px 16px 0; }
+.kgc .card-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.kgc .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.kgc .card-body { padding: 12px 16px 16px; }
+.kgc .plugin-section-number { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; }
+.kgc .form-group { margin-bottom: 12px; }
+.kgc .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.kgc .form-label.required::after { content: " *"; color: var(--danger, #ef4444); }
+.kgc .form-help { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+.kgc .form-control { font: inherit; font-size: 12.5px; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); }
+.kgc .btn { font: inherit; font-size: 12.5px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); cursor: pointer; text-decoration: none; }
+.kgc .btn:disabled { opacity: .5; cursor: not-allowed; }
+.kgc .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.kgc .btn-lg { padding: 8px 16px; font-size: 13px; }
+.kgc .btn-sm { padding: 4px 9px; font-size: 12px; }
+.kgc .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
+.kgc .btn-ghost:hover { color: var(--text-secondary); border-color: var(--border); }
+.kgc .btn-secondary { background: transparent; }
+.kgc .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: kg-rot var(--kgl-motion-spin, 800ms) linear infinite; }
+.kgc .divider { border: 0; border-top: 1px solid var(--border-light, rgba(0,0,0,.06)); margin: 14px 0; }
+.kgc .badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.kgc .badge-status-queued { background: var(--bg-secondary, rgba(0,0,0,.06)); color: var(--text-muted); }
+.kgc .badge-status-running { background: var(--accent-light, rgba(42,74,97,.08)); color: var(--accent); }
+.kgc .badge-status-completed { background: rgba(5,150,105,.1); color: var(--success); }
+.kgc .badge-status-failed { background: rgba(239,68,68,.08); color: var(--danger, #ef4444); }
+.kgc .plugin-progress-wrap { height: 6px; border-radius: 3px; background: var(--bg-secondary, rgba(0,0,0,.08)); overflow: hidden; }
+.kgc .plugin-progress-bar { height: 100%; background: var(--accent); }
+.kgc .alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-lg, 8px); border: 1px solid var(--border); margin-bottom: 12px; font-size: 12.5px; }
+.kgc .alert-success { background: rgba(5,150,105,.08); border-color: rgba(5,150,105,.25); }
+.kgc .alert-success .alert-icon { color: var(--success); font-size: 16px; display: flex; margin-top: 1px; }
+.kgc .alert-error { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.25); }
+.kgc .alert-error .alert-icon { color: var(--danger, #ef4444); display: flex; margin-top: 1px; }
+.kgc [hidden] { display: none !important; }
+</style>
 
-  <!-- ── Hero: identity · constraints · the Loop ─────────────────────── -->
+  <!-- ── Hero ──────────────────────────────────────────────────────── -->
   <div class="plugin-hero" style="margin-bottom: 4px;">
     <div class="kg-id-row">
       <span class="kg-id-icon"><svg class="kgi kgi-20" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><path d="M9 11.5h5M11.5 9v5"/></svg></span>
       <div>
         <h1 class="kg-id-title">Kaggle Classification</h1>
-        <p class="kg-id-sub">Import the starter kit, train the fixed baseline, label in the Dashboard, predict and submit. The whole competition loop without leaving the Hub.</p>
+        <p class="kg-id-sub">Import the dataset, train the fixed baseline, predict and submit.
+          The whole competition loop without leaving the Hub.</p>
       </div>
     </div>
     <div class="kg-constraints">
-      <div class="kg-micro-label" id="kgc-comp-name"></div>
-      <div class="kg-chips" id="kgc-chips"></div>
-      <div class="kg-tags" id="kgc-classes"></div>
+      <div class="kg-micro-label">Competition constraints</div>
+      <div class="kg-chips" id="kg-chips"></div>
     </div>
-    <div class="kg-loop" id="kgc-loop" hidden></div>
+    <!-- The data-centric loop, surfaced in the tool. Inspect deep-links to
+         the Dashboard (newest Run when one exists). -->
+    <div class="kg-loop" id="kg-loop">
+      <span class="kg-loop-label">The Loop</span>
+      <a data-goto="import">import</a>
+      <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
+      <a data-goto="train">train</a>
+      <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
+      <a id="kg-loop-inspect" target="_blank">inspect <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
+      <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
+      <a id="kg-loop-fixlabels" target="_blank" title="Edit labels in the Dashboard, then retrain with Use latest revision on">fix labels <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
+      <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
+      <a data-goto="train">retrain</a>
+      <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
+      <a data-goto="submit">submit</a>
+    </div>
   </div>
 
-  <div class="kg-warn-slot" id="kgc-warnings" hidden role="status"></div>
-  <div id="kgc-provisioning" hidden role="status"></div>
+  <div id="kg-provisioning" role="status" aria-live="polite"></div>
 
-  <!-- ── Tab bar / pipeline stepper ─────────────────────────────────── -->
-  <div class="kg-tabs" role="tablist" aria-label="Competition pipeline" id="kgc-tabs">
-    <button class="kg-tab" type="button" role="tab" data-tab="import" aria-selected="false"><div class="kg-tab-title"><span class="kg-tab-state pending" data-state-for="import"></span><span>1 Import</span></div><div class="kg-tab-sub">Starter kit to 3LC tables</div></button>
-    <button class="kg-tab" type="button" role="tab" data-tab="train" aria-selected="false"><div class="kg-tab-title"><span class="kg-tab-state pending" data-state-for="train"></span><span>2 Train</span></div><div class="kg-tab-sub" id="kgc-tab-sub-train"></div></button>
-    <button class="kg-tab" type="button" role="tab" data-tab="predict" aria-selected="false"><div class="kg-tab-title"><span class="kg-tab-state pending" data-state-for="predict"></span><span>3 Predict + Submit</span></div><div class="kg-tab-sub">Predict, CSV, Kaggle</div></button>
-    <button class="kg-tab" type="button" role="tab" data-tab="status" aria-selected="false"><div class="kg-tab-title"><span class="kg-tab-state pending" data-state-for="status"></span><span>4 Status</span></div><div class="kg-tab-sub">History and leaderboard</div></button>
+  <!-- ── Tab bar / pipeline stepper ────────────────────────────────── -->
+  <div class="kg-tabs" id="kg-tabs" role="tablist" aria-label="Competition pipeline">
+    <div class="kg-tab" data-tab="import" role="tab" tabindex="0" aria-selected="false">
+      <div class="kg-tab-title"><span class="kg-tab-state pending" id="kg-state-import"></span> 1 Import</div>
+      <div class="kg-tab-sub">Starter kit → 3LC tables</div>
+    </div>
+    <div class="kg-tab" data-tab="train" role="tab" tabindex="0" aria-selected="false">
+      <div class="kg-tab-title"><span class="kg-tab-state pending" id="kg-state-train"></span> 2 Train</div>
+      <div class="kg-tab-sub" id="kg-tab-sub-train"></div>
+    </div>
+    <div class="kg-tab" data-tab="submit" role="tab" tabindex="0" aria-selected="false">
+      <div class="kg-tab-title"><span class="kg-tab-state pending" id="kg-state-submit"></span> 3 Predict + Submit</div>
+      <div class="kg-tab-sub">Predict → CSV → Kaggle</div>
+    </div>
+    <div class="kg-tab" data-tab="status" role="tab" tabindex="0" aria-selected="false">
+      <div class="kg-tab-title"><span class="kg-tab-state" id="kg-state-status"></span> 4 Status</div>
+      <div class="kg-tab-sub">History &amp; leaderboard</div>
+    </div>
   </div>
 
-  <!-- ── 1 Import ─────────────────────────────────────────────────────── -->
-  <section class="kg-panel kgc-panel" data-panel="import">
-    <div class="card">
-      <div class="card-header"><div>
-        <div class="card-title"><span class="plugin-section-number">1</span> Import</div>
-      </div></div>
-      <div class="card-body">
-        <div id="kgc-conn-import" role="status" aria-live="polite"></div>
+  <!-- ── 1. Import ─────────────────────────────────────────────────── -->
+  <div class="kg-panel" id="kg-panel-import">
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-header"><div>
+      <div class="card-title"><span class="plugin-section-number">1</span> Import</div>
+      <div class="card-subtitle" id="kg-import-subtitle"></div>
+    </div></div>
+    <div class="card-body">
+      <!-- Connection guard banner (network-level failures only) -->
+      <div id="kg-conn-banner" role="status" aria-live="polite"></div>
 
-        <!-- ONE status line and ONE primary action by default (UI_PARITY #3b). Everything else
-             below is a disclosure or appears only for the state that needs it. -->
-        <div class="kg-status-row">
-          <div class="kg-status" id="kgc-status" aria-live="polite"></div>
-          <div class="kg-actions kg-status-actions">
-            <button class="btn btn-primary btn-sm kgi-btn" id="kgc-dl-start" type="button" hidden></button>
-            <button class="btn btn-ghost btn-sm" id="kgc-dl-cancel" type="button" hidden>Cancel</button>
-            <button class="btn btn-primary btn-sm kgi-btn" id="kgc-import-start" type="button" hidden disabled></button>
-            <button class="btn btn-ghost btn-sm" id="kgc-import-cancel" type="button" hidden>Cancel</button>
+      <!-- ── Starter-kit download (a section, not a stepper step: an offer
+           above the form; participants who already unzipped the kit just
+           use the form below). Hidden until the tab-open resolution decides
+           its state; the whole section hides on Import revisit. -->
+      <div id="kg-dl-section" hidden>
+        <div class="kg-sec-head">Starter kit</div>
+        <div id="kg-dl-banner" role="status"></div>
+        <div id="kg-dl-offer" hidden>
+          <!-- Two blurbs, TOGGLED by dlShowOffer, never rewritten. #kg-dl-dest
+               lives in here and is dereferenced unguarded by /config load and
+               by dlStart; replacing this block's innerHTML deleted it and took
+               the Update button's handler down with it (ExDark v1.2.13). -->
+          <div id="kg-dl-blurb-dl">
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 6px; line-height: 1.55;">
+            Downloads the competition images from the 3LC content network to the
+            machine running the compute service, then verifies every file against
+            the published manifest.</p>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 10px;">
+            Saves to <code id="kg-dl-dest" style="word-break: break-all;"></code>
+            on the service machine. An interrupted download keeps its finished
+            parts and resumes.</p>
+          </div>
+          <div id="kg-dl-blurb-topup" hidden>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.55;">
+            Downloads the newer kit beside the one you already have, then verifies
+            every file against the published manifest. Tables you have imported keep
+            reading the kit they were imported from.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" id="kg-dl-btn" class="btn btn-primary btn-sm kgi-btn"></button>
+            <span id="kg-dl-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
         </div>
-        <div id="kgc-kit-callout"></div>
-        <input class="form-control" id="kgc-f-kit" type="text" readonly hidden>
-
-        <!-- Running job: one progress line (step · shard and bytes · ETA), the bar, and the
-             seven step rows under "Show steps" (collapsed; auto-opens on failure). -->
-        <div id="kgc-pipeline" hidden>
-          <div class="kg-progress-line"><span id="kgc-pipeline-sub"></span><span class="kg-eta" id="kgc-eta"></span></div>
-          <div class="kg-progress" id="kgc-bar" hidden><div></div></div>
-          <div class="kg-acc-wrap" style="margin-top: 6px;">
-            <button type="button" class="kgl-acc-summary" id="kgc-steps-toggle" aria-expanded="false" aria-controls="kgc-steps-panel"></button>
-            <div class="kgl-acc" id="kgc-steps-panel" hidden><div class="kgl-acc-inner"><div id="kgc-steps"></div></div></div>
+        <div id="kg-dl-progress" style="margin-top: 10px;"></div>
+        <div class="kg-log-details" id="kg-dl-log-details" style="display: none;">
+          <button type="button" class="kgl-acc-summary" id="kg-dl-log-toggle"
+                  aria-expanded="false" aria-controls="kg-dl-log-panel">
+            <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
+          </button>
+          <div class="kgl-acc" id="kg-dl-log-panel" hidden>
+            <div class="kgl-acc-inner">
+              <pre id="kg-dl-log"></pre>
+            </div>
           </div>
         </div>
-
-        <!-- Import form: hidden until the kit is on disk; Project / Table name under Advanced. -->
-        <div id="kgc-import-revisit" hidden></div>
-        <div id="kgc-import-form" hidden>
-          <div id="kgc-import-gate"></div>
-          <div class="kg-acc-wrap">
-            <button type="button" class="kgl-acc-summary" id="kgc-adv-toggle" aria-expanded="false" aria-controls="kgc-adv-panel"></button>
-            <div class="kgl-acc" id="kgc-adv-panel" hidden><div class="kgl-acc-inner">
-              <div class="kg-form-cols" style="margin-top: 8px;">
-                <div class="form-group"><label class="form-label" for="kgc-f-project">Project</label><input class="form-control" id="kgc-f-project" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-project"></span></div>
-                <div class="form-group"><label class="form-label" for="kgc-f-table">Table name</label><input class="form-control" id="kgc-f-table" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-table"></span></div>
-              </div>
-              <label class="kg-check-label" id="kgc-reimport-wrap" hidden style="margin-top: 8px;"><input type="checkbox" id="kgc-reimport"> <span id="kgc-reimport-label"></span></label>
-            </div></div>
-          </div>
-        </div>
-        <div id="kgc-import-live" hidden>
-          <div id="kgc-live-checks"></div>
-        </div>
-        <div id="kgc-import-tech"></div>
-        <div class="kg-acc-wrap" id="kgc-log-wrap" hidden>
-          <button type="button" class="kgl-acc-summary" id="kgc-log-toggle" aria-expanded="false" aria-controls="kgc-log-panel"></button>
-          <div class="kgl-acc" id="kgc-log-panel" hidden><div class="kgl-acc-inner"><pre class="kg-log" id="kgc-log"></pre></div></div>
-        </div>
+        <hr class="divider">
       </div>
+
+      <!-- Success / failure banner (rendered by JS) -->
+      <div id="kg-import-banner"></div>
+
+      <form id="kg-import-form" onsubmit="return false;">
+        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          <div>
+            <div class="form-group">
+              <label class="form-label required" for="kg-kit">Starter kit folder</label>
+              <input id="kg-kit" type="text" class="form-control"
+                     placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false">
+              <div class="form-help">Path on the machine running the compute service.
+                Browsing from another computer? The starter kit must be unzipped on the
+                service's machine, and this is its path there.</div>
+              <div id="kg-preflight"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="kg-project">Project name</label>
+              <input id="kg-project" type="text" class="form-control" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="kg-table">Table name</label>
+              <input id="kg-table" type="text" class="form-control">
+              <div class="form-help">Revision name for the imported tables. <code>initial</code> is the convention for a first import.</div>
+            </div>
+          </div>
+          <div>
+            <div class="form-group" id="kg-splits-group">
+              <label class="form-label">Splits to import</label>
+              <div id="kg-splits-body"></div>
+            </div>
+            <div id="kg-glance"></div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" id="kg-import-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Import &amp; Validate</button>
+          <span class="spinner" id="kg-import-spinner" style="display: none;"></span>
+          <span id="kg-import-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
+        </div>
+        <div id="kg-import-progress" style="margin-top: 12px;"></div>
+        <div id="kg-checks"></div>
+        <div id="kg-result"></div>
+        <div class="kg-log-details" id="kg-log-details" style="display: none;">
+          <button type="button" class="kgl-acc-summary" id="kg-log-toggle"
+                  aria-expanded="false" aria-controls="kg-log-panel">
+            <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
+          </button>
+          <div class="kgl-acc" id="kg-log-panel" hidden>
+            <div class="kgl-acc-inner">
+              <pre id="kg-log"></pre>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
-  </section>
+  </div>
+  <div class="kg-footer" data-kg-footer></div>
+  </div>
 
-  <!-- ── 2 Train · 3 Predict + Submit · 4 Status: gated until an import exists ── -->
-  <section class="kg-panel kgc-panel" data-panel="train">
-    <div class="card"><div class="card-header"><div><div class="card-title"><span class="plugin-section-number">2</span> Train</div><div class="card-subtitle">Train the fixed baseline on the imported tables.</div></div></div>
-    <div class="card-body"><div id="kgc-conn-train" role="status" aria-live="polite"></div><div id="kgc-gate-train"></div><p class="kg-quiet" id="kgc-stub-train" hidden>The Train tab arrives in session 3.</p></div></div>
-  </section>
-  <section class="kg-panel kgc-panel" data-panel="predict">
-    <div class="card"><div class="card-header"><div><div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div><div class="card-subtitle">Predict from a run you trained here, then submit to Kaggle.</div></div></div>
-    <div class="card-body"><div id="kgc-conn-predict" role="status" aria-live="polite"></div><div id="kgc-gate-predict"></div><p class="kg-quiet" id="kgc-stub-predict" hidden>The Predict and Submit tab arrives in sessions 4 and 5.</p></div></div>
-  </section>
-  <section class="kg-panel kgc-panel" data-panel="status">
-    <div class="card"><div class="card-header"><div><div class="card-title"><span class="plugin-section-number">4</span> Status</div><div class="card-subtitle">Your runs, submissions and leaderboard standing.</div></div></div>
-    <div class="card-body"><div id="kgc-conn-status" role="status" aria-live="polite"></div><div id="kgc-gate-status"></div><p class="kg-quiet" id="kgc-stub-status" hidden>The Status tab arrives in session 6.</p></div></div>
-  </section>
-
-  <div class="kg-footer"><span id="kgc-version"></span><span aria-hidden="true">·</span><a id="kgc-repo" href="#" target="_blank" rel="noopener">Source</a></div>
-  <div class="kg-visually-hidden" aria-live="polite" id="kgc-announce"></div>
+  <!-- ── 2. Train · 3. Predict + Submit · 4. Status: ExDark's gate card until their sessions ── -->
+  <div class="kg-panel" id="kg-panel-train">
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">2</span> Train</div>
+      <div class="card-subtitle" id="kg-train-subtitle"></div></div></div>
+    <div class="card-body"><div id="tr-conn-banner" role="status" aria-live="polite"></div><div id="tr-gate"></div></div>
+  </div>
+  <div class="kg-footer" data-kg-footer></div>
+  </div>
+  <div class="kg-panel" id="kg-panel-submit">
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div>
+      <div class="card-subtitle">Run inference from a Run you trained here, write the submission CSV, submit to Kaggle.</div></div></div>
+    <div class="card-body"><div id="ps-conn-banner" role="status" aria-live="polite"></div><div id="ps-gate"></div></div>
+  </div>
+  <div class="kg-footer" data-kg-footer></div>
+  </div>
+  <div class="kg-panel" id="kg-panel-status">
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">4</span> Status</div>
+      <div class="card-subtitle">Your runs, submissions and leaderboard standing.</div></div></div>
+    <div class="card-body"><div id="st-conn-banner" role="status" aria-live="polite"></div><div id="st-gate"></div></div>
+  </div>
+  <div class="kg-footer" data-kg-footer></div>
+  </div>
 
   <script>
-  (function () {
-    var API = window.PLUGIN_API;
-    var EL = document.currentScript.closest('.kgc');
-    var base = API.getConfig('compute_service_url');
-    var dashboardUrl = API.getConfig('dashboard_url') || '';
-    var objectServiceUrl = API.getConfig('object_service_url') || '';
-    var PLUGIN_ID = 'kaggle-classification';
-    var NS = '/' + PLUGIN_ID;
-    var ROOT = base + '/api/plugins/' + PLUGIN_ID;
-    var POLL_MS = 1000, POLL_MAX = 8, PROVISION_POLL_MS = 5000, GATE_DEBOUNCE_MS = 500, TAB_KEY = 'kgc-tab';
-    var TABS = ['import', 'train', 'predict', 'status'];
-    var HUB_HOSTS = ['hub.3lc.ai', 'hub-beta.3lc.ai'];
-    var SVG_NS = 'http://www.w3.org/2000/svg';
+    (function () {
+      var API = window.PLUGIN_API;
+      var ROOT_EL = document.currentScript.closest('.kgc');
+      var computeUrl = API ? API.getConfig('compute_service_url') : '';
+      var dashboardUrl = API ? API.getConfig('dashboard_url') : '';
+      // Every outbound dashboard link must carry the configured Object
+      // Service URL: without the param the dashboard silently falls back to
+      // its own localhost:5015 default, which breaks non-default ports and
+      // remote/tunnelled services. The query param the dashboard reads is object_service.
+      var objectServiceUrl = API ? API.getConfig('object_service_url') : '';
+      function kgWithObjectService(url) {
+        if (!objectServiceUrl || !url) { return url; }
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') +
+          'object_service=' + encodeURIComponent(objectServiceUrl);
+      }
+      var PLUGIN_ID = 'kaggle-classification';
+      var NS = '/' + PLUGIN_ID;
+      var PLUGIN_ROOT = computeUrl + '/api/plugins/' + PLUGIN_ID;
 
-    // ── Element builders (the only way anything reaches the DOM) ─────────
-    function $(id) { return EL.querySelector('#' + id); }
-    function el(tag, cls, content) {
-      var n = document.createElement(tag);
-      if (cls) { n.className = cls; }
-      if (content != null) { n.textContent = String(content); }
-      return n;
-    }
-    function text(id, value) { var n = $(id); if (n) { n.textContent = value == null ? '' : String(value); } }
-    function show(id, on) { var n = $(id); if (n) { n.hidden = !on; } }
-    function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
-    function setKids(node, kids) { clear(node); kids.forEach(function (k) { if (k) { node.appendChild(k); } }); return node; }
-    function fmtCount(n) { return (n == null || isNaN(n)) ? '' : Number(n).toLocaleString(); }
-    function fmtBytes(n) { return n == null ? '' : (n / 1e6 >= 1000 ? (n / 1e9).toFixed(2) + ' GB' : (n / 1e6).toFixed(1) + ' MB'); }
-    function fmtSecs(s) { if (s == null) { return ''; } s = Number(s); return s >= 60 ? Math.floor(s / 60) + ' min ' + Math.round(s % 60) + ' s' : s.toFixed(1) + ' s'; }
-    function midTrunc(s, max) { s = s || ''; if (s.length <= max) { return s; } var keep = Math.floor((max - 1) / 2); return s.slice(0, keep) + '…' + s.slice(s.length - keep); }
-    function motionOK() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches); }
-    function enter(node) { if (motionOK()) { node.classList.add('kgl-enter'); } return node; }
+      // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
+      var el = function (id) { return ROOT_EL.querySelector('#' + id); };
 
-    // Icons: ExDark's set as element specs (16px grid, 1.5 stroke, currentColor)
-    var ICONS = {
-      'lock': [['rect', { x: '3.25', y: '7.25', width: '9.5', height: '6.25', rx: '1.5' }], ['path', { d: 'M5.5 7.25V5a2.5 2.5 0 0 1 5 0v2.25' }]],
-      'check': [['path', { d: 'M3 8.5l3.5 3.5L13 4.5' }]],
-      'x': [['path', { d: 'M4 4l8 8M12 4l-8 8' }]],
-      'check-circle': [['circle', { cx: '8', cy: '8', r: '6.25' }], ['path', { d: 'M5.4 8.2l1.8 1.8 3.4-4' }]],
-      'x-circle': [['circle', { cx: '8', cy: '8', r: '6.25' }], ['path', { d: 'M6 6l4 4M10 6l-4 4' }]],
-      'alert-triangle': [['path', { d: 'M8 2.6L14.4 13.4H1.6L8 2.6z' }], ['path', { d: 'M8 6.8v2.8' }], ['path', { d: 'M8 12h.01' }]],
-      'info': [['circle', { cx: '8', cy: '8', r: '6.25' }], ['path', { d: 'M8 7.4V11' }], ['path', { d: 'M8 5h.01' }]],
-      'copy': [['rect', { x: '6', y: '6', width: '7.5', height: '7.5', rx: '1.5' }], ['path', { d: 'M10 3.5H4A1.5 1.5 0 0 0 2.5 5v6' }]],
-      'arrow-right': [['path', { d: 'M2.5 8h11' }], ['path', { d: 'M9.5 4l4 4-4 4' }]],
-      'upload': [['path', { d: 'M8 10.5v-8' }], ['path', { d: 'M4.5 6L8 2.5 11.5 6' }], ['path', { d: 'M2.5 13.5h11' }]],
-      'download': [['path', { d: 'M8 2.5v8' }], ['path', { d: 'M4.5 7L8 10.5 11.5 7' }], ['path', { d: 'M2.5 13.5h11' }]],
-      'layers': [['path', { d: 'M8 2.5l6 3-6 3-6-3z' }], ['path', { d: 'M2 8.75l6 3 6-3' }], ['path', { d: 'M2 11.75l6 3 6-3' }]],
-      'refresh-cw': [['path', { d: 'M13.5 8a5.5 5.5 0 1 1-1.7-3.97' }], ['path', { d: 'M13.5 2.5V6H10' }]],
-      'chevron-right': [['path', { d: 'M6 3.5L10.5 8 6 12.5' }]],
-      'external-link': [['path', { d: 'M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2' }], ['path', { d: 'M9.5 2.5H13.5V6.5' }], ['path', { d: 'M13.5 2.5L8 8' }]],
-      'circle': [['circle', { cx: '8', cy: '8', r: '6.25' }]],
-      'dot': [['circle', { cx: '8', cy: '8', r: '4', fill: 'currentColor', stroke: 'none' }]]
-    };
-    function icon(name, cls) {
-      var svg = document.createElementNS(SVG_NS, 'svg');
-      svg.setAttribute('class', 'kgi' + (cls ? ' ' + cls : ''));
-      svg.setAttribute('viewBox', '0 0 16 16'); svg.setAttribute('aria-hidden', 'true');
-      svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.5');
-      svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
-      (ICONS[name] || []).forEach(function (spec) {
-        var shape = document.createElementNS(SVG_NS, spec[0]);
-        Object.keys(spec[1]).forEach(function (k) { shape.setAttribute(k, spec[1][k]); });
-        svg.appendChild(shape);
-      });
-      return svg;
-    }
-    function btn(cls, iconName, label, onClick) {
-      var b = el('button', 'btn ' + cls + (iconName ? ' kgi-btn' : ''));
-      b.type = 'button';
-      if (iconName) { b.appendChild(icon(iconName, cls.indexOf('btn-lg') >= 0 ? 'kgi-16' : 'kgi-12')); }
-      b.appendChild(el('span', null, label));
-      if (onClick) { b.onclick = onClick; }
-      return b;
-    }
-    function setBtn(b, iconName, label, spinning) {
-      clear(b);
-      if (spinning) { var sp = el('span', 'spinner'); sp.setAttribute('aria-hidden', 'true'); b.appendChild(sp); }
-      else if (iconName) { b.appendChild(icon(iconName, b.classList.contains('btn-lg') ? 'kgi-16' : 'kgi-12')); }
-      b.appendChild(el('span', null, label));
-    }
-    function link(href, label, external) {
-      var a = el('a', null, label); a.href = href; a.target = '_blank'; a.rel = 'noopener';
-      if (external) { a.className = 'kgi-btn'; a.appendChild(icon('external-link', 'kgi-12')); }
-      return a;
-    }
-    function callout(kind, lines, iconName) {
-      var box = el('div', 'kg-callout ' + kind);
-      box.appendChild(icon(iconName || { ok: 'check-circle', info: 'info', warn: 'alert-triangle', err: 'x-circle' }[kind] || 'info'));
-      var body = el('div');
-      lines.forEach(function (l) { if (!l) { return; } body.appendChild(typeof l === 'string' ? el('p', null, l) : l); });
-      box.appendChild(body);
-      return enter(box);
-    }
-    function strongLine(strong, rest) { var p = el('p'); p.appendChild(el('strong', null, strong)); if (rest) { p.appendChild(document.createTextNode(' ' + rest)); } return p; }
-    function copyBtn(value, label) {
-      var b = btn('btn-ghost btn-sm', 'copy', label || 'Copy');
-      b.setAttribute('aria-label', 'Copy ' + (label || 'value'));
-      b.onclick = function () {
-        var p = (navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(value) : Promise.reject(new Error('no clipboard'));
-        p.then(function () { setBtn(b, 'check', 'Copied'); setTimeout(function () { setBtn(b, 'copy', label || 'Copy'); }, 1200); })
-         .catch(function () { window.prompt('Copy:', value); });
-      };
-      return b;
-    }
-    // Long paths: middle-truncated, full value in the title, Copy beside (docs/UI_PARITY.md #12)
-    function pathCell(value, max) {
-      var span = el('span', 'kg-path', midTrunc(value || '', max || 64)); span.title = value || '';
-      return span;
-    }
-    function pathRow(label, value, extraActions) {
-      var row = el('div', 'kg-tech-row');
-      row.appendChild(el('span', 'lbl', label));
-      row.appendChild(pathCell(value, 72));
-      var acts = el('span', 'kg-row-actions');
-      (extraActions || []).forEach(function (a) { acts.appendChild(a); });
-      if (value) { acts.appendChild(copyBtn(value)); }
-      row.appendChild(acts);
-      return row;
-    }
-    // Accordion: button + region; reduced motion is instant
-    function bindAccordion(toggle, panel) {
-      toggle.onclick = function () {
-        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
-        if (isOpen) {
-          toggle.setAttribute('aria-expanded', 'false');
-          if (!motionOK()) { panel.classList.remove('open'); panel.hidden = true; return; }
-          panel.addEventListener('transitionend', function h(e) {
-            if (e.propertyName !== 'grid-template-rows') { return; }
-            panel.removeEventListener('transitionend', h);
-            if (toggle.getAttribute('aria-expanded') === 'false') { panel.hidden = true; }
+      // ── Job start (host dispatch) ─────────────────────────────────────
+      // ExDark validates through its own /validate/<kind> first; here the preflight is the gate
+      // and run_import re-validates, so the start is one POST to the host's /run (PluginJobs.start)
+      // and the job's events arrive on the plugin's namespace. Resolves {ok, body} like ExDark's.
+      function kgIsAbort(e) {
+        return e && (e.name === 'AbortError' || /abort/i.test(String(e && e.message || '')));
+      }
+      function kgAbortMessage(stage) {
+        return stage === 'run'
+          ? 'The start request timed out before the service answered. The job may ' +
+            'still have started — this page checks for it automatically; if nothing ' +
+            'appears in a few seconds, retry (retrying is safe).'
+          : 'The service took too long to answer (a just-installed or just-restarted ' +
+            'plugin warms up on its first request). Retry — the retry is safe and ' +
+            'usually instant.';
+      }
+      function kgStartJob(kind, params) {
+        var body = Object.assign({ kind: kind }, params || {});
+        return window.PluginJobs.start(PLUGIN_ID, body)
+          .catch(function (e) {
+            if (kgIsAbort(e)) { throw new Error(kgAbortMessage('run')); }
+            throw e;
+          })
+          .then(function (b) {
+            if (b && !b.job_id && b.status === 'provisioning') {
+              kgEnterProvisioning(b.provisioning);
+              throw new Error('The plugin worker is still provisioning its environment — try again in a minute.');
+            }
+            return { ok: !!(b && b.job_id), body: b || {} };
           });
-          panel.classList.remove('open');
-        } else {
-          toggle.setAttribute('aria-expanded', 'true'); panel.hidden = false;
-          if (!motionOK()) { panel.classList.add('open'); return; }
-          requestAnimationFrame(function () { requestAnimationFrame(function () { panel.classList.add('open'); }); });
-        }
-      };
-    }
-    function accordion(id, label, contentNode, openNow) {
-      var wrap = el('div', 'kg-acc-wrap');
-      var toggle = el('button', 'kgl-acc-summary'); toggle.type = 'button'; toggle.id = id + '-toggle';
-      toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-controls', id + '-panel');
-      var caret = el('span', 'kgl-acc-caret'); caret.setAttribute('aria-hidden', 'true'); caret.appendChild(icon('chevron-right', 'kgi-12'));
-      toggle.appendChild(caret); toggle.appendChild(el('span', null, label));
-      var panel = el('div', 'kgl-acc'); panel.id = id + '-panel'; panel.hidden = true;
-      var inner = el('div', 'kgl-acc-inner'); inner.appendChild(contentNode); panel.appendChild(inner);
-      wrap.appendChild(toggle); wrap.appendChild(panel);
-      bindAccordion(toggle, panel);
-      if (openNow) { toggle.setAttribute('aria-expanded', 'true'); panel.classList.add('open'); panel.hidden = false; }
-      return wrap;
-    }
-    function setAccordionLabel(id, label) { var t = $(id + '-toggle'); if (t) { t.lastChild.textContent = label; } }
-    // Class tags: the Hub's --chart-N palette as quiet tints
-    var CHART_FALLBACKS = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#5b8fd9', '#c9a227'];
-    function classTint(i) {
-      var v = '';
-      try { v = getComputedStyle(document.documentElement).getPropertyValue('--chart-' + ((i % 12) + 1)).trim(); } catch (e) { /* fallback */ }
-      var hex = /^#[0-9a-fA-F]{6}$/.test(v) ? v : CHART_FALLBACKS[i % 12];
-      var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-      return { background: 'rgba(' + r + ',' + g + ',' + b + ',.10)', borderColor: 'rgba(' + r + ',' + g + ',' + b + ',.35)' };
-    }
-    function withObjectService(url) {
-      if (!objectServiceUrl || !url) { return url; }
-      return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'object_service=' + encodeURIComponent(objectServiceUrl);
-    }
-    function tableLink(url) { return dashboardUrl ? withObjectService(dashboardUrl + '?table=' + encodeURIComponent(url)) : ''; }
-    // The Hub project page: only when this fragment runs inside a Hub origin (never guessed)
-    function hubProjectUrl(project) {
-      try {
-        var origin = window.location.origin, host = window.location.hostname;
-        if (HUB_HOSTS.indexOf(host) >= 0 && project) { return origin + '/projects/' + encodeURIComponent(project); }
-      } catch (e) { /* not in a browser context */ }
-      return '';
-    }
-    function isProvisioning(body) { return !!(body && body.status === 'provisioning' && !body._meta && !body.job_id); }
-    function announce(msg) { text('kgc-announce', msg); }
-
-    // ── Remedies: matched by error text, rendered under failures (UI_PARITY #10) ──
-    var REMEDIES = [
-      { re: /disk space|no space|ENOSPC|disk full/i, hint: 'Free up disk space on the machine running the compute service, or choose another destination, then run again.' },
-      { re: /sha256 mismatch/i, hint: 'The file arrived corrupted. Run the download again: finished shards are kept and the job resumes.' },
-      { re: /URLError|Connection|timed out|unreachable|Could not download|HTTP \d{3}|Name or service not known|getaddrinfo/i, hint: 'The content network could not be reached. Check the connection, then run again; the download resumes where it stopped.' },
-      { re: /Access is denied|WinError 5|WinError 32|being used by another process|Permission denied|locked/i, hint: 'A file is locked, usually by antivirus or a sync client (OneDrive). Pause it or exclude the plugin folder, then run again.' },
-      { re: /already exist/i, hint: 'Tables with this name exist. Tick Re-import to write fresh tables beside them, or choose another table name.' },
-      { re: /provisioning|plugin environment/i, hint: 'The plugin environment is still being set up. Wait for the setup line to clear, then try again.' },
-      { re: /kit defect|does not match the competition manifest|do not decode|misconfigured on the server/i, hint: 'This is a problem in the published starter kit, not on this machine. Report it to the organizers.' }
-    ];
-    function remedyFor(message) {
-      for (var i = 0; i < REMEDIES.length; i++) { if (REMEDIES[i].re.test(message || '')) { return REMEDIES[i].hint; } }
-      return '';
-    }
-
-    // ── Diagnostics: one fenced block for a forum post or DM ────────────
-    function buildDiagnostics() {
-      var m = state.meta || {}, prov = m.manifest_provenance || {};
-      var out = ['```3lc-kaggle-classification-diagnostics'];
-      out.push('plugin: kaggle-classification ' + (m.version || ''));
-      out.push('os: ' + (navigator.userAgent || 'unknown'));
-      out.push('time: ' + new Date().toISOString());
-      out.push('manifest: ' + (prov.manifest_source || '') + ' ' + (prov.manifest_sha256 || '') + ' ' + (prov.manifest_document_url || ''));
-      if (m.plugin_home) { out.push('plugin home: ' + m.plugin_home.path + ' (' + m.plugin_home.resolved_by + ')'); }
-      if (state.session) { out.push('session: ' + JSON.stringify(state.session)); }
-      if (state.job) { out.push('job: ' + state.job.id + ' ' + state.job.kind + ' ' + state.job.status); }
-      if (state.lastError) { out.push('error: ' + state.lastError); }
-      if (state.checks.length) { out.push('', '[checks]'); state.checks.forEach(function (c) { out.push((c.ok ? 'PASS ' : 'FAIL ') + c.label + (c.detail ? ' · ' + c.detail : '')); }); }
-      if (state.logs.length) { out.push('', '[log tail]'); out.push.apply(out, state.logs.slice(-40)); }
-      out.push('```');
-      return out.join('\n');
-    }
-    function diagBtn() {
-      var b = btn('btn-secondary btn-sm', 'copy', 'Copy diagnostics');
-      b.onclick = function () {
-        var textOut = buildDiagnostics();
-        var p = (navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(textOut) : Promise.reject(new Error('no clipboard'));
-        p.then(function () { setBtn(b, 'check', 'Copied'); setTimeout(function () { setBtn(b, 'copy', 'Copy diagnostics'); }, 1200); })
-         .catch(function () { window.prompt('Copy diagnostics:', textOut); });
-      };
-      return b;
-    }
-
-    // ── Connection guard: network-level failures only (ExDark's kgConn, in full) ──
-    var conn = (function () {
-      var down = false, attempt = 0, timer = null, onUp = [];
-      var DELAYS = [2000, 5000, 10000];
-      function slots() { return TABS.map(function (t) { return $('kgc-conn-' + t); }).filter(Boolean); }
-      function render(kind, iconName, message) {
-        slots().forEach(function (slot) { setKids(slot, [callout(kind, [message], iconName)]); });
       }
-      function ping() { API.authFetch(ROOT + '/import/state').then(function () { up(); }).catch(function () { schedule(); }); }
-      function schedule() { var d = attempt < DELAYS.length ? DELAYS[attempt] : 15000; attempt++; timer = setTimeout(ping, d); }
-      function up() {
-        down = false; attempt = 0; clearTimeout(timer);
-        render('info', 'check', 'Reconnected.');
-        slots().forEach(function (slot) {
-          var banner = slot.firstChild; if (!banner) { return; }
-          setTimeout(function () {
-            if (banner.parentNode !== slot) { return; }
-            if (!motionOK()) { slot.removeChild(banner); return; }
-            banner.addEventListener('transitionend', function () { if (banner.parentNode) { banner.parentNode.removeChild(banner); } });
-            banner.classList.add('kg-conn-fade');
-          }, 2000);
+
+      // ── Job channel: the ExDark job-record shape, filled from the host's events ──
+      // ExDark polls its own job store for {status, progress, checks, log, result, error}. Here
+      // one local record per job is filled from job_update (status, percent, label, error) and
+      // the plugin's own events (checks, stage_progress, log_line, fact); the renderers below are
+      // ExDark's and read that record unchanged.
+      var kgJobs = {};
+      var kgUnsub = [];
+      function kgJobRecord(id, kind) {
+        if (!kgJobs[id]) {
+          kgJobs[id] = { id: id, kind: kind, status: 'running', created_at: Date.now() / 1000,
+                         progress: { stages: [], done: [], current: null, started_at: {}, finished_at: {} },
+                         checks: [], log: [], facts: {}, error: null, result: null };
+        }
+        return kgJobs[id];
+      }
+      function kgListen() {
+        if (kgUnsub.length || !window.PluginJobs) { return; }
+        window.PluginJobs.connect(NS);
+        var byJob = function (fn) { return function (p) { if (!p || !p.job_id || !kgJobs[p.job_id]) { return; } fn(kgJobs[p.job_id], p); kgOnRecord(kgJobs[p.job_id]); }; };
+        kgUnsub.push(window.PluginJobs.on(NS, 'checks', byJob(function (job, p) { job.checks = p.checks || []; })));
+        kgUnsub.push(window.PluginJobs.on(NS, 'log_line', byJob(function (job, p) { job.log.push(String(p.line || '')); })));
+        kgUnsub.push(window.PluginJobs.on(NS, 'fact', byJob(function (job, p) { job.facts[p.key] = p.value; })));
+        kgUnsub.push(window.PluginJobs.on(NS, 'stage_progress', byJob(function (job, p) { kgApplyStage(job, p); })));
+      }
+      // Our worker reports phases; ExDark's rows want stages with started/finished stamps.
+      var KG_IMPORT_STAGES = ['train', 'val', 'validate'];
+      function kgApplyStage(job, p) {
+        var pr = job.progress; var now = Date.now() / 1000;
+        pr.phase = p.phase || pr.phase; pr.label = p.label || pr.label; pr.percent = p.percent;
+        pr.bytes_done = p.bytes_done; pr.bytes_total = p.bytes_total; pr.archive = p.archive;
+        if (job.kind !== 'import') { return; }
+        pr.stages = KG_IMPORT_STAGES;
+        var current = null;
+        if (p.phase === 'validate' || p.phase === 'decode' || p.phase === 'collision') { current = 'train'; }
+        else if (p.phase === 'register') { current = /\bval\b/i.test(p.label || '') ? 'val' : 'train'; }
+        else if (p.phase === 'verify') { current = 'validate'; }
+        else if (p.phase === 'record' || p.phase === 'done') { current = null; }
+        var order = KG_IMPORT_STAGES;
+        var idx = current ? order.indexOf(current) : order.length;
+        order.forEach(function (s, i) {
+          if (i < idx && pr.done.indexOf(s) === -1) { pr.done.push(s); pr.finished_at[s] = pr.finished_at[s] || now; }
+          if (i <= idx && !pr.started_at[s]) { pr.started_at[s] = now; }
         });
-        var fns = onUp.splice(0);
-        fns.forEach(function (f) { try { f(); } catch (e) { /* resume is best-effort */ } });
+        pr.current = current;
       }
-      return {
-        // True when the error was network-level and the guard owns it. `resume` runs once on
-        // reconnect: polls, gates and config loads only, never a job start.
-        fail: function (err, resume) {
-          if (!(err instanceof TypeError)) { return false; }
-          if (resume) { onUp.push(resume); }
-          if (!down) { down = true; attempt = 0; render('warn', 'alert-triangle', 'Compute service unreachable, retrying…'); schedule(); }
-          return true;
-        },
-        isDown: function () { return down; }
-      };
-    })();
-
-    // ── State ────────────────────────────────────────────────────────────
-    var state = {
-      meta: null, session: null, shownTab: null,
-      job: null, unsub: [], checks: [], logs: [], lastError: '',
-      gate: null, gateTimer: null, provisionTimer: null, pendingAction: null,
-      stepState: {}, stepStart: {}
-    };
-
-    // ── Hero: chips, class tags, the Loop ────────────────────────────────
-    function chip(label, tooltip, lock) {
-      var c = el('span', 'kg-chip'); if (lock) { c.appendChild(icon('lock', 'kgi-12')); }
-      c.appendChild(el('span', null, label)); c.title = tooltip || ''; return c;
-    }
-    function renderManifest(m, source, provenance, warnings, candidates) {
-      var comp = m.competition || {}, model = m.model || {}, splits = m.splits || {}, sub = m.submission || {}, kit = m.kit || {};
-      var numClasses = (m.classes || []).length;
-      var pool = (splits.train || {}).undefined;
-      text('kgc-comp-name', comp.display_name || '');
-      // Every chip reads the manifest; the fragment holds no count of its own (test_routes pins it).
-      setKids($('kgc-chips'), [
-        model.arch ? chip(model.arch + ' · ' + (model.pretrained ? 'pretrained' : 'from scratch') + ' · ' + model.image_size + ' px',
-          'Identical architecture, initialisation and resolution for every participant. The Run records them as proof.', true) : null,
-        numClasses ? chip(numClasses + ' classes · ' + fmtCount(pool) + ' unlabeled to label',
-          'Unlabeled images show as ‘undefined’ in the Dashboard. Label them and set their weight to train on them.') : null,
-        sub.metric ? chip('Scored by ' + sub.metric, 'The leaderboard metric.') : null,
-        kit.version ? chip('Kit ' + kit.version + (kit.shards && kit.shards.length ? '' : ' (not published yet)'),
-          kit.shards && kit.shards.length ? kit.shards.length + ' shards, ' + fmtBytes(kit.shards.reduce(function (a, s) { return a + (s.bytes || 0); }, 0)) : 'The starter kit has not been published yet.') : null,
-        sub.daily_limit ? chip(fmtCount(sub.daily_limit) + ' submissions per day', 'Kaggle’s daily limit for this competition.') : null
-      ]);
-      state.manifestSource = source || '';
-      var tags = $('kgc-classes'); clear(tags);
-      (m.classes || []).forEach(function (c) {
-        var t = el('span', 'kg-tag', c.name); var tint = classTint(Number(c.id) || 0);
-        t.style.background = tint.background; t.style.borderColor = tint.borderColor; t.title = 'Class ' + c.id;
-        tags.appendChild(t);
-      });
-      text('kgc-tab-sub-train', model.arch ? model.arch + ', ' + (model.pretrained ? 'pretrained' : 'from scratch') : '');
-      var box = $('kgc-warnings'); clear(box);
-      (warnings || []).forEach(function (w) { box.appendChild(callout('warn', [w])); });
-      if (candidates && candidates.length > 1) {
-        var picker = el('div', 'kg-chips');
-        candidates.forEach(function (c) { picker.appendChild(btn('btn-secondary btn-sm', null, c.display_name + ' (' + c.id + ')', function () { select(c.id); })); });
-        box.appendChild(callout('info', ['Several competitions are active. Pick one:', picker]));
+      function kgTrack(job) {
+        kgListen();
+        var off = window.PluginJobs.track(NS, job.id, {
+          onUpdate: function (u) {
+            job.status = u.status || job.status;
+            if (u.progress && u.progress.percent != null) { job.progress.percent = u.progress.percent; }
+            if (u.error) { job.error = u.error; }
+            kgOnRecord(job);
+          },
+          onDone: function (u) { job.status = u.status; kgOnRecord(job, true); off(); },
+          onError: function (u) { job.status = 'failed'; job.error = (u && (u.error || u.subtitle)) || job.error || 'The job failed.'; kgOnRecord(job, true); off(); }
+        });
       }
-      box.hidden = !box.firstChild;
-      renderLoop();
-    }
-    function renderLoop() {
-      var loop = $('kgc-loop'); clear(loop);
-      var st = (state.meta || {}).import_state || {};
-      var latestTrain = (st.latest || {}).train || (((st.record || {}).tables || {}).train || {}).url || '';
-      var dash = latestTrain ? tableLink(latestTrain) : '';
-      loop.appendChild(el('span', 'kg-loop-label', 'The Loop'));
-      var steps = [
-        ['import', 'import'], ['train', 'train'], ['dash', 'label & weight in Dashboard'], ['train', 'retrain'], ['predict', 'predict'], ['predict', 'submit']
-      ];
-      steps.forEach(function (s, i) {
-        if (i) { var sep = el('span', 'kg-loop-sep'); sep.appendChild(icon('chevron-right', 'kgi-12')); loop.appendChild(sep); }
-        var a = el('a', null, s[1]);
-        if (s[0] === 'dash') {
-          a.appendChild(icon('external-link', 'kgi-12'));
-          if (dash) { a.href = dash; a.target = '_blank'; a.rel = 'noopener'; a.title = 'Opens the latest train revision in the Dashboard'; }
-          else { a.setAttribute('aria-disabled', 'true'); a.title = 'Available once the kit is imported'; }
-        } else {
-          a.setAttribute('data-goto', s[0]); a.href = '#'; a.onclick = function (e) { e.preventDefault(); showTab(s[0]); };
-        }
-        loop.appendChild(a);
-      });
-      loop.hidden = false;
-      markLoop();
-    }
-    function markLoop() {
-      EL.querySelectorAll('#kgc-loop a[data-goto]').forEach(function (a) { a.classList.toggle('kg-loop-active', a.getAttribute('data-goto') === state.shownTab); });
-    }
-    function renderMeta(meta) {
-      var refresh = meta.manifest_refresh || {};
-      // The source label reflects the LATEST resolution: the refresh result when it finished.
-      var source = refresh.state === 'done' && refresh.source ? refresh.source : meta.manifest_source;
-      renderManifest(meta.manifest || {}, source, meta.manifest_provenance, meta.manifest_warnings, meta.manifest_candidates);
-      text('kgc-version', 'kaggle-classification ' + (meta.version || ''));
-      var repo = $('kgc-repo'); if (meta.repository_url) { repo.href = meta.repository_url; }
-    }
-
-    // ── Tabs: the bar is the stepper; each tab refreshes its data on entry ──
-    function showTab(name) {
-      if (TABS.indexOf(name) === -1) { name = 'import'; }
-      var first = state.shownTab === null;
-      state.shownTab = name;
-      TABS.forEach(function (t) {
-        var tab = EL.querySelector('.kg-tab[data-tab="' + t + '"]');
-        tab.classList.toggle('active', t === name); tab.setAttribute('aria-selected', String(t === name));
-        var panel = EL.querySelector('.kgc-panel[data-panel="' + t + '"]'); panel.classList.toggle('active', t === name);
-      });
-      markLoop();
-      try { localStorage.setItem(TAB_KEY, name); } catch (e) { /* sandboxed */ }
-      // Tab-entry refetch: the page never needs a manual reload to tell the truth. Never restarts work.
-      if (!first) { refreshConfig(); }
-    }
-    EL.querySelectorAll('.kg-tab').forEach(function (tab, i) {
-      tab.onclick = function () { showTab(tab.getAttribute('data-tab')); };
-      tab.onkeydown = function (e) {
-        var idx = TABS.indexOf(tab.getAttribute('data-tab'));
-        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-          e.preventDefault();
-          var next = TABS[(idx + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
-          showTab(next); EL.querySelector('.kg-tab[data-tab="' + next + '"]').focus();
-        }
-      };
-    });
-    function renderPipelineGlyphs() {
-      var imported = ((state.meta || {}).import_state || {}).state === 'success';
-      var currentSeen = false;
-      TABS.forEach(function (t) {
-        var span = EL.querySelector('.kg-tab-state[data-state-for="' + t + '"]'); clear(span);
-        var done = t === 'import' && imported;
-        if (done) { span.appendChild(icon('check-circle', 'kgi-12')); span.className = 'kg-tab-state done'; }
-        else if (!currentSeen) { span.appendChild(icon('dot', 'kgi-12')); span.className = 'kg-tab-state current'; currentSeen = true; }
-        else { span.appendChild(icon('circle', 'kgi-12')); span.className = 'kg-tab-state pending'; }
-      });
-    }
-    // Gate: the later tabs need the tables Import creates (UI_PARITY #17)
-    function renderGates() {
-      var imported = ((state.meta || {}).import_state || {}).state === 'success';
-      [['train', 'Train'], ['predict', 'Predict + Submit'], ['status', 'Status']].forEach(function (pair) {
-        var slot = $('kgc-gate-' + pair[0]); clear(slot);
-        show('kgc-stub-' + pair[0], imported);
-        if (imported) { return; }
-        var go = btn('btn-secondary btn-sm', null, 'Go to Import', function () { showTab('import'); });
-        go.appendChild(icon('arrow-right', 'kgi-12'));
-        var actions = el('div', 'kg-banner-actions'); actions.appendChild(go);
-        slot.appendChild(callout('info', [strongLine('Import the kit first.', 'The ' + pair[1] + ' step uses the tables that Import creates in this project.'), actions]));
-      });
-    }
-
-    // ── Pipeline stepper rows (one list for download_kit and import) ─────
-    var STEPS = [
-      ['manifest', 'Manifest'], ['space', 'Disk space'], ['download', 'Download'], ['verify', 'Verify'],
-      ['extract', 'Extract'], ['register', 'Register'], ['validate', 'Validate']
-    ];
-    var STEP_NAMES = STEPS.map(function (s) { return s[0]; });
-    function renderSteps() {
-      var host = $('kgc-steps'); clear(host);
-      STEPS.forEach(function (s) {
-        var row = el('div', 'kg-job-row'); row.setAttribute('data-step', s[0]);
-        row.appendChild(el('span', 'kg-job-label', s[1]));
-        row.appendChild(el('span', 'kg-job-detail'));
-        row.appendChild(el('span', 'kg-job-elapsed'));
-        var badge = el('span', 'kg-badge pending', 'pending'); badge.setAttribute('data-badge', '1');
-        row.appendChild(badge);
-        host.appendChild(row);
-      });
-    }
-    function step(name, st, detail) {
-      var row = EL.querySelector('.kg-job-row[data-step="' + name + '"]'); if (!row) { return; }
-      if (st && state.stepState[name] !== st) {
-        var badge = row.querySelector('[data-badge]');
-        badge.className = 'kg-badge ' + st + (motionOK() ? ' kgl-badge-in' : '');
-        badge.textContent = { pending: 'pending', running: 'running', done: 'completed', failed: 'failed' }[st] || st;
-        if (st === 'running') { state.stepStart[name] = Date.now(); row.querySelector('.kg-job-elapsed').textContent = ''; }
-        if ((st === 'done' || st === 'failed') && state.stepStart[name]) { row.querySelector('.kg-job-elapsed').textContent = fmtSecs((Date.now() - state.stepStart[name]) / 1000); }
-        if (st === 'pending') { row.querySelector('.kg-job-elapsed').textContent = ''; }
-        state.stepState[name] = st;
+      function kgOnRecord(job, terminal) {
+        if (job.kind === 'download_kit') { dlOnRecord(job, terminal); }
+        else if (job.kind === 'import') { kgOnImportRecord(job, terminal); }
       }
-      if (detail != null) { row.querySelector('.kg-job-detail').textContent = detail; }
-    }
-    function resetSteps(from) {
-      var start = from ? STEP_NAMES.indexOf(from) : 0;
-      STEP_NAMES.slice(start).forEach(function (s) { step(s, 'pending', ''); });
-    }
-    function bar(percent) {
-      var b = $('kgc-bar'); b.hidden = percent == null;
-      if (percent != null) { b.firstElementChild.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
-    }
-    function stepForCheck(label) {
-      var l = label.toLowerCase();
-      if (l.indexOf('kit listed') >= 0) { return 'manifest'; }
-      if (l.indexOf('disk space') >= 0) { return 'space'; }
-      if (l.indexOf('shards downloaded') >= 0) { return 'download'; }
-      if (l.indexOf('files.json') >= 0 || l.indexOf('split counts') >= 0 || l.indexOf('kit root') >= 0 || l.indexOf('kit version') >= 0) { return 'verify'; }
-      if (l.indexOf('extracted') >= 0) { return 'extract'; }
-      if (l.indexOf('table names') >= 0 || l.indexOf('no tables') >= 0) { return 'register'; }
-      if (l.indexOf('row count') >= 0 || l.indexOf('label map') >= 0 || l.indexOf('zero-weight') >= 0) { return 'validate'; }
-      return 'verify';
-    }
-    function checkGroup(label) {
-      var l = label.toLowerCase();
-      return (l.indexOf('row count') >= 0 || l.indexOf('label map') >= 0 || l.indexOf('zero-weight') >= 0 || l.indexOf('table names') >= 0 || l.indexOf('no tables') >= 0) ? 'Tables' : 'Kit';
-    }
-    function applyChecks(checks) {
-      state.checks = checks || [];
-      var failedSteps = {};
-      state.checks.forEach(function (c) { if (!c.ok) { failedSteps[stepForCheck(c.label || '')] = true; } });
-      state.checks.forEach(function (c) {
-        var s = stepForCheck(c.label || '');
-        if (failedSteps[s]) { if (!c.ok) { step(s, 'failed', c.detail || c.label); } }
-        else if (state.stepState[s] !== 'running') { step(s, 'done', c.detail || ''); }
-      });
-      renderChecks($('kgc-live-checks'), state.checks, true);
-    }
-    function eta(bytesDone, bytesTotal) {
-      // From the download's own start: bytes per second so far, remaining bytes over it.
-      if (!state.dlStart || !bytesDone || !bytesTotal || bytesDone >= bytesTotal) { return ''; }
-      var elapsed = (Date.now() - state.dlStart) / 1000; if (elapsed < 3) { return ''; }
-      var left = (bytesTotal - bytesDone) / (bytesDone / elapsed);
-      return 'about ' + (left >= 90 ? Math.round(left / 60) + ' min' : Math.max(5, Math.round(left / 5) * 5) + ' s') + ' left';
-    }
-    function applyStageProgress(p) {
-      var phase = p.phase || '', kind = state.job ? state.job.kind : 'import';
-      if (p.percent != null) { bar(p.percent); }
-      if (phase === 'download') {
-        if (!state.dlStart) { state.dlStart = Date.now(); }
-        var shard = (p.archive ? p.archive + ' · ' : '') + (p.bytes_total ? fmtBytes(p.bytes_done) + ' of ' + fmtBytes(p.bytes_total) : '');
-        text('kgc-pipeline-sub', (p.label || 'Downloading') + (shard ? ' · ' + shard : ''));
-        text('kgc-eta', eta(p.bytes_done, p.bytes_total));
-        step('manifest', 'done'); step('space', 'done');
-        step('download', 'running', shard);
-      } else if (p.label) { text('kgc-pipeline-sub', p.label); text('kgc-eta', ''); }
-      if (phase === 'download') {
-      } else if (phase === 'extract') { step('download', 'done'); step('extract', 'running', p.label || '');
-      } else if (phase === 'verify' && kind === 'download') { step('extract', 'done'); step('verify', 'running', p.label || '');
-      } else if (phase === 'validate' || phase === 'decode' || phase === 'collision') { step('verify', 'running', p.label || '');
-      } else if (phase === 'register') { step('verify', 'done'); step('register', 'running', p.label || '');
-      } else if (phase === 'verify') { step('register', 'done'); step('validate', 'running', p.label || '');
-      } else if (phase === 'record') { step('validate', 'running', p.label || '');
-      } else if (phase === 'done') {
-        if (kind === 'download') { step('verify', 'done'); }
-        else { var n = state.checks.length, bad = state.checks.filter(function (c) { return !c.ok; }).length; step('register', 'done'); step('validate', 'done', n ? (n - bad) + '/' + n + ' checks passed' : ''); }
+      // Strip the host's appended worker traceback: the first line is the participant sentence.
+      function kgErrorText(raw) {
+        raw = String(raw || '');
+        var cut = raw.indexOf('\nworker stderr:');
+        return (cut >= 0 ? raw.slice(0, cut) : raw).split('\n')[0].replace(/^[A-Za-z]+Error: /, '');
       }
-    }
-    // Checks: verdict line as the toggle; collapsed on pass, auto-expanded on any failure
-    function renderChecks(host, checks, live) {
-      clear(host);
-      var n = (checks || []).length; if (!n) { return; }
-      var failed = checks.filter(function (c) { return !c.ok; }).length;
-      var grid = el('div', 'kg-checks-grid' + (live && motionOK() ? ' kgl-cascade' : ''));
-      ['Kit', 'Tables'].forEach(function (group) {
-        var col = el('div'); col.appendChild(el('div', 'kg-checks-head', group));
-        var i = 0;
-        checks.forEach(function (c) {
-          if (checkGroup(c.label || '') !== group) { return; }
-          var row = el('div', 'kg-check'); row.style.setProperty('--kgl-i', String(i++));
-          var mk = el('span', c.ok ? 'ok' : 'bad'); mk.appendChild(icon(c.ok ? 'check' : 'x')); row.appendChild(mk);
-          var body = el('div', 'kg-check-body'); body.appendChild(el('span', null, c.label || ''));
-          if (c.ok && c.detail) { body.appendChild(el('span', 'detail', ' · ' + c.detail)); }
-          if (!c.ok) {
-            if (c.detail) { body.appendChild(el('span', 'detail', ' · ' + c.detail)); }
-            var hint = remedyFor(c.label + ' ' + (c.detail || '')); if (hint) { body.appendChild(el('span', 'remedy', hint)); }
+
+      // ── Tabs: the tab bar is the pipeline stepper ─────────────────────
+      var TABS = ['import', 'train', 'submit', 'status'];
+      var TAB_KEY = 'kgc.activeTab';
+      var kgShownTab = null;
+
+      function showTab(name) {
+        if (TABS.indexOf(name) === -1) { name = 'import'; }
+        var crossfade = kgShownTab !== null && name !== kgShownTab && kgMotionOK() && !!document.startViewTransition;
+        kgShownTab = name;
+        if (crossfade) { document.startViewTransition(function () { kgApplyTab(name); }); }
+        else { kgApplyTab(name); }
+      }
+
+      function kgApplyTab(name) {
+        TABS.forEach(function (t) {
+          var tab = ROOT_EL.querySelector('#kg-tabs .kg-tab[data-tab="' + t + '"]');
+          if (tab) {
+            tab.classList.toggle('active', t === name);
+            tab.setAttribute('aria-selected', String(t === name));
           }
-          row.appendChild(body); col.appendChild(row);
+          var panel = el('kg-panel-' + t);
+          if (panel) { panel.classList.toggle('active', t === name); }
         });
-        if (i) { grid.appendChild(col); }
-      });
-      var verdictText = failed ? (n - failed) + '/' + n + ' checks passed, ' + failed + ' failed' : n + '/' + n + ' checks passed';
-      var acc = accordion('kgc-checks-' + (live ? 'live' : 'rev'), verdictText, grid, failed > 0);
-      var toggle = acc.querySelector('.kgl-acc-summary');
-      var mark = el('span', failed ? 'bad' : 'ok'); mark.appendChild(icon(failed ? 'x-circle' : 'check-circle', 'kgi-12'));
-      toggle.insertBefore(mark, toggle.firstChild);
-      toggle.classList.add('kg-verdict'); toggle.style.marginTop = '10px';
-      host.appendChild(acc);
-    }
-    function appendLog(line) {
-      state.logs.push(line); if (state.logs.length > 400) { state.logs.shift(); }
-      text('kgc-log', state.logs.join('\n'));
-      show('kgc-log-wrap', true);
-    }
-    setKids($('kgc-log-toggle'), [(function () { var c = el('span', 'kgl-acc-caret'); c.setAttribute('aria-hidden', 'true'); c.appendChild(icon('chevron-right', 'kgi-12')); return c; })(), el('span', null, 'Show log')]);
-    bindAccordion($('kgc-log-toggle'), $('kgc-log-panel'));
+        Array.prototype.forEach.call(
+          ROOT_EL.querySelectorAll('#kg-loop a[data-goto]'),
+          function (a) { a.classList.toggle('kg-loop-active', a.getAttribute('data-goto') === name); }
+        );
+        try { localStorage.setItem(TAB_KEY, name); } catch (e) { /* sandboxed */ }
+        // Tab-entry refetch: every tab refreshes its backing data when shown, silently — the
+        // no-more-F5 rule. The stepper refreshes on every switch.
+        renderPipeline();
+        if (name !== 'import' && kgConfigDone) { kgRenderGates(); }
+      }
 
-    // ── Technical details: everything a participant does not need, behind one disclosure ──
-    function renderTech(meta, rec) {
-      var host = $('kgc-import-tech'); clear(host);
-      var body = el('div', 'kg-tech');
-      var prov = (rec && rec.manifest_provenance) || meta.manifest_provenance || {};
-      var rows = [
-        ['Plugin home', meta.plugin_home && meta.plugin_home.path ? meta.plugin_home.path + ' (' + meta.plugin_home.resolved_by + ')' : ''],
-        ['Kit destination', meta.kit_dest || ''],
-        ['Kit directory', (rec && rec.kit_dir) || (meta.kit_state || {}).kit_dir || (state.session || {}).kit_dir || ''],
-        ['Manifest', (state.manifestSource || prov.manifest_source || '') + (prov.manifest_sha256 ? ' · ' + prov.manifest_sha256 : '') + (prov.manifest_fetched_at ? ' · fetched ' + prov.manifest_fetched_at : '')],
-        ['Manifest URL', prov.manifest_document_url || ''],
-        ['Import job', (rec && rec.job_id) || ''],
-        ['Timings', rec && rec.timings ? Object.keys(rec.timings).map(function (k) { return k.replace(/_s$/, '') + ' ' + fmtSecs(rec.timings[k]); }).join(' · ') : ''],
-        ['Lineage root', rec && rec.lineage_root ? rec.lineage_root.train_url : ''],
-        ['Locked val', rec && rec.val_locked ? rec.val_locked.url : '']
-      ];
-      rows.forEach(function (r) { if (r[1]) { body.appendChild(pathRow(r[0], r[1])); } });
-      if (body.firstChild) { host.appendChild(accordion('kgc-tech', 'Technical details', body, false)); }
-    }
-
-    // ── Job channel ──────────────────────────────────────────────────────
-    function detach() { state.unsub.forEach(function (u) { try { u(); } catch (e) { /* closed */ } }); state.unsub = []; }
-    function listen(jobId) {
-      detach();
-      var forJob = function (fn) { return function (payload) { if (!payload || payload.job_id !== jobId) { return; } fn(payload); }; };
-      state.unsub.push(PluginJobs.on(NS, 'checks', forJob(function (p) { applyChecks(p.checks || []); })));
-      state.unsub.push(PluginJobs.on(NS, 'stage_progress', forJob(function (p) { applyStageProgress(p); })));
-      state.unsub.push(PluginJobs.on(NS, 'fact', forJob(function (p) { if (p.key === 'actual_table_name') { appendLog('table name: ' + p.value); } })));
-    }
-    function inferKind(job) {
-      var l = ((job.progress && job.progress.label) || job.subtitle || '').toLowerCase();
-      if (l.indexOf('shard') >= 0 || l.indexOf('extract') >= 0 || l.indexOf('verifying files') >= 0) { return 'download'; }
-      if (l.indexOf('register') >= 0 || l.indexOf('decod') >= 0 || l.indexOf('kit against') >= 0 || l.indexOf('tables') >= 0 || l.indexOf('import') >= 0) { return 'import'; }
-      return state.job && state.job.kind ? state.job.kind : 'import';
-    }
-    // Status line + the one primary action; the Cancel that belongs to a running job.
-    function setStatus(lines) {
-      var box = $('kgc-status'); clear(box);
-      lines.forEach(function (l) { if (l) { box.appendChild(typeof l === 'string' ? el('div', null, l) : l); } });
-    }
-    function setBusy(kind, busy) {
-      var dl = $('kgc-dl-start'), imp = $('kgc-import-start');
-      if (kind === 'download') {
-        show('kgc-dl-cancel', busy); dl.disabled = busy; dl.classList.remove('guide-next');
-        if (busy) { setBtn(dl, null, 'Downloading…', true); dl.hidden = false; imp.hidden = true; }
-      } else {
-        show('kgc-import-cancel', busy); imp.disabled = busy;
-        if (busy) { setBtn(imp, null, 'Importing…', true); imp.hidden = false; dl.hidden = true; }
-      }
-    }
-    // Steps disclosure: collapsed while running and after success; open (and scrolled to the
-    // failing row) on failure (UI_PARITY #3b).
-    function stepsOpen(open) {
-      var toggle = $('kgc-steps-toggle'), panel = $('kgc-steps-panel');
-      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
-      if (open !== isOpen) { toggle.click(); }
-    }
-    function onUpdate(job) {
-      if (!state.job) { return; }
-      if (!state.job.kind) { state.job.kind = inferKind(job); }
-      state.job.status = job.status;
-      if (job.progress && job.progress.percent != null && job.progress.percent >= 0) { bar(job.progress.percent); }
-      var lbl = (job.progress && job.progress.label) || '';
-      if (lbl && lbl.indexOf('PASS ') !== 0 && lbl.indexOf('FAIL ') !== 0 && !(state.job.kind === 'download' && state.dlStart && $('kgc-pipeline-sub').textContent.indexOf(' of ') > 0)) { text('kgc-pipeline-sub', lbl); }
-      if (job.error) { state.job.error = job.error; }
-    }
-    function onDone(job) {
-      var kind = state.job ? state.job.kind : 'import';
-      detach(); bar(null); text('kgc-eta', '');
-      if (job.status === 'cancelled') {
-        text('kgc-pipeline-sub', kind === 'download' ? 'Download cancelled. Completed shards are kept; the next download resumes.' : 'Import cancelled. Nothing partial was left behind.');
-        resetSteps(kind === 'download' ? 'download' : 'register');
-      } else {
-        // One summary line; the rows stay under Show steps.
-        var n = state.checks.length, bad = state.checks.filter(function (c) { return !c.ok; }).length;
-        text('kgc-pipeline-sub', kind === 'download' ? 'Download finished.' : 'Import finished' + (n ? ' · ' + (n - bad) + '/' + n + ' checks passed' : '') + '.');
-      }
-      announce(kind === 'download' ? 'Download finished' : 'Import finished');
-      state.job = null; state.dlStart = null; setBusy(kind, false);
-      refreshConfig(true);
-    }
-    function onError(job) {
-      var kind = state.job ? state.job.kind : 'import';
-      var raw = (job && (job.error || job.subtitle)) || 'The job failed.';
-      var cut = raw.indexOf('\nworker stderr:');
-      var msg = (cut >= 0 ? raw.slice(0, cut) : raw).split('\n')[0].replace(/^[A-Za-z]+Error: /, '');
-      if (cut >= 0) { appendLog(raw.slice(cut + 1)); }
-      state.lastError = msg;
-      detach(); bar(null); text('kgc-eta', '');
-      var failing = null;
-      STEP_NAMES.forEach(function (s) { if (state.stepState[s] === 'running') { step(s, 'failed'); failing = failing || s; } });
-      STEP_NAMES.forEach(function (s) { if (state.stepState[s] === 'failed') { failing = failing || s; } });
-      text('kgc-pipeline-sub', kind === 'download' ? 'Download failed.' : 'Import failed.');
-      announce(kind === 'download' ? 'Download failed' : 'Import failed');
-      var hint = remedyFor(msg);
-      var actions = el('div', 'kg-banner-actions'); actions.appendChild(diagBtn());
-      setKids($('kgc-kit-callout'), [callout('err', [strongLine(kind === 'download' ? 'Download failed.' : 'Import failed.', msg), hint ? el('p', 'remedy', hint) : null, actions])]);
-      // Failure: the steps open by themselves and the failing row comes into view.
-      stepsOpen(true);
-      var row = failing ? EL.querySelector('.kg-job-row[data-step="' + failing + '"]') : null;
-      if (row) { setTimeout(function () { row.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'nearest' }); }, motionOK() ? 350 : 0); }
-      state.job = null; state.dlStart = null; setBusy(kind, false);
-      if (kind === 'download') { setBtn($('kgc-dl-start'), 'refresh-cw', 'Resume download'); $('kgc-dl-start').hidden = false; }
-      else { setBtn($('kgc-import-start'), 'refresh-cw', 'Re-run import'); $('kgc-import-start').hidden = false; $('kgc-import-start').disabled = false; }
-    }
-    function startJob(kind, params) {
-      if (state.job) { return Promise.resolve(null); }  // one job at a time; a double click is a no-op
-      state.logs = []; state.checks = []; state.lastError = ''; state.dlStart = null; text('kgc-log', ''); show('kgc-log-wrap', false);
-      clear($('kgc-kit-callout')); clear($('kgc-live-checks')); show('kgc-import-live', kind === 'import');
-      show('kgc-pipeline', true); state.pipelineShown = true; stepsOpen(false); text('kgc-eta', '');
-      resetSteps(kind === 'download' ? 'manifest' : 'verify');
-      if (kind === 'import') { ['manifest', 'space', 'download', 'extract'].forEach(function (s) { step(s, 'done'); }); }
-      state.job = { id: null, kind: kind, status: 'starting' };
-      text('kgc-pipeline-sub', kind === 'download' ? 'Starting the download.' : 'Starting the import.');
-      setStatus([kind === 'download' ? 'Downloading the starter kit.' : 'Importing the kit as 3LC tables.']);
-      setBusy(kind, true);
-      var body = Object.assign({ kind: kind === 'download' ? 'download_kit' : 'import' }, params || {});
-      return PluginJobs.run(PLUGIN_ID, body, { onUpdate: onUpdate, onDone: onDone, onError: onError }).then(function (resp) {
-        if (isProvisioning(resp)) { state.job = null; setBusy(kind, false); state.pendingAction = kind; enterProvisioning(resp.provisioning); return resp; }
-        if (!resp || !resp.job_id) { state.job = null; setBusy(kind, false); return resp; }
-        state.job.id = resp.job_id; listen(resp.job_id);
-        return resp;
-      }).catch(function (err) {
-        state.job = null; setBusy(kind, false);
-        if (!conn.fail(err)) { onError({ error: String(err) }); }
-      });
-    }
-    function reconnect(job) {
-      state.job = { id: job.id, kind: inferKind(job), status: job.status }; state.logs = [];
-      listen(job.id);
-      state.unsub.push(PluginJobs.track(NS, job.id, { onUpdate: onUpdate, onDone: onDone, onError: onError }));
-      onUpdate(job);
-      show('kgc-pipeline', true); state.pipelineShown = true; stepsOpen(false);
-      setStatus([(state.job.kind === 'download' ? 'Download' : 'Import') + ' in progress. It keeps running if you leave this page.']);
-      text('kgc-pipeline-sub', (job.progress && job.progress.label) || 'Running');
-      setBusy(state.job.kind, true);
-      if (state.job.kind === 'download') { step('download', 'running', (job.progress && job.progress.label) || ''); }
-      else { show('kgc-import-live', true); step('register', 'running', (job.progress && job.progress.label) || ''); }
-    }
-
-    // ── First-run provisioning: expected, never an error ─────────────────
-    function enterProvisioning(prov) {
-      var box = $('kgc-provisioning');
-      var sp = el('span', 'spinner'); sp.setAttribute('aria-hidden', 'true');
-      setKids(box, [callout('info', [strongLine('Setting up the plugin environment.', 'The first run takes a few minutes.'), el('p', 'kg-quiet', prov && prov.state ? 'Environment state: ' + prov.state + (prov.error ? '. ' + prov.error : '') : '')], 'info')]);
-      box.firstChild.insertBefore(sp, box.firstChild.firstChild);
-      box.hidden = false;
-      text('kgc-pipeline-sub', 'Setting up the plugin environment. The first run takes a few minutes.');
-      $('kgc-dl-start').disabled = true; $('kgc-import-start').disabled = true;
-      if (state.provisionTimer) { return; }
-      state.provisionTimer = setTimeout(function pollProvision() {
-        state.provisionTimer = null;
-        API.authFetch(ROOT + '/config').then(function (r) { return r.json(); }).then(function (body) {
-          if (isProvisioning(body)) { state.provisionTimer = setTimeout(pollProvision, PROVISION_POLL_MS); return; }
-          show('kgc-provisioning', false);
-          applyConfig(body);
-          var action = state.pendingAction; state.pendingAction = null;
-          if (action === 'download') { startDownload(); } else if (action === 'import') { startImport(); }
-        }).catch(function () { state.provisionTimer = setTimeout(pollProvision, PROVISION_POLL_MS); });
-      }, PROVISION_POLL_MS);
-    }
-
-    // ── Starter kit section ──────────────────────────────────────────────
-    // The kit decides the card's status line and which ONE action shows (UI_PARITY #3b). The
-    // import form, revisit banner and step rows are the states below it, never all at once.
-    function renderKit(meta) {
-      var ks = meta.kit_state || {};
-      var st = meta.import_state || {};
-      var dl = $('kgc-dl-start'), imp = $('kgc-import-start');
-      if (state.job) { return; }  // a running job owns the status line
-      clear($('kgc-kit-callout'));
-      dl.classList.remove('guide-next'); dl.disabled = false;
-      var kitOk = ks.state === 'success' || ks.state === 'superseded';
-      var imported = st.state === 'success';
-      if (imported) {
-        // The import banner (renderImport) is the status; the kit is a solved problem here.
-        dl.hidden = true; imp.hidden = true;
-        setStatus([]);
-        show('kgc-pipeline', false);
-        return;
-      }
-      if (ks.state === 'success') {
-        setStatus(['Kit ' + ks.kit_version + ' downloaded and verified · ' + fmtCount(ks.file_count) + ' files.', el('span', 'kg-quiet', 'Next: import it as 3LC tables.')]);
-        dl.hidden = true; imp.hidden = false; setBtn(imp, 'upload', 'Import'); imp.className = 'btn btn-primary btn-sm kgi-btn';
-      } else if (ks.state === 'superseded') {
-        setStatus(['Kit ' + ks.kit_version + ' on this machine; the manifest now ships ' + ks.current_version + '.', el('span', 'kg-quiet', 'Tables you imported keep working. A fresh download lands beside the old kit.')]);
-        dl.hidden = false; setBtn(dl, 'download', 'Download ' + ks.current_version); dl.className = 'btn btn-primary btn-sm kgi-btn'; imp.hidden = true;
-      } else if (ks.state === 'stale') {
-        setStatus(['The recorded kit is no longer on disk.', el('span', 'kg-quiet', ks.reason || 'The kit folder was moved or deleted. Download it again.')]);
-        dl.hidden = false; setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn'; imp.hidden = true;
-      } else {
-        setStatus(['No kit on this machine yet.']);
-        dl.hidden = false; setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn guide-next'; imp.hidden = true;
-      }
-      // Step rows: only after a job ran in this page (a revisit gets the one line above).
-      if (!state.pipelineShown) { show('kgc-pipeline', false); }
-      $('kgc-import-form').hidden = !kitOk;
-    }
-    function startDownload() { clear($('kgc-kit-callout')); startJob('download', {}); }
-    $('kgc-dl-start').onclick = startDownload;
-    $('kgc-dl-cancel').onclick = function () { if (state.job && state.job.id) { PluginJobs.cancel(state.job.id); } };
-
-    // ── Import section ───────────────────────────────────────────────────
-    function formParams() {
-      return { project_name: $('kgc-f-project').value.trim(), table_name: $('kgc-f-table').value.trim(), mode: $('kgc-reimport').checked ? 'reimport' : 'import' };
-    }
-    function saveSession() {
-      if (!state.session) { return; }
-      var s = Object.assign({}, state.session, { project_name: $('kgc-f-project').value.trim(), table_name: $('kgc-f-table').value.trim() });
-      if (s.project_name === state.session.project_name && s.table_name === state.session.table_name) { return; }
-      state.session = s;
-      API.authFetch(ROOT + '/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: s }) }).catch(function () { /* the next load re-reads */ });
-    }
-    function renderGate(g) {
-      state.gate = g;
-      var box = $('kgc-import-gate'); clear(box);
-      var wrap = $('kgc-reimport-wrap');
-      var kitOk = g.kit && (g.kit.state === 'success' || g.kit.state === 'superseded');
-      if (!state.job) { setBtn($('kgc-import-start'), 'upload', 'Import'); }
-      if (g.error && !g.collision) {
-        if (kitOk) { box.appendChild(callout('warn', [g.error])); }
-        wrap.hidden = true; $('kgc-reimport').checked = false; $('kgc-import-start').disabled = true;
-        return;
-      }
-      if (g.collision) {
-        // The only time the re-import toggle exists; the Advanced disclosure opens to show it.
-        advOpen(true);
-        var list = el('div', 'kg-table-rows');
-        Object.keys(g.existing || {}).forEach(function (split) {
-          var t = g.existing[split]; if (!t || !t.exists) { return; }
-          var row = el('div', 'kg-table-row');
-          row.appendChild(el('span', 'split', split));
-          row.appendChild(el('span', 'rows', t.rows != null ? fmtCount(t.rows) + ' rows' : ''));
-          row.appendChild(pathCell(t.url, 56));
-          var acts = el('span', 'kg-row-actions'); var href = tableLink(t.url);
-          if (href) { acts.appendChild(link(href, 'Open in Dashboard', true)); }
-          acts.appendChild(copyBtn(t.url)); row.appendChild(acts);
-          list.appendChild(row);
-        });
-        box.appendChild(callout('warn', [strongLine('Tables already exist under this project and table name.'), list,
-          el('p', 'kg-quiet', 'They are never reused or overwritten. Re-import writes fresh tables named ' + g.fresh_table_name + ' beside them, or pick another table name.')]));
-        wrap.hidden = false;
-        text('kgc-reimport-label', 'Re-import as fresh tables (' + g.fresh_table_name + ')');
-        $('kgc-import-start').disabled = !($('kgc-reimport').checked && kitOk);
-        return;
-      }
-      wrap.hidden = true; $('kgc-reimport').checked = false;
-      if (g.ok && g.params) {
-        var ok = el('div', 'kg-preflight-ok'); ok.appendChild(icon('check-circle'));
-        var t2 = el('span', null, 'Ready. Tables will be created in project ' + g.params.project_name + ' as ' + g.params.table_name + '.');
-        var where = pathCell(g.project_root || '', 60); where.style.display = 'block'; t2.appendChild(where);
-        ok.appendChild(t2); box.appendChild(enter(ok));
-      }
-      $('kgc-import-start').disabled = !(g.ok && kitOk);
-    }
-    function gate() {
-      var p = formParams();
-      var q = '?project_name=' + encodeURIComponent(p.project_name) + '&table_name=' + encodeURIComponent(p.table_name);
-      API.authFetch(ROOT + '/import/preflight' + q).then(function (r) { return r.json(); }).then(function (g) {
-        if (isProvisioning(g)) { enterProvisioning(g.provisioning); return; }
-        renderGate(g);
-      }).catch(function (err) {
-        if (conn.fail(err, gate)) { return; }
-        setKids($('kgc-import-gate'), [callout('warn', ['Could not check the import settings: ' + err])]);
-        $('kgc-import-start').disabled = true;
-      });
-    }
-    function scheduleGate() { if (state.gateTimer) { clearTimeout(state.gateTimer); } state.gateTimer = setTimeout(gate, GATE_DEBOUNCE_MS); }
-    ['kgc-f-project', 'kgc-f-table'].forEach(function (id) {
-      var input = $(id);
-      input.oninput = scheduleGate;
-      input.onblur = function () { saveSession(); gate(); };
-      input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); saveSession(); gate(); } };
-    });
-    $('kgc-reimport').onchange = function () { if (state.gate) { renderGate(state.gate); } };
-    function startImport() {
-      var p = formParams();
-      if (p.mode !== 'reimport' && state.gate && state.gate.collision) { return; }
-      saveSession(); clear($('kgc-import-gate'));
-      startJob('import', p);
-    }
-    $('kgc-import-start').onclick = startImport;
-    $('kgc-import-cancel').onclick = function () { if (state.job && state.job.id) { PluginJobs.cancel(state.job.id); } };
-    // Start over is a VIEW change: back to the form, re-run the read-only gate. Nothing server-side.
-    function startOver() { show('kgc-import-revisit', false); show('kgc-import-form', true); gate(); }
-
-    function renderImport(meta, session) {
-      var st = meta.import_state || { state: 'empty' };
-      var rec = st.record || {};
-      $('kgc-f-project').value = session.project_name || '';
-      $('kgc-f-table').value = session.table_name || '';
-      $('kgc-f-kit').value = session.kit_dir || '';
-      text('kgc-help-project', session.project_name ? session.project_name + ' is the competition’s project. Tables land under it in the Hub.' : 'The 3LC project the tables land under.');
-      text('kgc-help-table', 'initial is the convention for a first import. A re-import gets -2, -3 and so on; existing tables are never touched.');
-      setAccordionLabel('kgc-adv', 'Advanced · project ' + (session.project_name || '') + ' · table ' + (session.table_name || ''));
-      var running = state.job && state.job.kind === 'import';
-      var kitOk = (meta.kit_state || {}).state === 'success' || (meta.kit_state || {}).state === 'superseded';
-      renderTech(meta, st.state === 'success' ? rec : null);
-      if (st.state === 'success' && !running) {
-        show('kgc-import-form', false); show('kgc-import-live', false); show('kgc-import-revisit', true);
-        var tables = rec.tables || {};
-        var parts = Object.keys(tables).map(function (s) { return s + ' ' + fmtCount(tables[s].rows) + ' rows'; });
-        var banner = el('div', 'kg-callout ok'); banner.appendChild(icon('check-circle'));
-        var body = el('div');
-        body.appendChild(strongLine('Imported.', 'Project ' + rec.project_name + ', table ' + rec.table_name + ': ' + parts.join(', ') + (rec.timings && rec.timings.total_s != null ? ' in ' + fmtSecs(rec.timings.total_s) : '') + '.'));
-        var list = el('div', 'kg-table-rows');
-        Object.keys(tables).forEach(function (s) {
-          var row = el('div', 'kg-table-row');
-          row.appendChild(el('span', 'split', s));
-          row.appendChild(el('span', 'rows', fmtCount(tables[s].rows) + ' rows'));
-          row.appendChild(el('span', 'kg-badge kg-badge-created', 'created'));
-          row.appendChild(pathCell(tables[s].url, 48));
-          var acts = el('span', 'kg-row-actions'); var href = tableLink(tables[s].url);
-          if (href) { acts.appendChild(link(href, 'Open in Dashboard', true)); }
-          acts.appendChild(copyBtn(tables[s].url)); row.appendChild(acts);
-          list.appendChild(row);
-        });
-        body.appendChild(list);
-        var actions = el('div', 'kg-banner-actions');
-        var next = btn('btn-primary btn-sm', null, 'Next: train your first model', function () { showTab('train'); });
-        next.appendChild(icon('arrow-right', 'kgi-12')); actions.appendChild(next);
-        var hub = hubProjectUrl(rec.project_name); if (hub) { var hl = link(hub, 'Open project in the Hub', true); hl.className = 'btn btn-secondary btn-sm kgi-btn'; actions.appendChild(hl); }
-        var over = btn('btn-ghost btn-sm', null, 'Start over'); over.id = 'kgc-import-startover'; actions.appendChild(over);
-        body.appendChild(actions); banner.appendChild(body);
-        var rev = $('kgc-import-revisit'); setKids(rev, [banner]);
-        renderChecks(rev, rec.checks || [], false);
-        over.onclick = startOver;
-        if (!state.job) { STEP_NAMES.forEach(function (s) { step(s, 'done'); }); }
-      } else {
-        show('kgc-import-revisit', false);
-        // The form exists only once the kit is on disk (renderKit owns the status line and the CTA).
-        show('kgc-import-form', kitOk || running);
-        if (st.state === 'stale' && !running) {
-          setStatus(['The recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing).', el('span', 'kg-quiet', kitOk ? 'Import again.' : 'Download the kit, then import again.')]);
-          resetSteps('register');
+      Array.prototype.forEach.call(
+        ROOT_EL.querySelectorAll('#kg-tabs .kg-tab'),
+        function (tab) {
+          tab.addEventListener('click', function () { showTab(tab.getAttribute('data-tab')); });
+          tab.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              showTab(tab.getAttribute('data-tab'));
+            }
+          });
         }
-        if (!running && kitOk) { gate(); }
-      }
-    }
+      );
 
-    // ── Config load and tab resolution ───────────────────────────────────
-    function applyConfig(cfg) {
-      var meta = cfg._meta || {};
-      state.meta = meta; state.session = cfg.session || {};
-      renderMeta(meta); renderPipelineGlyphs(); renderGates(); renderKit(meta); renderImport(meta, state.session);
-      if ((meta.manifest_refresh || {}).state === 'running') { pollManifest(POLL_MAX); }
-    }
-    function pollManifest(remaining) {
-      if (remaining <= 0) { return; }
-      setTimeout(function () {
-        API.authFetch(ROOT + '/manifest').then(function (r) { return r.json(); }).then(function (p) {
-          var st = (p.refresh || {}).state;
-          if (st === 'running') { pollManifest(remaining - 1); return; }
-          renderManifest(p.manifest || {}, (p.refresh && p.refresh.source) || (p.manifest || {}).source, p.provenance, p.warnings, p.candidates);
-        }).catch(function () { /* the first render stands */ });
-      }, POLL_MS);
-    }
-    function select(id) {
-      API.authFetch(ROOT + '/manifest/select', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) })
-        .then(function () { load(); })
-        .catch(function (err) { if (!conn.fail(err, load)) { setKids($('kgc-warnings'), [callout('err', ['Could not select the competition: ' + err])]); $('kgc-warnings').hidden = false; } });
-    }
-    function adoptRunningJob() {
-      if (state.job || !window.PluginJobs) { return Promise.resolve(); }
-      return PluginJobs.list(PLUGIN_ID).then(function (jobs) {
-        var live = (jobs || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
-        if (live.length) { reconnect(live[0]); }
-      }).catch(function () { /* no host job list: the record decides */ });
-    }
-    // Re-read /config (tab entry, job end, reconnect). Never starts work.
-    function refreshConfig(afterJob) {
-      API.authFetch(ROOT + '/config').then(function (r) { return r.json(); }).then(function (cfg) {
-        if (isProvisioning(cfg)) { enterProvisioning(cfg.provisioning); return; }
-        applyConfig(cfg);
-      }).catch(function (err) { conn.fail(err, function () { refreshConfig(afterJob); }); });
-    }
-    function load() {
-      API.authFetch(ROOT + '/config')
+      var savedTab = null;
+      try { savedTab = localStorage.getItem(TAB_KEY); } catch (e) { /* sandboxed */ }
+
+      Array.prototype.forEach.call(
+        ROOT_EL.querySelectorAll('#kg-loop a[data-goto]'),
+        function (a) {
+          a.setAttribute('tabindex', '0');
+          a.setAttribute('role', 'button');
+          a.addEventListener('click', function () { showTab(a.getAttribute('data-goto')); });
+          a.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              showTab(a.getAttribute('data-goto'));
+            }
+          });
+        }
+      );
+      if (dashboardUrl) {
+        el('kg-loop-inspect').href = kgWithObjectService(dashboardUrl);
+        el('kg-loop-fixlabels').href = kgWithObjectService(dashboardUrl);
+      }
+
+      function dashTableLink(tableUrl) {
+        return dashboardUrl
+          ? kgWithObjectService(dashboardUrl + '?table=' + encodeURIComponent(tableUrl)) : '';
+      }
+
+      function fmtDur(seconds) {
+        var s = Math.max(0, Math.round(seconds));
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        if (h) { return h + 'h ' + m + 'm'; }
+        if (m) { return m + 'm ' + (s % 60) + 's'; }
+        return s + 's';
+      }
+
+      function esc(s) {
+        if (s === null || s === undefined) { return ''; }
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function fmtCount(n) {
+        return (n === null || n === undefined) ? '?' : Number(n).toLocaleString('en-US');
+      }
+
+      function kgFmtAgo(ts) {
+        if (!ts) { return ''; }
+        var mins = Math.round((Date.now() / 1000 - ts) / 60);
+        if (mins < 1) { return 'just now'; }
+        if (mins === 1) { return '1 minute ago'; }
+        if (mins < 60) { return mins + ' minutes ago'; }
+        var hours = Math.round(mins / 60);
+        if (hours === 1) { return '1 hour ago'; }
+        if (hours < 48) { return hours + ' hours ago'; }
+        return Math.round(hours / 24) + ' days ago';
+      }
+
+      // ── Icon system (ExDark's set) ────────────────────────────────────
+      var KG_ICONS = {
+        'lock': '<rect x="3.25" y="7.25" width="9.5" height="6.25" rx="1.5"/><path d="M5.5 7.25V5a2.5 2.5 0 0 1 5 0v2.25"/>',
+        'check-square': '<rect x="2.75" y="2.75" width="10.5" height="10.5" rx="2"/><path d="M5.5 8.25l1.75 1.75L10.75 6"/>',
+        'check': '<path d="M3 8.5l3.5 3.5L13 4.5"/>',
+        'x': '<path d="M4 4l8 8M12 4l-8 8"/>',
+        'check-circle': '<circle cx="8" cy="8" r="6.25"/><path d="M5.4 8.2l1.8 1.8 3.4-4"/>',
+        'x-circle': '<circle cx="8" cy="8" r="6.25"/><path d="M6 6l4 4M10 6l-4 4"/>',
+        'alert-triangle': '<path d="M8 2.6L14.4 13.4H1.6L8 2.6z"/><path d="M8 6.8v2.8"/><path d="M8 12h.01"/>',
+        'info': '<circle cx="8" cy="8" r="6.25"/><path d="M8 7.4V11"/><path d="M8 5h.01"/>',
+        'copy': '<rect x="6" y="6" width="7.5" height="7.5" rx="1.5"/><path d="M10 3.5H4A1.5 1.5 0 0 0 2.5 5v6"/>',
+        'arrow-right': '<path d="M2.5 8h11"/><path d="M9.5 4l4 4-4 4"/>',
+        'upload': '<path d="M8 10.5v-8"/><path d="M4.5 6L8 2.5 11.5 6"/><path d="M2.5 13.5h11"/>',
+        'download': '<path d="M8 2.5v8"/><path d="M4.5 7L8 10.5 11.5 7"/><path d="M2.5 13.5h11"/>',
+        'git-branch': '<circle cx="4.5" cy="3.75" r="1.75"/><circle cx="4.5" cy="12.25" r="1.75"/><circle cx="11.5" cy="3.75" r="1.75"/><path d="M4.5 5.5v5"/><path d="M11.5 5.5c0 3.25-7 2-7 5"/>',
+        'circle': '<circle cx="8" cy="8" r="6.25"/>',
+        'dot': '<circle cx="8" cy="8" r="4" fill="currentColor" stroke="none"/>',
+        'refresh-cw': '<path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.97"/><path d="M13.5 2.5V6H10"/>',
+        'chevron-right': '<path d="M6 3.5L10.5 8 6 12.5"/>',
+        'external-link': '<path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/>'
+      };
+
+      function kgIcon(name, cls) {
+        return '<svg class="kgi' + (cls ? ' ' + cls : '') + '" viewBox="0 0 16 16" aria-hidden="true" ' +
+               'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" ' +
+               'stroke-linejoin="round">' + (KG_ICONS[name] || '') + '</svg>';
+      }
+
+      // ── Class-tag palette ─────────────────────────────────────────────
+      var KG_CHART_FALLBACKS = ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949',
+                                '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab', '#5b8fd9', '#c9a227'];
+      function kgClassTint(i) {
+        var v = '';
+        try {
+          v = getComputedStyle(document.documentElement).getPropertyValue('--chart-' + ((i % 12) + 1)).trim();
+        } catch (e) { /* fall through to the stock fallback */ }
+        var hex = /^#[0-9a-fA-F]{6}$/.test(v) ? v : KG_CHART_FALLBACKS[i % 12];
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return 'background:rgba(' + r + ',' + g + ',' + b + ',.10);' +
+               'border-color:rgba(' + r + ',' + g + ',' + b + ',.35);';
+      }
+
+      // Primary CTA labels (icon + text), used everywhere the label resets.
+      var KG_BTN_IMPORT = kgIcon('upload', 'kgi-16') + '<span>Import &amp; Validate</span>';
+      var KG_BTN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run Import &amp; Validate</span>';
+      el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
+
+      // ── Copy diagnostics ──────────────────────────────────────────────
+      var kgPluginVersion = '';
+      var kgLastPreflightRaw = null;
+      var kgLastChecks = null;
+      var kgLastJobId = '';
+
+      function kgBuildDiagnosticsCore(sections) {
+        var out = ['```3lc-kaggle-diagnostics'];
+        out.push('plugin: 3lc-compute-plugin-kaggle-classification' + (kgPluginVersion ? ' v' + kgPluginVersion : ''));
+        out.push('os: ' + (navigator.userAgent || 'unknown'));
+        out.push('time: ' + new Date().toISOString());
+        var m = kgManifestFacts();
+        if (m.sha256) { out.push('manifest: ' + m.source + ' ' + m.sha256 + ' ' + m.url); }
+        (sections || []).forEach(function (s) {
+          if (s && s.length) { out.push.apply(out, s); }
+        });
+        out.push('```');
+        return out.join('\n');
+      }
+
+      function kgChecksSection(title, checks) {
+        if (!checks || !checks.length) { return null; }
+        return ['', '[' + title + ']'].concat(checks.map(function (c) {
+          return (c.ok ? 'PASS ' : 'FAIL ') + c.label + (c.detail ? ' — ' + c.detail : '');
+        }));
+      }
+
+      function kgLogTailSection(logEl) {
+        var log = logEl.textContent;
+        if (!log) { return null; }
+        return ['', '[log tail]', log.split('\n').slice(-40).join('\n')];
+      }
+
+      function kgBuildDiagnostics() {
+        var head = [];
+        var kit = (kgSession && kgSession.kit_dir) || el('kg-kit').value.trim();
+        if (kit) { head.push('kit: ' + kit); }
+        if (kgLastJobId) { head.push('job: ' + kgLastJobId); }
+        return kgBuildDiagnosticsCore([
+          head,
+          kgLastPreflightRaw ? ['', '[preflight]', JSON.stringify(kgLastPreflightRaw, null, 1)] : null,
+          kgChecksSection('checks', kgLastChecks),
+          kgLogTailSection(el('kg-log'))
+        ]);
+      }
+
+      function kgDiagBtn() {
+        return '<button type="button" class="btn btn-secondary btn-sm kgi-btn kg-diag-btn">' +
+               kgIcon('copy') + '<span>Copy diagnostics</span></button>';
+      }
+
+      function kgBindDiag(container, build) {
+        build = build || kgBuildDiagnostics;
+        container.querySelectorAll('.kg-diag-btn').forEach(function (b) {
+          var orig = b.innerHTML;
+          b.addEventListener('click', function () {
+            var text = build();
+            var p = (navigator.clipboard && navigator.clipboard.writeText)
+              ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard API'));
+            p.then(function () {
+              kgSwapHtml(b, kgIcon('check') + '<span>Copied</span>');
+              setTimeout(function () { kgSwapHtml(b, orig); }, 1200);
+            }).catch(function () { window.prompt('Copy diagnostics:', text); });
+          });
+        });
+      }
+
+      // ── Connection guard ──────────────────────────────────────────────
+      var kgConn = (function () {
+        var down = false, attempt = 0, timer = null, onUp = [];
+        var DELAYS = [2000, 5000, 10000];
+        var SLOTS = ['kg-conn-banner', 'tr-conn-banner', 'ps-conn-banner', 'st-conn-banner'];
+
+        function show(html) {
+          SLOTS.forEach(function (id) {
+            var slot = el(id);
+            if (slot) { slot.innerHTML = html; }
+          });
+        }
+
+        function ping() {
+          API.authFetch(PLUGIN_ROOT + '/import/state')
+            .then(function () { up(); })
+            .catch(function () { schedule(); });
+        }
+
+        function schedule() {
+          var d = attempt < DELAYS.length ? DELAYS[attempt] : 15000;
+          attempt++;
+          timer = setTimeout(ping, d);
+        }
+
+        function up() {
+          down = false; attempt = 0;
+          clearTimeout(timer);
+          show('<div class="kg-callout info">' + kgIcon('check') + '<span>Reconnected.</span></div>');
+          SLOTS.forEach(function (id) {
+            var slot = el(id);
+            var banner = slot && slot.firstChild;
+            if (!banner) { return; }
+            setTimeout(function () {
+              if (banner.parentNode !== slot) { return; }
+              if (!kgMotionOK()) { slot.removeChild(banner); return; }
+              banner.addEventListener('transitionend', function () {
+                if (banner.parentNode) { banner.parentNode.removeChild(banner); }
+              });
+              banner.classList.add('kg-conn-fade');
+            }, 2000);
+          });
+          var fns = onUp.splice(0);
+          fns.forEach(function (f) { try { f(); } catch (e) { /* resume is best-effort */ } });
+        }
+
+        return {
+          fail: function (err, resume) {
+            if (!(err instanceof TypeError)) { return false; }
+            if (resume) { onUp.push(resume); }
+            if (!down) {
+              down = true; attempt = 0;
+              show('<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+                   '<span>Compute service unreachable, retrying…</span></div>');
+              schedule();
+            }
+            return true;
+          }
+        };
+      })();
+
+      // ── Document-title progress nudge ─────────────────────────────────
+      var KG_TITLE_RE = /^⟳ \d+% — /;
+      function kgSetTitleProgress(pct) {
+        var base = document.title.replace(KG_TITLE_RE, '');
+        document.title = '⟳ ' + Math.max(0, Math.min(100, Math.round(pct))) + '% — ' + base;
+      }
+      function kgClearTitleProgress() {
+        document.title = document.title.replace(KG_TITLE_RE, '');
+      }
+
+      // ── Motion helpers ────────────────────────────────────────────────
+      function kgMotionOK() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches);
+      }
+      function kgScrollTo(elm) {
+        if (!elm) { return; }
+        var r = elm.getBoundingClientRect();
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        if (r.top >= 0 && r.bottom <= vh) { return; }
+        elm.scrollIntoView({ behavior: kgMotionOK() ? 'smooth' : 'auto', block: 'nearest' });
+      }
+      // Path ergonomics: tolerate Windows Copy-as-path quotes and trailing separators.
+      function kgCleanPath(v) {
+        var s = (v || '').trim().replace(/^["']+|["']+$/g, '').trim();
+        return s.replace(/[\\\/]+$/, '');
+      }
+      function kglEnter(elm) {
+        if (!kgMotionOK()) { return; }
+        elm.classList.remove('kgl-enter');
+        void elm.offsetWidth;
+        elm.classList.add('kgl-enter');
+        elm.addEventListener('animationend', function h(e) {
+          if (e.target !== elm) { return; }
+          elm.classList.remove('kgl-enter');
+          elm.removeEventListener('animationend', h);
+        });
+      }
+      function kgSwapHtml(elm, html) {
+        if (!kgMotionOK()) { elm.innerHTML = html; return; }
+        elm.addEventListener('transitionend', function h(e) {
+          if (e.propertyName !== 'opacity') { return; }
+          elm.removeEventListener('transitionend', h);
+          elm.innerHTML = html;
+          elm.style.opacity = '';
+        });
+        elm.style.opacity = '0';
+      }
+      function kgBindAccordion(toggleId, panelId) {
+        var toggle = el(toggleId);
+        var panel = el(panelId);
+        toggle.addEventListener('click', function () {
+          var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+          if (isOpen) {
+            toggle.setAttribute('aria-expanded', 'false');
+            if (!kgMotionOK()) { panel.classList.remove('open'); panel.hidden = true; return; }
+            panel.addEventListener('transitionend', function h(e) {
+              if (e.propertyName !== 'grid-template-rows') { return; }
+              panel.removeEventListener('transitionend', h);
+              if (toggle.getAttribute('aria-expanded') === 'false') { panel.hidden = true; }
+            });
+            panel.classList.remove('open');
+          } else {
+            toggle.setAttribute('aria-expanded', 'true');
+            panel.hidden = false;
+            if (!kgMotionOK()) { panel.classList.add('open'); return; }
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () { panel.classList.add('open'); });
+            });
+          }
+        });
+      }
+      kgBindAccordion('kg-log-toggle', 'kg-log-panel');
+      kgBindAccordion('kg-dl-log-toggle', 'kg-dl-log-panel');
+
+      // ── Canonical session ─────────────────────────────────────────────
+      // One session object (project, table, kit folder, device, overrides) every tab shares;
+      // the Import form is its editor. Defaults are SERVED (GET /config), never held here.
+      var kgSession = null;
+      var kgManifest = null;        // the manifest as resolved, from _meta (latest resolution)
+      var kgMeta = null;
+      var kgConfigDone = false;
+      var kgImportState = { state: 'empty' };
+
+      function kgSessionSave() {
+        if (!kgSession) { return; }
+        API.authFetch(PLUGIN_ROOT + '/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: kgSession })
+        }).catch(function () { /* persistence is best-effort */ });
+      }
+      function kgCurrentProject() {
+        var v = el('kg-project').value.trim();
+        return v || (kgSession && kgSession.project_name) || '';
+      }
+      function kgDatasetName(split) {
+        var id = kgManifest && kgManifest.competition ? kgManifest.competition.id : '';
+        return id ? id + '_' + split : split;
+      }
+      function kgLogOpen() {
+        return el('kg-log-toggle').getAttribute('aria-expanded') === 'true';
+      }
+      function kgLogReset() {
+        el('kg-log-details').style.display = 'none';
+        el('kg-log-toggle').setAttribute('aria-expanded', 'false');
+        var panel = el('kg-log-panel');
+        panel.classList.remove('open');
+        panel.hidden = true;
+        el('kg-log').textContent = '';
+      }
+
+      function kgApplySession(cfg) {
+        kgSession = cfg.session || { project_name: '', table_name: '', kit_dir: '', device: '', overrides: {} };
+        if (!kgSession.overrides) { kgSession.overrides = {}; }
+        el('kg-project').value = kgSession.project_name;
+        el('kg-table').value = kgSession.table_name;
+        if (kgSession.kit_dir) { el('kg-kit').value = kgSession.kit_dir; }
+      }
+
+      // Version footer on every tab, from the config _meta block.
+      function kgRenderFooters(meta) {
+        var repo = String(meta.repository_url || '');
+        var link = function (href, label, icon) {
+          return '<a href="' + esc(href) + '" target="_blank" class="kgi-btn" ' +
+                 'style="display:inline-flex;gap:4px;color:inherit">' +
+                 (icon ? kgIcon(icon, 'kgi-12') : '') + '<span>' + label + '</span></a>';
+        };
+        ROOT_EL.querySelectorAll('[data-kg-footer]').forEach(function (f) {
+          f.innerHTML = '3LC Kaggle Classification plugin v' + esc(meta.version || '?') +
+            (repo ? ' · ' + link(repo, 'GitHub', 'git-branch') +
+                    ' · ' + link(repo + '#readme', 'Docs') : '');
+        });
+      }
+
+      // ── The competition contract, rendered from the manifest (allowed differences 1–3) ──
+      // One source for every manifest fact on the page: the LATEST resolution. The first paint
+      // uses what /config served (cache or bundled); when the background refresh lands, the
+      // chips, the subtitle and the diagnostics all re-render from the refreshed document.
+      function kgManifestFacts() {
+        var prov = (kgMeta && kgMeta.manifest_provenance) || {};
+        var refresh = (kgMeta && kgMeta.manifest_refresh) || {};
+        return {
+          source: (refresh.state === 'done' && refresh.source) ? refresh.source : (kgMeta ? kgMeta.manifest_source : ''),
+          sha256: kgManifest && kgManifest.sha256 ? kgManifest.sha256 : (prov.manifest_sha256 || ''),
+          url: kgManifest && kgManifest.document_url ? kgManifest.document_url : (prov.manifest_document_url || '')
+        };
+      }
+      function kgRenderContract(m) {
+        kgManifest = m || kgManifest || {};
+        m = kgManifest;
+        var model = m.model || {}, sub = m.submission || {}, splits = m.splits || {};
+        var classes = m.classes || [];
+        var pool = (splits.train || {}).undefined;
+        var chips = '';
+        if (model.arch) {
+          chips += '<span class="kg-chip" title="Identical architecture, initialisation and resolution for every participant. The Run records them as proof.">' +
+                   kgIcon('lock', 'kgi-12') + ' ' + esc(model.arch) + ' · ' + (model.pretrained ? 'pretrained' : 'from scratch') +
+                   ' · ' + esc(model.image_size) + 'px</span>';
+        }
+        if (classes.length) {
+          chips += '<span class="kg-chip" title="The canonical class list, fixed so every submission scores against the same label map. ' +
+                   'Unlabeled images show as \u2018undefined\u2019 in the Dashboard: label them and set their weight to train on them.">' +
+                   fmtCount(classes.length) + ' classes' + (pool ? ' · ' + fmtCount(pool) + ' unlabeled' : '') + '</span>';
+        }
+        if (sub.metric) {
+          chips += '<span class="kg-chip" title="The leaderboard metric. The local preview uses the identical implementation.">Scored by ' + esc(sub.metric) + '</span>';
+        }
+        el('kg-chips').innerHTML = chips;
+        el('kg-tab-sub-train').textContent = model.arch ? model.arch + ', ' + (model.pretrained ? 'pretrained' : 'from scratch') : '';
+        el('kg-import-subtitle').innerHTML = 'Creates <code>' + esc(kgDatasetName('train')) + '</code> / <code>' +
+          esc(kgDatasetName('val')) + '</code> tables from the starter kit and validates them against the competition manifest.';
+        el('kg-train-subtitle').textContent = model.arch
+          ? 'Trains ' + model.arch + ' ' + (model.pretrained ? 'from the pinned checkpoint' : 'from scratch') + ' on the imported tables.'
+          : '';
+      }
+      // The background refresh: poll /manifest until it settles, then re-render every manifest fact.
+      function kgPollManifest(remaining) {
+        if (remaining <= 0) { return; }
+        setTimeout(function () {
+          API.authFetch(PLUGIN_ROOT + '/manifest').then(function (r) { return r.json(); }).then(function (p) {
+            var st = (p.refresh || {}).state;
+            if (st === 'running') { kgPollManifest(remaining - 1); return; }
+            if (kgMeta) { kgMeta.manifest_refresh = p.refresh || kgMeta.manifest_refresh; kgMeta.manifest_provenance = p.provenance || kgMeta.manifest_provenance; }
+            kgRenderContract(p.manifest || kgManifest);
+          }).catch(function () { /* the first render stands */ });
+        }, 1000);
+      }
+
+      // ── First-use provisioning (compute 1.1.0): an expected state, never an error ──
+      var kgProvisionTimer = null;
+      function kgEnterProvisioning(prov) {
+        el('kg-provisioning').innerHTML =
+          '<div class="kg-callout info"><span class="spinner" aria-hidden="true"></span>' +
+          '<span><strong>Setting up the plugin environment.</strong> The first run takes a few minutes.' +
+          (prov && prov.state ? ' <span style="color:var(--text-muted)">Environment state: ' + esc(prov.state) + '</span>' : '') +
+          '</span></div>';
+        el('kg-import-btn').disabled = true;
+        el('kg-dl-btn').disabled = true;
+        if (kgProvisionTimer) { return; }
+        kgProvisionTimer = setTimeout(function poll() {
+          kgProvisionTimer = null;
+          API.authFetch(PLUGIN_ROOT + '/config').then(function (r) { return r.json(); }).then(function (cfg) {
+            if (cfg && cfg.status === 'provisioning' && !cfg._meta) { kgProvisionTimer = setTimeout(poll, 5000); return; }
+            el('kg-provisioning').innerHTML = '';
+            kgFetchConfig(function () { kgInitImportTab(); });
+          }).catch(function () { kgProvisionTimer = setTimeout(poll, 5000); });
+        }, 5000);
+      }
+
+      function kgFetchConfig(resolve) {
+        API.authFetch(PLUGIN_ROOT + '/config')
         .then(function (r) { return r.json(); })
         .then(function (cfg) {
-          if (isProvisioning(cfg)) { enterProvisioning(cfg.provisioning); return; }
-          show('kgc-provisioning', false);
-          if (window.PluginJobs) { PluginJobs.connect(NS); }
-          adoptRunningJob().then(function () { applyConfig(cfg); });
+          if (cfg && cfg.status === 'provisioning' && !cfg._meta) { kgEnterProvisioning(cfg.provisioning); resolve(); return; }
+          kgMeta = cfg._meta || {};
+          kgImportState = kgMeta.import_state || { state: 'empty' };
+          kgApplySession(cfg);
+          kgPluginVersion = String(kgMeta.version || '');
+          kgRenderFooters(kgMeta);
+          kgRenderContract(kgMeta.manifest);
+          if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
+          kgRenderLoopLinks();
+          if ((kgMeta.manifest_refresh || {}).state === 'running') { kgPollManifest(8); }
+          kgConfigDone = true;
+          resolve();
         })
-        .catch(function (err) {
-          if (conn.fail(err, load)) { return; }
-          setKids($('kgc-warnings'), [callout('err', ['Saved settings could not be loaded: ' + err])]); $('kgc-warnings').hidden = false;
+        .catch(function (e) {
+          if (kgConn.fail(e, function () { kgFetchConfig(resolve); })) { return; }
+          ['kg-conn-banner', 'tr-conn-banner', 'ps-conn-banner', 'st-conn-banner'].forEach(function (slot) {
+            var box = el(slot);
+            if (box) {
+              box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+                '<span>Saved settings could not be loaded (' + esc(e.message || String(e)) +
+                '). Defaults are shown; reload the page to try again.</span></div>';
+            }
+          });
+          resolve();
         });
-    }
+      }
+      var configLoaded = new Promise(function (resolve) { kgFetchConfig(resolve); });
 
-    // The two static disclosures on the Import card: step rows, and the Advanced form fields.
-    function initToggle(id, label) {
-      var t = $(id + '-toggle'); var c = el('span', 'kgl-acc-caret'); c.setAttribute('aria-hidden', 'true'); c.appendChild(icon('chevron-right', 'kgi-12'));
-      setKids(t, [c, el('span', null, label)]); bindAccordion(t, $(id + '-panel'));
-    }
-    function advOpen(open) {
-      var t = $('kgc-adv-toggle'); if ((t.getAttribute('aria-expanded') === 'true') !== open) { t.click(); }
-    }
-    initToggle('kgc-steps', 'Show steps');
-    initToggle('kgc-adv', 'Advanced');
-    renderSteps();
-    setBtn($('kgc-dl-start'), 'download', 'Download the starter kit');
-    setBtn($('kgc-import-start'), 'upload', 'Import');
-    var remembered = 'import';
-    try { remembered = localStorage.getItem(TAB_KEY) || 'import'; } catch (e) { /* sandboxed */ }
-    showTab(remembered);
-    load();
-  })();
+      // Loop deep links: fix labels → the latest train revision once imported (the seed until a
+      // revision exists), the Dashboard root until then; inspect → the Dashboard root (the newest
+      // Run once Train exists).
+      function kgRenderLoopLinks() {
+        if (!dashboardUrl) { return; }
+        var latest = ((kgImportState || {}).latest || {}).train ||
+                     ((((kgImportState || {}).record || {}).tables || {}).train || {}).url || '';
+        el('kg-loop-fixlabels').href = latest ? dashTableLink(latest) : kgWithObjectService(dashboardUrl);
+      }
+
+      // Stepper states, in icon-set glyphs: check-circle done, filled dot active, outline circle
+      // upcoming. Done comes from the import record (Train/Submit until their sessions); the dot
+      // marks the SELECTED tab when its step is not done (docs/EXDARK_MIRROR.md #6).
+      function renderPipeline() {
+        var done = { import: kgImportState.state === 'success', train: false, submit: false };
+        ['import', 'train', 'submit'].forEach(function (s) {
+          var span = el('kg-state-' + s);
+          if (!span) { return; }
+          if (done[s]) {
+            span.innerHTML = kgIcon('check-circle', 'kgi-12');
+            span.className = 'kg-tab-state done';
+          } else if (s === kgShownTab) {
+            span.innerHTML = kgIcon('dot', 'kgi-12');
+            span.className = 'kg-tab-state current';
+          } else {
+            span.innerHTML = kgIcon('circle', 'kgi-12');
+            span.className = 'kg-tab-state pending';
+          }
+        });
+      }
+
+      // Gate card on the tabs that need the imported tables (ExDark's Train gate).
+      function kgRenderGates() {
+        var imported = kgImportState.state === 'success';
+        [['tr-gate', 'Train'], ['ps-gate', 'Predict + Submit'], ['st-gate', 'Status']].forEach(function (pair) {
+          var box = el(pair[0]);
+          if (!box) { return; }
+          if (imported) {
+            box.innerHTML = '<div class="form-help">The ' + esc(pair[1]) + ' tab arrives in a later session.</div>';
+            return;
+          }
+          box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+            '<span><strong>Tables not found.</strong>' +
+            '<br><span class="form-help">Looking in project <code>' + esc(kgCurrentProject()) +
+            '</code> — no import has produced these tables there yet. If you just changed the ' +
+            'Project name, Import (tab 1) needs one run for that project.</span>' +
+            '<div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm kgi-btn kg-goto-import">' +
+            '<span>Go to Import</span>' + kgIcon('arrow-right', 'kgi-12') + '</button></div></span></div>';
+          box.querySelector('.kg-goto-import').addEventListener('click', function () { showTab('import'); });
+        });
+      }
+
+      // ── Import: preflight (State 2 progressive disclosure) ───────────
+      var kgPreflight = null;
+      var kgPreflightTimer = null;
+      var kgPreflightSeq = 0;
+      var kgLastPreflightKit = null;
+      var kgImporting = false;
+
+      var KG_HINT_HTML =
+        '<div class="form-help">Point this at the starter kit folder (the one holding ' +
+        '<code>files.json</code>), typically <code>…\\starter_kit</code>. The download above fills it in.</div>';
+
+      function kgSplitsPlaceholder() {
+        el('kg-splits-body').innerHTML =
+          '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">' +
+          'Enter the kit folder above to auto-detect splits.</div>';
+      }
+
+      function kgRenderSplitsLocked() {
+        var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">';
+        ['Train', 'Val'].forEach(function (s) {
+          html += '<span style="display:flex;align-items:center;gap:5px;font-size:12px;opacity:.75;cursor:default" ' +
+                  'title="Both splits are required for a valid competition setup.">' +
+                  kgIcon('check-square', 'kgi-12 kgi-muted') + ' ' + s + ' ' +
+                  kgIcon('lock', 'kgi-12 kgi-muted') + '</span>';
+        });
+        html += '</div><div class="form-help">Both splits are mandatory for the competition. The test images stay on disk and are never registered.</div>';
+        el('kg-splits-body').innerHTML = html;
+      }
+
+      function kgRenderGlance(data, entering) {
+        var box = el('kg-glance');
+        if (!data || !data.all_ok) { box.innerHTML = ''; return; }
+        var html = '<div class="kg-glance' + (entering ? ' kgl-enter' : '') + '">' +
+          '<div class="kg-micro-label">Dataset at a glance</div>' +
+          '<div class="kg-glance-stats">';
+        html += '<span class="kg-stat"><span class="lbl">train</span><span class="val">' + fmtCount(data.splits.train.labeled) + '</span></span>';
+        html += '<span class="kg-stat"><span class="lbl">unlabeled</span><span class="val">' + fmtCount((data.unlabeled || {}).found) + '</span></span>';
+        html += '<span class="kg-stat"><span class="lbl">val</span><span class="val">' + fmtCount(data.splits.val.found) + '</span></span>';
+        html += '</div>';
+        var names = (data.classes && data.classes.names) || [];
+        if (names.length) {
+          html += '<div class="kg-tags">' + names.map(function (n, i) {
+            return '<span class="kg-tag" style="' + kgClassTint(i) + '">' + esc(n) + '</span>';
+          }).join('') + '</div>';
+        }
+        box.innerHTML = html + '</div>';
+      }
+
+      var kgPreflightKind = 'idle';
+
+      function kgRenderPreflight(data) {
+        var box = el('kg-preflight');
+        var kind = !data ? 'idle'
+          : data.checking ? 'checking'
+          : data.error ? 'error'
+          : data.all_ok ? 'ok' : 'mismatch';
+        var entering = (kind !== kgPreflightKind &&
+                        (kind === 'ok' || kind === 'mismatch' || kind === 'error'))
+          ? ' kgl-enter' : '';
+        kgPreflightKind = kind;
+
+        if (!data) {
+          box.innerHTML = KG_HINT_HTML;
+          kgSplitsPlaceholder();
+          kgRenderGlance(null);
+          return;
+        }
+        if (data.checking) {
+          box.innerHTML = '<div class="form-help">Checking dataset…</div>';
+          kgRenderGlance(null);
+          return;
+        }
+        if (data.error) {
+          box.innerHTML = '<div class="kg-callout err' + entering + '">' + kgIcon('x-circle') +
+                          '<span>' + esc(data.error) + '</span></div>';
+          kgSplitsPlaceholder();
+          kgRenderGlance(null);
+          return;
+        }
+        if (data.all_ok) {
+          var counts = fmtCount(data.splits.train.found) + ' / ' + fmtCount(data.splits.val.found);
+          var html = '<div class="kg-verdict"><span class="ok">' + kgIcon('check-circle') + '</span>' +
+                     '<span>Detected: train / val · ' + fmtCount((data.classes.names || []).length) + ' classes (manifest order) · ' + counts +
+                     ' images. Matches the competition manifest.</span></div>';
+          box.innerHTML = '<div class="' + (entering ? 'kgl-enter' : '') + '">' + html + '</div>';
+          kgRenderSplitsLocked();
+          kgRenderGlance(data, !!entering);
+          return;
+        }
+        // Mismatch: name exactly what's off, with a remediation hint.
+        var problems = (data.problems || []).map(function (p) {
+          return { label: p.label + (p.detail ? ' (' + p.detail + ')' : ''), remedy: kgRemedyFor(p.label) || 'Re-download the starter kit.' };
+        });
+        var mhtml = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+                    '<span style="flex:1;min-width:0"><strong>Doesn’t match the competition manifest:</strong>' +
+                    problems.map(function (p) {
+                      return '<div class="kg-check"><span class="bad">' + kgIcon('x') + '</span>' +
+                             '<span class="kg-check-body">' + esc(p.label) +
+                             '<span class="remedy">' + esc(p.remedy) + '</span></span></div>';
+                    }).join('') +
+                    '<div style="margin-top:8px">' + kgDiagBtn() + '</div></span></div>';
+        box.innerHTML = '<div class="' + (entering ? 'kgl-enter' : '') + '">' + mhtml + '</div>';
+        kgBindDiag(box);
+        kgSplitsPlaceholder();
+        kgRenderGlance(null);
+      }
+
+      function kgCheckReady() {
+        var btn = el('kg-import-btn');
+        btn.disabled = kgImporting || !(kgPreflight && kgPreflight.all_ok);
+        // Guide pulse: the kit folder is the one required field.
+        el('kg-kit').classList.toggle('guide-next', !el('kg-kit').value.trim() && !kgImporting);
+      }
+
+      function kgRunPreflight(force) {
+        var kit = kgCleanPath(el('kg-kit').value);
+        if (kit !== el('kg-kit').value) { el('kg-kit').value = kit; }
+        if (!force && kit === kgLastPreflightKit) { return; }
+        kgLastPreflightKit = kit;
+        kgPreflight = null;
+        kgCheckReady();
+        if (!kit) { kgRenderPreflight(null); return; }
+        var seq = ++kgPreflightSeq;
+        kgRenderPreflight({ checking: true });
+        API.authFetch(PLUGIN_ROOT + '/import/preflight?kit_dir=' + encodeURIComponent(kit) +
+                      '&project_name=' + encodeURIComponent(el('kg-project').value.trim()) +
+                      '&table_name=' + encodeURIComponent(el('kg-table').value.trim()))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (seq !== kgPreflightSeq) { return; }
+            if (data && data.status === 'provisioning' && !data.all_ok && !data.error) { kgEnterProvisioning(data.provisioning); return; }
+            kgLastPreflightRaw = data;
+            if (data.plugin_version) { kgPluginVersion = data.plugin_version; }
+            if (!data.error && data.kit_dir && data.kit_dir !== kit && kgCleanPath(el('kg-kit').value) === kit) {
+              el('kg-kit').value = data.kit_dir;
+              kgLastPreflightKit = data.kit_dir;
+            }
+            kgPreflight = data.error ? null : data;
+            kgRenderPreflight(data);
+            kgCheckReady();
+          })
+          .catch(function (e) {
+            if (seq !== kgPreflightSeq) { return; }
+            if (kgConn.fail(e, function () { kgRunPreflight(true); })) {
+              kgRenderPreflight(null);
+              kgCheckReady();
+              return;
+            }
+            kgRenderPreflight({ error: 'Could not reach the compute service: ' + e.message });
+            kgCheckReady();
+          });
+      }
+
+      el('kg-kit').addEventListener('input', function () {
+        clearTimeout(kgPreflightTimer);
+        kgPreflightTimer = setTimeout(kgRunPreflight, 500);
+      });
+      el('kg-kit').addEventListener('blur', function () {
+        clearTimeout(kgPreflightTimer);
+        kgRunPreflight();
+      });
+      el('kg-kit').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(kgPreflightTimer);
+          kgRunPreflight();
+        }
+      });
+      el('kg-kit').addEventListener('paste', function () {
+        clearTimeout(kgPreflightTimer);
+        setTimeout(kgRunPreflight, 0);
+      });
+
+      // ── Import form = the session's editor ───────────────────────────
+      var kgCfgSaveTimer = null;
+      function kgImportCfgSettled() {
+        if (!kgSession) { return; }
+        var project = el('kg-project').value.trim() || kgSession.project_name;
+        var table = el('kg-table').value.trim() || kgSession.table_name;
+        var pairChanged = project !== kgSession.project_name || table !== kgSession.table_name;
+        kgSession.project_name = project;
+        kgSession.table_name = table;
+        kgSession.kit_dir = el('kg-kit').value.trim();
+        if (pairChanged) { kgSession.overrides = {}; }
+        kgSessionSave();
+        if (pairChanged) { kgRenderGates(); kgRunPreflight(true); }
+      }
+      ['kg-kit', 'kg-project', 'kg-table'].forEach(function (id) {
+        el(id).addEventListener('input', function () {
+          clearTimeout(kgCfgSaveTimer);
+          kgCfgSaveTimer = setTimeout(kgImportCfgSettled, 600);
+        });
+        el(id).addEventListener('blur', function () {
+          clearTimeout(kgCfgSaveTimer);
+          kgImportCfgSettled();
+        });
+      });
+
+      // One-line remediation hints per check, shown only when it fails. Ordered [regex, hint].
+      var KG_REMEDIES = [
+        [/kit version matches the manifest/, 'The kit on disk is another version than the manifest names. Download the starter kit again.'],
+        [/class directories equal the manifest classes/, 'Don’t rename or add class folders. Restore the starter kit’s folders.'],
+        [/labeled images per class|undefined pool ==|val images per class|test images ==/, 'Image count doesn’t match the competition manifest. Re-download the starter kit; the download resumes and verifies every file.'],
+        [/sample_submission\.csv/, 'Restore the starter kit’s sample_submission.csv (don’t add, rename or remove test images).'],
+        [/every kit image decodes/, 'A kit image is corrupt. Re-download the starter kit; the download verifies every file against the manifest.'],
+        [/^(train|val) row count/, 'Row count doesn’t match the manifest. The existing $1 table was modified; import under another table name.'],
+        [/^(train|val) label map/, 'The existing $1 table has a modified class map. Import under another table name.'],
+        [/^(train|val) zero-weight rows/, 'The existing $1 table’s weights were changed. Import under another table name.']
+      ];
+      function kgRemedyFor(label) {
+        for (var i = 0; i < KG_REMEDIES.length; i++) {
+          var m = label.match(KG_REMEDIES[i][0]);
+          if (m) { return KG_REMEDIES[i][1].replace('$1', m[1] || ''); }
+        }
+        return '';
+      }
+
+      // Display transform: passing checks compress, failing checks keep full density.
+      function kgCheckDisplay(c) {
+        var label = c.label || '';
+        var detail = c.detail || '';
+        var m = label.match(/^(train|val) row count == ([\d,]+)$/);
+        if (c.ok) {
+          if (m) { return { label: m[1] + ' row count · ' + m[2], detail: '' }; }
+          if (/class directories equal/.test(label)) { return { label: label, detail: '' }; }
+          if (/label map is the manifest classes/.test(label)) { return { label: label, detail: '' }; }
+          if (/kit version matches/.test(label)) { return { label: label, detail: '' }; }
+          // Paths never render in participant rows (the log and Copy carry them).
+          if (/^[A-Za-z]:[\\\/]|^\/|^\\\\/.test(detail)) { detail = ''; }
+        }
+        detail = detail.replace(/\b\d{4,}\b/g, function (n) { return fmtCount(+n); });
+        return { label: label, detail: detail };
+      }
+
+      // The checks arrive in stable backend order: the kit-vs-manifest structure checks first,
+      // then the table checks (competition integrity).
+      function kgIsTableCheck(c) { return /^(train|val) (row count|label map|zero-weight)|existing tables reused|target table names/.test(c.label || ''); }
+      function renderChecks(checks, animate) {
+        if (!checks || !checks.length) { el('kg-checks').innerHTML = ''; return; }
+        kgLastChecks = checks;
+        var passed = checks.filter(function (c) { return c.ok; }).length;
+        var total = checks.length;
+        var allOk = passed === total;
+        var html = '<div class="kg-verdict">' +
+          (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
+                 : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
+          '<span>' + passed + '/' + total + ' checks passed' +
+          (allOk ? '' : ' (' + (total - passed) + ' failed)') + '</span></div>';
+        var groups = [
+          { title: 'Dataset structure', items: checks.filter(function (c) { return !kgIsTableCheck(c); }) },
+          { title: 'Competition integrity', items: checks.filter(kgIsTableCheck) }
+        ];
+        html += '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
+        groups.forEach(function (g) {
+          if (!g.items.length) { return; }
+          html += '<div><div class="kg-checks-head">' + g.title + '</div>';
+          g.items.forEach(function (c, i) {
+            var remedy = c.ok ? '' : kgRemedyFor(c.label || '');
+            var d = kgCheckDisplay(c);
+            html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+                    (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
+                          : '<span class="bad">' + kgIcon('x') + '</span>') +
+                    '<span class="kg-check-body">' + esc(d.label) +
+                    (d.detail ? ' <span class="detail">(' + esc(d.detail) + ')</span>' : '') +
+                    (remedy ? '<span class="remedy">' + esc(remedy) + '</span>' : '') +
+                    '</span></div>';
+          });
+          html += '</div>';
+        });
+        el('kg-checks').innerHTML = html + '</div>';
+      }
+
+      function midTrunc(s, max) {
+        s = s || '';
+        if (s.length <= max) { return s; }
+        var keep = Math.floor((max - 1) / 2);
+        return s.slice(0, keep) + '…' + s.slice(s.length - keep);
+      }
+
+      function kgBindCopy(container) {
+        container.querySelectorAll('[data-copy]').forEach(function (b) {
+          var glyph = b.innerHTML;
+          b.addEventListener('click', function () {
+            var text = b.getAttribute('data-copy');
+            var p = (navigator.clipboard && navigator.clipboard.writeText)
+              ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard API'));
+            p.then(function () {
+              kgSwapHtml(b, kgIcon('check') + '<span>Copied</span>');
+              setTimeout(function () { kgSwapHtml(b, glyph); }, 1200);
+            }).catch(function () { window.prompt('Copy the table path:', text); });
+          });
+        });
+      }
+
+      // ── State 3: per-split progress rows (stock queue-panel style) ──
+      var KG_STAGE_LABELS = { train: 'Import train', val: 'Import val', validate: 'Validate (18 checks)' };
+      var kgPrevStageStatus = {};
+
+      function kgRenderProgress(job) {
+        var box = el('kg-import-progress');
+        if (!job || job.status !== 'running') { box.innerHTML = ''; kgPrevStageStatus = {}; return; }
+        var p = job.progress || {};
+        var stages = (p.stages && p.stages.length) ? p.stages : KG_IMPORT_STAGES;
+        var done = p.done || [];
+        var startedAt = p.started_at || {};
+        var finishedAt = p.finished_at || {};
+        var now = Date.now() / 1000;
+        var html = '';
+        stages.forEach(function (s) {
+          var isDone = done.indexOf(s) !== -1;
+          var isCur = p.current === s;
+          var status = isDone ? 'completed' : isCur ? 'running' : 'queued';
+          var fade = (kgPrevStageStatus[s] && kgPrevStageStatus[s] !== status) ? ' kgl-badge-in' : '';
+          kgPrevStageStatus[s] = status;
+          var badge = '<span class="badge badge-status-' + status + fade + '">' + status + '</span>';
+          var elapsed = '';
+          if (startedAt[s]) {
+            var secs = ((isDone && finishedAt[s]) ? finishedAt[s] : now) - startedAt[s];
+            elapsed = '<span class="kg-job-elapsed">' + fmtDur(secs) + '</span>';
+          }
+          html += '<div class="kg-job-row"><span class="kg-job-label">' +
+                  (KG_STAGE_LABELS[s] || esc(s)) + '</span>' + badge + elapsed + '</div>';
+          if (isCur) {
+            html += '<div class="plugin-progress-wrap" style="margin:4px 0 8px">' +
+                    '<div class="plugin-progress-bar indeterminate" style="width:30%"></div></div>';
+          }
+        });
+        box.innerHTML = html;
+      }
+
+      function kgCheckIcon(animate) {
+        return '<svg class="kgl-check-svg' + (animate ? ' kgl-draw' : '') + '" viewBox="0 0 16 16" aria-hidden="true">' +
+               '<path d="M2.5 8.5l4 4 7-9" pathLength="1" fill="none" stroke="currentColor" ' +
+               'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+
+      // ── State 4: success banner + table summary rows ────────────────
+      var KG_SPLITS = ['train', 'val'];
+      function renderResult(result, animate) {
+        if (!result || !result.tables) { return; }
+        var banner = '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+          '<strong>Imported &amp; validated: ' + esc(kgDatasetName('train')) + ' · ' + esc(kgDatasetName('val')) + '</strong>' +
+          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="kg-continue-train">' +
+          '<span>Continue to Train</span>' + kgIcon('arrow-right') + '</button>';
+        KG_SPLITS.forEach(function (split) {
+          var t = result.tables[split];
+          if (t && t.url && dashboardUrl) {
+            banner += '<a class="btn btn-secondary btn-sm" target="_blank" href="' +
+                      dashTableLink(t.url) + '">Explore ' + split + '</a>';
+          }
+        });
+        if (kgRevisitActive) {
+          banner += '<button type="button" class="btn btn-ghost btn-sm" id="kg-start-over">Start over</button>';
+        }
+        banner += '</div></div></div>';
+        el('kg-import-banner').innerHTML = banner;
+        el('kg-continue-train').addEventListener('click', function () { showTab('train'); });
+        if (kgRevisitActive) {
+          el('kg-start-over').addEventListener('click', function () { kgEnterFormState(true); });
+        }
+
+        // Summary rows: count · badge · middle-truncated path · actions. Full untruncated paths
+        // live only in the log accordion / Copy. The Re-import slot stays fixed-width so Copy and
+        // Explore align across rows; the action itself awaits the re-import decision
+        // (docs/EXDARK_MIRROR.md #26).
+        var html = '<div class="kg-table-rows">';
+        KG_SPLITS.forEach(function (split) {
+          var t = result.tables[split];
+          if (!t) { return; }
+          var badge = t.reused
+            ? '<span class="kg-badge-reused" title="An identical table already existed and was reused. Validation still ran on it.">REUSED</span>'
+            : '<span class="kg-badge-created" title="Freshly imported from disk this run.">CREATED</span>';
+          html += '<div class="kg-table-row">' +
+            '<span class="split">' + split + '</span>' +
+            '<span class="rows">' + fmtCount(t.rows) + ' rows</span>' + badge +
+            '<span class="path" title="' + esc(t.url) + '">' + esc(midTrunc(t.url, 52)) + '</span>' +
+            '<span class="kg-row-actions">' +
+            '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(t.url) +
+              '" title="Copy full table path (a path on the compute service\'s machine)" aria-label="Copy full table path">' + kgIcon('copy') + '</button>' +
+            (dashboardUrl ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
+              dashTableLink(t.url) + '"><span>Explore</span>' +
+              kgIcon('arrow-right', 'kgi-12') + '</a>' : '') +
+            '<span class="kg-reimport-slot"></span></span></div>';
+        });
+        el('kg-result').innerHTML = html + '</div>';
+        kgBindCopy(el('kg-result'));
+      }
+
+      // ── State 5: red failure banner ──────────────────────────────────
+      function renderFailBanner(message, animate) {
+        el('kg-import-banner').innerHTML =
+          '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
+          '<div style="flex:1;min-width:0"><strong>Import failed</strong>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
+        kgBindDiag(el('kg-import-banner'));
+      }
+
+      // ExDark's poll() body, driven by the job record's updates instead of a timer.
+      function kgOnImportRecord(job, terminal) {
+        el('kg-log-details').style.display = 'block';
+        el('kg-log').textContent = (job.log || []).join('\n');
+        if (kgLogOpen()) { el('kg-log').scrollTop = el('kg-log').scrollHeight; }
+        kgRenderProgress(job);
+        if (!terminal && job.status === 'running') {
+          el('kg-import-state').textContent = 'Importing… (safe to navigate away)';
+          return;
+        }
+        if (!terminal) { return; }
+        kgImporting = false;
+        el('kg-import-spinner').style.display = 'none';
+        kgCheckReady();
+        kgRenderProgress(null);
+        renderChecks(job.checks, true);
+        if (job.status === 'completed') {
+          el('kg-import-state').textContent = '';
+          // The result rows come from the import record the server just wrote (two funnels).
+          API.authFetch(PLUGIN_ROOT + '/import/state').then(function (r) { return r.json(); }).then(function (state) {
+            kgImportState = state || kgImportState;
+            var snap = (state && state.record) || {};
+            var result = { tables: {} };
+            KG_SPLITS.forEach(function (s) { var t = (snap.tables || {})[s] || {}; result.tables[s] = { url: t.url || job.facts[s + '_table_url'] || '', rows: t.rows, reused: !!t.reused }; });
+            renderResult(result, true);
+            if (snap.checks && snap.checks.length) { renderChecks(snap.checks, false); }
+            renderPipeline();
+            kgRenderLoopLinks();
+            kgScrollTo(el('kg-import-banner'));
+          }).catch(function () { renderResult({ tables: { train: { url: job.facts.train_table_url || '' }, val: { url: job.facts.val_table_url || '' } } }, true); });
+        } else if (job.status === 'cancelled') {
+          el('kg-import-state').textContent = 'Import cancelled. Nothing partial was left behind.';
+        } else {
+          el('kg-import-state').textContent = '';
+          renderFailBanner(kgErrorText(job.error) || 'Import failed. See the checks below.', true);
+          el('kg-import-btn').innerHTML = KG_BTN_RERUN;
+          kgScrollTo(el('kg-import-banner'));
+        }
+        var alertEl = el('kg-import-banner').firstChild;
+        if (alertEl && alertEl.setAttribute) {
+          alertEl.setAttribute('tabindex', '-1');
+          alertEl.focus({ preventScroll: true });
+        }
+        renderPipeline();
+      }
+
+      var kgRevisitActive = false;
+
+      function kgStartImport() {
+        var kit, project, table;
+        if (kgRevisitActive && kgSession) {
+          kit = kgSession.kit_dir;
+          project = kgSession.project_name;
+          table = kgSession.table_name;
+        } else {
+          kit = kgCleanPath(el('kg-kit').value);
+          if (kit !== el('kg-kit').value) { el('kg-kit').value = kit; }
+          project = el('kg-project').value.trim();
+          table = el('kg-table').value.trim();
+          if (!kit || !(kgPreflight && kgPreflight.all_ok)) {
+            el('kg-import-state').textContent = 'Import needs a passing preflight. The kit folder above hasn’t validated yet.';
+            return;
+          }
+          kgImportCfgSettled();
+        }
+        if (!kit) {
+          el('kg-import-state').textContent = 'No starter kit folder recorded for this import. Start over restores the form.';
+          return;
+        }
+        kgImporting = true;
+        kgPrevStageStatus = {};
+        kgCheckReady();
+        el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
+        el('kg-import-spinner').style.display = 'inline-block';
+        el('kg-import-state').textContent = 'Starting…';
+        el('kg-import-banner').innerHTML = '';
+        el('kg-checks').innerHTML = '';
+        el('kg-result').innerHTML = '';
+        kgLogReset();
+        kgStartJob('import', { kit_dir: kit, project_name: project, table_name: table })
+          .then(function (res) {
+            if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
+            kgLastJobId = res.body.job_id;
+            var job = kgJobRecord(res.body.job_id, 'import');
+            kgRenderProgress(job);
+            kgScrollTo(el('kg-import-progress'));
+            kgTrack(job);
+          })
+          .catch(function (e) {
+            kgImporting = false;
+            el('kg-import-spinner').style.display = 'none';
+            kgRenderProgress(null);
+            kgCheckReady();
+            el('kg-import-state').textContent = kgConn.fail(e)
+              ? 'Import didn’t start (service unreachable). Re-run once reconnected.'
+              : 'Import request failed: ' + e.message;
+          });
+      }
+
+      el('kg-import-btn').addEventListener('click', function () { kgStartImport(); });
+
+      // ── Tab-open state resolution (State 6 precedence) ────────────────
+      function kgEnterFormState(animate) {
+        kgRevisitActive = false;
+        el('kg-import-form').style.display = '';
+        el('kg-import-banner').innerHTML = '';
+        el('kg-checks').innerHTML = '';
+        el('kg-result').innerHTML = '';
+        el('kg-import-progress').innerHTML = '';
+        el('kg-import-state').textContent = '';
+        kgLogReset();
+        el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
+        if (animate) { kglEnter(el('kg-import-form')); el('kg-kit').focus(); }
+        kgRenderPreflight(null);
+        kgCheckReady();
+        dlShowSection(true);
+        dlInit();
+        configLoaded.then(function () {
+          if (el('kg-kit').value.trim()) { kgRunPreflight(true); }
+        });
+      }
+
+      function kgRenderRevisit(state) {
+        var snap = state.record || {};
+        kgLastJobId = String(snap.job_id || '');
+        kgRevisitActive = true;
+        dlShowSection(false);
+        dlInit(true);
+        el('kg-import-form').style.display = 'none';
+        var result = { tables: {} };
+        KG_SPLITS.forEach(function (s) {
+          var t = (snap.tables || {})[s] || {};
+          result.tables[s] = { url: t.url || '', rows: t.rows, reused: !!t.reused };
+        });
+        renderResult(result);
+        renderChecks(snap.checks || []);
+        // No log on revisit: the host keeps no job log (docs/EXDARK_MIRROR.md #33).
+      }
+
+      function kgInitImportTab() {
+        kgListen();
+        window.PluginJobs.list(PLUGIN_ID)
+          .catch(function (e) { kgConn.fail(e); return []; })
+          .then(function (list) {
+            var running = (list || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
+            // Kind is inferred from the live label (host records carry no params).
+            var imp = running.filter(function (j) { return !/shard|extract|verifying files/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
+            var dl = running.filter(function (j) { return /shard|extract|verifying files/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
+            if (dl && !dlRunning) {
+              dlJobId = dl.id; dlRunning = true;
+              var djob = kgJobRecord(dl.id, 'download_kit');
+              dlShowSection(true); el('kg-dl-offer').hidden = true;
+              dlRenderProgress(djob);
+              kgTrack(djob);
+            }
+            if (imp && !kgImporting) {
+              kgLastJobId = imp.id;
+              kgImporting = true;
+              kgCheckReady();
+              if (!dl) { dlShowSection(false); }
+              el('kg-import-spinner').style.display = 'inline-block';
+              el('kg-import-state').textContent = 'Importing… (safe to navigate away)';
+              var job = kgJobRecord(imp.id, 'import');
+              kgRenderProgress(job);
+              kgTrack(job);
+              return;
+            }
+            return API.authFetch(PLUGIN_ROOT + '/import/state')
+              .then(function (r) { return r.json(); })
+              .catch(function (e) { kgConn.fail(e); return { state: 'empty' }; })
+              .then(function (state) {
+                kgImportState = state || { state: 'empty' };
+                renderPipeline(); kgRenderLoopLinks(); kgRenderGates();
+                if (state.state === 'success') { kgRenderRevisit(state); }
+                else { kgEnterFormState(); }
+              });
+          });
+      }
+
+      // ── Starter-kit download section ─────────────────────────────────
+      var dlJobId = null, dlRunning = false;
+      var dlLastChecks = null;
+      var KG_BTN_DL = kgIcon('download', 'kgi-16') + '<span>Download starter kit</span>';
+      var KG_BTN_DL_RESUME = kgIcon('download', 'kgi-16') + '<span>Resume download</span>';
+      var KG_BTN_TOPUP = kgIcon('download', 'kgi-16') + '<span>Download the newer kit</span>';
+      el('kg-dl-btn').innerHTML = KG_BTN_DL;
+      var dlMode = '';
+
+      function dlMB(bytes) { return fmtCount(Math.round((bytes || 0) / 1e6)); }
+
+      function dlLogReset() {
+        el('kg-dl-log-details').style.display = 'none';
+        el('kg-dl-log-toggle').setAttribute('aria-expanded', 'false');
+        var panel = el('kg-dl-log-panel');
+        panel.classList.remove('open');
+        panel.hidden = true;
+        el('kg-dl-log').textContent = '';
+      }
+
+      function dlBuildDiagnostics() {
+        return kgBuildDiagnosticsCore([
+          dlJobId ? ['download job: ' + dlJobId] : null,
+          kgChecksSection('download checks', dlLastChecks),
+          kgLogTailSection(el('kg-dl-log'))
+        ]);
+      }
+
+      function dlShowSection(show) { el('kg-dl-section').hidden = !show; }
+
+      function dlShowOffer(resume, animate, mode) {
+        dlMode = mode === 'top_up' ? 'top_up' : '';
+        el('kg-dl-offer').hidden = false;
+        el('kg-dl-progress').innerHTML = '';
+        el('kg-dl-btn').innerHTML = dlMode === 'top_up'
+          ? KG_BTN_TOPUP
+          : (resume ? KG_BTN_DL_RESUME : KG_BTN_DL);
+        el('kg-dl-btn').disabled = false;
+        el('kg-dl-state').textContent = '';
+        el('kg-dl-blurb-dl').hidden = dlMode === 'top_up';
+        el('kg-dl-blurb-topup').hidden = dlMode !== 'top_up';
+        if (animate) { kglEnter(el('kg-dl-offer')); }
+      }
+
+      function dlRenderQuiet(fileCount, when, matched) {
+        el('kg-dl-offer').hidden = true;
+        el('kg-dl-progress').innerHTML = '';
+        var text = (matched !== null && matched !== undefined)
+          ? 'Starter kit verified just now: ' + fmtCount(matched) +
+            ' of ' + fmtCount(fileCount) + ' files match the manifest.'
+          : 'Starter kit downloaded' + (when ? ' ' + kgFmtAgo(when) : '') +
+            (fileCount ? ' (' + fmtCount(fileCount) + ' files verified then)' : '') + '.';
+        el('kg-dl-banner').innerHTML =
+          '<div class="kg-preflight-ok">' + kgIcon('check-circle') +
+          '<span style="flex:1">' + text + '</span>' +
+          '<button type="button" id="kg-dl-verify" class="btn btn-ghost btn-sm kgi-btn" ' +
+          'title="Re-check every kit file against the published manifest (a few seconds)">' +
+          kgIcon('refresh-cw', 'kgi-12') + '<span>Verify</span></button></div>';
+        el('kg-dl-verify').addEventListener('click', dlVerifyNow);
+      }
+
+      function dlVerifyNow() {
+        var btn = el('kg-dl-verify');
+        if (!btn || btn.disabled) { return; }
+        btn.disabled = true;
+        btn.classList.add('kg-spin');
+        API.authFetch(PLUGIN_ROOT + '/download/verify')
+          .then(function (r) { return r.json(); })
+          .then(function (v) {
+            if (v.ok) { dlRenderQuiet(v.file_count, null, v.matched); return; }
+            var parts = [];
+            if (v.missing_count) { parts.push(fmtCount(v.missing_count) + ' missing'); }
+            if (v.mismatch_count) { parts.push(fmtCount(v.mismatch_count) + ' changed'); }
+            var first = ((v.missing || []).concat(v.mismatch || [])[0]) || '';
+            el('kg-dl-banner').innerHTML =
+              '<div class="kg-callout err">' + kgIcon('x-circle') +
+              '<span><strong>Verification failed.</strong> ' +
+              (v.error ? esc(v.error) + ' '
+                       : parts.join(', ') + (first ? ' (first: ' + esc(first) + ')' : '') + '. ') +
+              'Downloading again restores the kit.</span></div>';
+            dlShowOffer(false, false);
+          })
+          .catch(function (e) {
+            kgConn.fail(e);
+            btn.disabled = false;
+            btn.classList.remove('kg-spin');
+          });
+      }
+
+      // A complete, intact kit of an older version: information, not a fault. The offer beneath is
+      // a fresh download beside it (our download stage has no top-up: docs/EXDARK_MIRROR.md #27).
+      function dlRenderSuperseded(state) {
+        el('kg-dl-progress').innerHTML = '';
+        var have = String(state.kit_version || '');
+        var current = String(state.current_version || '');
+        var when = state.completed_at ? ', downloaded ' + kgFmtAgo(state.completed_at) : '';
+        el('kg-dl-banner').innerHTML =
+          '<div class="kg-callout info">' + kgIcon('info') +
+          '<span>An updated starter kit is available. This machine has ' +
+          esc(have) + when + '; the current kit is ' + esc(current) + '. ' +
+          'Downloading it lands beside the kit you have, so tables you have already imported keep ' +
+          'reading the files they were imported from.</span></div>';
+        dlShowOffer(false, false, 'top_up');
+      }
+
+      function dlRenderSuccess(job, animate) {
+        el('kg-dl-offer').hidden = true;
+        el('kg-dl-progress').innerHTML = '';
+        var res = job.result || {};
+        var files = res.file_count;
+        var head = '<strong>Starter kit downloaded and verified.</strong> ';
+        var tail = (files ? fmtCount(files) + ' files match the published manifest. ' : '') +
+                   'The starter kit folder below is filled in and ready to import.';
+        el('kg-dl-banner').innerHTML =
+          '<div class="kg-callout ok' + (animate ? ' kgl-enter' : '') + '">' +
+          kgIcon('check-circle') + '<span>' + head + tail + '</span></div>';
+      }
+
+      function dlRenderFail(job, animate) {
+        var failed = (job.checks || []).filter(function (c) { return !c.ok; });
+        var lines = failed.map(function (c) {
+          return '<div style="font-size: 12px; margin-top: 4px;">' +
+            esc(c.label) + (c.detail ? ' <span style="color: var(--text-muted);">(' + esc(c.detail) + ')</span>' : '') + '</div>';
+        }).join('');
+        el('kg-dl-banner').innerHTML =
+          '<div class="kg-callout err' + (animate ? ' kgl-enter' : '') + '">' + kgIcon('x-circle') +
+          '<span><strong>Download failed.</strong> ' + esc(kgErrorText(job.error) || 'See the log for details.') +
+          lines + '<div style="margin-top: 8px;">' + kgDiagBtn() + '</div></span></div>';
+        kgBindDiag(el('kg-dl-banner'), dlBuildDiagnostics);
+        dlShowOffer(true, false);
+      }
+
+      function dlRenderCancelled(animate) {
+        el('kg-dl-banner').innerHTML =
+          '<div class="kg-callout info' + (animate ? ' kgl-enter' : '') + '">' + kgIcon('info') +
+          '<span>Download cancelled. Finished parts are kept, so downloading again resumes where it stopped.</span></div>';
+        dlShowOffer(true, false);
+      }
+
+      function dlRenderProgress(job) {
+        var p = job.progress || {};
+        var box = el('kg-dl-progress');
+        if (!box.querySelector('.kg-run-head')) {
+          box.innerHTML =
+            '<div class="kg-run-head">' +
+            '<span class="name">Starter kit download</span>' +
+            '<span class="badge badge-status-running">running</span>' +
+            '<span class="kg-run-meta"><span class="epoch" id="kg-dl-prog-label"></span>' +
+            '<span id="kg-dl-prog-elapsed"></span></span>' +
+            '<button type="button" id="kg-dl-cancel" class="btn btn-ghost btn-sm" style="margin-left: auto;">Cancel</button></div>' +
+            '<div class="plugin-progress-wrap"><div class="plugin-progress-bar" id="kg-dl-prog-bar" style="width:0%"></div></div>' +
+            '<span class="kg-visually-hidden" id="kg-dl-announce" aria-live="polite"></span>';
+          el('kg-dl-cancel').addEventListener('click', dlCancel);
+        }
+        var label = String(p.label || 'Starting…');
+        if (p.phase === 'download' && p.bytes_total) {
+          label += ' · ' + dlMB(p.bytes_done) + ' of ' + dlMB(p.bytes_total) + ' MB';
+        }
+        var labelEl = el('kg-dl-prog-label');
+        if (labelEl.textContent !== label) { labelEl.textContent = label; }
+        el('kg-dl-prog-elapsed').textContent = job.created_at
+          ? 'elapsed ' + fmtDur(Date.now() / 1000 - job.created_at) : '';
+        var pct = Math.min(100, Math.round(p.percent || 0));
+        el('kg-dl-prog-bar').style.width = pct + '%';
+        kgSetTitleProgress(pct);
+        var quartile = Math.floor(pct / 25) * 25;
+        var ann = el('kg-dl-announce');
+        if (quartile > 0 && ann.textContent !== 'Download ' + quartile + '% complete') {
+          ann.textContent = 'Download ' + quartile + '% complete';
+        }
+      }
+
+      function dlCancel() {
+        if (!dlJobId) { return; }
+        var btn = el('kg-dl-cancel');
+        if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
+        window.PluginJobs.cancel(dlJobId)
+          .catch(function () { if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; } });
+      }
+
+      // Two funnels: kit_dir is a SESSION fact the server wrote. Re-read /config so it enters
+      // through the session funnel instead of being copied out of job facts.
+      function dlAdoptSessionKit() {
+        API.authFetch(PLUGIN_ROOT + '/config')
+          .then(function (r) { return r.json(); })
+          .then(function (cfg) {
+            var kit = String(((cfg || {}).session || {}).kit_dir || '');
+            if (cfg && cfg._meta) { kgMeta = cfg._meta; }
+            if (!kit || !kgSession) { return; }
+            kgSession.kit_dir = kit;
+            el('kg-kit').value = kit;
+            kgRunPreflight(true);
+          })
+          .catch(function () { /* the offer's help still names the path */ });
+      }
+
+      function dlTerminal(job, animate) {
+        dlRunning = false;
+        kgClearTitleProgress();
+        el('kg-dl-progress').innerHTML = '';
+        dlLastChecks = job.checks || null;
+        if (job.status === 'completed') {
+          // The kit facts (file count) come from the kit record the server wrote.
+          API.authFetch(PLUGIN_ROOT + '/config').then(function (r) { return r.json(); }).then(function (cfg) {
+            var ks = ((cfg || {})._meta || {}).kit_state || {};
+            job.result = { file_count: ks.file_count, kit_version: ks.kit_version };
+            dlRenderSuccess(job, animate);
+            dlAdoptSessionKit();
+          }).catch(function () { dlRenderSuccess(job, animate); dlAdoptSessionKit(); });
+        } else if (job.status === 'cancelled') {
+          dlRenderCancelled(animate);
+        } else {
+          dlRenderFail(job, animate);
+        }
+      }
+
+      function dlOnRecord(job, terminal) {
+        el('kg-dl-log-details').style.display = 'block';
+        el('kg-dl-log').textContent = (job.log || []).join('\n');
+        if (!terminal && job.status === 'running') { dlRenderProgress(job); return; }
+        if (terminal) { dlTerminal(job, true); }
+      }
+
+      function dlStart() {
+        if (dlRunning) { return; }
+        dlRunning = true;
+        el('kg-dl-banner').innerHTML = '';
+        // U1: a red not-found on the kit's own path is stale the moment a download for that
+        // path starts. Idle the gate; success re-gates through dlAdoptSessionKit.
+        var destEl = dlMode === 'top_up' ? null : el('kg-dl-dest');
+        var dest = destEl ? destEl.textContent : '';
+        var kitEl = el('kg-kit');
+        var kitVal = kitEl ? kitEl.value.trim() : '';
+        if (dest && kitVal && kitVal.toLowerCase().indexOf(dest.toLowerCase()) === 0 &&
+            !(kgPreflight && kgPreflight.all_ok)) {
+          kgPreflight = null;
+          kgRenderPreflight(null);
+          kgCheckReady();
+        }
+        el('kg-dl-btn').disabled = true;
+        el('kg-dl-state').textContent = 'Starting…';
+        dlLogReset();
+        kgStartJob('download_kit', {})
+          .then(function (res) {
+            if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
+            dlJobId = res.body.job_id;
+            el('kg-dl-offer').hidden = true;
+            el('kg-dl-state').textContent = '';
+            var job = kgJobRecord(dlJobId, 'download_kit');
+            dlRenderProgress(job);
+            kgTrack(job);
+          })
+          .catch(function (e) {
+            dlRunning = false;
+            el('kg-dl-btn').disabled = false;
+            el('kg-dl-state').textContent = kgConn.fail(e)
+              ? 'Download didn’t start (service unreachable). Try again once reconnected.'
+              : 'Download request failed: ' + e.message;
+          });
+      }
+
+      el('kg-dl-btn').addEventListener('click', function () { dlStart(); });
+
+      // Section state resolution: running download → reconnect (handled in kgInitImportTab), else
+      // a verified kit on disk → quiet line, else the offer. revisitOnly reveals the section only
+      // for a running download or a superseded kit.
+      function dlInit(revisitOnly) {
+        if (dlRunning) { if (revisitOnly) { dlShowSection(true); } return; }
+        API.authFetch(PLUGIN_ROOT + '/config')
+          .then(function (r) { return r.json(); })
+          .catch(function () { return {}; })
+          .then(function (cfg) {
+            var state = ((cfg || {})._meta || {}).kit_state || { state: 'empty' };
+            if (cfg && cfg._meta) { kgMeta = cfg._meta; }
+            if (state.state === 'superseded') {
+              dlJobId = String(state.job_id || '');
+              if (revisitOnly) { dlShowSection(true); }
+              dlRenderSuperseded(state);
+              return;
+            }
+            if (revisitOnly) { return; }
+            if (state.state === 'success') {
+              dlJobId = String(state.job_id || '');
+              dlRenderQuiet(state.file_count, state.completed_at);
+            } else {
+              dlShowOffer(state.state === 'stale', false);
+            }
+          });
+      }
+
+      // ── Dispatch — LAST ───────────────────────────────────────────────
+      showTab(savedTab || 'import');
+      configLoaded.then(function () {
+        kgInitImportTab();
+        kgRenderGates();
+      });
+    })();
   </script>
 </div>
 </div>

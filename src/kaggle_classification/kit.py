@@ -344,6 +344,8 @@ def download_state(manifest: Manifest) -> dict[str, Any]:
         "current_version": manifest.kit.version,
         "file_count": record.get("file_count"),
         "completed_at": record.get("completed_at"),
+        "manifest_provenance": record.get("manifest_provenance"),
+        "job_id": record.get("job_id", ""),
     }
 
 
@@ -524,6 +526,10 @@ def run_download(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
         "kit_version": kit.version,
         "kit_dir": str(kit_root),
         "file_count": len(index["files"]),
+        # The manifest this download ran under (sha256, source, URL, fetched_at): the record
+        # answers "which manifest did the download use" without the worker log.
+        "manifest_provenance": manifest.provenance,
+        "job_id": str(getattr(ctx, "job_id", "") or ""),
     }
     _write_record(manifest, facts)
     session.publish_kit_dir(manifest, kit_root)

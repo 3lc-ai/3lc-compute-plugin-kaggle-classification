@@ -19,10 +19,11 @@ Contract (docs/PLAN.md §C "Importer", session 2 decisions):
   ``CategoricalLabelSchema(classes + [undefined])``, ``SampleWeightSchema``) under
   ``<tlc.config.project_root_url>/<project>/datasets/<manifest.dataset_name(split)>/tables/<table>``.
   ``if_exists="raise"``: the importer never reuses and never overwrites.
-* Collisions: if either split's table already exists the job REFUSES (the preflight route shows
-  the existing tables first); an explicit ``mode = "reimport"`` writes FRESH tables under the
-  next free name (``<table>-2``, ``<table>-3``, …) for both splits together. Existing tables are
-  never touched — a participant's edited revisions stay intact.
+* Existing tables (the ExDark mirror, docs/EXDARK_MIRROR.md #25): a table already at a split's
+  target URL is REUSED, never rewritten, and the post-write checks run on it. ``mode =
+  "reimport"`` writes FRESH tables under the next free name (``<table>-2``, ``<table>-3``, …) for
+  both splits together and is kept for the re-import decision (#26). Existing tables are never
+  touched — a participant's edited revisions stay intact.
 * No partial tables: the second table failing, a verification failing, or a cancel after the
   first write deletes what this job created before it reports.
 * After writing, each table is re-read and checked: row count == ``manifest.expected_rows``,
@@ -472,30 +473,51 @@ def _latest_url(url: str) -> str:
 
 
 def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
-    """Cheap, read-only gate for the Import form: params, kit presence, collisions, fresh name.
-    Never writes. ``ok`` is whether an ``import`` (not ``reimport``) would proceed."""
+    """The Import form's read-only gate, in the shape ExDark's ``/import/preflight`` answers so
+    the ported fragment renders it unchanged (docs/EXDARK_MIRROR.md #20). Never writes.
+
+    ``error`` — the kit folder is missing or unreadable (parse failure / path not found).
+    ``all_ok`` — every kit-vs-manifest structural check passes; ``splits`` carries per-split
+    ``{found, expected, ok}`` (train counts labeled + pool), ``unlabeled`` the pool,
+    ``classes`` ``{names, count, canonical}`` (the class directories in manifest order), and
+    ``problems`` the failing checks as ``{label, detail, remedy}`` rows for the mismatch view.
+    ``existing`` names the tables already at the target URLs (they will be REUSED).
+    """
+    import kaggle_classification
+
+    out: dict[str, Any] = {"plugin_version": kaggle_classification.__version__, "kit": kit.download_state(manifest)}
     try:
         params = resolve_params(data, manifest)
     except ImportRefused as exc:
-        return {"ok": False, "error": str(exc), "existing": {}, "kit": kit.download_state(manifest)}
-    existing = existing_tables(manifest, params["project_name"], params["table_name"])
-    collision = any(v["exists"] for v in existing.values())
-    out = {
-        "ok": not collision,
-        "params": params,
-        "existing": existing,
-        "collision": collision,
-        "fresh_table_name": fresh_table_name(manifest, params["project_name"], params["table_name"])
-        if collision
-        else params["table_name"],
-        "kit": kit.download_state(manifest),
-        "project_root": project_root_url(),
+        out.update({"all_ok": False, "error": str(exc)})
+        return out
+    kit_root = Path(params["kit_dir"])
+    out["kit_dir"] = str(kit_root)
+    out["params"] = params
+    scan = scan_kit(kit_root, manifest)
+    checks = validate_kit(scan, manifest)
+    failed = [c for c in checks if not c["ok"]]
+    names = manifest.class_names
+    out["splits"] = {
+        "train": {
+            "found": scan.labeled_count + len(scan.train_undefined),
+            "expected": manifest.expected_rows("train"),
+            "labeled": scan.labeled_count,
+            "ok": scan.labeled_count == manifest.splits.train.labeled_per_class * manifest.num_classes
+            and len(scan.train_undefined) == manifest.splits.train.undefined,
+        },
+        "val": {"found": scan.val_count, "expected": manifest.expected_rows("val"), "ok": scan.val_count == manifest.expected_rows("val")},
     }
-    if collision:
-        out["error"] = (
-            "Tables already exist under this project and table name. Re-import writes fresh tables under "
-            f"the name {out['fresh_table_name']!r}; the existing tables are left untouched."
-        )
+    out["unlabeled"] = {"found": len(scan.train_undefined), "expected": manifest.splits.train.undefined}
+    out["classes"] = {
+        "names": names,
+        "count": len(scan.train_class_dirs),
+        "canonical": scan.train_class_dirs == sorted(names) and scan.val_class_dirs == sorted(names),
+    }
+    out["problems"] = [{"label": c["label"], "detail": c.get("detail", "")} for c in failed]
+    out["all_ok"] = not failed
+    out["existing"] = existing_tables(manifest, params["project_name"], params["table_name"])
+    out["project_root"] = project_root_url()
     return out
 
 
@@ -579,24 +601,26 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
     if is_cancelled():
         return {"cancelled": True}
 
-    # ── Collisions ──────────────────────────────────────────────────────
+    # ── Existing tables (the ExDark mirror: an existing table at the target URL is REUSED) ──
+    # ``if_exists="reuse"`` semantics as ExDark's ``from_yolo_url``: a table already at the
+    # deterministic URL is not rewritten; the post-write checks run on it exactly as on a
+    # created one, so a stale or edited table cannot pass unnoticed. ``mode="reimport"`` (fresh
+    # ``<table>-N`` names beside the old ones) stays available for the re-import decision
+    # (docs/EXDARK_MIRROR.md #26) and is never chosen by the fragment today.
     stage("collision", 31.0, "Checking for existing tables")
     existing = existing_tables(manifest, project, table_name)
     collision = any(v["exists"] for v in existing.values())
-    if collision and mode != "reimport":
-        listing = "; ".join(f"{s}: {v['url']} ({v['rows']} rows)" for s, v in existing.items() if v["exists"])
-        check("no tables under this project and table name yet", False, listing)
-        msg = (
-            f"Tables already exist under project {project!r} and table name {table_name!r}: {listing}. "
-            "Nothing was written. Use Re-import to write fresh tables beside them, or pick another table name."
+    actual_name = fresh_table_name(manifest, project, table_name) if (collision and mode == "reimport") else table_name
+    reused = {s: bool(existing[s]["exists"]) and actual_name == table_name for s in REGISTERED_SPLITS}
+    if any(reused.values()):
+        listing = ", ".join(f"{s} ({existing[s]['rows']} rows)" for s in REGISTERED_SPLITS if reused[s])
+        check("existing tables reused", True, listing)
+    else:
+        check(
+            "target table names are free",
+            True,
+            f"{actual_name!r}" + (f" (fresh, {table_name!r} is taken)" if actual_name != table_name else ""),
         )
-        raise ImportRefused(msg)
-    actual_name = fresh_table_name(manifest, project, table_name) if collision else table_name
-    check(
-        "target table names are free",
-        True,
-        f"{actual_name!r}" + (f" (fresh, {table_name!r} is taken)" if actual_name != table_name else ""),
-    )
     set_field("actual_table_name", actual_name)
 
     # ── Register train, then val; verify; no partial tables ────────────
@@ -611,6 +635,12 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         for i, split in enumerate(REGISTERED_SPLITS):
             if is_cancelled():
                 raise _Cancelled()
+            if reused[split]:
+                stage("register", 35.0 + 25.0 * i, f"Reusing the existing {split} table")
+                urls[split] = existing[split]["url"]
+                set_field(f"{split}_table_url", urls[split])
+                log(f"{split}: reused {urls[split]} ({existing[split]['rows']} rows)")
+                continue
             stage("register", 35.0 + 25.0 * i, f"Registering the {split} table ({len(rows[split]['image']):,} rows)")
             t0 = time.time()
             url = register_split(split, rows[split], manifest, project, actual_name, description)
@@ -650,7 +680,13 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         "kit_dir": str(kit_root),
         "kit_version": manifest.kit.version,
         "tables": {
-            split: {"url": urls[split], "rows": len(rows[split]["image"]), "undefined_rows": undefined_rows[split]}
+            split: {
+                "url": urls[split],
+                "rows": int(existing[split]["rows"] or 0) if reused[split] else len(rows[split]["image"]),
+                "undefined_rows": undefined_rows[split],
+                # ExDark's per-split outcome: REUSED (an existing table at the URL, validated) or CREATED.
+                "reused": reused[split],
+            }
             for split in REGISTERED_SPLITS
         },
         # The lineage root every later revision descends from, and the locked val revision.

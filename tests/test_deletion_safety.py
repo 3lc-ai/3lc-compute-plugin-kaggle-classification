@@ -55,11 +55,14 @@ def test_the_only_table_deletion_is_the_import_rollback():
 
 
 def test_start_over_is_a_view_change_only():
+    """ExDark's Start over (kgEnterFormState): the form comes back, the banners clear, the download
+    section re-resolves with read-only fetches. No job starts, nothing is deleted."""
     html = (SRC / "ui" / "ui.html").read_text(encoding="utf-8")
-    handler = re.search(r"function startOver\(\) \{(.*?)\}\n", html, re.S).group(1)
-    assert "show('kgc-import-revisit', false)" in handler and "gate()" in handler
-    assert "authFetch" not in handler and "PluginJobs" not in handler and "DELETE" not in handler
-    assert "over.onclick = startOver" in html  # the banner's Start over button binds to it and nothing else
+    assert "el('kg-start-over').addEventListener('click', function () { kgEnterFormState(true); });" in html
+    body = re.search(r"function kgEnterFormState\(animate\) \{(.*?)\n      \}", html, re.S).group(1)
+    assert "el('kg-import-form').style.display = ''" in body and "dlInit()" in body
+    for forbidden in ("PluginJobs.start", "kgStartJob(", "DELETE", "'reimport'"):
+        assert forbidden not in body, forbidden
     # No plugin route deletes anything, and the fragment never issues a DELETE.
     assert "method: 'DELETE'" not in html and '"DELETE"' not in html
 

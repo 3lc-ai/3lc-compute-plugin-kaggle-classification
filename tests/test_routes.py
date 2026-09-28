@@ -5,6 +5,15 @@ defines: version, repository, the manifest with its provenance, the kit destinat
 
 from __future__ import annotations
 
+import json
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+
 import kaggle_classification
 from kaggle_classification import routes, session
 
@@ -52,7 +61,7 @@ def test_route_handlers_build_when_litestar_is_present():
     pytest.importorskip("litestar")
     handlers = routes.get_route_handlers()
     paths = {p for h in handlers for p in h.paths}
-    assert paths == {"/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state"}
+    assert paths == {"/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify"}
 
 
 def test_route_handler_annotations_resolve_like_litestar_does():
@@ -75,82 +84,190 @@ def test_plugin_compute_and_fragment():
     assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit", "import"]
     html = plugin.get_ui_fragment()
     assert 'class="kgc"' in html and "kaggle-classification" in html
-    for needle in ("buildings", "resnet18", "6000"):
+    for needle in ("buildings", "resnet18", "6000", "1800", "HackNova"):
         assert needle not in html, f"competition literal {needle!r} in the fragment"
 
 
-def test_fragment_renders_manifest_strings_only_through_textcontent():
-    """Escaped at both ends: the server refuses markup in display strings, and the fragment never
-    interprets HTML — no innerHTML, insertAdjacentHTML, outerHTML or document.write anywhere."""
-    from pathlib import Path
+# ── The ExDark mirror (docs/EXDARK_MIRROR.md): the port's shape, and its safety pattern ──────
 
-    html = (Path(kaggle_classification.__file__).parent / "ui" / "ui.html").read_text(encoding="utf-8")
-    for forbidden in ("innerHTML", "insertAdjacentHTML", "outerHTML", "document.write", "eval("):
-        assert forbidden not in html, forbidden
-    assert "textContent" in html
-    assert "/manifest/select" in html and "/manifest'" in html  # the picker and the poll
+FRAGMENT = Path(kaggle_classification.__file__).parent / "ui" / "ui.html"
 
 
-def test_fragment_drives_import_through_the_host_job_channel():
-    """Session 2: the Import tab starts jobs through window.PluginJobs (host dispatch, generic
-    job_update), listens for the plugin's own events, gates through /import/preflight, revisits
-    from the import record, and treats first-run provisioning as an expected state."""
-    html = kaggle_classification.KaggleClassificationPlugin().get_ui_fragment()
+def _script() -> str:
+    html = FRAGMENT.read_text(encoding="utf-8")
+    return html[html.index("<script>") + len("<script>") : html.rindex("</script>")]
+
+
+def test_fragment_is_the_exdark_import_tab():
+    """The shell and Import tab elements ExDark renders, in ExDark's ids and copy (EXDARK_MIRROR §1–2)."""
+    html = FRAGMENT.read_text(encoding="utf-8")
     for needle in (
-        "PluginJobs.run(",
-        "PluginJobs.on(NS, 'checks'",
-        "PluginJobs.on(NS, 'stage_progress'",
-        "PluginJobs.cancel(",
-        "PluginJobs.list(",
-        "/import/preflight",
-        "import_state",
-        "'download_kit'",
-        "'reimport'",
-        "Setting up the plugin environment. The first run takes a few minutes.",
-        "status === 'provisioning'",
-        "?table=",
-        "object_service=",
-        # session 2.5 parity (docs/UI_PARITY.md): Dashboard wording, the Hub project link only on a
-        # Hub origin, participant view behind Technical details, gated later tabs, the next step,
-        # the full connection guard, remedies, reduced-motion gate, chips wording from the manifest
-        "Open in Dashboard",
-        "'hub.3lc.ai', 'hub-beta.3lc.ai'",
-        "window.location.origin",
-        "'Technical details'",
-        "Import the kit first.",
-        "Next: train your first model",
-        "Compute service unreachable, retrying",
-        "Reconnected.",
-        "var REMEDIES",
-        "prefers-reduced-motion: no-preference",
-        "unlabeled to label",
-        "refresh.source",
+        'class="kg-id-row"', "Competition constraints", 'id="kg-loop"', 'id="kg-loop-inspect"', 'id="kg-loop-fixlabels"',
+        'id="kg-tabs"', 'id="kg-state-import"', "Starter kit → 3LC tables", "Predict → CSV → Kaggle", "History &amp; leaderboard",
+        'id="kg-conn-banner"', 'id="kg-dl-section"', 'id="kg-dl-offer"', 'id="kg-dl-dest"', 'id="kg-dl-btn"', 'id="kg-dl-progress"',
+        'id="kg-import-banner"', 'id="kg-import-form"', 'for="kg-kit"', 'id="kg-project"', 'id="kg-table"', 'id="kg-splits-body"',
+        'id="kg-glance"', 'id="kg-import-btn"', "Import &amp; Validate", 'id="kg-import-progress"', 'id="kg-checks"', 'id="kg-result"',
+        'id="kg-log-toggle"', "Show log", "data-kg-footer", "Continue to Train", "Explore ", "REUSED", "CREATED", "Start over",
+        "Tables not found.", "Go to Import", "Compute service unreachable, retrying", "Reconnected.", "Copy diagnostics",
+        "Importing… (safe to navigate away)", "Dataset at a glance", "Detected: train / val", "Matches the competition manifest",
+        "var KG_REMEDIES", "function kgRenderProgress", "function renderResult", "function renderFailBanner", "function kgRenderRevisit",
+        "function dlRenderQuiet", "function dlRenderSuperseded", "function dlRenderProgress", "prefers-reduced-motion: no-preference",
     ):
         assert needle in html, needle
-    for forbidden in ("Open in the Hub", "HackNova", "innerHTML", "font-family"):
-        assert forbidden not in html, forbidden
-    # Progressive disclosure (UI_PARITY #3b): step rows and the form fields sit behind disclosures,
-    # the form is hidden until the kit is on disk, no undefined class tag, the pool explained on the chip.
-    for needle in ("'Show steps'", "'Advanced'", 'id="kgc-import-form" hidden', "show('kgc-import-form', kitOk || running)",
-                   "Label them and set their weight to train on them.", "stepsOpen(true)", "scrollIntoView"):
+    # Dropped on purpose (allowed difference 4): the Ultralytics band and the YOLO format banner.
+    for gone in ("kg-license-note", "format-selected-banner", "Ultralytics", "YOLO", "exdark_", "dataset.yaml", "Explore test"):
+        assert gone not in html, gone
+    # Plumbing that stays ours: the host job channel, the provisioning state, the remote manifest.
+    for needle in ("PluginJobs.start(", "PluginJobs.track(", "PluginJobs.on(NS, 'checks'", "PluginJobs.on(NS, 'stage_progress'",
+                   "PluginJobs.on(NS, 'log_line'", "PluginJobs.cancel(", "PluginJobs.list(", "/import/preflight", "/import/state",
+                   "/download/verify", "'download_kit'", "Setting up the plugin environment.", "status === 'provisioning'",
+                   "?table=", "object_service=", "/manifest'", "refresh.state === 'done'"):
         assert needle in html, needle
-    assert "'kg-tag', 'undefined'" not in html
-    assert 'id="kgc-import-subtitle"' not in html and "Manifest: '" not in html
+    # The re-import action awaits a decision (EXDARK_MIRROR #26): the slot exists, the button does not.
+    assert 'class="kg-reimport-slot"></span>' in html
+    assert "kg-reimport" not in html.replace("kg-reimport-slot", "")
 
 
-def test_submissions_chip_reads_the_manifest_daily_limit(home, manifest):
-    """The chip text is built from ``submission.daily_limit``; the fragment carries no count of its own,
-    and the served value is the bundled manifest's (the session-1 placeholder 3 is gone)."""
-    import re
+ESC = "function esc(s) {"
 
-    html = kaggle_classification.KaggleClassificationPlugin().get_ui_fragment()
-    assert "fmtCount(sub.daily_limit) + ' submissions per day'" in html
-    assert not re.search(r"\d+ submissions per day", html), "a literal count would diverge from the manifest"
-    served = routes.config_payload()["_meta"]["manifest"]["submission"]["daily_limit"]
-    assert served == manifest.submission.daily_limit == 100
-    # Every remedy the brief requires has an entry.
-    for topic in ("disk", "sha256 mismatch", "unreachable|Could not download", "locked", "already exist", "provisioning"):
-        assert topic in html, topic
-    # The fragment never opens its own socket or fetches the CDN; the host owns the transport.
-    assert "io(" not in html.replace("API.libs.io", "") or "new WebSocket" not in html
-    assert "competitions." not in html
+# Values that may enter a markup template unescaped: calls that emit markup they built themselves
+# or text they escaped/formatted, our own accumulators and constants, and the numbers, enum values
+# and boolean flags the fragment itself computes (used in ternaries over literals).
+SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon(", "kgDiagBtn(", "kgClassTint(",
+              "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(")
+SAFE_IDENTS = {
+    # markup accumulators / constants the fragment builds from literals and the calls above
+    "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
+    "KG_HINT_HTML", "KG_BTN_IMPORT", "KG_BTN_RERUN", "KG_BTN_DL", "KG_BTN_DL_RESUME", "KG_BTN_TOPUP", "KG_ICONS", "KG_STAGE_LABELS",
+    "orig", "glyph", "label", "when",
+    # numbers, enum values and loop variables the fragment defines
+    "passed", "total", "i", "s", "split", "status", "pct", "quartile", "r", "g", "b", "cls", "name", "g.title", "kind",
+    # boolean flags used only to pick between literal branches
+    "animate", "allOk", "c.ok", "t.reused", "dashboardUrl", "kgRevisitActive", "resume", "dlMode", "isCur", "isDone",
+    "model.pretrained", "pool", "files", "have", "current", "first", "res.updated", "icon", "prov", "prov.state", "repo",
+    "p.detail", "c.detail", "d.detail", "remedy", "matched", "fileCount", "v.error", "true", "false", "null", "undefined",
+}
+HEAD = re.compile(
+    r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"
+    r"\b(?:html|banner|mhtml|chips)\s*\+=|\breturn\s+(?='<))"
+)
+
+
+def _statement_from(script: str, pos: int) -> str:
+    """The statement starting at ``pos`` up to its terminating ';' outside strings and brackets."""
+    depth = 0
+    i = pos
+    n = len(script)
+    while i < n:
+        ch = script[i]
+        if ch == "'" or ch == '"' or ch == "`":
+            q = ch
+            i += 1
+            while i < n and script[i] != q:
+                i += 2 if script[i] == "\\" else 1
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                break
+            depth -= 1
+        elif ch == ";" and depth == 0:
+            break
+        i += 1
+    return script[pos:i]
+
+
+def _template_statements(script: str):
+    """Statements that BUILD MARKUP: an innerHTML assignment, an accumulator, or a returned
+    template — recognised by carrying an HTML literal ('<…) or an icon call."""
+    for m in HEAD.finditer(script):
+        stmt = _statement_from(script, m.start())
+        if "'<" in stmt or "kgIcon(" in stmt or "kgCheckIcon(" in stmt or "kgDiagBtn(" in stmt:
+            yield script.count("\n", 0, m.start()) + 1, stmt
+
+
+def _operands(stmt: str):
+    """The non-literal top-level operands of the statement's concatenation."""
+    body = re.sub(r"^.*?(?:\+=|=|\breturn)\s*", "", stmt, count=1, flags=re.S)
+    depth = 0
+    cur = ""
+    ops = []
+    i = 0
+    while i < len(body):
+        ch = body[i]
+        if ch in "'\"`":
+            q = ch
+            j = i + 1
+            while j < len(body) and body[j] != q:
+                j += 2 if body[j] == "\\" else 1
+            cur += body[i : j + 1]
+            i = j + 1
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        if ch == "+" and depth == 0:
+            ops.append(cur)
+            cur = ""
+        else:
+            cur += ch
+        i += 1
+    ops.append(cur)
+    out = []
+    for o in ops:
+        o = o.strip()
+        if not o or re.fullmatch(r"'(?:[^'\\]|\\.)*'", o):
+            continue  # a string literal
+        out.append(o)
+    return out
+
+
+def test_every_interpolated_value_in_an_innerhtml_template_is_escaped():
+    """ExDark's safety pattern, as a census over the fragment's markup-building statements: a value
+    that reaches innerHTML is a string literal, one of our own accumulators/constants, a number or
+    flag the fragment computed, or wrapped in esc() (or a helper that only emits markup it built)."""
+    script = _script()
+    assert ESC in script
+    offenders = []
+    for line, stmt in _template_statements(script):
+        for op in _operands(stmt):
+            if any(call in op for call in SAFE_CALLS):
+                continue
+            idents = set(re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", re.sub(r"'(?:[^'\\]|\\.)*'", "", op)))
+            if not idents or idents <= SAFE_IDENTS:
+                continue
+            offenders.append(f"line {line}: {op[:100]}")
+    assert offenders == [], "unescaped interpolation(s) in a markup template:\n" + "\n".join(offenders)
+    # The census saw the templates it exists for.
+    assert sum(1 for _ in _template_statements(script)) >= 25
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is needed to execute the fragment's esc()")
+def test_markup_in_a_manifest_string_renders_as_literal_text():
+    """A class name or display name of `<img src=x onerror=alert(1)>` must render as text. Every
+    manifest string enters the DOM through esc() (census above); this runs the fragment's own esc()
+    on the payload and checks the escaped form, which browsers render literally."""
+    script = _script()
+    start = script.index(ESC)
+    end = script.index("}", script.index("replace(/\"/g, '&quot;');", start)) + 1
+    esc_src = script[start:end]
+    payload = "<img src=x onerror=alert(1)>"
+    out = subprocess.run(
+        ["node", "-e", esc_src + "\nprocess.stdout.write(esc(" + json.dumps(payload) + "));"],
+        capture_output=True, text=True, check=True,
+    )
+    assert out.stdout == "&lt;img src=x onerror=alert(1)&gt;"
+    # The two manifest strings a participant sees first go through it: the lock chip and the class tags.
+    assert "esc(model.arch)" in script and "esc(n)" in script
+
+
+def test_constraint_chips_read_the_manifest(home, manifest):
+    """ExDark's constraint chips are the model, the class count and the metric (the daily limit belongs
+    to Predict + Submit). Whatever renders reads the manifest; the fragment holds no count of its own."""
+    html = FRAGMENT.read_text(encoding="utf-8")
+    assert not re.search(r"\d+ submissions per day", html)
+    assert "esc(sub.metric)" in html and "fmtCount(classes.length)" in html and "esc(model.image_size)" in html
+    served = routes.config_payload()["_meta"]["manifest"]
+    assert served["submission"]["daily_limit"] == manifest.submission.daily_limit == 100
+    assert served["competition"]["display_name"] == "3LC Scene Classification Challenge"

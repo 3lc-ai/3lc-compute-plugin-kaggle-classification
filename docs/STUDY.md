@@ -454,6 +454,8 @@ Audit before porting: each source module below was grepped for `ultralytics` / `
 | `tests/test_kit.py` | `tests/test_downloader.py` | 0 | FakeCDN / FakeCtx pattern and the network-behaviour cases |
 | `tests/test_packaging.py` | `tests/test_packaging.py` | 0 | wheel build, version parity, catalog consistency (extended: SDK overlap, import weight, licence lineage) |
 | `tests/test_ctx_adapter.py` | `tests/test_jobs_bridge.py` | 0 | real-signature fake ctx |
+| `src/kaggle_classification/ui/ui.html` (session 2.5) | `src/tlc_plugin_kaggle/ui.html` | 0 in the ported parts (the license band, format banner and YOLO copy were dropped, not carried) | the shell and the Import tab: CSS, markup, `esc`/icon/motion/accordion/diagnostics/connection-guard helpers, preflight, progress rows, result and failure banners, revisit resolution, the download section — the ExDark mirror (`docs/EXDARK_MIRROR.md`) |
+| `tests/test_ui_node_lifetime.py` | `tests/test_ui_node_lifetime.py` | 0 | the `#kg-dl-dest` node-lifetime guards |
 
 Copied from `3lc-compute-plugin-timm` (already Apache-2.0, header names the origin):
 `scripts/release_version.py`, `tests/test_release_version.py`.

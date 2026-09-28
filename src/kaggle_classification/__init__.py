@@ -70,6 +70,9 @@ class _JobCtxAdapter:
 
     def log(self, message: str) -> None:
         self._sdk.log(message)
+        # The host keeps no job log the fragment can read back (PLAN §A3), so the line also goes
+        # out as a plugin event: the Import tab's "Show log" accordion fills from it live.
+        self._sdk.emit("log_line", {"job_id": self.job_id, "line": message})
 
     def set_checks(self, checks: list[dict[str, Any]]) -> None:
         self._sdk.emit("checks", {"job_id": self.job_id, "checks": [dict(c) for c in checks]})

@@ -1,4 +1,14 @@
-# UI_PARITY.md — bringing the fragment to the ExDark plugin's standard (session 2.5, Phase 1)
+# UI_PARITY.md — SUPERSEDED (2026-09-28)
+
+**The governing rule is now `docs/EXDARK_MIRROR.md`: the plugin mirrors the ExDark plugin in
+functionality and looks, its fragment ported as close to verbatim as the four allowed differences
+permit, innerHTML + `esc()` included.** The "planned changes" below and §3b (the disclosure rule)
+were applied in the two Phase 2 passes and then withdrawn after the visual reviews; they are kept
+only as the record of what was tried. Nothing here is binding.
+
+---
+
+# (historical) UI_PARITY.md — bringing the fragment to the ExDark plugin's standard (session 2.5, Phase 1)
 
 Read-only study of `../3lc-compute-plugin-kaggle/src/tlc_plugin_kaggle/ui.html` (6,550 lines:
 CSS 3–568, markup 569–1215, JS 1216–6549) and `docs/ui-notes.md` (the UI playbook, §1–§18 and

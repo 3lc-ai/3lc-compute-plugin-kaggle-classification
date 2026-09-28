@@ -98,4 +98,5 @@ and update them in the same commit series. Keep them terse.
 | docs/STUDY.md | What the reference plugins do and what we reuse / adapt / write new; the Gate 0 findings; G-5 relicensing list |
 | RELEASING.md | Tag → catalog flow, the version census, kit staging rules |
 | CHANGELOG.md | What each version shipped |
+| docs/EXDARK_MIRROR.md | **The UI rule (2026-09-28): the plugin mirrors the ExDark plugin.** Every shell and Import element, marked verbatim / adapted (allowed difference) / needs decision; the four allowed differences; the safety tests that replaced the innerHTML ban |
 | ../3lc-compute-plugin-kaggle/docs/ui-notes.md | The UI playbook the tabs follow from session 2 (six-state machines, motion, icons, copy) |
