@@ -65,6 +65,12 @@ def test_start_over_is_a_view_change_only():
         assert forbidden not in body, forbidden
     # No plugin route deletes anything, and the fragment never issues a DELETE.
     assert "method: 'DELETE'" not in html and '"DELETE"' not in html
+    # Re-import fresh (decision 2026-09-28): ExDark's button, but it starts a mode=reimport job that
+    # writes fresh tables beside the old ones. No overwrite anywhere in the fragment or the backend.
+    reimport = re.search(r"function kgReimportFresh\(split, url\) \{(.*?)\n      \}", html, re.S).group(1)
+    assert "kgStartImport({ reimport: true })" in reimport
+    # No overwrite request can leave the fragment: no such string literal, no force flag.
+    assert "'overwrite'" not in html and '"overwrite"' not in html and "force_splits" not in html
 
 
 # ── Behaviour: an edited-label revision survives ────────────────────────────────────────────

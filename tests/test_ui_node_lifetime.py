@@ -51,16 +51,33 @@ def test_the_offer_blurbs_are_toggled_never_rewritten(ui: str) -> None:
 
 
 def test_kg_dl_dest_is_never_dereferenced_bare(ui: str) -> None:
-    """Every production read/write goes through a null check (this fragment has no ?kgdev fixture
-    block, so there is no exempt region)."""
+    """Every production read/write goes through a null check.
+
+    A missing node must not be able to take an unrelated click handler down with it - especially
+    not one that has already latched ``dlRunning``.
+    """
+    # Everything after `var devDest =` is the ?kgdev fixture block, which runs only in dev mode and
+    # force-renders the section first. A boundary, not a blanket exemption: each excluded site must
+    # actually be a fixture write.
+    fixtures_begin = ui.index("var devDest =")
+
     bare: list[str] = []
+    fixture_sites: list[str] = []
     for m in DEREF.finditer(ui):
         line = _line_at(ui, m.start())
+        if m.start() > fixtures_begin:
+            fixture_sites.append(line)
+            continue
         context = ui[max(0, m.start() - 400) : m.start()]
         if "el('kg-dl-dest')" in context or "destEl" in context:
             continue
         bare.append(line)
+
     assert bare == [], f"unguarded el('kg-dl-dest') dereference(s): {bare}"
+    assert fixture_sites, "expected the ?kgdev fixture writes; did the block move?"
+    assert all("devDest" in line for line in fixture_sites), (
+        f"a non-fixture dereference slipped past the boundary: {fixture_sites}"
+    )
 
 
 def test_dlstart_latches_after_the_dest_read_not_before(ui: str) -> None:

@@ -421,6 +421,11 @@
       var PLUGIN_ID = 'kaggle-classification';
       var NS = '/' + PLUGIN_ID;
       var PLUGIN_ROOT = computeUrl + '/api/plugins/' + PLUGIN_ID;
+      // Dev affordance (ExDark's): ?kgdev=<state> renders a UI state from static fixtures —
+      // no fetches, no job side effects. Values: state1, state2, state2-mismatch, state2-error,
+      // state3, state4, state5, state6, state6-superseded, dl-empty, dl-running, dl-verify,
+      // dl-success, dl-fail, dl-cancelled, dl-revisit, dl-superseded.
+      var kgDevMode = new URLSearchParams(window.location.search).get('kgdev');
 
       // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
       var el = function (id) { return ROOT_EL.querySelector('#' + id); };
@@ -975,6 +980,9 @@
           chips += '<span class="kg-chip" title="The leaderboard metric. The local preview uses the identical implementation.">Scored by ' + esc(sub.metric) + '</span>';
         }
         el('kg-chips').innerHTML = chips;
+        // Competition identity (allowed difference 1): the hero title is the manifest's display name.
+        var comp = m.competition || {};
+        if (comp.display_name) { ROOT_EL.querySelector('.kg-id-title').textContent = comp.display_name; }
         el('kg-tab-sub-train').textContent = model.arch ? model.arch + ', ' + (model.pretrained ? 'pretrained' : 'from scratch') : '';
         el('kg-import-subtitle').innerHTML = 'Creates <code>' + esc(kgDatasetName('train')) + '</code> / <code>' +
           esc(kgDatasetName('val')) + '</code> tables from the starter kit and validates them against the competition manifest.';
@@ -1058,20 +1066,23 @@
         el('kg-loop-fixlabels').href = latest ? dashTableLink(latest) : kgWithObjectService(dashboardUrl);
       }
 
-      // Stepper states, in icon-set glyphs: check-circle done, filled dot active, outline circle
-      // upcoming. Done comes from the import record (Train/Submit until their sessions); the dot
-      // marks the SELECTED tab when its step is not done (docs/EXDARK_MIRROR.md #6).
+      // Stepper states, in icon-set glyphs (ExDark's exact behaviour, decision 2026-09-28):
+      // check-circle done, filled dot on the FIRST not-done step, outline circle upcoming. Done
+      // comes from the import record (Train/Submit stay not-done until their sessions).
       function renderPipeline() {
-        var done = { import: kgImportState.state === 'success', train: false, submit: false };
-        ['import', 'train', 'submit'].forEach(function (s) {
+        var p = { import: kgImportState.state === 'success', train: false, submit: false };
+        var steps = ['import', 'train', 'submit'];
+        var currentSeen = false;
+        steps.forEach(function (s) {
           var span = el('kg-state-' + s);
           if (!span) { return; }
-          if (done[s]) {
+          if (p[s]) {
             span.innerHTML = kgIcon('check-circle', 'kgi-12');
             span.className = 'kg-tab-state done';
-          } else if (s === kgShownTab) {
+          } else if (!currentSeen) {
             span.innerHTML = kgIcon('dot', 'kgi-12');
             span.className = 'kg-tab-state current';
+            currentSeen = true;
           } else {
             span.innerHTML = kgIcon('circle', 'kgi-12');
             span.className = 'kg-tab-state pending';
@@ -1112,9 +1123,26 @@
         '<code>files.json</code>), typically <code>…\\starter_kit</code>. The download above fills it in.</div>';
 
       function kgSplitsPlaceholder() {
+        // With the folder filled in, the splits are not undetected but unmatched: say so
+        // (deviation from ExDark's single placeholder, review 2026-09-28 fix c).
+        var text = el('kg-kit').value.trim()
+          ? 'Splits are detected once the kit folder matches the competition manifest.'
+          : 'Enter the kit folder above to auto-detect splits.';
         el('kg-splits-body').innerHTML =
-          '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">' +
-          'Enter the kit folder above to auto-detect splits.</div>';
+          '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">' + text + '</div>';
+      }
+
+      // A stale result must not sit next to a new verdict (review 2026-09-28 fix c; ExDark clears
+      // only at import start and Start over): when the preflight leaves a green/idle state for a
+      // mismatch or error while a finished import's banner is on screen, that result goes.
+      function kgClearStaleResult() {
+        if (kgImporting || kgRevisitActive) { return; }
+        if (!el('kg-import-banner').firstChild && !el('kg-result').firstChild && !el('kg-checks').firstChild) { return; }
+        el('kg-import-banner').innerHTML = '';
+        el('kg-checks').innerHTML = '';
+        el('kg-result').innerHTML = '';
+        kgLogReset();
+        el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
       }
 
       function kgRenderSplitsLocked() {
@@ -1159,7 +1187,9 @@
         var entering = (kind !== kgPreflightKind &&
                         (kind === 'ok' || kind === 'mismatch' || kind === 'error'))
           ? ' kgl-enter' : '';
+        var transitioned = kind !== kgPreflightKind;
         kgPreflightKind = kind;
+        if (transitioned && (kind === 'mismatch' || kind === 'error')) { kgClearStaleResult(); }
 
         if (!data) {
           box.innerHTML = KG_HINT_HTML;
@@ -1209,7 +1239,7 @@
 
       function kgCheckReady() {
         var btn = el('kg-import-btn');
-        btn.disabled = kgImporting || !(kgPreflight && kgPreflight.all_ok);
+        btn.disabled = kgImporting || !(kgPreflight && kgPreflight.all_ok) || !!kgDevMode;
         // Guide pulse: the kit folder is the one required field.
         el('kg-kit').classList.toggle('guide-next', !el('kg-kit').value.trim() && !kgImporting);
       }
@@ -1465,9 +1495,9 @@
         }
 
         // Summary rows: count · badge · middle-truncated path · actions. Full untruncated paths
-        // live only in the log accordion / Copy. The Re-import slot stays fixed-width so Copy and
-        // Explore align across rows; the action itself awaits the re-import decision
-        // (docs/EXDARK_MIRROR.md #26).
+        // live only in the log accordion / Copy. Actions use the stock small-button vocabulary;
+        // the Re-import slot is fixed-width so Copy/Explore align across rows (created rows have
+        // nothing to force — by design).
         var html = '<div class="kg-table-rows">';
         KG_SPLITS.forEach(function (split) {
           var t = result.tables[split];
@@ -1485,10 +1515,29 @@
             (dashboardUrl ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
               dashTableLink(t.url) + '"><span>Explore</span>' +
               kgIcon('arrow-right', 'kgi-12') + '</a>' : '') +
-            '<span class="kg-reimport-slot"></span></span></div>';
+            '<span class="kg-reimport-slot">' +
+            (t.reused ? '<button type="button" class="btn btn-ghost btn-sm kgi-btn kg-btn-danger-hover kg-reimport" ' +
+              'data-split="' + split + '" data-url="' + esc(t.url) +
+              '" title="Import this split again from disk as fresh tables beside the existing ones. Nothing is overwritten.">' +
+              kgIcon('refresh-cw', 'kgi-12') + '<span>Re-import fresh</span></button>' : '') +
+            '</span></span></div>';
         });
         el('kg-result').innerHTML = html + '</div>';
         kgBindCopy(el('kg-result'));
+        el('kg-result').querySelectorAll('.kg-reimport').forEach(function (b) {
+          b.addEventListener('click', function () {
+            kgReimportFresh(b.getAttribute('data-split'), b.getAttribute('data-url'));
+          });
+        });
+      }
+
+      // Re-import fresh (decision 2026-09-28, docs/EXDARK_MIRROR.md #26): ExDark's button and
+      // placement, but the job writes FRESH `<table>-N` tables beside the existing pair and never
+      // overwrites a table or its revisions — so, unlike ExDark, there is no revision count to
+      // confirm and no dialog: nothing is discarded.
+      function kgReimportFresh(split, url) {
+        if (kgDevMode) { return; }
+        kgStartImport({ reimport: true });
       }
 
       // ── State 5: red failure banner ──────────────────────────────────
@@ -1550,7 +1599,8 @@
 
       var kgRevisitActive = false;
 
-      function kgStartImport() {
+      function kgStartImport(opts) {
+        opts = opts || {};
         var kit, project, table;
         if (kgRevisitActive && kgSession) {
           kit = kgSession.kit_dir;
@@ -1581,7 +1631,7 @@
         el('kg-checks').innerHTML = '';
         el('kg-result').innerHTML = '';
         kgLogReset();
-        kgStartJob('import', { kit_dir: kit, project_name: project, table_name: table })
+        kgStartJob('import', { kit_dir: kit, project_name: project, table_name: table, mode: opts.reimport ? 'reimport' : 'import' })
           .then(function (res) {
             if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
             kgLastJobId = res.body.job_id;
@@ -1601,7 +1651,10 @@
           });
       }
 
-      el('kg-import-btn').addEventListener('click', function () { kgStartImport(); });
+      el('kg-import-btn').addEventListener('click', function () {
+        if (kgDevMode) { return; }
+        kgStartImport();
+      });
 
       // ── Tab-open state resolution (State 6 precedence) ────────────────
       function kgEnterFormState(animate) {
@@ -1718,7 +1771,7 @@
         el('kg-dl-btn').innerHTML = dlMode === 'top_up'
           ? KG_BTN_TOPUP
           : (resume ? KG_BTN_DL_RESUME : KG_BTN_DL);
-        el('kg-dl-btn').disabled = false;
+        el('kg-dl-btn').disabled = !!kgDevMode;
         el('kg-dl-state').textContent = '';
         el('kg-dl-blurb-dl').hidden = dlMode === 'top_up';
         el('kg-dl-blurb-topup').hidden = dlMode !== 'top_up';
@@ -1743,6 +1796,7 @@
       }
 
       function dlVerifyNow() {
+        if (kgDevMode) { return; }
         var btn = el('kg-dl-verify');
         if (!btn || btn.disabled) { return; }
         btn.disabled = true;
@@ -1905,7 +1959,7 @@
       }
 
       function dlStart() {
-        if (dlRunning) { return; }
+        if (kgDevMode || dlRunning) { return; }
         dlRunning = true;
         el('kg-dl-banner').innerHTML = '';
         // U1: a red not-found on the kit's own path is stale the moment a download for that
@@ -1942,12 +1996,19 @@
           });
       }
 
-      el('kg-dl-btn').addEventListener('click', function () { dlStart(); });
+      el('kg-dl-btn').addEventListener('click', function () {
+        if (kgDevMode) { return; }
+        dlStart();
+      });
 
       // Section state resolution: running download → reconnect (handled in kgInitImportTab), else
       // a verified kit on disk → quiet line, else the offer. revisitOnly reveals the section only
       // for a running download or a superseded kit.
       function dlInit(revisitOnly) {
+        if (kgDevMode) {
+          if (!revisitOnly) { dlShowOffer(false, false); }
+          return;
+        }
         if (dlRunning) { if (revisitOnly) { dlShowSection(true); } return; }
         API.authFetch(PLUGIN_ROOT + '/config')
           .then(function (r) { return r.json(); })
@@ -1971,12 +2032,265 @@
           });
       }
 
+      // ── Dev affordance: ?kgdev=<state> renders each UI state from static fixtures for
+      // screenshotting — no fetches, no job side effects (ExDark's kgDevForce, adapted to our
+      // states). Fixture data derives from the SERVED manifest (class names, split sizes, shard
+      // names), so the fragment still carries no competition literal; the numbers below are
+      // computed from it once the config lands (apply() re-runs then, like ExDark's).
+
+      // Fixture pages must never start real work: every job-firing button renders disabled with
+      // a note. The ready-recalc functions OR in kgDevMode so no later recalc can re-enable, and
+      // the click handlers guard on it as the hard backstop.
+      function kgDevDisableActions() {
+        ['kg-import-btn', 'kg-dl-btn'].forEach(function (id) {
+          var btn = el(id);
+          btn.disabled = true;
+          var note = document.createElement('span');
+          note.textContent = 'demo state — actions disabled';
+          note.style.cssText = 'font-size: 11px; font-style: italic; color: var(--text-muted); white-space: nowrap;';
+          btn.parentNode.appendChild(note);
+        });
+      }
+
+      function kgDevForce(mode) {
+        kgDevDisableActions();
+        var devDest = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\competition';
+        var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
+        var devDlKit = devDest + '\\v1\\starter_kit';
+
+        function apply() {
+          var m = kgManifest || {};
+          var names = (m.classes || []).map(function (c) { return c.name; });
+          var nC = names.length || 1;
+          var perClass = ((m.splits || {}).train || {}).labeled_per_class || 0;
+          var pool = ((m.splits || {}).train || {}).undefined || 0;
+          var valPer = ((m.splits || {}).val || {}).per_class || 0;
+          var testN = ((m.splits || {}).test || {}).count || 0;
+          var trainRows = perClass * nC + pool, valRows = valPer * nC, labeled = perClass * nC;
+          var kitV = (m.kit || {}).version || 'v1';
+          var shards = (m.kit || {}).shards || [];
+          var fileCount = trainRows + valRows + testN + 1;   // + sample_submission.csv
+          var totalBytes = shards.reduce(function (a, s) { return a + (s.bytes || 0); }, 0);
+          var base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + ((m.competition || {}).id || 'competition') + '/datasets/';
+          function T(s, rows, reused) { return { url: base + kgDatasetName(s) + '/tables/initial', rows: rows, reused: reused }; }
+          function CHECKS(valShort) {
+            return [
+              { label: 'files.json present and the kit version matches the manifest', ok: true, detail: kitV + ' vs ' + kitV },
+              { label: 'train class directories equal the manifest classes', ok: true, detail: 'found ' + JSON.stringify(names.slice().sort()) },
+              { label: 'val class directories equal the manifest classes', ok: true, detail: 'found ' + JSON.stringify(names.slice().sort()) },
+              { label: 'train labeled images per class == ' + fmtCount(perClass), ok: true, detail: fmtCount(labeled) + ' labeled images across ' + nC + ' classes' },
+              { label: 'train undefined pool == ' + fmtCount(pool), ok: true, detail: 'found ' + fmtCount(pool) },
+              { label: 'val images per class == ' + fmtCount(valPer), ok: !valShort, detail: valShort ? 'off: {"' + names[1] + '": ' + (valPer - 1) + '}' : fmtCount(valRows) + ' val images' },
+              { label: 'test images == ' + fmtCount(testN), ok: true, detail: 'found ' + fmtCount(testN) },
+              { label: 'sample_submission.csv rows == test images', ok: true, detail: fmtCount(testN) + ' rows vs ' + fmtCount(testN) + ' images' },
+              { label: 'sample_submission.csv ids are the test image ids', ok: true, detail: 'every id has exactly one image' },
+              { label: 'sample_submission.csv header matches the submission columns', ok: true, detail: 'found ' + JSON.stringify(((m.submission || {}).columns) || []) },
+              { label: 'every kit image decodes', ok: true, detail: fmtCount(trainRows + valRows + testN) + '/' + fmtCount(trainRows + valRows + testN) + ' decoded' },
+              { label: 'existing tables reused', ok: true, detail: 'train (' + trainRows + ' rows), val (' + valRows + ' rows)' },
+              { label: 'train row count == ' + fmtCount(trainRows), ok: true, detail: fmtCount(trainRows) + ' rows' },
+              { label: 'train label map is the manifest classes + undefined', ok: true, detail: names.concat(['undefined']).join(', ') },
+              { label: 'train zero-weight rows == ' + fmtCount(pool), ok: true, detail: fmtCount(pool) + ' rows at weight 0' },
+              { label: 'val row count == ' + fmtCount(valRows), ok: !valShort, detail: fmtCount(valShort ? valRows - 1 : valRows) + ' rows' },
+              { label: 'val label map is the manifest classes + undefined', ok: true, detail: names.concat(['undefined']).join(', ') },
+              { label: 'val zero-weight rows == 0', ok: true, detail: '0 rows at weight 0' }
+            ];
+          }
+          var LOG = [
+            'Manifest: remote (' + ((m.competition || {}).id || '') + ', kit ' + kitV + ')',
+            'PASS files.json present and the kit version matches the manifest: ' + kitV + ' vs ' + kitV,
+            'PASS every kit image decodes: ' + fmtCount(trainRows + valRows + testN) + '/' + fmtCount(trainRows + valRows + testN) + ' decoded',
+            'PASS target table names are free: \'initial\'',
+            'train: created ' + T('train').url + ' (' + fmtCount(trainRows) + ' rows, 1.7s)',
+            'val: created ' + T('val').url + ' (' + fmtCount(valRows) + ' rows, 0.1s)',
+            'PASS train row count == ' + fmtCount(trainRows) + ': ' + fmtCount(trainRows) + ' rows',
+            'PASS val row count == ' + fmtCount(valRows) + ': ' + fmtCount(valRows) + ' rows'
+          ];
+          var pfGreen = {
+            all_ok: true, kit_dir: devKit,
+            classes: { count: nC, canonical: true, names: names },
+            splits: { train: { found: trainRows, expected: trainRows, labeled: labeled, ok: true }, val: { found: valRows, expected: valRows, ok: true } },
+            unlabeled: { found: pool, expected: pool }, problems: []
+          };
+          var pfMismatch = {
+            all_ok: false, kit_dir: devKit,
+            classes: { count: nC, canonical: true, names: names },
+            splits: { train: { found: trainRows, expected: trainRows, labeled: labeled, ok: true }, val: { found: valRows - 1, expected: valRows, ok: false } },
+            unlabeled: { found: pool, expected: pool },
+            problems: [{ label: 'val images per class == ' + fmtCount(valPer), detail: 'off: {"' + names[1] + '": ' + (valPer - 1) + '}' }]
+          };
+          var DLLOG = ['Manifest: remote (' + ((m.competition || {}).id || '') + ', kit ' + kitV + ')',
+            'PASS kit listed by the competition manifest: ' + kitV + ' from remote: ' + shards.length + ' shards, ' + fmtCount(totalBytes) + ' bytes',
+            'PASS enough disk space at the destination: 361.3 GB free, ~0.3 GB needed']
+            .concat(shards.map(function (s) { return s.name + ': ' + fmtCount(s.bytes) + ' bytes, sha256 verified'; }))
+            .concat(['PASS all ' + shards.length + ' shards downloaded and sha256-verified: ' + fmtCount(totalBytes) + ' bytes',
+              'PASS all ' + shards.length + ' shards extracted', 'PASS files.json present in the kit',
+              'PASS kit version inside the kit matches the manifest: ' + kitV + ' vs ' + kitV,
+              'PASS extracted kit matches files.json: ' + fmtCount(fileCount) + '/' + fmtCount(fileCount) + ' files verified',
+              'PASS kit split counts match the manifest', 'Session updated: Import now points at the downloaded kit',
+              'Shard archives removed after verification']);
+
+          kgRevisitActive = false;
+          el('kg-import-state').textContent = '';
+          if (mode && mode.indexOf('state') === 0) {
+            if (mode === 'state1') {
+              dlShowSection(true);
+              el('kg-dl-dest').textContent = devDest;
+              dlShowOffer(false, false);
+            } else if (mode === 'state3' || mode === 'state6') {
+              dlShowSection(false);
+            } else {
+              dlShowSection(true);
+              dlRenderQuiet(fileCount, Date.now() / 1000 - 7200);
+            }
+          }
+          if (mode && mode.indexOf('dl-') === 0) {
+            dlShowSection(true);
+            el('kg-dl-dest').textContent = devDest;
+            var dlNow = Date.now() / 1000;
+            if (mode === 'dl-success' || mode === 'dl-revisit' || mode === 'dl-superseded') {
+              el('kg-kit').value = devDlKit;
+              kgPreflight = pfGreen;
+              kgRenderPreflight(pfGreen);
+            } else {
+              el('kg-kit').value = '';
+              kgPreflight = null;
+              kgRenderPreflight(null);
+            }
+            kgCheckReady();
+            var s3 = shards[Math.min(2, shards.length - 1)] || { name: 'shard', bytes: 0 };
+            if (mode === 'dl-empty') {
+              dlShowOffer(false, false);
+            } else if (mode === 'dl-running' || mode === 'dl-verify') {
+              el('kg-dl-offer').hidden = true;
+              dlRenderProgress({
+                status: 'running',
+                created_at: dlNow - (mode === 'dl-verify' ? 51 : 23),
+                progress: mode === 'dl-verify'
+                  ? { percent: 94, label: 'Verifying files', phase: 'verify' }
+                  : { percent: 37, label: 'Downloading shard 3/' + shards.length, phase: 'download',
+                      bytes_done: Math.round(totalBytes * 0.37), bytes_total: totalBytes }
+              });
+              el('kg-dl-log').textContent = DLLOG.slice(0, mode === 'dl-verify' ? DLLOG.length - 4 : 5).join('\n');
+              el('kg-dl-log-details').style.display = 'block';
+            } else if (mode === 'dl-success') {
+              dlRenderSuccess({ result: { file_count: fileCount } }, false);
+              el('kg-dl-log').textContent = DLLOG.join('\n');
+              el('kg-dl-log-details').style.display = 'block';
+            } else if (mode === 'dl-fail') {
+              dlRenderFail({
+                error: 'Could not download ' + s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) +
+                  ' of ' + fmtCount(s3.bytes) + ' bytes. Run the download again. Completed shards are kept, and the job resumes where it stopped.',
+                checks: []
+              }, false);
+              el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat([
+                s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) + ' of ' + fmtCount(s3.bytes) + ' bytes, retrying',
+                'FAILED: Could not download ' + s3.name + '.'
+              ]).join('\n');
+              el('kg-dl-log-details').style.display = 'block';
+            } else if (mode === 'dl-cancelled') {
+              dlRenderCancelled(false);
+              el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat([
+                'Cancelled. Completed shards are kept; running the download again resumes.'
+              ]).join('\n');
+              el('kg-dl-log-details').style.display = 'block';
+            } else if (mode === 'dl-revisit') {
+              dlRenderQuiet(fileCount, dlNow - 7200);
+            } else if (mode === 'dl-superseded') {
+              dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
+                completed_at: dlNow - 259200, file_count: fileCount, kit_dir: devDlKit });
+            } else {
+              kgInitImportTab();
+            }
+            return;
+          }
+          if (mode === 'state1') {
+            el('kg-kit').value = '';
+            kgPreflight = null;
+            kgRenderPreflight(null);
+            kgCheckReady();
+          } else if (mode === 'state2') {
+            el('kg-kit').value = devKit;
+            kgPreflight = pfGreen;
+            kgRenderPreflight(pfGreen);
+            kgCheckReady();
+          } else if (mode === 'state2-mismatch') {
+            el('kg-kit').value = devKit;
+            kgPreflight = null;
+            kgRenderPreflight(pfMismatch);
+            kgCheckReady();
+          } else if (mode === 'state2-error') {
+            el('kg-kit').value = 'C:\\nope\\starter_kit';
+            kgPreflight = null;
+            kgRenderPreflight({ error: 'No kit found at C:\\nope\\starter_kit (files.json missing). Download the starter kit first.' });
+            kgCheckReady();
+          } else if (mode === 'state3') {
+            var now = Date.now() / 1000;
+            el('kg-kit').value = devKit;
+            kgPreflight = pfGreen;
+            kgRenderPreflight(pfGreen);
+            kgImporting = true;
+            kgCheckReady();
+            el('kg-import-spinner').style.display = 'inline-block';
+            el('kg-import-state').textContent = 'Importing… (safe to navigate away)';
+            kgRenderProgress({
+              status: 'running',
+              progress: { stages: KG_IMPORT_STAGES, current: 'val', done: ['train'],
+                          started_at: { train: now - 9, val: now - 2 }, finished_at: { train: now - 2 } }
+            });
+            el('kg-log').textContent = LOG.slice(0, 5).join('\n');
+            el('kg-log-details').style.display = 'block';
+          } else if (mode === 'state4') {
+            el('kg-kit').value = devKit;
+            kgPreflight = pfGreen;
+            kgRenderPreflight(pfGreen);
+            kgCheckReady();
+            renderResult({ tables: { train: T('train', trainRows, true), val: T('val', valRows, false) } });
+            renderChecks(CHECKS());
+            el('kg-log').textContent = LOG.join('\n');
+            el('kg-log-details').style.display = 'block';
+          } else if (mode === 'state5') {
+            el('kg-kit').value = devKit;
+            kgPreflight = pfGreen;
+            kgRenderPreflight(pfGreen);
+            kgCheckReady();
+            renderFailBanner('The val table did not verify after writing (see the checks). It was removed.');
+            renderChecks(CHECKS(true));
+            el('kg-import-btn').innerHTML = KG_BTN_RERUN;
+            el('kg-log').textContent = LOG.concat(['FAIL val row count == ' + fmtCount(valRows) + ': ' + fmtCount(valRows - 1) + ' rows',
+              'FAILED: The val table did not verify after writing.']).join('\n');
+            el('kg-log-details').style.display = 'block';
+          } else if (mode === 'state6-superseded') {
+            kgRenderRevisit({ state: 'success', record: { project_name: (m.competition || {}).id, table_name: 'initial', kit_dir: devDlKit,
+              tables: { train: T('train', trainRows, true), val: T('val', valRows, true) }, checks: CHECKS() } });
+            dlShowSection(true);
+            el('kg-dl-dest').textContent = devDest;
+            dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
+              completed_at: Date.now() / 1000 - 259200, file_count: fileCount, kit_dir: devDlKit });
+          } else if (mode === 'state6') {
+            kgRenderRevisit({ state: 'success', record: { project_name: (m.competition || {}).id, table_name: 'initial', kit_dir: devKit,
+              tables: { train: T('train', trainRows, true), val: T('val', valRows, true) }, checks: CHECKS() } });
+          } else {
+            kgInitImportTab();   // unknown value → normal resolution
+            return;
+          }
+        }
+        apply();
+        // The async config load fills saved form values after we've applied the fixture — re-apply
+        // once it lands so the forced state sticks (and so the derived numbers are the manifest's).
+        configLoaded.then(function () { setTimeout(apply, 0); });
+      }
+
       // ── Dispatch — LAST ───────────────────────────────────────────────
       showTab(savedTab || 'import');
-      configLoaded.then(function () {
-        kgInitImportTab();
-        kgRenderGates();
-      });
+      if (kgDevMode) {
+        kgDevForce(kgDevMode);
+        configLoaded.then(function () { kgRenderGates(); });
+      } else {
+        configLoaded.then(function () {
+          kgInitImportTab();
+          kgRenderGates();
+        });
+      }
     })();
   </script>
 </div>

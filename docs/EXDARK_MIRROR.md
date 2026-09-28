@@ -72,13 +72,38 @@ adapted under allowed difference n (how) · **D** needs decision.
 | 37 | `poll(jobId)` every second against the plugin's job store (2876) | the same terminal handling driven by `PluginJobs.run/track` events; the log accordion fills from a `log` event the worker adapter emits | A(plumbing) |
 | 38 | Bug 4 (stale manifest): n/a in ExDark | every manifest fact renders from ONE source: the latest resolution (the refresh result once it lands, else the config's). The kit record now stores the manifest provenance the download job ran under, so "which manifest did the download use" is answerable from the record | plumbing |
 
-## 3. Needs decision (summary)
+## 3. Decisions (Rishikesh, 2026-09-28, after the visual review of the mirror)
 
-- **#26 Re-import fresh** — omit / fresh `-2` tables / ExDark's overwrite.
-- **#27 Superseded kit** — ExDark's in-place top-up vs our download-beside.
-- **#6 Stepper dot** — ExDark marks the next pipeline step; you reported that as a bug. Ported
-  with the dot on the selected tab; say so if you want ExDark's exact behaviour instead.
-- **#11 `?kgdev` fixtures** — port later or not at all.
+- **#26 Re-import fresh** — ExDark's button and placement (the `.kg-reimport-slot` of a REUSED
+  row). It starts a `mode=reimport` job that writes fresh `initial-N` tables beside the old pair;
+  it never overwrites a table or its revisions. Consequence: ExDark's confirm dialog (a revision
+  count, "re-importing fresh discards them") is not shown — nothing is discarded.
+- **#27 Superseded kit** — download-beside stays (existing tables point at the v1 image files);
+  the callout keeps ExDark's shape and wording where it is true, with the top-up sentence replaced
+  by the download-beside fact.
+- **#6 Stepper dot** — ExDark's exact behaviour: the dot marks the next pipeline step.
+- **#11 `?kgdev` fixtures** — ported (kgDevForce / kgDevDisableActions, verbatim structure) for
+  the states this plugin has: `state1`, `state2`, `state2-mismatch`, `state2-error`, `state3`,
+  `state4`, `state5`, `state6`, `state6-superseded`, `dl-empty`, `dl-running`, `dl-verify`,
+  `dl-success`, `dl-fail`, `dl-cancelled`, `dl-revisit`, `dl-superseded`. Fixture numbers, class
+  names and shard names derive from the served manifest (the literal census stays clean); fixture
+  pages disable both job-firing buttons and every start path guards on `kgDevMode`.
+
+Fixes from the same review:
+
+- **a. Competition name** — the hero title is the manifest's `display_name` (allowed difference 1).
+- **b. Status glyph** — checked: ExDark's `#kg-state-status` is empty too (Status is not a
+  pipeline step; `renderPipeline` marks import/train/submit only). Mirrored as is.
+- **c. Stale result next to a new preflight verdict** — checked: ExDark clears the banner, checks
+  and result only at import start and Start over, and its splits placeholder always says "Enter a
+  YAML path above…". **Deviation:** `kgClearStaleResult()` runs when the preflight transitions to
+  mismatch or error while a finished import's result is on screen (form state only; never during
+  an import or on the revisit view), and the splits placeholder reads "Splits are detected once
+  the kit folder matches the competition manifest." when the folder is filled.
+- **d. (future)** — the gate says "no import has produced these tables" when the tables exist but
+  the plugin's record was reset (e.g. after a `--reset-state` reinstall or a fresh machine sharing
+  the project root). ExDark's `verified_import_state` synthesizes a snapshot from the canonical
+  URLs when they all exist; port that when the Train tab needs the tables (session 3).
 
 ## 4. Tests
 

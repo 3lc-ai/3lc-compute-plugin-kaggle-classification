@@ -123,9 +123,20 @@ def test_fragment_is_the_exdark_import_tab():
                    "/download/verify", "'download_kit'", "Setting up the plugin environment.", "status === 'provisioning'",
                    "?table=", "object_service=", "/manifest'", "refresh.state === 'done'"):
         assert needle in html, needle
-    # The re-import action awaits a decision (EXDARK_MIRROR #26): the slot exists, the button does not.
-    assert 'class="kg-reimport-slot"></span>' in html
-    assert "kg-reimport" not in html.replace("kg-reimport-slot", "")
+    # Decisions of 2026-09-28 (EXDARK_MIRROR §3): Re-import fresh in ExDark's slot, writing fresh
+    # tables (mode=reimport, never overwrite); ExDark's exact stepper dot; the hero title is the
+    # manifest's display name; the ?kgdev fixtures ported.
+    assert "Re-import fresh" in html and "kgStartImport({ reimport: true })" in html
+    assert "mode: opts.reimport ? 'reimport' : 'import'" in html
+    assert "var currentSeen = false;" in html
+    assert "querySelector('.kg-id-title').textContent = comp.display_name" in html
+    assert "function kgDevForce(mode)" in html and "function kgDevDisableActions()" in html
+    for state in ("state1", "state2", "state2-mismatch", "state2-error", "state3", "state4", "state5", "state6",
+                  "state6-superseded", "dl-empty", "dl-running", "dl-verify", "dl-success", "dl-fail", "dl-cancelled",
+                  "dl-revisit", "dl-superseded"):
+        assert f"mode === '{state}'" in html, state
+    # Fix c: a stale result never sits next to a new amber/red preflight.
+    assert "function kgClearStaleResult()" in html and "if (transitioned && (kind === 'mismatch' || kind === 'error')) { kgClearStaleResult(); }" in html
 
 
 ESC = "function esc(s) {"

@@ -5,7 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased] — 0.1.0 (sessions 1 and 2)
 
-### Changed (session 2.5)
+### Changed (session 2.5, the ExDark mirror)
+- The plugin now mirrors 3lc-compute-plugin-kaggle v1.2.15 (`docs/EXDARK_MIRROR.md`): the shell and
+  the Import tab are a port of its fragment (innerHTML + `esc()`, icons, motion, connection guard,
+  diagnostics, preflight, progress rows, result and failure banners, revisit, download section,
+  `?kgdev` fixtures) under the four allowed differences; existing tables are REUSED and re-validated;
+  Re-import fresh writes fresh `initial-N` tables beside the old ones; the hero title is the
+  manifest's display name; a stale result clears when the preflight turns amber or red.
+  `GET /download/verify`; the kit record carries the manifest provenance of the download.
+
+### Changed (session 2.5, superseded passes)
 - Competition display name in the bundled manifest: "3LC Scene Classification Challenge"; `cdn/` regenerated
   (manifest sha256 `d9f34aed…db83c`, index `e0e9c4bc…f262d`), not yet uploaded.
 - The fragment at the ExDark presentation standard (`docs/UI_PARITY.md`): hero with constraint chips
