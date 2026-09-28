@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased] — 0.1.0 (sessions 1 and 2)
 
+### Changed (session 2.5)
+- Competition display name in the bundled manifest: "3LC Scene Classification Challenge"; `cdn/` regenerated
+  (manifest sha256 `d9f34aed…db83c`, index `e0e9c4bc…f262d`), not yet uploaded.
+- The fragment at the ExDark presentation standard (`docs/UI_PARITY.md`): hero with constraint chips
+  and the Loop row, the tab bar as stepper with state glyphs and keyboard support, Hub card and
+  form classes, one callout geometry, stepper rows with status badges and elapsed, checks as a
+  collapsed verdict that auto-expands on failure with remedies, Technical details and Show log
+  disclosures, truncated paths with Copy, "Open in Dashboard" and the Hub project link, the
+  connection guard, Copy diagnostics, "Next: train your first model", gated later tabs, reduced
+  motion honoured everywhere. `import_state` now carries `latest` (the newest revision per split).
+
 ### Changed (session 2)
 - Manifest schema v1: `kit.base_url` replaced by a relative `kit.path`; shard URLs resolve against the
   URL the manifest was fetched from; the index's `manifest_url` is relative to the index. Layout

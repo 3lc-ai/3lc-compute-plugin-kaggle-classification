@@ -70,8 +70,25 @@ download section's two blurbs become one blurb reading the manifest (`kit.versio
 bytes from `_meta`); the checks grid gains the collapsed verdict toggle (#14).
 
 Not ported: the Ultralytics license band (§16, AGPL-specific), the locked-format banner (YOLO
-format), the revision picker popover (Train-session item), the Status hero strip and history
-table (session 6), the segmented source toggle and sanity card (sessions 4–5), the sparkline.
+format), the Status hero strip and history table (session 6), the segmented source toggle and
+sanity card (sessions 4–5), the sparkline. **Deferred, not dropped:** the revision picker popover
+(`kgBindTablePicker`, ui-notes §7) ports in session 3 with the Train tab's table-URL fields.
+
+## 2b. Adjustments from the Phase 2 go (2026-09-28)
+
+- Loop steps for classification: **import › train › label & weight in Dashboard ↗ › retrain ›
+  predict › submit**; the Dashboard step deep-links the **latest train revision**
+  (`import_state.latest.train`, tlc's own `latest()`), not the seed table.
+- Connection guard: ExDark's **full** `kgConn` (retrying banner with 2/5/10/15 s backoff in every
+  tab's slot, resume callbacks on reconnect, never restarts or duplicates work).
+- Class chip wording: **"6 classes · 6,000 unlabeled to label"**, both numbers from the manifest.
+- Remedy map, at minimum: disk full, network or CDN failure, sha256 mismatch, file locked
+  (antivirus or sync client), tables already exist, plugin environment still provisioning.
+- Reduced motion: the guide pulse and every other animation live inside the
+  `prefers-reduced-motion: no-preference` gate; JS waits are gated by `kgMotionOK()`.
+- Hub project link: built from `window.location.origin` only when the origin is `hub.3lc.ai` or
+  `hub-beta.3lc.ai`; omitted elsewhere.
+- Element builders + `textContent` everywhere; the `innerHTML` ban stays.
 
 ## 3. Decisions already taken for Phase 2 (from the brief)
 

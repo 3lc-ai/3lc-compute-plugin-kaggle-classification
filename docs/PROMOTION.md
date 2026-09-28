@@ -98,8 +98,14 @@ Keys, sizes and sha256s of the current build (kit v1, 2026-09-22):
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-02.zip` | 53,237,641 | `908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-03.zip` | 24,511,747 | `ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-04.zip` | 14,208,813 | `4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2` |
-| `kaggle/intel-scene/manifest.json` | 2,699 | `2dd9757680512f421d102e2c66f946318f190bc54d1522ad68da4a36a21a4b38` |
-| `kaggle/classification-index.json` | 213 | `64c8fa92fc8250fd14bfd573a56bee0e201de6c5ba5d1ce93e9c89e322641b0e` |
+| `kaggle/intel-scene/manifest.json` | 2,689 | `d9f34aedce6f2d98b1c16294a2ab3252ceb64ff7df7a94fa5000d8c08e4db83c` |
+| `kaggle/classification-index.json` | 203 | `e0e9c4bce89460607277fa7a57eead1d65c39be38a1d53d151a5eb63073f262d` |
+
+The two mutable documents above are the **session 2.5 build** (display name "3LC Scene
+Classification Challenge", `cdn/` regenerated 2026-09-28, not yet uploaded). Until they are
+re-uploaded and the two paths invalidated, the dev tier still serves the earlier documents
+(manifest 2,699 B `2dd97576…4b38`, index 213 B `64c8fa92…41b0e`, verified in §6). The shards
+are unchanged; both manifests describe the same kit v1.
 
 Nothing on prod changes during session 2; this section is the hand-off for later.
 

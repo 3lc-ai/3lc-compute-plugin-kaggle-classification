@@ -449,11 +449,26 @@ def import_state() -> dict[str, Any]:
     if not record:
         return {"state": "empty"}
     verified: dict[str, bool] = {}
+    latest: dict[str, str] = {}
     for split in REGISTERED_SPLITS:
         url = str(((record.get("tables") or {}).get(split) or {}).get("url") or "")
         verified[split] = bool(url) and _url_exists(url)
+        if verified[split]:
+            latest[split] = _latest_url(url)
     state = "success" if all(verified.values()) else "stale"
-    return {"state": state, "verified": verified, "record": record}
+    # ``latest``: the newest revision descending from each seed table (tlc's own ``latest()``),
+    # so the Loop's Dashboard step opens what the participant is actually labeling. Equal to the
+    # seed URL until a revision exists.
+    return {"state": state, "verified": verified, "latest": latest, "record": record}
+
+
+def _latest_url(url: str) -> str:
+    import tlc
+
+    try:
+        return str(tlc.Table.from_url(tlc.Url(url)).latest().url)
+    except Exception:  # noqa: BLE001 - the seed is always a valid answer
+        return url
 
 
 def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:

@@ -9,7 +9,7 @@ schema_version: 1
 competition:
   id: intel-scene                      # stable CDN id; never the Kaggle slug
   slug: 3-lc-hack-nova-scene-classification-challenge   # TBC: Kaggle URL slug
-  display_name: "3LC HackNova: Scene Classification Challenge"
+  display_name: "3LC Scene Classification Challenge"
   deadline_utc: "2026-12-31T23:59:59Z"  # TBC
 
 classes:

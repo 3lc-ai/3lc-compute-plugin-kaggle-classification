@@ -110,8 +110,28 @@ def test_fragment_drives_import_through_the_host_job_channel():
         "status === 'provisioning'",
         "?table=",
         "object_service=",
+        # session 2.5 parity (docs/UI_PARITY.md): Dashboard wording, the Hub project link only on a
+        # Hub origin, participant view behind Technical details, gated later tabs, the next step,
+        # the full connection guard, remedies, reduced-motion gate, chips wording from the manifest
+        "Open in Dashboard",
+        "'hub.3lc.ai', 'hub-beta.3lc.ai'",
+        "window.location.origin",
+        "'Technical details'",
+        "Import the kit first.",
+        "Next: train your first model",
+        "Compute service unreachable, retrying",
+        "Reconnected.",
+        "var REMEDIES",
+        "prefers-reduced-motion: no-preference",
+        "unlabeled to label",
+        "refresh.source",
     ):
         assert needle in html, needle
+    for forbidden in ("Open in the Hub", "HackNova", "innerHTML", "font-family"):
+        assert forbidden not in html, forbidden
+    # Every remedy the brief requires has an entry.
+    for topic in ("disk", "sha256 mismatch", "unreachable|Could not download", "locked", "already exist", "provisioning"):
+        assert topic in html, topic
     # The fragment never opens its own socket or fetches the CDN; the host owns the transport.
     assert "io(" not in html.replace("API.libs.io", "") or "new WebSocket" not in html
     assert "competitions." not in html

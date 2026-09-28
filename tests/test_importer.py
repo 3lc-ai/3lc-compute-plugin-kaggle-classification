@@ -84,7 +84,11 @@ def test_import_registers_train_and_val_with_undefined_and_weights(project_root,
     assert record["manifest_provenance"]["competition_id"] == "intel-scene"
     assert record["timings"]["total_s"] >= 0
     assert ctx.facts["run_url"] == result["tables"]["train"]["url"]
-    assert importer.import_state()["state"] == "success"
+    state = importer.import_state()
+    assert state["state"] == "success"
+    # No revision yet: the latest train/val revision IS the seed (the Loop's Dashboard target).
+    assert state["latest"] == {"train": result["tables"]["train"]["url"], "val": result["tables"]["val"]["url"]}
+    assert "3LC Scene Classification Challenge" in tlc.Table.from_url(tlc.Url(result["tables"]["train"]["url"])).description
 
 
 def test_collision_refuses_then_reimport_writes_fresh_tables(project_root, kit_and_manifest):
