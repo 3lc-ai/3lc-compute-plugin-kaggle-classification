@@ -67,9 +67,11 @@ environments, credential locations); it points here at the repo boundary.
 ## C. The dev loop
 
 ```powershell
-uv sync --extra kaggle-classification --group dev
+uv sync --python 3.12 --extra kaggle-classification --group dev
 uv run pytest
 ```
+
+`--python 3.12` mirrors what the host does (`--python <its major.minor>`, PLAN §A Python); without it a bare `uv sync` takes the newest interpreter on the machine, and 3lc ships no cp314 wheel.
 
 Folder-source registration on the 1.1.0 Hub (`../3lc-hub-11/`, compute :5023; the run command with the redirected home is in its `SETUP.md`; admin and plugin routes need the Hub JWT, so from a script use the in-process pattern in `../3lc-hub-11/config_probe.py`):
 start the service with `--plugin-dir "<repo>\src"` (or

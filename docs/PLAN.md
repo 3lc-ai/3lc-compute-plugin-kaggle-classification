@@ -25,7 +25,7 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | Tabs | Import, Train, Predict + Submit, Status. |
 | Hosts | `min_service_version = "1.1.0"` (the 1.1.0 torch-backend fix is required for a clean Windows install). |
 | Torch index | Mirrors the timm plugin exactly: `pytorch-cu126` explicit index, `torch`/`torchvision` sourced from it on `linux` and `win32`, PyPI on macOS. |
-| Python | `requires-python = ">=3.11"`: the timm plugin says `>=3.10`, but `kaggle>=2.2.3` and `scikit-learn>=1.9` floor at 3.11 and uv locks the whole range. |
+| Python | `requires-python = ">=3.11"`, **no upper bound** (verdict 2026-09-28). The host picks the plugin venv's interpreter, never uv's default: compute 1.1.0 `provisioning.resolve_provision_python` passes `--python <host major.minor>` (`sys.version_info` of the service process) to both `uv sync` (folder source) and `uv venv` (catalog/spec install), overridable only by a `[runtime] python` key in `plugin.toml`, which this plugin does not declare. The service itself runs on 3lc, whose wheels are cp310–cp313 with `Requires-Python <3.14` (3.3.0–3.3.2 checked on PyPI), so no participant host can be 3.14 and no plugin venv can be either. The one place a newer interpreter CAN sneak in is a bare `uv sync` in a checkout (uv picks the newest Python on the machine), which is why the dev loop passes `--python 3.12`. The floor stays at 3.11: the timm plugin says `>=3.10`, but `kaggle>=2.2.3` and `scikit-learn>=1.9` floor at 3.11 and uv locks the whole range. |
 | DataLoader workers | `num_workers=0` everywhere data loads (Windows). Device-aware in session 3. |
 | Paths | Windows host, every path may contain spaces: quote everything. |
 
