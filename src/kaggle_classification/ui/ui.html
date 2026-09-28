@@ -68,6 +68,13 @@
     .kgc .card { min-width: 0; margin-bottom: 16px; }
     .kgc .card-body { min-width: 0; }
     .kgc .kg-sec-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); margin: 0 0 10px; }
+    /* The one status line + one primary action every tab leads with (UI_PARITY #3b) */
+    .kgc .kg-status-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .kgc .kg-status { flex: 1 1 260px; min-width: 0; font-size: 13px; color: var(--text); line-height: 1.5; }
+    .kgc .kg-status .kg-quiet { display: block; }
+    .kgc .kg-status-actions { margin-top: 0; }
+    .kgc .kg-progress-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .kgc .kg-eta { color: var(--text-muted); white-space: nowrap; margin-left: auto; }
     .kgc .kg-sec + .kg-sec { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light, rgba(0,0,0,.06)); }
     .kgc .kg-blurb { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; line-height: 1.55; }
     .kgc .kg-quiet { font-size: 12px; color: var(--text-muted); }
@@ -210,55 +217,57 @@
     <div class="card">
       <div class="card-header"><div>
         <div class="card-title"><span class="plugin-section-number">1</span> Import</div>
-        <div class="card-subtitle" id="kgc-import-subtitle"></div>
       </div></div>
       <div class="card-body">
         <div id="kgc-conn-import" role="status" aria-live="polite"></div>
 
-        <div class="kg-sec" id="kgc-kit-sec">
-          <div class="kg-sec-head">Starter kit</div>
-          <p class="kg-blurb" id="kgc-kit-blurb"></p>
-          <div class="kg-quiet" id="kgc-kit-state" aria-live="polite"></div>
-          <div id="kgc-kit-callout"></div>
-          <div class="kg-actions">
-            <button class="btn btn-primary btn-sm kgi-btn" id="kgc-dl-start" type="button"></button>
+        <!-- ONE status line and ONE primary action by default (UI_PARITY #3b). Everything else
+             below is a disclosure or appears only for the state that needs it. -->
+        <div class="kg-status-row">
+          <div class="kg-status" id="kgc-status" aria-live="polite"></div>
+          <div class="kg-actions kg-status-actions">
+            <button class="btn btn-primary btn-sm kgi-btn" id="kgc-dl-start" type="button" hidden></button>
             <button class="btn btn-ghost btn-sm" id="kgc-dl-cancel" type="button" hidden>Cancel</button>
-            <button class="btn btn-ghost btn-sm kgi-btn" id="kgc-kit-verify" type="button" hidden></button>
+            <button class="btn btn-primary btn-sm kgi-btn" id="kgc-import-start" type="button" hidden disabled></button>
+            <button class="btn btn-ghost btn-sm" id="kgc-import-cancel" type="button" hidden>Cancel</button>
           </div>
         </div>
+        <div id="kgc-kit-callout"></div>
+        <input class="form-control" id="kgc-f-kit" type="text" readonly hidden>
 
-        <div class="kg-sec" id="kgc-pipeline">
-          <div class="kg-sec-head">Pipeline</div>
-          <div class="kg-quiet" id="kgc-pipeline-sub" aria-live="polite"></div>
+        <!-- Running job: one progress line (step · shard and bytes · ETA), the bar, and the
+             seven step rows under "Show steps" (collapsed; auto-opens on failure). -->
+        <div id="kgc-pipeline" hidden>
+          <div class="kg-progress-line"><span id="kgc-pipeline-sub"></span><span class="kg-eta" id="kgc-eta"></span></div>
           <div class="kg-progress" id="kgc-bar" hidden><div></div></div>
-          <div id="kgc-steps"></div>
+          <div class="kg-acc-wrap" style="margin-top: 6px;">
+            <button type="button" class="kgl-acc-summary" id="kgc-steps-toggle" aria-expanded="false" aria-controls="kgc-steps-panel"></button>
+            <div class="kgl-acc" id="kgc-steps-panel" hidden><div class="kgl-acc-inner"><div id="kgc-steps"></div></div></div>
+          </div>
         </div>
 
-        <div class="kg-sec" id="kgc-import-sec">
-          <div class="kg-sec-head">Import</div>
-          <div id="kgc-import-revisit" hidden></div>
-          <div id="kgc-import-form">
-            <p class="kg-blurb" id="kgc-import-blurb"></p>
-            <div class="kg-form-cols">
-              <div class="form-group"><label class="form-label" for="kgc-f-project">Project</label><input class="form-control" id="kgc-f-project" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-project"></span></div>
-              <div class="form-group"><label class="form-label" for="kgc-f-table">Table name</label><input class="form-control" id="kgc-f-table" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-table"></span></div>
-              <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label" for="kgc-f-kit">Kit directory</label><div class="kg-table-row" style="border: 0; padding: 0;"><input class="form-control" id="kgc-f-kit" type="text" readonly hidden><span class="kg-path" id="kgc-kit-path"></span><span class="kg-row-actions" id="kgc-kit-path-actions"></span></div><span class="form-help">Filled by the download. Tables reference the images in this folder, so it stays where it is.</span></div>
-            </div>
-            <div id="kgc-import-gate"></div>
-            <div class="kg-actions">
-              <button class="btn btn-primary btn-lg kgi-btn" id="kgc-import-start" type="button" disabled></button>
-              <label class="kg-check-label" id="kgc-reimport-wrap" hidden><input type="checkbox" id="kgc-reimport"> <span id="kgc-reimport-label"></span></label>
-              <button class="btn btn-ghost btn-sm" id="kgc-import-cancel" type="button" hidden>Cancel</button>
-            </div>
+        <!-- Import form: hidden until the kit is on disk; Project / Table name under Advanced. -->
+        <div id="kgc-import-revisit" hidden></div>
+        <div id="kgc-import-form" hidden>
+          <div id="kgc-import-gate"></div>
+          <div class="kg-acc-wrap">
+            <button type="button" class="kgl-acc-summary" id="kgc-adv-toggle" aria-expanded="false" aria-controls="kgc-adv-panel"></button>
+            <div class="kgl-acc" id="kgc-adv-panel" hidden><div class="kgl-acc-inner">
+              <div class="kg-form-cols" style="margin-top: 8px;">
+                <div class="form-group"><label class="form-label" for="kgc-f-project">Project</label><input class="form-control" id="kgc-f-project" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-project"></span></div>
+                <div class="form-group"><label class="form-label" for="kgc-f-table">Table name</label><input class="form-control" id="kgc-f-table" type="text" autocomplete="off" spellcheck="false"><span class="form-help" id="kgc-help-table"></span></div>
+              </div>
+              <label class="kg-check-label" id="kgc-reimport-wrap" hidden style="margin-top: 8px;"><input type="checkbox" id="kgc-reimport"> <span id="kgc-reimport-label"></span></label>
+            </div></div>
           </div>
-          <div id="kgc-import-live" hidden>
-            <div id="kgc-live-checks"></div>
-          </div>
-          <div id="kgc-import-tech"></div>
-          <div class="kg-acc-wrap" id="kgc-log-wrap" hidden>
-            <button type="button" class="kgl-acc-summary" id="kgc-log-toggle" aria-expanded="false" aria-controls="kgc-log-panel"></button>
-            <div class="kgl-acc" id="kgc-log-panel" hidden><div class="kgl-acc-inner"><pre class="kg-log" id="kgc-log"></pre></div></div>
-          </div>
+        </div>
+        <div id="kgc-import-live" hidden>
+          <div id="kgc-live-checks"></div>
+        </div>
+        <div id="kgc-import-tech"></div>
+        <div class="kg-acc-wrap" id="kgc-log-wrap" hidden>
+          <button type="button" class="kgl-acc-summary" id="kgc-log-toggle" aria-expanded="false" aria-controls="kgc-log-panel"></button>
+          <div class="kgl-acc" id="kgc-log-panel" hidden><div class="kgl-acc-inner"><pre class="kg-log" id="kgc-log"></pre></div></div>
         </div>
       </div>
     </div>
@@ -559,29 +568,25 @@
       var numClasses = (m.classes || []).length;
       var pool = (splits.train || {}).undefined;
       text('kgc-comp-name', comp.display_name || '');
+      // Every chip reads the manifest; the fragment holds no count of its own (test_routes pins it).
       setKids($('kgc-chips'), [
         model.arch ? chip(model.arch + ' · ' + (model.pretrained ? 'pretrained' : 'from scratch') + ' · ' + model.image_size + ' px',
           'Identical architecture, initialisation and resolution for every participant. The Run records them as proof.', true) : null,
         numClasses ? chip(numClasses + ' classes · ' + fmtCount(pool) + ' unlabeled to label',
-          'The competition classes, fixed. The unlabeled pool is in the train table at weight 0: label images in the Dashboard and they join the next training run.') : null,
+          'Unlabeled images show as ‘undefined’ in the Dashboard. Label them and set their weight to train on them.') : null,
         sub.metric ? chip('Scored by ' + sub.metric, 'The leaderboard metric.') : null,
         kit.version ? chip('Kit ' + kit.version + (kit.shards && kit.shards.length ? '' : ' (not published yet)'),
           kit.shards && kit.shards.length ? kit.shards.length + ' shards, ' + fmtBytes(kit.shards.reduce(function (a, s) { return a + (s.bytes || 0); }, 0)) : 'The starter kit has not been published yet.') : null,
-        sub.daily_limit ? chip(sub.daily_limit + ' submissions per day', 'Kaggle’s daily limit for this competition.') : null,
-        chip('Manifest: ' + (source || ''), provenance && provenance.manifest_fetched_at ? 'Fetched ' + provenance.manifest_fetched_at : 'The competition rules this page renders come from the manifest.')
+        sub.daily_limit ? chip(fmtCount(sub.daily_limit) + ' submissions per day', 'Kaggle’s daily limit for this competition.') : null
       ]);
-      $('kgc-chips').lastChild.id = 'kgc-source';
+      state.manifestSource = source || '';
       var tags = $('kgc-classes'); clear(tags);
       (m.classes || []).forEach(function (c) {
         var t = el('span', 'kg-tag', c.name); var tint = classTint(Number(c.id) || 0);
         t.style.background = tint.background; t.style.borderColor = tint.borderColor; t.title = 'Class ' + c.id;
         tags.appendChild(t);
       });
-      if (numClasses) { var u = el('span', 'kg-tag', 'undefined'); u.title = 'The unlabeled pool (label id ' + numClasses + ')'; tags.appendChild(u); }
       text('kgc-tab-sub-train', model.arch ? model.arch + ', ' + (model.pretrained ? 'pretrained' : 'from scratch') : '');
-      text('kgc-import-subtitle', 'Creates the ' + (comp.id ? comp.id + '_train and ' + comp.id + '_val' : 'train and val') + ' tables from the starter kit and validates them against the competition manifest.');
-      text('kgc-kit-blurb', 'Downloads the competition images from the 3LC content network to the machine running the compute service, then verifies every file against the published manifest. An interrupted download keeps its finished parts and resumes.');
-      text('kgc-import-blurb', (m.ui && m.ui.loop_banner_text) || '');
       var box = $('kgc-warnings'); clear(box);
       (warnings || []).forEach(function (w) { box.appendChild(callout('warn', [w])); });
       if (candidates && candidates.length > 1) {
@@ -744,13 +749,25 @@
       });
       renderChecks($('kgc-live-checks'), state.checks, true);
     }
+    function eta(bytesDone, bytesTotal) {
+      // From the download's own start: bytes per second so far, remaining bytes over it.
+      if (!state.dlStart || !bytesDone || !bytesTotal || bytesDone >= bytesTotal) { return ''; }
+      var elapsed = (Date.now() - state.dlStart) / 1000; if (elapsed < 3) { return ''; }
+      var left = (bytesTotal - bytesDone) / (bytesDone / elapsed);
+      return 'about ' + (left >= 90 ? Math.round(left / 60) + ' min' : Math.max(5, Math.round(left / 5) * 5) + ' s') + ' left';
+    }
     function applyStageProgress(p) {
       var phase = p.phase || '', kind = state.job ? state.job.kind : 'import';
       if (p.percent != null) { bar(p.percent); }
-      if (p.label) { text('kgc-pipeline-sub', p.label); }
       if (phase === 'download') {
+        if (!state.dlStart) { state.dlStart = Date.now(); }
+        var shard = (p.archive ? p.archive + ' · ' : '') + (p.bytes_total ? fmtBytes(p.bytes_done) + ' of ' + fmtBytes(p.bytes_total) : '');
+        text('kgc-pipeline-sub', (p.label || 'Downloading') + (shard ? ' · ' + shard : ''));
+        text('kgc-eta', eta(p.bytes_done, p.bytes_total));
         step('manifest', 'done'); step('space', 'done');
-        step('download', 'running', (p.archive ? p.archive + ' · ' : '') + (p.bytes_total ? fmtBytes(p.bytes_done) + ' of ' + fmtBytes(p.bytes_total) : ''));
+        step('download', 'running', shard);
+      } else if (p.label) { text('kgc-pipeline-sub', p.label); text('kgc-eta', ''); }
+      if (phase === 'download') {
       } else if (phase === 'extract') { step('download', 'done'); step('extract', 'running', p.label || '');
       } else if (phase === 'verify' && kind === 'download') { step('extract', 'done'); step('verify', 'running', p.label || '');
       } else if (phase === 'validate' || phase === 'decode' || phase === 'collision') { step('verify', 'running', p.label || '');
@@ -810,7 +827,7 @@
         ['Plugin home', meta.plugin_home && meta.plugin_home.path ? meta.plugin_home.path + ' (' + meta.plugin_home.resolved_by + ')' : ''],
         ['Kit destination', meta.kit_dest || ''],
         ['Kit directory', (rec && rec.kit_dir) || (meta.kit_state || {}).kit_dir || (state.session || {}).kit_dir || ''],
-        ['Manifest', prov.manifest_source ? prov.manifest_source + ' · ' + (prov.manifest_sha256 || '') : ''],
+        ['Manifest', (state.manifestSource || prov.manifest_source || '') + (prov.manifest_sha256 ? ' · ' + prov.manifest_sha256 : '') + (prov.manifest_fetched_at ? ' · fetched ' + prov.manifest_fetched_at : '')],
         ['Manifest URL', prov.manifest_document_url || ''],
         ['Import job', (rec && rec.job_id) || ''],
         ['Timings', rec && rec.timings ? Object.keys(rec.timings).map(function (k) { return k.replace(/_s$/, '') + ' ' + fmtSecs(rec.timings[k]); }).join(' · ') : ''],
@@ -836,14 +853,27 @@
       if (l.indexOf('register') >= 0 || l.indexOf('decod') >= 0 || l.indexOf('kit against') >= 0 || l.indexOf('tables') >= 0 || l.indexOf('import') >= 0) { return 'import'; }
       return state.job && state.job.kind ? state.job.kind : 'import';
     }
+    // Status line + the one primary action; the Cancel that belongs to a running job.
+    function setStatus(lines) {
+      var box = $('kgc-status'); clear(box);
+      lines.forEach(function (l) { if (l) { box.appendChild(typeof l === 'string' ? el('div', null, l) : l); } });
+    }
     function setBusy(kind, busy) {
+      var dl = $('kgc-dl-start'), imp = $('kgc-import-start');
       if (kind === 'download') {
-        show('kgc-dl-cancel', busy); $('kgc-dl-start').disabled = busy; $('kgc-dl-start').classList.remove('guide-next');
-        if (busy) { setBtn($('kgc-dl-start'), null, 'Downloading…', true); }
+        show('kgc-dl-cancel', busy); dl.disabled = busy; dl.classList.remove('guide-next');
+        if (busy) { setBtn(dl, null, 'Downloading…', true); dl.hidden = false; imp.hidden = true; }
       } else {
-        show('kgc-import-cancel', busy); $('kgc-import-start').disabled = busy;
-        if (busy) { setBtn($('kgc-import-start'), null, 'Importing…', true); }
+        show('kgc-import-cancel', busy); imp.disabled = busy;
+        if (busy) { setBtn(imp, null, 'Importing…', true); imp.hidden = false; dl.hidden = true; }
       }
+    }
+    // Steps disclosure: collapsed while running and after success; open (and scrolled to the
+    // failing row) on failure (UI_PARITY #3b).
+    function stepsOpen(open) {
+      var toggle = $('kgc-steps-toggle'), panel = $('kgc-steps-panel');
+      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      if (open !== isOpen) { toggle.click(); }
     }
     function onUpdate(job) {
       if (!state.job) { return; }
@@ -851,18 +881,22 @@
       state.job.status = job.status;
       if (job.progress && job.progress.percent != null && job.progress.percent >= 0) { bar(job.progress.percent); }
       var lbl = (job.progress && job.progress.label) || '';
-      if (lbl && lbl.indexOf('PASS ') !== 0 && lbl.indexOf('FAIL ') !== 0) { text('kgc-pipeline-sub', lbl); }
+      if (lbl && lbl.indexOf('PASS ') !== 0 && lbl.indexOf('FAIL ') !== 0 && !(state.job.kind === 'download' && state.dlStart && $('kgc-pipeline-sub').textContent.indexOf(' of ') > 0)) { text('kgc-pipeline-sub', lbl); }
       if (job.error) { state.job.error = job.error; }
     }
     function onDone(job) {
       var kind = state.job ? state.job.kind : 'import';
-      detach(); bar(null);
+      detach(); bar(null); text('kgc-eta', '');
       if (job.status === 'cancelled') {
-        text('kgc-pipeline-sub', kind === 'download' ? 'Download cancelled. Completed shards are kept; run the download again to resume.' : 'Import cancelled. Nothing partial was left behind.');
+        text('kgc-pipeline-sub', kind === 'download' ? 'Download cancelled. Completed shards are kept; the next download resumes.' : 'Import cancelled. Nothing partial was left behind.');
         resetSteps(kind === 'download' ? 'download' : 'register');
-      } else { text('kgc-pipeline-sub', kind === 'download' ? 'Starter kit downloaded and verified.' : 'Import complete.'); }
+      } else {
+        // One summary line; the rows stay under Show steps.
+        var n = state.checks.length, bad = state.checks.filter(function (c) { return !c.ok; }).length;
+        text('kgc-pipeline-sub', kind === 'download' ? 'Download finished.' : 'Import finished' + (n ? ' · ' + (n - bad) + '/' + n + ' checks passed' : '') + '.');
+      }
       announce(kind === 'download' ? 'Download finished' : 'Import finished');
-      state.job = null; setBusy(kind, false);
+      state.job = null; state.dlStart = null; setBusy(kind, false);
       refreshConfig(true);
     }
     function onError(job) {
@@ -872,26 +906,33 @@
       var msg = (cut >= 0 ? raw.slice(0, cut) : raw).split('\n')[0].replace(/^[A-Za-z]+Error: /, '');
       if (cut >= 0) { appendLog(raw.slice(cut + 1)); }
       state.lastError = msg;
-      detach(); bar(null);
-      STEP_NAMES.forEach(function (s) { if (state.stepState[s] === 'running') { step(s, 'failed'); } });
+      detach(); bar(null); text('kgc-eta', '');
+      var failing = null;
+      STEP_NAMES.forEach(function (s) { if (state.stepState[s] === 'running') { step(s, 'failed'); failing = failing || s; } });
+      STEP_NAMES.forEach(function (s) { if (state.stepState[s] === 'failed') { failing = failing || s; } });
       text('kgc-pipeline-sub', kind === 'download' ? 'Download failed.' : 'Import failed.');
       announce(kind === 'download' ? 'Download failed' : 'Import failed');
-      var target = kind === 'download' ? $('kgc-kit-callout') : $('kgc-import-gate');
       var hint = remedyFor(msg);
       var actions = el('div', 'kg-banner-actions'); actions.appendChild(diagBtn());
-      setKids(target, [callout('err', [strongLine(kind === 'download' ? 'Download failed.' : 'Import failed.', msg), hint ? el('p', 'remedy', hint) : null, actions])]);
-      state.job = null; setBusy(kind, false);
-      if (kind === 'download') { setBtn($('kgc-dl-start'), 'refresh-cw', 'Resume download'); }
-      else { setBtn($('kgc-import-start'), 'refresh-cw', 'Re-run import'); }
+      setKids($('kgc-kit-callout'), [callout('err', [strongLine(kind === 'download' ? 'Download failed.' : 'Import failed.', msg), hint ? el('p', 'remedy', hint) : null, actions])]);
+      // Failure: the steps open by themselves and the failing row comes into view.
+      stepsOpen(true);
+      var row = failing ? EL.querySelector('.kg-job-row[data-step="' + failing + '"]') : null;
+      if (row) { setTimeout(function () { row.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'nearest' }); }, motionOK() ? 350 : 0); }
+      state.job = null; state.dlStart = null; setBusy(kind, false);
+      if (kind === 'download') { setBtn($('kgc-dl-start'), 'refresh-cw', 'Resume download'); $('kgc-dl-start').hidden = false; }
+      else { setBtn($('kgc-import-start'), 'refresh-cw', 'Re-run import'); $('kgc-import-start').hidden = false; $('kgc-import-start').disabled = false; }
     }
     function startJob(kind, params) {
       if (state.job) { return Promise.resolve(null); }  // one job at a time; a double click is a no-op
-      state.logs = []; state.checks = []; state.lastError = ''; text('kgc-log', ''); show('kgc-log-wrap', false);
-      clear($('kgc-live-checks')); show('kgc-import-live', kind === 'import');
+      state.logs = []; state.checks = []; state.lastError = ''; state.dlStart = null; text('kgc-log', ''); show('kgc-log-wrap', false);
+      clear($('kgc-kit-callout')); clear($('kgc-live-checks')); show('kgc-import-live', kind === 'import');
+      show('kgc-pipeline', true); state.pipelineShown = true; stepsOpen(false); text('kgc-eta', '');
       resetSteps(kind === 'download' ? 'manifest' : 'verify');
       if (kind === 'import') { ['manifest', 'space', 'download', 'extract'].forEach(function (s) { step(s, 'done'); }); }
       state.job = { id: null, kind: kind, status: 'starting' };
       text('kgc-pipeline-sub', kind === 'download' ? 'Starting the download.' : 'Starting the import.');
+      setStatus([kind === 'download' ? 'Downloading the starter kit.' : 'Importing the kit as 3LC tables.']);
       setBusy(kind, true);
       var body = Object.assign({ kind: kind === 'download' ? 'download_kit' : 'import' }, params || {});
       return PluginJobs.run(PLUGIN_ID, body, { onUpdate: onUpdate, onDone: onDone, onError: onError }).then(function (resp) {
@@ -909,7 +950,9 @@
       listen(job.id);
       state.unsub.push(PluginJobs.track(NS, job.id, { onUpdate: onUpdate, onDone: onDone, onError: onError }));
       onUpdate(job);
-      text('kgc-pipeline-sub', (state.job.kind === 'download' ? 'Download' : 'Import') + ' in progress. It keeps running if you leave this page.');
+      show('kgc-pipeline', true); state.pipelineShown = true; stepsOpen(false);
+      setStatus([(state.job.kind === 'download' ? 'Download' : 'Import') + ' in progress. It keeps running if you leave this page.']);
+      text('kgc-pipeline-sub', (job.progress && job.progress.label) || 'Running');
       setBusy(state.job.kind, true);
       if (state.job.kind === 'download') { step('download', 'running', (job.progress && job.progress.label) || ''); }
       else { show('kgc-import-live', true); step('register', 'running', (job.progress && job.progress.label) || ''); }
@@ -938,30 +981,40 @@
     }
 
     // ── Starter kit section ──────────────────────────────────────────────
+    // The kit decides the card's status line and which ONE action shows (UI_PARITY #3b). The
+    // import form, revisit banner and step rows are the states below it, never all at once.
     function renderKit(meta) {
       var ks = meta.kit_state || {};
-      var running = state.job && state.job.kind === 'download';
-      var dl = $('kgc-dl-start'), verify = $('kgc-kit-verify');
+      var st = meta.import_state || {};
+      var dl = $('kgc-dl-start'), imp = $('kgc-import-start');
+      if (state.job) { return; }  // a running job owns the status line
       clear($('kgc-kit-callout'));
-      dl.classList.remove('guide-next');
-      if (ks.state === 'success') {
-        text('kgc-kit-state', 'Kit ' + ks.kit_version + ' on this machine, ' + fmtCount(ks.file_count) + ' files verified when downloaded.');
-        setBtn(dl, 'download', 'Download again'); dl.className = 'btn btn-ghost btn-sm kgi-btn';
-        if (!state.job) { ['manifest', 'space', 'download', 'verify', 'extract'].forEach(function (s) { step(s, 'done'); }); }
-      } else if (ks.state === 'superseded') {
-        text('kgc-kit-state', 'Kit ' + ks.kit_version + ' on this machine; the manifest now ships ' + ks.current_version + '.');
-        setBtn(dl, 'download', 'Download ' + ks.current_version); dl.className = 'btn btn-primary btn-sm kgi-btn';
-        setKids($('kgc-kit-callout'), [callout('info', ['A newer kit is published. Tables you imported keep working; a fresh download lands beside the old kit.'])]);
-      } else if (ks.state === 'stale') {
-        text('kgc-kit-state', 'The recorded kit is no longer on disk.');
-        setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn';
-        setKids($('kgc-kit-callout'), [callout('warn', [ks.reason || 'The kit folder was moved or deleted. Download it again.'])]);
-      } else {
-        text('kgc-kit-state', 'No kit on this machine yet.');
-        if (!running) { setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn'; if (!state.job) { dl.classList.add('guide-next'); } }
+      dl.classList.remove('guide-next'); dl.disabled = false;
+      var kitOk = ks.state === 'success' || ks.state === 'superseded';
+      var imported = st.state === 'success';
+      if (imported) {
+        // The import banner (renderImport) is the status; the kit is a solved problem here.
+        dl.hidden = true; imp.hidden = true;
+        setStatus([]);
+        show('kgc-pipeline', false);
+        return;
       }
-      dl.disabled = !!state.job;
-      verify.hidden = true;
+      if (ks.state === 'success') {
+        setStatus(['Kit ' + ks.kit_version + ' downloaded and verified · ' + fmtCount(ks.file_count) + ' files.', el('span', 'kg-quiet', 'Next: import it as 3LC tables.')]);
+        dl.hidden = true; imp.hidden = false; setBtn(imp, 'upload', 'Import'); imp.className = 'btn btn-primary btn-sm kgi-btn';
+      } else if (ks.state === 'superseded') {
+        setStatus(['Kit ' + ks.kit_version + ' on this machine; the manifest now ships ' + ks.current_version + '.', el('span', 'kg-quiet', 'Tables you imported keep working. A fresh download lands beside the old kit.')]);
+        dl.hidden = false; setBtn(dl, 'download', 'Download ' + ks.current_version); dl.className = 'btn btn-primary btn-sm kgi-btn'; imp.hidden = true;
+      } else if (ks.state === 'stale') {
+        setStatus(['The recorded kit is no longer on disk.', el('span', 'kg-quiet', ks.reason || 'The kit folder was moved or deleted. Download it again.')]);
+        dl.hidden = false; setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn'; imp.hidden = true;
+      } else {
+        setStatus(['No kit on this machine yet.']);
+        dl.hidden = false; setBtn(dl, 'download', 'Download the starter kit'); dl.className = 'btn btn-primary btn-sm kgi-btn guide-next'; imp.hidden = true;
+      }
+      // Step rows: only after a job ran in this page (a revisit gets the one line above).
+      if (!state.pipelineShown) { show('kgc-pipeline', false); }
+      $('kgc-import-form').hidden = !kitOk;
     }
     function startDownload() { clear($('kgc-kit-callout')); startJob('download', {}); }
     $('kgc-dl-start').onclick = startDownload;
@@ -983,14 +1036,15 @@
       var box = $('kgc-import-gate'); clear(box);
       var wrap = $('kgc-reimport-wrap');
       var kitOk = g.kit && (g.kit.state === 'success' || g.kit.state === 'superseded');
-      setBtn($('kgc-import-start'), 'upload', 'Import');
+      if (!state.job) { setBtn($('kgc-import-start'), 'upload', 'Import'); }
       if (g.error && !g.collision) {
-        if (!kitOk) { box.appendChild(el('p', 'kg-quiet', 'Import unlocks once the starter kit is on this machine.')); }
-        else { box.appendChild(callout('warn', [g.error])); }
+        if (kitOk) { box.appendChild(callout('warn', [g.error])); }
         wrap.hidden = true; $('kgc-reimport').checked = false; $('kgc-import-start').disabled = true;
         return;
       }
       if (g.collision) {
+        // The only time the re-import toggle exists; the Advanced disclosure opens to show it.
+        advOpen(true);
         var list = el('div', 'kg-table-rows');
         Object.keys(g.existing || {}).forEach(function (split) {
           var t = g.existing[split]; if (!t || !t.exists) { return; }
@@ -1056,14 +1110,11 @@
       $('kgc-f-project').value = session.project_name || '';
       $('kgc-f-table').value = session.table_name || '';
       $('kgc-f-kit').value = session.kit_dir || '';
-      setKids($('kgc-kit-path'), [document.createTextNode(session.kit_dir ? midTrunc(session.kit_dir, 72) : 'Not downloaded yet')]);
-      $('kgc-kit-path').title = session.kit_dir || '';
-      setKids($('kgc-kit-path-actions'), session.kit_dir ? [copyBtn(session.kit_dir)] : []);
       text('kgc-help-project', session.project_name ? session.project_name + ' is the competition’s project. Tables land under it in the Hub.' : 'The 3LC project the tables land under.');
       text('kgc-help-table', 'initial is the convention for a first import. A re-import gets -2, -3 and so on; existing tables are never touched.');
+      setAccordionLabel('kgc-adv', 'Advanced · project ' + (session.project_name || '') + ' · table ' + (session.table_name || ''));
       var running = state.job && state.job.kind === 'import';
       var kitOk = (meta.kit_state || {}).state === 'success' || (meta.kit_state || {}).state === 'superseded';
-      $('kgc-import-sec').classList.toggle('kg-step-muted', !kitOk && st.state !== 'success' && !running);
       renderTech(meta, st.state === 'success' ? rec : null);
       if (st.state === 'success' && !running) {
         show('kgc-import-form', false); show('kgc-import-live', false); show('kgc-import-revisit', true);
@@ -1094,14 +1145,16 @@
         var rev = $('kgc-import-revisit'); setKids(rev, [banner]);
         renderChecks(rev, rec.checks || [], false);
         over.onclick = startOver;
-        if (!state.job) { STEP_NAMES.forEach(function (s) { step(s, 'done'); }); text('kgc-pipeline-sub', 'Kit imported. Next: train your first model.'); }
+        if (!state.job) { STEP_NAMES.forEach(function (s) { step(s, 'done'); }); }
       } else {
-        show('kgc-import-revisit', false); show('kgc-import-form', true);
+        show('kgc-import-revisit', false);
+        // The form exists only once the kit is on disk (renderKit owns the status line and the CTA).
+        show('kgc-import-form', kitOk || running);
         if (st.state === 'stale' && !running) {
-          text('kgc-pipeline-sub', 'The recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing). Import again.');
+          setStatus(['The recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing).', el('span', 'kg-quiet', kitOk ? 'Import again.' : 'Download the kit, then import again.')]);
           resetSteps('register');
         }
-        if (!running) { gate(); }
+        if (!running && kitOk) { gate(); }
       }
     }
 
@@ -1156,6 +1209,16 @@
         });
     }
 
+    // The two static disclosures on the Import card: step rows, and the Advanced form fields.
+    function initToggle(id, label) {
+      var t = $(id + '-toggle'); var c = el('span', 'kgl-acc-caret'); c.setAttribute('aria-hidden', 'true'); c.appendChild(icon('chevron-right', 'kgi-12'));
+      setKids(t, [c, el('span', null, label)]); bindAccordion(t, $(id + '-panel'));
+    }
+    function advOpen(open) {
+      var t = $('kgc-adv-toggle'); if ((t.getAttribute('aria-expanded') === 'true') !== open) { t.click(); }
+    }
+    initToggle('kgc-steps', 'Show steps');
+    initToggle('kgc-adv', 'Advanced');
     renderSteps();
     setBtn($('kgc-dl-start'), 'download', 'Download the starter kit');
     setBtn($('kgc-import-start'), 'upload', 'Import');

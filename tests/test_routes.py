@@ -129,6 +129,25 @@ def test_fragment_drives_import_through_the_host_job_channel():
         assert needle in html, needle
     for forbidden in ("Open in the Hub", "HackNova", "innerHTML", "font-family"):
         assert forbidden not in html, forbidden
+    # Progressive disclosure (UI_PARITY #3b): step rows and the form fields sit behind disclosures,
+    # the form is hidden until the kit is on disk, no undefined class tag, the pool explained on the chip.
+    for needle in ("'Show steps'", "'Advanced'", 'id="kgc-import-form" hidden', "show('kgc-import-form', kitOk || running)",
+                   "Label them and set their weight to train on them.", "stepsOpen(true)", "scrollIntoView"):
+        assert needle in html, needle
+    assert "'kg-tag', 'undefined'" not in html
+    assert 'id="kgc-import-subtitle"' not in html and "Manifest: '" not in html
+
+
+def test_submissions_chip_reads_the_manifest_daily_limit(home, manifest):
+    """The chip text is built from ``submission.daily_limit``; the fragment carries no count of its own,
+    and the served value is the bundled manifest's (the session-1 placeholder 3 is gone)."""
+    import re
+
+    html = kaggle_classification.KaggleClassificationPlugin().get_ui_fragment()
+    assert "fmtCount(sub.daily_limit) + ' submissions per day'" in html
+    assert not re.search(r"\d+ submissions per day", html), "a literal count would diverge from the manifest"
+    served = routes.config_payload()["_meta"]["manifest"]["submission"]["daily_limit"]
+    assert served == manifest.submission.daily_limit == 100
     # Every remedy the brief requires has an entry.
     for topic in ("disk", "sha256 mismatch", "unreachable|Could not download", "locked", "already exist", "provisioning"):
         assert topic in html, topic

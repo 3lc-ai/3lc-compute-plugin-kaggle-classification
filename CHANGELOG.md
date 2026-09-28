@@ -15,6 +15,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   disclosures, truncated paths with Copy, "Open in Dashboard" and the Hub project link, the
   connection guard, Copy diagnostics, "Next: train your first model", gated later tabs, reduced
   motion honoured everywhere. `import_state` now carries `latest` (the newest revision per split).
+- Progressive disclosure after the State 1 review (`docs/UI_PARITY.md` §3b): one status line and one
+  primary action per tab by default; step rows under "Show steps" (auto-open + scroll on failure),
+  one progress line with shard, bytes and ETA while running; the import form hidden until the kit
+  is on disk, Project / Table name under "Advanced", the re-import toggle only on a collision; no
+  `undefined` class tag (the pool is explained on the classes chip); the manifest source moved
+  into Technical details; `submission.daily_limit` in the bundled manifest is 100 (was the
+  session-1 placeholder 3), so the chip reads "100 submissions per day"; `cdn/` regenerated
+  (manifest sha256 `6a10e44f…efed2`), not uploaded.
 
 ### Changed (session 2)
 - Manifest schema v1: `kit.base_url` replaced by a relative `kit.path`; shard URLs resolve against the

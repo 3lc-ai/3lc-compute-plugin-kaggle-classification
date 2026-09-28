@@ -110,6 +110,39 @@ sanity card (sessions 4–5), the sparkline. **Deferred, not dropped:** the revi
 - Tab gating: Train, Predict + Submit and Status show "Import the kit first" until an import
   record exists (#17).
 
+## 3b. The disclosure rule (from the State 1 review, 2026-09-28)
+
+**Every tab shows one status line and one primary action by default; everything else lives in a
+disclosure, unless it failed.** Failures auto-expand their disclosure and scroll the failing row
+into view. Applied to the shell and the Import tab now, and binding for Train, Predict + Submit
+and Status.
+
+Compared with ExDark's first-run Import view (`kgEnterFormState`, `dlInit`): ExDark shows the
+locked-format banner, the download OFFER (blurb + button), the yaml FORM with a disabled CTA and
+placeholder panels; progress rows exist only while a job runs (`renderProgress`), checks and the
+log accordion only afterwards, and the revisit view hides the form and the kit section. Our State
+1 went further than ExDark in the wrong direction (stepper rows and the form always visible) and
+now goes further in the right one: the form itself stays hidden until the kit is on disk.
+
+| Element | Default | Disclosure | Auto-expands |
+|---|---|---|---|
+| Hero: title, tagline, competition name, constraint chips, class tags, the Loop | visible | — | — |
+| Tab bar | visible | — | — |
+| Import card | one status line (kit state / job progress / import result) + one primary action | — | — |
+| Pipeline step rows | hidden before any download | **Show steps** (collapsed while running and after success; the running view keeps a one-line progress: step, shard and bytes, ETA, Cancel) | on failure, with the failing row scrolled into view |
+| Import form | hidden until the kit is on disk | Project and Table name under **Advanced** (defaults from the session) | never |
+| Re-import toggle | hidden | appears only when the gate detects a collision | — |
+| Checks | one verdict line ("18/18 checks passed") | expands on click | on any failure |
+| Manifest source, plugin home, kit paths, job id, timings, lineage | hidden | **Technical details** (with Copy) | never |
+| Log | hidden | **Show log** | never |
+
+Also from the review: no `undefined` class tag (the classes chip's tooltip explains the pool:
+"Unlabeled images show as 'undefined' in the Dashboard. Label them and set their weight to train
+on them."); the Import card carries no description that repeats the tagline; the constraint chips
+read only manifest values (`submission.daily_limit` was the session-1 placeholder 3 in the bundled
+manifest, now 100; `tests/test_routes.py` pins that the chip is built from the manifest field and
+carries no literal count).
+
 ## 4. Constraints the port must respect
 
 - `tests/test_routes.py`: no `innerHTML` / `insertAdjacentHTML` / `outerHTML` / `document.write` /

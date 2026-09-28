@@ -75,7 +75,7 @@ training:
 submission:
   columns: [image_id, prediction, confidence]
   metric: accuracy
-  daily_limit: 3
+  daily_limit: 100
 
 ui:
   loop_banner_text: "Import the kit, train, inspect and label in the Dashboard, retrain on the latest revision, predict, submit."
