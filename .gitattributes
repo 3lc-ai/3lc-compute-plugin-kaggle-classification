@@ -1,0 +1,13 @@
+# Line endings: the repo is authored LF (CLAUDE.md §B). The machines that touch it have
+# core.autocrlf=true in the SYSTEM gitconfig, so the working tree is normalized here, not
+# per clone. Windows shell scripts keep CRLF; archives, images and wheels are never text.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.zip binary
+*.7z binary
+*.whl binary
