@@ -22,6 +22,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   per-check pass/fail, table links into the Hub, revisit from the import record, first-run
   provisioning rendered as an expected state.
 - Line endings normalized to LF (`.gitattributes`).
+- `docs/PROMOTION.md` §6: the dev tier verified (served headers, sha256s of all seven objects) and
+  the console upload steps as performed; `tests/test_deletion_safety.py` (the deletion audit).
 - `tools/make_cdn_tree.py` (the bucket mirror + `upload-plan.json`), `tools/verify_cdn.py`
   (served headers and sha256 verification), `docs/PROMOTION.md`.
 

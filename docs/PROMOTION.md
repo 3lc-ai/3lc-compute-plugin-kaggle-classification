@@ -38,10 +38,17 @@ For every object in `upload-plan.json`, in the S3 console for `3lc-competitions-
 
 1. **Upload** the local file to exactly the listed **key** (create the `kaggle/…` prefixes as
    folders; the key must match character for character).
-2. Before finishing the upload, open **Properties → Metadata** and add two **System defined**
-   entries: `Content-Type` = the listed value, `Cache-Control` = the listed value. (Setting
-   them after the upload works too: select the object → Actions → Edit metadata.)
+2. **Before finishing the upload**, open **Properties → Metadata** and add two **System defined**
+   entries: `Content-Type` = the listed value, `Cache-Control` = the listed value. Metadata is
+   set **at upload time**: the Actions menu has no bulk metadata edit, so an object uploaded
+   without them is fixed by **re-uploading** it with the metadata set.
 3. Shards first, index last: the index is what makes the competition visible to plugins.
+
+As done for the dev tier on 2026-09-28 (Rishikesh): **three separate uploads** — the five shards
+under `kaggle/intel-scene/starter-kit/v1/`, then `kaggle/intel-scene/manifest.json`, then
+`kaggle/classification-index.json` — each with the two metadata entries under Properties →
+Metadata at upload time. The shards had to be uploaded a second time to carry the metadata the
+first upload lacked (re-upload is the only fix); Last-Modified 15:28:47 GMT is that second pass.
 
 Never overwrite an object under `starter-kit/v1/`. A changed kit is a new `kit.version`
 (`starter-kit/v2/`) plus a manifest edit.
@@ -91,10 +98,28 @@ Keys, sizes and sha256s of the current build (kit v1, 2026-09-22):
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-02.zip` | 53,237,641 | `908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-03.zip` | 24,511,747 | `ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-04.zip` | 14,208,813 | `4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2` |
-| `kaggle/intel-scene/manifest.json` | see `cdn/upload-plan.json` | filled in at Phase D from the dev verification |
-| `kaggle/classification-index.json` | see `cdn/upload-plan.json` | filled in at Phase D from the dev verification |
+| `kaggle/intel-scene/manifest.json` | 2,699 | `2dd9757680512f421d102e2c66f946318f190bc54d1522ad68da4a36a21a4b38` |
+| `kaggle/classification-index.json` | 213 | `64c8fa92fc8250fd14bfd573a56bee0e201de6c5ba5d1ce93e9c89e322641b0e` |
 
 Nothing on prod changes during session 2; this section is the hand-off for later.
+
+## 6. Verified on dev (2026-09-28)
+
+`tools/verify_cdn.py https://competitions.dev.3lc.ai` → **PASS: 5 shards, 113,741,154 bytes**.
+Every sha256 in the table above is the value **served** by the dev distribution and equals the
+manifest's `kit{}` block. Headers as served on the first fetch (`X-Cache: Miss from cloudfront`;
+a re-fetch answered `Hit from cloudfront`):
+
+| Object | Content-Type | Cache-Control | Last-Modified |
+|---|---|---|---|
+| `kaggle/classification-index.json` | `application/json` | `max-age=60` | Mon, 28 Sep 2026 15:36:59 GMT |
+| `kaggle/intel-scene/manifest.json` | `application/json` | `max-age=60` | Mon, 28 Sep 2026 15:35:27 GMT |
+| the five shards | `application/zip` | `public, max-age=31536000, immutable` | Mon, 28 Sep 2026 15:28:47 GMT |
+
+The full Import ran on `3lc-hub-11` (compute 1.1.0, plugin installed from the test catalog pinned
+to commit `4a42051`, `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL=https://competitions.dev.3lc.ai`):
+manifest resolved `remote` from dev, download 68 s, import 18/18 checks, train 6,600 / val 1,200
+rows. The promotion to prod (§5) is a copy of these seven keys with their metadata.
 
 ## What the plugin does with all this
 
