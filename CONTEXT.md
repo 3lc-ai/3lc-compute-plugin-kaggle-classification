@@ -47,6 +47,14 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **plugin-run-only** — participants predict only from runs this plugin trained (session 4).
 - **the ledger / verification bundle** — the append-only record of every step and the per-run zip an organizer verifies a leaderboard entry against (session 5).
 
+## Machines
+
+- **office** — dev root `C:\Users\Owner\Desktop\3LC competitions\3LC Kaggle Competitions`; `3lc-hub-11` at `<root>\3lc-hub-11` (built 2026-09-22 on system Python 3.12.3, key byte-copied from `3lc-hub-ga`).
+- **laptop** — dev root `C:\Users\rishi\Desktop\3LC Hackathons` (since 2026-09-28); `3lc-hub-11` at `<root>\3lc-hub-11`, rebuilt on uv-managed CPython 3.12.13 (`uv python install 3.12`; the machine's Anaconda Python/3lc is never used). Folder names under the two roots are identical.
+- **path rule** — a path in any doc written before 2026-09-28 (STUDY, PLAN §A3 notes, the office section of `../3lc-hub-11/SETUP.md`, `config_probe.log` references) refers to the **office** root; substitute the laptop root, nothing else changes.
+- **laptop key store** — 3lc 3.3.0 resolves its config dir and API-key file through `platformdirs`/native known-folder lookups, so the `LOCALAPPDATA` redirect does NOT isolate them (they stay under `C:\Users\rishi\AppData\Local\3LC\3LC`); only `<home>/.3lc-compute/` follows `USERPROFILE`. Details and the login command: `../3lc-hub-11/SETUP.md` § Laptop.
+- **solution.csv** — on the laptop the Intel answer key lives at `<root>\hackathon_private\intel-scene-v1\solution.csv` (beside `kit.salt` and `mapping.csv`); it is the `--old-solution` input of the solution-file task and is never read or copied by code.
+
 ## Ops & environments
 
 - **hosts** — `../3lc-hub-11/` (compute **1.1.0** + 3lc 3.3.0 + SDK 0.3.3, compute :5023, object :5017 reserved, redirected home; recipe `../3lc-hub-11/SETUP.md`) is the plugin's host: the card reads `compatible: true` there and `GET /config` was verified through the host proxy on 2026-09-22. `../3lc-hub-ga/` (1.0.1, :5022) greys the card out (`min_service_version` 1.1.0) and is untouched.
