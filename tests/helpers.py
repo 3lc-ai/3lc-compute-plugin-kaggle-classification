@@ -42,13 +42,28 @@ def small_manifest_data(kit_version: str = "v1") -> dict[str, Any]:
 
 
 def _fake_jpeg(seed: int) -> bytes:
-    # Not a decodable image (session 1 never decodes); distinct, deterministic bytes, .jpg
+    # Not a decodable image (the kit stage never decodes); distinct, deterministic bytes, .jpg
     # suffix so the stored-not-deflated branch is exercised.
     return b"\xff\xd8" + bytes([seed % 251]) * 600 + b"\xff\xd9"
 
 
-def make_kit_tree(root: Path, data: dict[str, Any]) -> Path:
-    """``root/starter_kit/...`` matching ``data["classes"]`` and ``data["splits"]``."""
+def _real_jpeg(seed: int) -> bytes:
+    # A genuine 8x8 JPEG (the importer decodes every image); distinct per seed.
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), (seed % 256, (seed * 7) % 256, (seed * 13) % 256)).save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+def make_kit_tree(root: Path, data: dict[str, Any], *, real_images: bool = False) -> Path:
+    """``root/starter_kit/...`` matching ``data["classes"]`` and ``data["splits"]``.
+
+    ``real_images`` writes decodable JPEGs (the importer tests); the kit-stage tests keep the
+    opaque bytes, which are smaller and shard predictably."""
+    jpeg = _real_jpeg if real_images else _fake_jpeg
     kit = root / KIT_DIR_NAME
     classes = [c["name"] for c in data["classes"]]
     seed = 0
@@ -56,25 +71,25 @@ def make_kit_tree(root: Path, data: dict[str, Any]) -> Path:
         d = kit / "data" / "train" / name
         d.mkdir(parents=True)
         for i in range(data["splits"]["train"]["labeled_per_class"]):
-            (d / f"{name[:2]}{i:04x}.jpg").write_bytes(_fake_jpeg(seed))
+            (d / f"{name[:2]}{i:04x}.jpg").write_bytes(jpeg(seed))
             seed += 1
     und = kit / "data" / "train" / "undefined"
     und.mkdir(parents=True)
     for i in range(data["splits"]["train"]["undefined"]):
-        (und / f"u{i:04x}.jpg").write_bytes(_fake_jpeg(seed))
+        (und / f"u{i:04x}.jpg").write_bytes(jpeg(seed))
         seed += 1
     for name in classes:
         d = kit / "data" / "val" / name
         d.mkdir(parents=True)
         for i in range(data["splits"]["val"]["per_class"]):
-            (d / f"v{name[:2]}{i:04x}.jpg").write_bytes(_fake_jpeg(seed))
+            (d / f"v{name[:2]}{i:04x}.jpg").write_bytes(jpeg(seed))
             seed += 1
     test = kit / "data" / "test"
     test.mkdir(parents=True)
     ids = []
     for i in range(data["splits"]["test"]["count"]):
         stem = f"t{i:04x}"
-        (test / f"{stem}.jpg").write_bytes(_fake_jpeg(seed))
+        (test / f"{stem}.jpg").write_bytes(jpeg(seed))
         ids.append(stem)
         seed += 1
     cols = data["submission"]["columns"]

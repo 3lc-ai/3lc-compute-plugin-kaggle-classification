@@ -107,7 +107,7 @@ class KaggleClassificationPlugin(ComputePlugin):
             "plugin": "kaggle-classification",
             "version": __version__,
             "tabs": list(TABS),
-            "implemented": ["download_kit"],
+            "implemented": ["download_kit", "import"],
         }
 
     def get_route_handlers(self) -> list[Any]:
@@ -145,6 +145,18 @@ class KaggleClassificationPlugin(ComputePlugin):
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
             return
-        if kind in ("import", "train", "predict", "submit"):
+        if kind == "import":
+            from kaggle_classification import importer
+
+            try:
+                result = importer.run_import(params, adapter, current)
+            except (importer.ImportRefused, RuntimeError) as exc:
+                # Participant-facing by construction (kit defect, collision, verification): the
+                # message is the whole story, so it goes out verbatim, without a type prefix.
+                ctx.fail(str(exc))
+            if not result.get("cancelled"):
+                ctx.progress(percent=100.0, label="Done")
+            return
+        if kind in ("train", "predict", "submit"):
             ctx.fail(f"The {kind} step is not implemented in this build ({__version__}).")
         ctx.fail(f"Unknown job kind: {kind!r}. Expected one of download_kit, import, train, predict, submit.")

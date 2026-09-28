@@ -52,7 +52,7 @@ def test_route_handlers_build_when_litestar_is_present():
     pytest.importorskip("litestar")
     handlers = routes.get_route_handlers()
     paths = {p for h in handlers for p in h.paths}
-    assert paths == {"/config", "/manifest", "/manifest/select"}
+    assert paths == {"/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state"}
 
 
 def test_route_handler_annotations_resolve_like_litestar_does():
@@ -72,7 +72,7 @@ def test_route_handler_annotations_resolve_like_litestar_does():
 def test_plugin_compute_and_fragment():
     plugin = kaggle_classification.KaggleClassificationPlugin()
     info = plugin.compute({})
-    assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit"]
+    assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit", "import"]
     html = plugin.get_ui_fragment()
     assert 'class="kgc"' in html and "kaggle-classification" in html
     for needle in ("buildings", "resnet18", "6000"):

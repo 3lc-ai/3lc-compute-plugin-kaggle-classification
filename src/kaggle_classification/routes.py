@@ -11,6 +11,8 @@
 * ``GET /manifest`` — the same resolution payload alone, for that poll.
 * ``POST /manifest/select`` — pick one of several active competitions.
 * ``POST /config`` — merge per-tab snapshots; retired keys answer 400.
+* ``GET /import/preflight`` — the Import form's read-only gate (params, kit, collisions, the
+  fresh name a re-import would use); ``GET /import/state`` — the revisit record, re-verified.
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
@@ -64,8 +66,23 @@ def config_payload() -> dict[str, Any]:
         "plugin_home": storage.describe(),
         "kit_dest": str(kit.default_dest(current)),
         "kit_state": kit.download_state(current),
+        # The Import tab's revisit view: the last successful import, re-verified against disk
+        # (table existence decides, the record supplies the details).
+        "import_state": _import_state_safe(),
     }
     return out
+
+
+def _import_state_safe() -> dict[str, Any]:
+    """``importer.import_state()`` needs tlc for the on-disk check; without it (a light venv) the
+    record is served unverified so the page still renders."""
+    from kaggle_classification import importer
+
+    try:
+        return importer.import_state()
+    except Exception as exc:  # noqa: BLE001 - never let the revisit check take /config down
+        record = importer.read_record()
+        return {"state": "success" if record else "empty", "verified": None, "record": record, "note": str(exc)}
 
 
 def get_route_handlers() -> list[Any]:
@@ -99,4 +116,20 @@ def get_route_handlers() -> list[Any]:
         manifest.refresh_in_background(force=True)
         return Response(manifest_payload(kick_refresh=False), status_code=200)
 
-    return [get_config, save_config, get_manifest, select_manifest]
+    @get("/import/preflight", sync_to_thread=True)
+    def import_preflight(
+        project_name: str = "", table_name: str = "", kit_dir: str = "", mode: str = ""
+    ) -> dict[str, Any]:
+        """Read-only gate for the Import form: params, kit presence, existing tables, the fresh
+        name a re-import would use. Never writes."""
+        from kaggle_classification import importer, manifest
+
+        data = {k: v for k, v in (("project_name", project_name), ("table_name", table_name),
+                                  ("kit_dir", kit_dir), ("mode", mode)) if v}
+        return importer.preflight(data, manifest.resolve(network=False).manifest)
+
+    @get("/import/state", sync_to_thread=True)
+    def import_state() -> dict[str, Any]:
+        return _import_state_safe()
+
+    return [get_config, save_config, get_manifest, select_manifest, import_preflight, import_state]
