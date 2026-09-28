@@ -2,12 +2,18 @@
   Copyright 2026 3LC Inc.
   SPDX-License-Identifier: Apache-2.0
 
-  kaggle-classification fragment, session 1: the four-tab shell. Every value on this page
-  comes from GET /config (the session and the _meta block); the fragment defines no
-  competition literal of its own, and every manifest string reaches the DOM through
-  textContent, never by injecting markup (tests/test_routes.py enforces it). The page renders at
-  once from the cached or bundled manifest and re-renders when the background refresh
-  settles; the browser never talks to the CDN.
+  kaggle-classification fragment, session 2: the four-tab shell plus the Import tab (starter-kit
+  download + import as one stepper). Every value on this page comes from GET /config (the
+  session and the _meta block) or from the job channel; the fragment defines no competition
+  literal of its own, and every manifest string reaches the DOM through textContent, never by
+  injecting markup (tests/test_routes.py enforces it). The page renders at once from the cached
+  or bundled manifest and re-renders when the background refresh settles; the browser never
+  talks to the CDN.
+
+  Jobs run through the host dispatch channel (window.PluginJobs, injected by the SDK): generic
+  job_update for status/progress, and the plugin's own events (checks, stage_progress, fact)
+  relayed on the /kaggle-classification namespace. First-run provisioning (a 201 with
+  status=provisioning from any plugin route) is an expected state, never an error.
 -->
 <div class="kgc">
   <style>
@@ -37,12 +43,64 @@
     .kgc .kgc-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
     .kgc .kgc-footer { color: var(--text-muted); font-size: 11px; margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
     .kgc a { color: var(--accent); }
+    .kgc [hidden] { display: none !important; }
+
+    /* Stepper */
+    .kgc .kgc-steps { list-style: none; margin: 6px 0 0; padding: 0; }
+    .kgc .kgc-step { display: grid; grid-template-columns: 22px 150px 1fr; gap: 10px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--border); }
+    .kgc .kgc-step:first-child { border-top: none; }
+    .kgc .kgc-step .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); display: inline-block; position: relative; top: 2px; }
+    .kgc .kgc-step[data-state="running"] .dot { border-color: var(--accent); border-top-color: transparent; animation: kgc-spin var(--kgc-motion-slow, 700ms) linear infinite; }
+    .kgc .kgc-step[data-state="done"] .dot { border-color: var(--success, #2e7d32); background: var(--success, #2e7d32); }
+    .kgc .kgc-step[data-state="failed"] .dot { border-color: var(--error, #c62828); background: var(--error, #c62828); }
+    .kgc .kgc-step .lbl { font-weight: 500; }
+    .kgc .kgc-step[data-state="pending"] .lbl { color: var(--text-muted); }
+    .kgc .kgc-step .det { color: var(--text-muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .kgc .kgc-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin: 8px 0 4px; }
+    .kgc .kgc-bar > div { height: 100%; width: 0; background: var(--accent); transition: width var(--kgc-motion-base, 180ms) ease-out; }
+    @media (prefers-reduced-motion: reduce) { .kgc .kgc-step[data-state="running"] .dot { animation: none; border-top-color: var(--accent); } .kgc .kgc-bar > div { transition: none; } }
+    @keyframes kgc-spin { to { transform: rotate(360deg); } }
+
+    /* Callouts, checks, forms, buttons */
+    .kgc .kgc-callout { border: 1px solid var(--border); border-left-width: 3px; border-radius: var(--radius-sm, 4px); padding: 8px 12px; margin: 8px 0; }
+    .kgc .kgc-callout p { margin: 2px 0; }
+    .kgc .kgc-callout.ok { border-left-color: var(--success, #2e7d32); }
+    .kgc .kgc-callout.warn { border-left-color: var(--warning, #b26a00); }
+    .kgc .kgc-callout.err { border-left-color: var(--error, #c62828); }
+    .kgc .kgc-callout.info { border-left-color: var(--accent); }
+    .kgc .kgc-checks { list-style: none; margin: 6px 0 0; padding: 0; columns: 2; column-gap: 24px; }
+    .kgc .kgc-check { break-inside: avoid; padding: 2px 0; display: flex; gap: 6px; align-items: baseline; }
+    .kgc .kgc-check .mk { font-weight: 700; }
+    .kgc .kgc-check[data-ok="true"] .mk { color: var(--success, #2e7d32); }
+    .kgc .kgc-check[data-ok="false"] .mk { color: var(--error, #c62828); }
+    .kgc .kgc-check[data-ok="false"] .cd { color: var(--text); }
+    .kgc .kgc-check .cd { color: var(--text-muted); }
+    .kgc .kgc-verdict { color: var(--text-muted); margin: 6px 0 2px; }
+    .kgc .kgc-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 8px 0; }
+    .kgc .kgc-field label { display: block; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+    .kgc .kgc-field input { font: inherit; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg); color: var(--text); }
+    .kgc .kgc-field input[readonly] { color: var(--text-muted); }
+    .kgc .kgc-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .kgc .kgc-btn { font: inherit; padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg); color: var(--text); cursor: pointer; }
+    .kgc .kgc-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast, #fff); font-weight: 600; }
+    .kgc .kgc-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .kgc .kgc-btn.quiet { border-color: transparent; color: var(--text-muted); }
+    .kgc .kgc-check-toggle { display: flex; gap: 6px; align-items: center; }
+    .kgc .kgc-log { font-family: ui-monospace, Consolas, monospace; font-size: 11px; white-space: pre-wrap; max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg); }
+    .kgc details summary { cursor: pointer; color: var(--text-muted); }
+    .kgc .kgc-tables { margin: 6px 0 0; padding: 0; list-style: none; }
+    .kgc .kgc-tables li { padding: 3px 0; overflow-wrap: anywhere; }
   </style>
 
   <h1>Kaggle Classification</h1>
   <p class="kgc-sub" id="kgc-banner">Loading the competition manifest.</p>
 
   <div class="kgc-warn" id="kgc-warnings" hidden role="status"></div>
+
+  <div class="kgc-callout info" id="kgc-provisioning" hidden role="status">
+    <p><strong>Setting up the plugin environment.</strong> The first run takes a few minutes.</p>
+    <p class="kgc-muted" id="kgc-provisioning-detail"></p>
+  </div>
 
   <div class="kgc-tabs" role="tablist">
     <button class="kgc-tab" role="tab" data-tab="import" aria-selected="true">Import</button>
@@ -63,9 +121,64 @@
       <div class="kgc-classes" id="kgc-classes"></div>
       <div class="kgc-links" id="kgc-links"></div>
     </div>
-    <div class="kgc-card">
+
+    <div class="kgc-card" id="kgc-pipeline">
+      <h2>Pipeline</h2>
+      <p class="kgc-muted" id="kgc-pipeline-sub">Download the starter kit, then import it as 3LC tables.</p>
+      <div class="kgc-bar" id="kgc-bar" hidden><div></div></div>
+      <ol class="kgc-steps" id="kgc-steps">
+        <li class="kgc-step" data-step="manifest" data-state="pending"><span class="dot"></span><span class="lbl">Manifest</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="space" data-state="pending"><span class="dot"></span><span class="lbl">Disk space</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="download" data-state="pending"><span class="dot"></span><span class="lbl">Download</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="verify" data-state="pending"><span class="dot"></span><span class="lbl">Verify</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="extract" data-state="pending"><span class="dot"></span><span class="lbl">Extract</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="register" data-state="pending"><span class="dot"></span><span class="lbl">Register</span><span class="det"></span></li>
+        <li class="kgc-step" data-step="validate" data-state="pending"><span class="dot"></span><span class="lbl">Validate</span><span class="det"></span></li>
+      </ol>
+    </div>
+
+    <div class="kgc-card" id="kgc-kit-card">
       <h2>Starter kit</h2>
-      <p class="kgc-muted" id="kgc-kit-state">The download section arrives in session 2.</p>
+      <p class="kgc-muted" id="kgc-kit-state"></p>
+      <div id="kgc-kit-callout"></div>
+      <div class="kgc-actions">
+        <button class="kgc-btn primary" id="kgc-dl-start" type="button">Download the starter kit</button>
+        <button class="kgc-btn quiet" id="kgc-dl-cancel" type="button" hidden>Cancel</button>
+      </div>
+    </div>
+
+    <div class="kgc-card" id="kgc-import-card">
+      <h2>Import</h2>
+      <div id="kgc-import-revisit" hidden>
+        <div class="kgc-callout ok" id="kgc-import-success">
+          <p><strong>Imported.</strong> <span id="kgc-import-summary"></span></p>
+          <ul class="kgc-tables" id="kgc-import-tables"></ul>
+        </div>
+        <p class="kgc-verdict" id="kgc-import-verdict"></p>
+        <ul class="kgc-checks" id="kgc-import-checks"></ul>
+        <details id="kgc-import-details"><summary>Details</summary><pre class="kgc-log" id="kgc-import-record"></pre></details>
+        <div class="kgc-actions">
+          <button class="kgc-btn" id="kgc-import-startover" type="button">Start over</button>
+        </div>
+      </div>
+      <div id="kgc-import-form">
+        <div class="kgc-form">
+          <div class="kgc-field"><label for="kgc-f-project">Project</label><input id="kgc-f-project" type="text" autocomplete="off"></div>
+          <div class="kgc-field"><label for="kgc-f-table">Table name</label><input id="kgc-f-table" type="text" autocomplete="off"></div>
+          <div class="kgc-field"><label for="kgc-f-kit">Kit directory</label><input id="kgc-f-kit" type="text" readonly></div>
+        </div>
+        <div id="kgc-import-gate"></div>
+        <div class="kgc-actions">
+          <button class="kgc-btn primary" id="kgc-import-start" type="button" disabled>Import</button>
+          <label class="kgc-check-toggle" id="kgc-reimport-wrap" hidden><input type="checkbox" id="kgc-reimport"> <span id="kgc-reimport-label">Re-import as fresh tables</span></label>
+          <button class="kgc-btn quiet" id="kgc-import-cancel" type="button" hidden>Cancel</button>
+        </div>
+      </div>
+      <div id="kgc-import-live" hidden>
+        <p class="kgc-verdict" id="kgc-live-verdict"></p>
+        <ul class="kgc-checks" id="kgc-live-checks"></ul>
+        <details><summary>Show log</summary><pre class="kgc-log" id="kgc-log"></pre></details>
+      </div>
     </div>
   </section>
 
@@ -92,12 +205,17 @@
     var API = window.PLUGIN_API;
     var EL = document.currentScript.closest('.kgc');
     var base = API.getConfig('compute_service_url');
+    var dashboardUrl = API.getConfig('dashboard_url') || '';
+    var objectServiceUrl = API.getConfig('object_service_url') || '';
     var PLUGIN_ID = 'kaggle-classification';
+    var NS = '/' + PLUGIN_ID;
     var ROOT = base + '/api/plugins/' + PLUGIN_ID;
-    var POLL_MS = 1000, POLL_MAX = 8;
+    var POLL_MS = 1000, POLL_MAX = 8, PROVISION_POLL_MS = 5000, GATE_DEBOUNCE_MS = 500;
 
+    // ── DOM helpers (textContent only: manifest strings never become markup) ──
     function $(id) { return EL.querySelector('#' + id); }
     function text(id, value) { var n = $(id); if (n) { n.textContent = value == null ? '' : String(value); } }
+    function show(id, on) { var n = $(id); if (n) { n.hidden = !on; } }
     function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
     function el(tag, cls, content) {
       var n = document.createElement(tag);
@@ -105,7 +223,22 @@
       if (content != null) { n.textContent = String(content); }
       return n;
     }
+    function fmtCount(n) { return (n == null || isNaN(n)) ? '' : Number(n).toLocaleString(); }
+    function fmtBytes(n) { return n == null ? '' : (n / 1e6 >= 1000 ? (n / 1e9).toFixed(2) + ' GB' : (n / 1e6).toFixed(1) + ' MB'); }
+    function fmtSecs(s) { return s == null ? '' : (s >= 60 ? Math.floor(s / 60) + ' min ' + Math.round(s % 60) + ' s' : Number(s).toFixed(1) + ' s'); }
+    function withObjectService(url) {
+      if (!objectServiceUrl || !url) { return url; }
+      return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'object_service=' + encodeURIComponent(objectServiceUrl);
+    }
+    function tableLink(url) { return dashboardUrl ? withObjectService(dashboardUrl + '?table=' + encodeURIComponent(url)) : ''; }
+    function callout(kind, lines) {
+      var box = el('div', 'kgc-callout ' + kind);
+      lines.forEach(function (l) { if (l) { box.appendChild(typeof l === 'string' ? el('p', null, l) : l); } });
+      return box;
+    }
+    function isProvisioning(body) { return !!(body && body.status === 'provisioning' && !body._meta && !body.job_id); }
 
+    // ── Tabs ─────────────────────────────────────────────────────────────
     EL.querySelectorAll('.kgc-tab').forEach(function (btn) {
       btn.onclick = function () {
         EL.querySelectorAll('.kgc-tab').forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
@@ -113,6 +246,19 @@
       };
     });
 
+    // ── State ────────────────────────────────────────────────────────────
+    var state = {
+      meta: null, session: null,
+      job: null,            // {id, kind, status} for the live job this fragment drives or reconnected to
+      unsub: [],            // socket unsubscribers for the live job
+      checks: [], logs: [],
+      gate: null,           // last preflight answer
+      gateTimer: null,
+      provisionTimer: null,
+      pendingAction: null   // 'download' | 'import' to auto-continue once provisioning finishes
+    };
+
+    // ── Manifest / meta rendering (session 1) ────────────────────────────
     function renderManifest(m, source, provenance, warnings, candidates) {
       text('kgc-banner', (m.ui && m.ui.loop_banner_text) || '');
       text('kgc-comp-name', m.competition && m.competition.display_name);
@@ -146,15 +292,365 @@
 
     function renderMeta(meta) {
       renderManifest(meta.manifest || {}, meta.manifest_source, meta.manifest_provenance, meta.manifest_warnings, meta.manifest_candidates);
-      var ks = meta.kit_state || {};
-      text('kgc-kit-state', ks.state === 'success' ? 'Kit ' + ks.kit_version + ' on disk at ' + ks.kit_dir
-        : ks.state === 'superseded' ? 'Kit ' + ks.kit_version + ' on disk; ' + ks.current_version + ' is available'
-        : 'No kit on this machine yet. The download section arrives in session 2.');
       text('kgc-version', 'kaggle-classification ' + (meta.version || ''));
       text('kgc-home', meta.plugin_home ? ('state: ' + meta.plugin_home.path) : '');
       var repo = $('kgc-repo'); if (meta.repository_url) { repo.href = meta.repository_url; }
     }
 
+    // ── Stepper ──────────────────────────────────────────────────────────
+    var STEPS = ['manifest', 'space', 'download', 'verify', 'extract', 'register', 'validate'];
+    function step(name, st, detail) {
+      var li = EL.querySelector('.kgc-step[data-step="' + name + '"]');
+      if (!li) { return; }
+      if (st) { li.setAttribute('data-state', st); }
+      if (detail != null) { li.querySelector('.det').textContent = detail; }
+    }
+    function resetSteps(from) {
+      var start = from ? STEPS.indexOf(from) : 0;
+      STEPS.slice(start).forEach(function (s) { step(s, 'pending', ''); });
+    }
+    function bar(percent) {
+      var b = $('kgc-bar'); b.hidden = percent == null;
+      if (percent != null) { b.firstElementChild.style.width = Math.max(0, Math.min(100, percent)) + '%'; }
+    }
+    // Which stepper row a backend check labels (labels are the backend's, matched by keyword).
+    function stepForCheck(label) {
+      var l = label.toLowerCase();
+      if (l.indexOf('kit listed') >= 0) { return 'manifest'; }
+      if (l.indexOf('disk space') >= 0) { return 'space'; }
+      if (l.indexOf('shards downloaded') >= 0) { return 'download'; }
+      if (l.indexOf('extracted') >= 0) { return 'extract'; }
+      if (l.indexOf('files.json') >= 0 || l.indexOf('split counts') >= 0 || l.indexOf('kit root') >= 0 || l.indexOf('kit version') >= 0) { return 'verify'; }
+      if (l.indexOf('table names') >= 0 || l.indexOf('no tables') >= 0) { return 'register'; }
+      if (l.indexOf('row count') >= 0 || l.indexOf('label map') >= 0 || l.indexOf('zero-weight') >= 0) { return 'validate'; }
+      return 'verify'; // kit-vs-manifest checks of the import job
+    }
+    function applyChecks(checks) {
+      state.checks = checks || [];
+      var failedSteps = {};
+      state.checks.forEach(function (c) { var s = stepForCheck(c.label || ''); if (!c.ok) { failedSteps[s] = true; } });
+      state.checks.forEach(function (c) {
+        var s = stepForCheck(c.label || '');
+        var li = EL.querySelector('.kgc-step[data-step="' + s + '"]');
+        if (!li) { return; }
+        if (failedSteps[s]) { step(s, 'failed', c.ok ? undefined : c.detail || c.label); }
+        else if (li.getAttribute('data-state') !== 'running') { step(s, 'done', c.detail || ''); }
+      });
+      renderChecks('kgc-live-checks', 'kgc-live-verdict', state.checks);
+    }
+    function applyStageProgress(p) {
+      var phase = p.phase || '';
+      if (p.percent != null) { bar(p.percent); }
+      if (phase === 'download') {
+        step('manifest', 'done'); step('space', 'done');
+        step('download', 'running', (p.label || '') + (p.archive ? ' · ' + p.archive : '') + (p.bytes_total ? ' · ' + fmtBytes(p.bytes_done) + ' of ' + fmtBytes(p.bytes_total) : ''));
+      } else if (phase === 'extract') {
+        step('download', 'done'); step('extract', 'running', p.label || '');
+      } else if (phase === 'verify' && state.job && state.job.kind === 'download') {
+        step('extract', 'done'); step('verify', 'running', p.label || '');
+      } else if (phase === 'validate' || phase === 'decode' || phase === 'collision') {
+        step('verify', 'running', p.label || '');
+      } else if (phase === 'register') {
+        step('verify', 'done'); step('register', 'running', p.label || '');
+      } else if (phase === 'verify') {
+        step('register', 'done'); step('validate', 'running', p.label || '');
+      } else if (phase === 'record') {
+        step('validate', 'running', p.label || '');
+      } else if (phase === 'done') {
+        if (state.job && state.job.kind === 'download') { step('verify', 'done'); } else { step('register', 'done'); step('validate', 'done'); }
+      }
+    }
+    function renderChecks(listId, verdictId, checks) {
+      var list = $(listId); clear(list);
+      var failed = 0;
+      (checks || []).forEach(function (c) {
+        if (!c.ok) { failed += 1; }
+        var li = el('li', 'kgc-check'); li.setAttribute('data-ok', String(!!c.ok));
+        li.appendChild(el('span', 'mk', c.ok ? '✓' : '✗'));
+        var body = el('span', null, c.label || '');
+        if (c.detail) { body.appendChild(el('span', 'cd', ' · ' + c.detail)); }
+        li.appendChild(body);
+        list.appendChild(li);
+      });
+      var n = (checks || []).length;
+      text(verdictId, n ? (failed ? (n - failed) + '/' + n + ' checks passed — ' + failed + ' failed' : n + '/' + n + ' checks passed') : '');
+    }
+    function appendLog(line) {
+      state.logs.push(line);
+      if (state.logs.length > 400) { state.logs.shift(); }
+      text('kgc-log', state.logs.join('\n'));
+    }
+
+    // ── Job channel ──────────────────────────────────────────────────────
+    function detach() { state.unsub.forEach(function (u) { try { u(); } catch (e) { /* closed */ } }); state.unsub = []; }
+    function listen(jobId) {
+      detach();
+      var forJob = function (fn) { return function (payload) { if (!payload || payload.job_id !== jobId) { return; } fn(payload); }; };
+      state.unsub.push(PluginJobs.on(NS, 'checks', forJob(function (p) { applyChecks(p.checks || []); })));
+      state.unsub.push(PluginJobs.on(NS, 'stage_progress', forJob(function (p) { applyStageProgress(p); })));
+      state.unsub.push(PluginJobs.on(NS, 'fact', forJob(function (p) { if (p.key === 'actual_table_name') { appendLog('table name: ' + p.value); } })));
+    }
+    function inferKind(job) {
+      var l = ((job.progress && job.progress.label) || job.subtitle || '').toLowerCase();
+      if (l.indexOf('shard') >= 0 || l.indexOf('extract') >= 0 || l.indexOf('verifying files') >= 0) { return 'download'; }
+      if (l.indexOf('register') >= 0 || l.indexOf('decod') >= 0 || l.indexOf('kit against') >= 0 || l.indexOf('tables') >= 0 || l.indexOf('import') >= 0) { return 'import'; }
+      return state.job && state.job.kind ? state.job.kind : 'import';
+    }
+    function onUpdate(job) {
+      if (!state.job) { return; }
+      if (!state.job.kind) { state.job.kind = inferKind(job); }
+      state.job.status = job.status;
+      if (job.progress && job.progress.percent != null && job.progress.percent >= 0) { bar(job.progress.percent); }
+      if (job.progress && job.progress.label) { text('kgc-pipeline-sub', job.progress.label); }
+      if (job.error) { state.job.error = job.error; }
+    }
+    function onDone(job) {
+      var kind = state.job ? state.job.kind : 'import';
+      detach();
+      bar(null);
+      if (job.status === 'cancelled') {
+        text('kgc-pipeline-sub', kind === 'download' ? 'Download cancelled. Completed shards are kept; run the download again to resume.' : 'Import cancelled. Nothing partial was left behind.');
+        resetSteps(kind === 'download' ? 'download' : 'register');
+      } else {
+        text('kgc-pipeline-sub', kind === 'download' ? 'Starter kit downloaded and verified.' : 'Import complete.');
+      }
+      state.job = null;
+      if (kind === 'download') { show('kgc-dl-cancel', false); $('kgc-dl-start').disabled = false; text('kgc-dl-start', 'Download the starter kit'); }
+      else { show('kgc-import-cancel', false); $('kgc-import-start').disabled = false; text('kgc-import-start', 'Import'); }
+      load(); // the server wrote the record; re-read everything from /config
+    }
+    function onError(job) {
+      var kind = state.job ? state.job.kind : 'import';
+      var msg = (job && (job.error || job.subtitle)) || 'The job failed.';
+      detach();
+      bar(null);
+      STEPS.forEach(function (s) { var li = EL.querySelector('.kgc-step[data-step="' + s + '"]'); if (li.getAttribute('data-state') === 'running') { step(s, 'failed'); } });
+      text('kgc-pipeline-sub', (kind === 'download' ? 'Download failed. ' : 'Import failed. ') + msg);
+      var target = kind === 'download' ? $('kgc-kit-callout') : $('kgc-import-gate');
+      clear(target); target.appendChild(callout('err', [msg]));
+      state.job = null;
+      if (kind === 'download') { show('kgc-dl-cancel', false); $('kgc-dl-start').disabled = false; text('kgc-dl-start', 'Resume download'); }
+      else { show('kgc-import-cancel', false); $('kgc-import-start').disabled = false; text('kgc-import-start', 'Re-run import'); }
+    }
+    function startJob(kind, params) {
+      state.logs = []; state.checks = []; text('kgc-log', '');
+      show('kgc-import-live', kind === 'import');
+      renderChecks('kgc-live-checks', 'kgc-live-verdict', []);
+      resetSteps(kind === 'download' ? 'manifest' : 'verify');
+      if (kind === 'import') { step('manifest', 'done'); step('space', 'done'); step('download', 'done'); step('extract', 'done'); }
+      state.job = { id: null, kind: kind, status: 'starting' };
+      text('kgc-pipeline-sub', kind === 'download' ? 'Starting the download.' : 'Starting the import.');
+      var body = Object.assign({ kind: kind === 'download' ? 'download_kit' : 'import' }, params || {});
+      // Subscribe to the plugin's own events before the job starts so the first ones are not missed.
+      return PluginJobs.run(PLUGIN_ID, body, { onUpdate: onUpdate, onDone: onDone, onError: onError }).then(function (resp) {
+        if (isProvisioning(resp)) {
+          state.job = null;
+          state.pendingAction = kind;
+          enterProvisioning(resp.provisioning);
+          return resp;
+        }
+        if (!resp || !resp.job_id) { return resp; }
+        state.job.id = resp.job_id;
+        listen(resp.job_id);
+        if (kind === 'download') { show('kgc-dl-cancel', true); $('kgc-dl-start').disabled = true; }
+        else { show('kgc-import-cancel', true); $('kgc-import-start').disabled = true; }
+        return resp;
+      });
+    }
+    function reconnect(job) {
+      state.job = { id: job.id, kind: inferKind(job), status: job.status };
+      state.logs = [];
+      listen(job.id);
+      state.unsub.push(PluginJobs.track(NS, job.id, { onUpdate: onUpdate, onDone: onDone, onError: onError }));
+      onUpdate(job);
+      text('kgc-pipeline-sub', (state.job.kind === 'download' ? 'Download' : 'Import') + ' in progress (safe to navigate away).');
+      if (state.job.kind === 'download') { show('kgc-dl-cancel', true); $('kgc-dl-start').disabled = true; step('download', 'running', job.progress && job.progress.label || ''); }
+      else { show('kgc-import-cancel', true); $('kgc-import-start').disabled = true; show('kgc-import-live', true); step('register', 'running', job.progress && job.progress.label || ''); }
+    }
+
+    // ── First-run provisioning: expected, never an error ─────────────────
+    function enterProvisioning(prov) {
+      show('kgc-provisioning', true);
+      text('kgc-provisioning-detail', prov && prov.state ? ('Environment state: ' + prov.state + (prov.error ? ' — ' + prov.error : '')) : '');
+      text('kgc-pipeline-sub', 'Setting up the plugin environment. The first run takes a few minutes.');
+      $('kgc-dl-start').disabled = true; $('kgc-import-start').disabled = true;
+      if (state.provisionTimer) { return; }
+      state.provisionTimer = setTimeout(function pollProvision() {
+        state.provisionTimer = null;
+        API.authFetch(ROOT + '/config').then(function (r) { return r.json(); }).then(function (body) {
+          if (isProvisioning(body)) {
+            text('kgc-provisioning-detail', body.provisioning && body.provisioning.state ? 'Environment state: ' + body.provisioning.state : '');
+            state.provisionTimer = setTimeout(pollProvision, PROVISION_POLL_MS);
+            return;
+          }
+          show('kgc-provisioning', false);
+          applyConfig(body);
+          var action = state.pendingAction; state.pendingAction = null;
+          if (action === 'download') { startDownload(); } else if (action === 'import') { startImport(); }
+        }).catch(function () { state.provisionTimer = setTimeout(pollProvision, PROVISION_POLL_MS); });
+      }, PROVISION_POLL_MS);
+    }
+
+    // ── Starter kit section ──────────────────────────────────────────────
+    function renderKit(meta) {
+      var ks = meta.kit_state || {};
+      var box = $('kgc-kit-callout'); clear(box);
+      var running = state.job && state.job.kind === 'download';
+      if (ks.state === 'success') {
+        text('kgc-kit-state', 'Kit ' + ks.kit_version + ' on disk at ' + ks.kit_dir + ' (' + fmtCount(ks.file_count) + ' files verified when downloaded).');
+        text('kgc-dl-start', 'Download again');
+        ['manifest', 'space', 'download', 'verify', 'extract'].forEach(function (s) { if (!state.job) { step(s, 'done'); } });
+      } else if (ks.state === 'superseded') {
+        text('kgc-kit-state', 'Kit ' + ks.kit_version + ' on disk at ' + ks.kit_dir + '; the manifest now ships ' + ks.current_version + '.');
+        text('kgc-dl-start', 'Download ' + ks.current_version);
+      } else if (ks.state === 'stale') {
+        text('kgc-kit-state', 'The recorded kit is gone: ' + (ks.reason || '') + '.');
+        text('kgc-dl-start', 'Download the starter kit');
+      } else {
+        text('kgc-kit-state', 'No kit on this machine yet. It downloads to ' + (meta.kit_dest || '') + '.');
+        if (!running) { text('kgc-dl-start', 'Download the starter kit'); }
+      }
+      $('kgc-dl-start').disabled = !!state.job;
+    }
+    function startDownload() {
+      var box = $('kgc-kit-callout'); clear(box);
+      startJob('download', {});
+    }
+    $('kgc-dl-start').onclick = startDownload;
+    $('kgc-dl-cancel').onclick = function () { if (state.job && state.job.id) { PluginJobs.cancel(state.job.id); } };
+
+    // ── Import section ───────────────────────────────────────────────────
+    function formParams() {
+      return {
+        project_name: $('kgc-f-project').value.trim(),
+        table_name: $('kgc-f-table').value.trim(),
+        mode: $('kgc-reimport').checked ? 'reimport' : 'import'
+      };
+    }
+    function saveSession() {
+      if (!state.session) { return; }
+      var s = Object.assign({}, state.session, { project_name: $('kgc-f-project').value.trim(), table_name: $('kgc-f-table').value.trim() });
+      if (s.project_name === state.session.project_name && s.table_name === state.session.table_name) { return; }
+      state.session = s;
+      API.authFetch(ROOT + '/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: s }) }).catch(function () { /* the next load re-reads */ });
+    }
+    function renderGate(g) {
+      state.gate = g;
+      var box = $('kgc-import-gate'); clear(box);
+      var wrap = $('kgc-reimport-wrap');
+      var kitOk = g.kit && (g.kit.state === 'success' || g.kit.state === 'superseded');
+      if (g.error && !g.collision) {
+        box.appendChild(callout('warn', [g.error]));
+        wrap.hidden = true; $('kgc-reimport').checked = false;
+        $('kgc-import-start').disabled = true;
+        return;
+      }
+      if (g.collision) {
+        var lines = [el('p', null, 'Tables already exist under this project and table name:')];
+        var list = el('ul', 'kgc-tables');
+        Object.keys(g.existing || {}).forEach(function (split) {
+          var t = g.existing[split]; if (!t || !t.exists) { return; }
+          var li = el('li', null, split + ': ');
+          var a = el('a', null, t.url); var href = tableLink(t.url);
+          if (href) { a.href = href; a.target = '_blank'; a.rel = 'noopener'; li.appendChild(a); } else { li.appendChild(el('span', null, t.url)); }
+          if (t.rows != null) { li.appendChild(el('span', 'kgc-muted', ' · ' + fmtCount(t.rows) + ' rows')); }
+          list.appendChild(li);
+        });
+        lines.push(list);
+        lines.push(el('p', 'kgc-muted', 'They are never reused or overwritten. Re-import writes fresh tables named ' + g.fresh_table_name + ' beside them, or pick another table name.'));
+        box.appendChild(callout('warn', lines));
+        wrap.hidden = false;
+        text('kgc-reimport-label', 'Re-import as fresh tables (' + g.fresh_table_name + ')');
+        $('kgc-import-start').disabled = !($('kgc-reimport').checked && kitOk);
+        return;
+      }
+      wrap.hidden = true; $('kgc-reimport').checked = false;
+      if (g.ok && g.params) {
+        box.appendChild(callout('ok', ['Ready. Tables will be created under ' + g.project_root + ' in project ' + g.params.project_name + ' as ' + g.params.table_name + '.']));
+      }
+      $('kgc-import-start').disabled = !(g.ok && kitOk);
+    }
+    function gate() {
+      var p = formParams();
+      var q = '?project_name=' + encodeURIComponent(p.project_name) + '&table_name=' + encodeURIComponent(p.table_name);
+      API.authFetch(ROOT + '/import/preflight' + q).then(function (r) { return r.json(); }).then(function (g) {
+        if (isProvisioning(g)) { enterProvisioning(g.provisioning); return; }
+        renderGate(g);
+      }).catch(function (err) {
+        var box = $('kgc-import-gate'); clear(box); box.appendChild(callout('warn', ['Could not check the import settings: ' + err]));
+        $('kgc-import-start').disabled = true;
+      });
+    }
+    function scheduleGate() { if (state.gateTimer) { clearTimeout(state.gateTimer); } state.gateTimer = setTimeout(gate, GATE_DEBOUNCE_MS); }
+    ['kgc-f-project', 'kgc-f-table'].forEach(function (id) {
+      var input = $(id);
+      input.oninput = scheduleGate;
+      input.onblur = function () { saveSession(); gate(); };
+      input.onkeydown = function (e) { if (e.key === 'Enter') { saveSession(); gate(); } };
+    });
+    $('kgc-reimport').onchange = function () { if (state.gate) { renderGate(state.gate); } };
+    function startImport() {
+      var p = formParams();
+      if (p.mode !== 'reimport' && state.gate && state.gate.collision) { return; }
+      saveSession();
+      var box = $('kgc-import-gate'); clear(box);
+      startJob('import', p);
+    }
+    $('kgc-import-start').onclick = startImport;
+    $('kgc-import-cancel').onclick = function () { if (state.job && state.job.id) { PluginJobs.cancel(state.job.id); } };
+    $('kgc-import-startover').onclick = function () { show('kgc-import-revisit', false); show('kgc-import-form', true); gate(); };
+
+    function renderImport(meta, session) {
+      var st = meta.import_state || { state: 'empty' };
+      var rec = st.record || {};
+      $('kgc-f-project').value = session.project_name || '';
+      $('kgc-f-table').value = session.table_name || '';
+      $('kgc-f-kit').value = session.kit_dir || '';
+      var running = state.job && state.job.kind === 'import';
+      if (st.state === 'success' && !running) {
+        // Revisit: straight into the success view, form hidden, Start over in the banner.
+        show('kgc-import-form', false); show('kgc-import-live', false); show('kgc-import-revisit', true);
+        var tables = rec.tables || {};
+        var parts = Object.keys(tables).map(function (s) { return s + ' ' + fmtCount(tables[s].rows) + ' rows'; });
+        text('kgc-import-summary', 'Project ' + rec.project_name + ', table ' + rec.table_name + ' — ' + parts.join(', ') + (rec.timings && rec.timings.total_s != null ? ' — ' + fmtSecs(rec.timings.total_s) : '') + '.');
+        var list = $('kgc-import-tables'); clear(list);
+        Object.keys(tables).forEach(function (s) {
+          var li = el('li', null, s + ': ');
+          var href = tableLink(tables[s].url);
+          if (href) { var a = el('a', null, 'Open in the Hub'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; li.appendChild(a); li.appendChild(el('span', 'kgc-muted', ' · ' + tables[s].url)); }
+          else { li.appendChild(el('span', null, tables[s].url)); }
+          list.appendChild(li);
+        });
+        renderChecks('kgc-import-checks', 'kgc-import-verdict', rec.checks || []);
+        var prov = rec.manifest_provenance || {};
+        text('kgc-import-record', [
+          'kit: ' + rec.kit_version + ' at ' + rec.kit_dir,
+          'lineage root: train ' + (rec.lineage_root || {}).train_url,
+          'locked val: ' + (rec.val_locked || {}).url,
+          'manifest: ' + prov.manifest_source + ' sha256 ' + prov.manifest_sha256,
+          'timings: ' + JSON.stringify(rec.timings || {}),
+          'job: ' + (rec.job_id || '')
+        ].join('\n'));
+        if (!state.job) { STEPS.forEach(function (s) { step(s, 'done'); }); text('kgc-pipeline-sub', 'Kit imported. Continue on the Train tab.'); }
+      } else {
+        show('kgc-import-revisit', false); show('kgc-import-form', true);
+        if (st.state === 'stale') {
+          var box = $('kgc-import-gate'); clear(box);
+          box.appendChild(callout('warn', ['A recorded import is no longer on disk (' + Object.keys(st.verified || {}).filter(function (k) { return !st.verified[k]; }).join(', ') + ' missing). Import again.']));
+        }
+        if (!running) { gate(); }
+      }
+    }
+
+    // ── Config load and tab resolution ───────────────────────────────────
+    function applyConfig(cfg) {
+      var meta = cfg._meta || {};
+      state.meta = meta; state.session = cfg.session || {};
+      renderMeta(meta);
+      renderKit(meta);
+      renderImport(meta, state.session);
+      if ((meta.manifest_refresh || {}).state === 'running') { pollManifest(POLL_MAX); }
+    }
     function pollManifest(remaining) {
       if (remaining <= 0) { return; }
       setTimeout(function () {
@@ -165,20 +661,28 @@
         }).catch(function () { /* the first render stands */ });
       }, POLL_MS);
     }
-
     function select(id) {
       API.authFetch(ROOT + '/manifest/select', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) })
         .then(function () { load(); })
         .catch(function (err) { text('kgc-banner', 'Could not select the competition: ' + err); });
     }
-
+    function adoptRunningJob() {
+      // Tab-open resolution: a running job of this plugin wins (reconnect), then the revisit
+      // record, then the form. job records carry no kind; it is inferred from the live label.
+      if (state.job || !window.PluginJobs) { return Promise.resolve(); }
+      return PluginJobs.list(PLUGIN_ID).then(function (jobs) {
+        var live = (jobs || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
+        if (live.length) { reconnect(live[0]); }
+      }).catch(function () { /* no host job list: the record decides */ });
+    }
     function load() {
       API.authFetch(ROOT + '/config')
         .then(function (r) { return r.json(); })
         .then(function (cfg) {
-          var meta = cfg._meta || {};
-          renderMeta(meta);
-          if ((meta.manifest_refresh || {}).state === 'running') { pollManifest(POLL_MAX); }
+          if (isProvisioning(cfg)) { enterProvisioning(cfg.provisioning); return; }
+          show('kgc-provisioning', false);
+          if (window.PluginJobs) { PluginJobs.connect(NS); }
+          adoptRunningJob().then(function () { applyConfig(cfg); });
         })
         .catch(function (err) { text('kgc-banner', 'Could not load the plugin config: ' + err); });
     }

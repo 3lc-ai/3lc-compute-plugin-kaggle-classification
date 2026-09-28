@@ -89,3 +89,29 @@ def test_fragment_renders_manifest_strings_only_through_textcontent():
         assert forbidden not in html, forbidden
     assert "textContent" in html
     assert "/manifest/select" in html and "/manifest'" in html  # the picker and the poll
+
+
+def test_fragment_drives_import_through_the_host_job_channel():
+    """Session 2: the Import tab starts jobs through window.PluginJobs (host dispatch, generic
+    job_update), listens for the plugin's own events, gates through /import/preflight, revisits
+    from the import record, and treats first-run provisioning as an expected state."""
+    html = kaggle_classification.KaggleClassificationPlugin().get_ui_fragment()
+    for needle in (
+        "PluginJobs.run(",
+        "PluginJobs.on(NS, 'checks'",
+        "PluginJobs.on(NS, 'stage_progress'",
+        "PluginJobs.cancel(",
+        "PluginJobs.list(",
+        "/import/preflight",
+        "import_state",
+        "'download_kit'",
+        "'reimport'",
+        "Setting up the plugin environment. The first run takes a few minutes.",
+        "status === 'provisioning'",
+        "?table=",
+        "object_service=",
+    ):
+        assert needle in html, needle
+    # The fragment never opens its own socket or fetches the CDN; the host owns the transport.
+    assert "io(" not in html.replace("API.libs.io", "") or "new WebSocket" not in html
+    assert "competitions." not in html
