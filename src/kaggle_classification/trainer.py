@@ -763,6 +763,59 @@ def prewarm_status() -> dict[str, Any]:
         return dict(_prewarm)
 
 
+# Item 6 of the 2026-09-29 re-check: a run summary written before part E has no ``params`` and no
+# ``elapsed_s``. They are backfilled once — the settings from the Run's own recorded parameters (a
+# torch-free read of its object.3lc.json), the elapsed time from the record's timestamps — and the
+# summary is written back so the read happens once. A Run that cannot be read leaves
+# ``params_missing`` with the reason, which disables "Use these settings" for that run.
+BACKFILL_PARAM_KEYS = ("epochs", "batch_size", "lr", "weight_decay", "seed", "optimizer")
+
+
+def _run_parameters_on_disk(run_url: str) -> dict[str, Any] | None:
+    """``constants.parameters`` of a local Run, read as JSON (no tlc, no torch): None when unreadable."""
+    if not run_url:
+        return None
+    raw = str(run_url).strip()
+    if raw.lower().startswith("file://"):
+        raw = raw[7:]
+    if "://" in raw:
+        return None
+    path = Path(raw) / "object.3lc.json"
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    params = ((obj.get("constants") or {}).get("parameters")) if isinstance(obj, dict) else None
+    return params if isinstance(params, dict) else None
+
+
+def _backfill_run(r: dict[str, Any]) -> bool:
+    """Fill ``elapsed_s`` / ``params`` / ``device_label`` on an older summary. True when it changed."""
+    changed = False
+    if r.get("elapsed_s") is None and r.get("finished_at") and r.get("created_at"):
+        r["elapsed_s"] = round(float(r["finished_at"]) - float(r["created_at"]), 1)
+        changed = True
+    if r.get("params") or r.get("params_missing"):
+        return changed
+    p = _run_parameters_on_disk(str(r.get("run_url") or ""))
+    if p:
+        params = {k: p.get(k) for k in BACKFILL_PARAM_KEYS if p.get(k) is not None}
+        sched = str(p.get("schedule") or "")
+        key = sched.split("(")[0].strip()
+        if key in SCHEDULES:
+            params["schedule"] = key
+        r["params"] = params
+        r["params_source"] = "run"
+        if not r.get("device_label") and r.get("device"):
+            r["device_label"] = device_label(r["device"], p.get("device_requested"), str(p.get("device_fallback_reason") or ""))
+    else:
+        r["params_missing"] = (
+            "Settings were not recorded for this run (it predates the run list keeping them) and its Run "
+            "could not be read from disk."
+        )
+    return True
+
+
 def train_state() -> dict[str, Any]:
     """``GET /train/state``: the current record (orphan-checked), the finished-run history for the
     ETA and the run list, the best checkpoint re-verified on disk. Torch-free."""
@@ -773,6 +826,9 @@ def train_state() -> dict[str, Any]:
         weights = str((current.get("facts") or {}).get("weights") or "")
         current["weights_on_disk"] = bool(weights) and Path(weights).is_file()
     runs = [r for r in (state.get("runs") or []) if isinstance(r, dict)]
+    if [r for r in runs if _backfill_run(r)]:   # a list, not any(): every summary is filled
+        state["runs"] = runs
+        _write_state(state)
     return {
         "state": (current or {}).get("status") or "empty",
         "current": current,

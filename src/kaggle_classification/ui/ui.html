@@ -3823,7 +3823,8 @@
         var rows = [
           ['Status', '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(r.status)) + '</span>'],
           ['Trained on', rev ? esc(rev) + (typeof r.usable_rows === 'number' ? ' · ' + fmtCount(r.usable_rows) + ' usable rows' : '') : '—'],
-          ['Settings', esc(trHpLine(r.params) || '—')],
+          ['Settings', esc(trHpLine(r.params) || (r.params_missing ? 'not recorded' : '—')) +
+                       (r.params_source === 'run' ? ' <span style="color:var(--text-muted)">(from the Run\'s record)</span>' : '')],
           ['Best', esc(best)],
           ['Device', esc(r.device_label || r.device || r.device_class || '—')],
           ['Elapsed', r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '—']
@@ -3836,11 +3837,14 @@
                   '"><span>Open in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
           (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
                   '"><span>Open in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
-          '<button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-run-use">' + kgIcon('refresh-cw', 'kgi-12') +
+          '<button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-run-use"' +
+          (r.params_missing ? ' disabled title="' + esc(r.params_missing) + '"' : '') + '>' + kgIcon('refresh-cw', 'kgi-12') +
           '<span>Use these settings</span></button>' +
-          '<span id="tr-run-use-note" class="form-help" style="margin:0"></span></div>';
+          '<span id="tr-run-use-note" class="form-help" style="margin:0">' +
+          (r.params_missing ? esc(r.params_missing) : '') + '</span></div>';
         box.innerHTML = html;
-        el('tr-run-use').addEventListener('click', function () { trUseRunSettings(r); });
+        // Item 6: an older run whose settings could not be recovered cannot be reused.
+        if (!r.params_missing) { el('tr-run-use').addEventListener('click', function () { trUseRunSettings(r); }); }
       }
 
       // Loads that run's EDITABLE settings into the form; never the locked ones, and never a train

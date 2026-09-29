@@ -203,6 +203,8 @@ def test_fragment_is_the_exdark_train_tab():
         # Item 5: the runs dropdown shows the Run folder's unique name and says "interrupted", never "stale".
         "function trStatusLabel", "return status === 'stale' ? 'interrupted' : (status || '?');", "function trRunFolder",
         "return trRunFolder(r) + ' · ' + trStatusLabel(r.status)", "esc(trStatusLabel(r.status))", "esc(trStatusLabel(status))",
+        # Item 6: older runs show backfilled settings; unrecoverable ones disable Use these settings with a reason.
+        "r.params_missing ? 'not recorded'", "(from the Run\\'s record)", "if (!r.params_missing) { el('tr-run-use')",
     ):
         assert needle in html, needle
     assert "Defaults are shown; reload the page to try again." not in html

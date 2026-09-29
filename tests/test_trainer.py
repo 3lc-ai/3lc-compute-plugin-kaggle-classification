@@ -162,6 +162,35 @@ def test_run_summary_carries_what_predict_and_the_eta_need(store):
     assert s["provenance_ok"] is True and s["weights"] == "C:/x/best.pt" and s["device_class"] == "cpu"
 
 
+def test_older_run_summaries_are_backfilled_from_the_run_once(store, tmp_path):
+    """Item 6 of the re-check: a summary from before part E (no params, no elapsed) gets its settings
+    from the Run's recorded parameters and its elapsed time from the record's timestamps, written
+    back once; a Run that cannot be read leaves params_missing (Use these settings disabled)."""
+    import json
+
+    run_dir = tmp_path / "runs" / "review-1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "object.3lc.json").write_text(json.dumps({"constants": {"parameters": {
+        "epochs": 10, "batch_size": 16, "lr": 0.0001, "weight_decay": 0.0, "seed": 42, "optimizer": "adam",
+        "schedule": "steplr(step_size=5, gamma=0.1)", "device": "cuda", "device_requested": "", "device_fallback_reason": "",
+    }}}), encoding="utf-8")
+    old = {"id": "old1", "run_name": "review-1", "status": "completed", "created_at": 1000.0, "finished_at": 1070.4,
+           "run_url": run_dir.as_posix(), "device": "cuda", "device_class": "cuda", "epoch_s_per_row": 0.006}
+    gone = {"id": "old2", "run_name": "g1_cpu", "status": "completed", "created_at": 2000.0, "finished_at": 2100.0,
+            "run_url": (tmp_path / "runs" / "missing").as_posix(), "device": "cpu"}
+    store.save({"train_state": {"runs": [old, gone]}})
+    st = trainer.train_state()
+    a, b = st["runs"]
+    assert a["params"] == {"epochs": 10, "batch_size": 16, "lr": 0.0001, "weight_decay": 0.0, "seed": 42,
+                           "optimizer": "adam", "schedule": "steplr"}
+    assert a["params_source"] == "run" and a["elapsed_s"] == 70.4 and a["device_label"] == "cuda (auto)"
+    assert "params" not in b and "could not be read" in b["params_missing"] and b["elapsed_s"] == 100.0
+    # Written back once: the store now carries the filled summaries.
+    saved = store.load()["train_state"]["runs"]
+    assert saved[0]["params"]["epochs"] == 10 and saved[1]["params_missing"]
+    assert trainer._run_parameters_on_disk("s3://bucket/run") is None and trainer._run_parameters_on_disk("") is None
+
+
 def test_device_label_names_the_reason_in_each_case():
     """Item 1 of the 2026-09-29 re-check: the log line and the in-run header share one sentence
     that says WHY the run is on its device."""
