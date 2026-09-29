@@ -191,7 +191,15 @@ def test_fragment_is_the_exdark_train_tab():
         # Item 2: the estimate's inputs are keyed by the resolved device class; the in-run terms follow the run's.
         "function trStatsFor", "r.device_class === cls;", "function trAwaitDeviceProbe", "function trRunEtaTerms",
         "Recent ' + clsText + ' runs averaged",
+        # Item 3: the config load retries while the worker starts and never renders an empty form.
+        "function kgStartupError", "name === 'AbortError'", "function kgCacheConfig", "function kgCachedConfig",
+        "function kgApplyLoadedConfig", "function kgConfigFallback", "Loading saved settings… the plugin worker is starting",
+        "from the last successful load", "so the form stays hidden rather than empty", "class=\"btn btn-ghost btn-sm kg-cfg-retry\"",
+        "if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }",
     ):
+        assert needle in html, needle
+    assert "Defaults are shown; reload the page to try again." not in html
+    for needle in ():
         assert needle in html, needle
     assert "el('tr-device').value = String(p.device)" not in html
     for needle in ():
@@ -249,6 +257,8 @@ SAFE_IDENTS = {
     "row",
     # the duration hint's device class word (item 2 of the re-check): 'CPU' or 'GPU', picked over literals
     "clsText",
+    # the config-load banners (item 3): the pre-escaped reason and the Retry button markup built above
+    "reason", "retryBtn",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

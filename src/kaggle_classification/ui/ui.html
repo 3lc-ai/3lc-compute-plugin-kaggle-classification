@@ -1297,40 +1297,119 @@
         }, 5000);
       }
 
+      // ── The config load, with startup patience (item 3 of the 2026-09-29 re-check) ──────
+      // The first request after a reinstall or a worker restart can outlive the Hub's fetch timeout
+      // ("signal is aborted without reason") while the worker imports torch. That, provisioning and
+      // gateway errors are EXPECTED here — as the Import tab treats provisioning — so the load retries
+      // with backoff and never renders an empty form: the form stays hidden while retrying; if the
+      // load truly fails, the last successful load (cached in this browser) fills every field and
+      // locked row and the banner says so; with nothing to fill from, the form stays hidden.
+      var KG_CFG_DELAYS = [2000, 3000, 5000, 8000, 10000, 15000, 15000, 20000, 20000, 30000];
+      var KG_LAST_CFG_KEY = 'kgc.lastConfig';
+      var kgCfgAttempt = 0, kgCfgTimer = null;
+
+      function kgStartupError(e) {
+        var name = String((e && e.name) || ''), msg = String((e && e.message) || e || '');
+        var status = e && e.status;
+        return name === 'AbortError' || name === 'TimeoutError' || /abort|timeout|timed out/i.test(msg) ||
+               status === 502 || status === 503 || status === 504;
+      }
+      function kgCacheConfig(cfg) {
+        try { localStorage.setItem(KG_LAST_CFG_KEY, JSON.stringify({ at: Date.now(), cfg: cfg })); } catch (e) { /* sandboxed */ }
+      }
+      function kgCachedConfig() {
+        try {
+          var v = JSON.parse(localStorage.getItem(KG_LAST_CFG_KEY) || 'null');
+          return v && v.cfg && v.cfg._meta ? v : null;
+        } catch (e) { return null; }
+      }
+      function kgShowCfgBanner(html) {
+        ['kg-conn-banner', 'tr-conn-banner', 'ps-conn-banner', 'st-conn-banner'].forEach(function (slot) {
+          var box = el(slot);
+          if (box) { box.innerHTML = html; }
+        });
+      }
+      // What a loaded config renders (live or cached): the shell, the contract, every field and
+      // locked row, the saved values.
+      function kgApplyLoadedConfig(cfg) {
+        kgMeta = cfg._meta || {};
+        kgImportState = kgMeta.import_state || { state: 'empty' };
+        kgApplySession(cfg);
+        kgPluginVersion = String(kgMeta.version || '');
+        kgRenderFooters(kgMeta);
+        kgRenderContract(kgMeta.manifest);
+        kgTraining = kgMeta.training || kgTraining;
+        kgTrainState = kgMeta.train_state || kgTrainState;
+        trApplyContract();
+        trApplyFields(false);
+        applyConfig(cfg);
+        if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
+        kgRenderLoopLinks();
+      }
+
       function kgFetchConfig(resolve) {
         API.authFetch(PLUGIN_ROOT + '/config')
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }
+          return r.json();
+        })
         .then(function (cfg) {
-          if (cfg && cfg.status === 'provisioning' && !cfg._meta) { kgEnterProvisioning(cfg.provisioning); resolve(); return; }
-          kgMeta = cfg._meta || {};
-          kgImportState = kgMeta.import_state || { state: 'empty' };
-          kgApplySession(cfg);
-          kgPluginVersion = String(kgMeta.version || '');
-          kgRenderFooters(kgMeta);
-          kgRenderContract(kgMeta.manifest);
-          kgTraining = kgMeta.training || kgTraining;
-          kgTrainState = kgMeta.train_state || kgTrainState;
-          trApplyContract();
-          trApplyFields(false);
-          applyConfig(cfg);
-          if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
-          kgRenderLoopLinks();
+          if (cfg && cfg.status === 'provisioning' && !cfg._meta) { kgShowCfgBanner(''); kgEnterProvisioning(cfg.provisioning); resolve(); return; }
+          kgCfgAttempt = 0;
+          kgShowCfgBanner('');
+          kgCacheConfig(cfg);
+          kgApplyLoadedConfig(cfg);
+          trShowForm(true);
           if ((kgMeta.manifest_refresh || {}).state === 'running') { kgPollManifest(8); }
           kgConfigDone = true;
           resolve();
         })
         .catch(function (e) {
           if (kgConn.fail(e, function () { kgFetchConfig(resolve); })) { return; }
-          ['kg-conn-banner', 'tr-conn-banner', 'ps-conn-banner', 'st-conn-banner'].forEach(function (slot) {
-            var box = el(slot);
-            if (box) {
-              box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
-                '<span>Saved settings could not be loaded (' + esc(e.message || String(e)) +
-                '). Defaults are shown; reload the page to try again.</span></div>';
-            }
-          });
-          resolve();
+          if (kgStartupError(e) && kgCfgAttempt < KG_CFG_DELAYS.length) {
+            var delay = KG_CFG_DELAYS[kgCfgAttempt++];
+            trShowForm(false);
+            kgShowCfgBanner('<div class="kg-callout info"><span class="spinner" aria-hidden="true"></span>' +
+              '<span>Loading saved settings… the plugin worker is starting (retry ' + fmtCount(kgCfgAttempt) + ' of ' +
+              fmtCount(KG_CFG_DELAYS.length) + ' in ' + fmtCount(Math.round(delay / 1000)) + ' s).</span></div>');
+            clearTimeout(kgCfgTimer);
+            kgCfgTimer = setTimeout(function () { kgFetchConfig(resolve); }, delay);
+            return;
+          }
+          kgConfigFallback(e, resolve);
         });
+      }
+
+      function kgConfigFallback(e, resolve) {
+        var cached = kgCachedConfig();
+        var reason = esc(kgErrorText((e && e.message) || String(e)) || 'no response');
+        var retryBtn = '<button type="button" class="btn btn-ghost btn-sm kg-cfg-retry" style="margin-left:8px">Retry</button>';
+        if (cached) {
+          kgApplyLoadedConfig(cached.cfg);
+          trShowForm(true);
+          kgShowCfgBanner('<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+            '<span>Saved settings could not be loaded (' + reason + '). Every field and locked row shows the ' +
+            'competition defaults from the last successful load (' + esc(kgFmtAgo(cached.at / 1000)) +
+            '); values saved since then are not reflected.' + retryBtn + '</span></div>');
+        } else {
+          trShowForm(false);
+          kgShowCfgBanner('<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+            '<span>The competition settings could not be loaded (' + reason + ') and no earlier load is cached, ' +
+            'so the form stays hidden rather than empty.' + retryBtn + '</span></div>');
+        }
+        Array.prototype.forEach.call(ROOT_EL.querySelectorAll('.kg-cfg-retry'), function (btn) {
+          btn.addEventListener('click', function () {
+            kgCfgAttempt = 0;
+            kgShowCfgBanner('<div class="kg-callout info"><span class="spinner" aria-hidden="true"></span><span>Loading saved settings…</span></div>');
+            kgFetchConfig(function () {
+              if (!kgConfigDone) { return; }
+              if (!kgDevMode) { kgInitImportTab(); kgRenderGates(); }
+              if (kgShownTab === 'train') { trOnTabEnter(); }
+            });
+          });
+        });
+        kgConfigDone = !!cached;
+        resolve();
       }
       var configLoaded = new Promise(function (resolve) { kgFetchConfig(resolve); });
 
