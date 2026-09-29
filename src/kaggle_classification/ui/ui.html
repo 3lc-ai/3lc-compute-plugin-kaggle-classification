@@ -3964,25 +3964,34 @@
       // Train-tab forced states (?kgdev=train-…): static fixtures, no fetches, no job side
       // effects. Numbers derive from the served manifest (the literal census stays clean).
       function trDevForce(mode) {
-        var m = kgManifest || {};
-        var names = (m.classes || []).map(function (c) { return c.name; });
-        var nC = names.length || 1;
-        var perClass = ((m.splits || {}).train || {}).labeled_per_class || 0;
-        var pool = ((m.splits || {}).train || {}).undefined || 0;
-        var valRows = (((m.splits || {}).val || {}).per_class || 0) * nC;
-        var labeled = perClass * nC, trainRows = labeled + pool;
-        var arch = (m.model || {}).arch || 'model', px = (m.model || {}).image_size || 0;
-        var id = (m.competition || {}).id || 'competition';
-        var base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/datasets/';
-        var trainUrl = base + kgDatasetName('train') + '/tables/initial';
-        var revUrl = base + kgDatasetName('train') + '/tables/labels-round-1';
-        var valUrl = base + kgDatasetName('val') + '/tables/initial';
-        var devRun = id + '_run_20260929_090000';
-        var runUrl = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/runs/' + devRun;
-        var weights = runUrl + '/model/best.pt';
-        var sha = '5f8a1c0e7b3d92a46e1f0c3b8d7a5e2f91c4b6d8e0a2f4c6b8d0e2a4c6e8f0a1';
-        var mf = (kgTraining || {}).model || {};
-        var tvV = mf.torchvision_version || '0.x';
+        // Re-derived on every apply(): the first pass runs before the config lands (every count 0),
+        // the second after it — the closures below read these variables, so they must be reassigned,
+        // not captured once (the "No usable rows" fixture bug of the 2026-09-29 closeout).
+        var m, names, nC, perClass, pool, valRows, labeled, trainRows, arch, px, id, base, trainUrl, revUrl, rev2Url,
+            valUrl, devRun, runUrl, weights, sha, mf, tvV;
+        function derive() {
+          m = kgManifest || {};
+          names = (m.classes || []).map(function (c) { return c.name; });
+          nC = names.length || 1;
+          perClass = ((m.splits || {}).train || {}).labeled_per_class || 0;
+          pool = ((m.splits || {}).train || {}).undefined || 0;
+          valRows = (((m.splits || {}).val || {}).per_class || 0) * nC;
+          labeled = perClass * nC; trainRows = labeled + pool;
+          arch = (m.model || {}).arch || 'model'; px = (m.model || {}).image_size || 0;
+          id = (m.competition || {}).id || 'competition';
+          base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/datasets/';
+          trainUrl = base + kgDatasetName('train') + '/tables/initial';
+          revUrl = base + kgDatasetName('train') + '/tables/labels-round-1';
+          rev2Url = base + kgDatasetName('train') + '/tables/labels-round-2';
+          valUrl = base + kgDatasetName('val') + '/tables/initial';
+          devRun = id + '_run_20260929_090000';
+          runUrl = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/runs/' + devRun;
+          weights = runUrl + '/model/best.pt';
+          sha = '5f8a1c0e7b3d92a46e1f0c3b8d7a5e2f91c4b6d8e0a2f4c6b8d0e2a4c6e8f0a1';
+          mf = (kgTraining || {}).model || {};
+          tvV = mf.torchvision_version || '0.x';
+        }
+        derive();
 
         // Deterministic from-scratch curve: loss falls, val accuracy climbs, a mild wobble.
         function HIST(n) {
@@ -4013,7 +4022,9 @@
           Object.keys(over || {}).forEach(function (k) { info[k] = over[k]; });
           return info;
         }
-        var PROV = [
+        var PROV, LOG;
+        function deriveText() {
+        PROV = [
           { label: 'run records backbone == ' + (mf.backbone || 'torchvision_' + arch), ok: true, detail: 'backbone=' + JSON.stringify(mf.backbone || 'torchvision_' + arch) },
           { label: 'run records head == ' + (mf.head || 'head'), ok: true, detail: 'head=' + JSON.stringify(mf.head || 'head') },
           { label: 'run records image_size == ' + px, ok: true, detail: 'image_size=' + px },
@@ -4024,7 +4035,7 @@
           { label: 'run records val_table_url == the locked val', ok: true, detail: 'val_table_url=' + JSON.stringify(valUrl.slice(-48)) },
           { label: 'run records the best checkpoint sha256, equal to the file on disk', ok: true, detail: 'best_checkpoint_sha256=' + sha.slice(0, 12) + '...' }
         ];
-        var LOG = [
+        LOG = [
           'Manifest: remote (' + id + ', kit v1)',
           'train: ' + trainUrl + ' (' + fmtCount(trainRows) + ' rows)',
           'val (locked): ' + valUrl + ' (' + fmtCount(valRows) + ' rows)',
@@ -4034,6 +4045,8 @@
           'epoch 1/10 — train_loss=1.7512, val_loss=1.6890, val_accuracy=31.42% (new best)',
           'epoch 2/10 — train_loss=1.4021, val_loss=1.4210, val_accuracy=45.08% (new best)'
         ];
+        }
+        deriveText();
         function JOB(status, epoch, total, extra) {
           var now = Date.now() / 1000;
           var job = {
@@ -4070,6 +4083,8 @@
         function gateGreen() { gateWith(INFO()); }
 
         function apply() {
+          derive();
+          deriveText();
           kgImportState = { state: 'success', record: { val_locked: { url: valUrl }, tables: { train: { url: trainUrl, rows: trainRows }, val: { url: valUrl, rows: valRows } } } };
           trApplyContract();
           trShowForm(true);
@@ -4138,11 +4153,13 @@
             gateGreen();
             if (el('tr-train-pop').hidden) { el('tr-train-pick').click(); }
           } else if (mode === 'train-state2-pinned') {
-            // Use these settings pinned the seed while two newer revisions exist (item 4).
-            var newest = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 2, summary: S(labeled + 9, pool - 9, 0, 0) };
+            // Use these settings pinned the seed (its usable rows in use) while two newer revisions
+            // exist behind it: initial -> labels-round-1 -> labels-round-2 (item 4's warning).
+            var pinnedBase = { url: trainUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 0, summary: S(labeled, pool, 0, 0) };
+            var newest = { url: rev2Url, rows: trainRows, descends_from_seed: true, steps_from_seed: 2, summary: S(labeled + 21, pool - 21, 0, 0) };
             el('tr-latest').checked = false;
             el('tr-train-url').value = trainUrl;
-            trTableInfo = INFO({ latest: newest, latest_url: revUrl, has_revisions: true });
+            trTableInfo = INFO({ base: pinnedBase, latest: newest, latest_url: rev2Url, has_revisions: true });
             trEvaluateGate();
           } else if (mode === 'train-state2-lineage') {
             var stranger = base + kgDatasetName('train') + '/tables/my-own-table';

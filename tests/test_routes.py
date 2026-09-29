@@ -208,6 +208,9 @@ def test_fragment_is_the_exdark_train_tab():
         # Item 7: the tree connector is inline before the name and names never wrap; a three-level fixture.
         '<span class="kg-pop-name">', ".kg-pop-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }",
         ".kg-pop-tree { display: inline;", "'train-state2-tree'", "depth: 2, parent: aUrl", "var kgDevTables = null;",
+        # Closeout: the fixtures re-derive the manifest numbers on every apply (usable rows never 0 after the config);
+        # the pinned fixture pins the seed with its rows while two newer revisions exist.
+        "function derive() {", "          derive();\n          deriveText();", "base: pinnedBase, latest: newest, latest_url: rev2Url",
     ):
         assert needle in html, needle
     assert "Defaults are shown; reload the page to try again." not in html
