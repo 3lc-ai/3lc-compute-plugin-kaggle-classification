@@ -492,3 +492,20 @@ cancel, completed revisit, fixtures. Six parts followed, one commit each:
   background UMAP pre-warm (after Import, on the first Train tab open), and the estimate = setup +
   training + collection (collection scaled by rows collected and device class); F6 the hint hides
   while a field is out of bounds. The ETA gate record follows.
+
+### ETA gate (F5, 2026-09-29, `3lc-hub-11`, plugin at `1c63cb7`)
+
+`../3lc-hub-11/gates_review2.py`: the estimate is computed as the fragment computes its hint
+(history median over the last five same-class runs, each term falling to the benchmark when the
+history lacks it) before the run; the actual is the host job's elapsed time.
+
+| Run | Estimate | Actual | Parts (actual) |
+|---|---|---|---|
+| GPU, 10 epochs, 609 usable rows | 84.9 s (setup 13.3 + train 36.0 + collect 35.6) | **70.1 s** | setup 6.7 + train 37.0 + collect **24.1** (+ provenance / record) — within 21 % |
+| CPU, 3 epochs, forced `cpu` | 152.1 s (setup 0.6 + train 73.8 + collect 77.8) | **164.3 s** | setup 0.7 + train 84.3 + collect 77.0 — within 8 % |
+
+The UMAP pre-warm (4,500 rows, the NN-descent path a competition table takes) ran in 48 s in the
+background after the tab open; the GPU collection pass then took 24 s in a freshly installed worker
+(it took 49 s in the first attempt, whose pre-warm compiled the small-data path, and 81 s before any
+pre-warm). The history medians still carry the earlier cold passes, so the GPU estimate is high
+until they roll out of the last five runs. Runs added: `eta_gpu` (best 7), `eta_cpu` (best 3).
