@@ -629,7 +629,10 @@ def run_summary(record: dict[str, Any]) -> dict[str, Any]:
         "epoch_s_per_row": result.get("epoch_s_per_row"),
         "collect_s": result.get("collect_s"),
         "collect_rows": result.get("collect_rows"),
-        "collect_s_per_row": result.get("collect_s_per_row"),
+        "collect_s_per_row": result.get("collect_s_per_row") or (
+            round(float(result["collect_s"]) / float(result["collect_rows"]), 5)
+            if result.get("collect_s") and result.get("collect_rows") else None
+        ),
         "setup_s": result.get("setup_s"),
         "last_val_accuracy": (progress.get("history") or [{}])[-1].get("va") if progress.get("history") else None,
         "provenance_ok": bool(checks) and all(c.get("ok") for c in checks),
@@ -698,6 +701,7 @@ def _mark_run_interrupted(record: dict[str, Any]) -> None:
 
 
 NUMBA_CACHE_DIR_NAME = "numba-cache"
+PREWARM_ROWS = 4500
 _prewarm: dict[str, Any] = {"state": "idle", "seconds": None, "error": None}
 _prewarm_lock = threading.Lock()
 
@@ -731,11 +735,13 @@ def prewarm_umap_async() -> dict[str, Any]:
             import numpy as np
             import umap
 
+            # Above 4,096 rows UMAP switches from exact neighbours to NN-descent (pynndescent), which
+            # is the path a competition table takes; a small fit would compile the wrong one.
             rng = np.random.default_rng(0)
-            data = rng.normal(size=(60, 16)).astype(np.float32)
-            reducer = umap.UMAP(n_components=3, n_neighbors=min(15, len(data) - 1), min_dist=0.1, random_state=42)
+            data = rng.normal(size=(PREWARM_ROWS, 16)).astype(np.float32)
+            reducer = umap.UMAP(n_components=3, n_neighbors=15, min_dist=0.1, random_state=42)
             reducer.fit(data)
-            reducer.transform(rng.normal(size=(8, 16)).astype(np.float32))
+            reducer.transform(rng.normal(size=(64, 16)).astype(np.float32))
             with _prewarm_lock:
                 _prewarm.update({"state": "done", "seconds": round(time.time() - t0, 1), "error": None})
         except Exception as exc:
@@ -1177,6 +1183,7 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
     set_checks = getattr(ctx, "set_checks", lambda c: None)
     is_cancelled = getattr(ctx, "is_cancelled", lambda: False)
     job_id = str(getattr(ctx, "job_id", "") or "") or f"local-{int(time.time())}"
+    job_started_at = time.time()
 
     kw = build_train_kwargs(params, manifest)
 
@@ -1245,6 +1252,7 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
 
     # ── The record: written before any Run exists (a restart from here on reads back as stale) ──
     rec = _Recorder(_new_record(job_id, kw))
+    rec.record["job_started_at"] = job_started_at
     rec.record["facts"].update({
         "run_name": kw["run_name"], "project_name": kw["project_name"], "train_table_url": resolved_url,
         "train_table_requested": train_url, "val_table_url": val_url, "usable": summary,
@@ -1446,7 +1454,8 @@ def _train_and_collect(
 
     # ── Epochs ──────────────────────────────────────────────────────────────
     st.train_start = time.time()
-    setup_s = round(st.train_start - float(rec.record.get("created_at") or st.train_start), 1)
+    started = rec.record.get("job_started_at") or rec.record.get("created_at") or st.train_start
+    setup_s = round(st.train_start - float(started), 1)
     rec.record["facts"]["setup_s"] = setup_s
     set_field("setup_s", setup_s)
     st.last_hb = st.train_start

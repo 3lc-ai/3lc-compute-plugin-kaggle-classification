@@ -3384,8 +3384,12 @@
         var b = cls ? bench[cls] : null;
         if (trPerRow) {
           trStatsSource = 'history';
-          trCollectPerRow = kgMedian(recent.map(function (r) { return r.collect_s_per_row; }));
-          trSetupSecs = kgMedian(recent.map(function (r) { return r.setup_s; }));
+          // A term the history cannot supply (records older than the setup / per-row fields) falls
+          // to the benchmark's, so the estimate never silently drops a phase.
+          trCollectPerRow = kgMedian(recent.map(function (r) {
+            return r.collect_s_per_row || (r.collect_s && r.collect_rows ? r.collect_s / r.collect_rows : null);
+          })) || (b && b.collect_s_per_row) || null;
+          trSetupSecs = kgMedian(recent.map(function (r) { return r.setup_s; })) || (b && b.setup_s) || null;
         } else if (b && b.epoch_s_per_row > 0) {
           trStatsSource = 'benchmark';
           trPerRow = b.epoch_s_per_row;
