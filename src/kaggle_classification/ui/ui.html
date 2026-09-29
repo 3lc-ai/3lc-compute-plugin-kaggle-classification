@@ -2955,7 +2955,7 @@
         }
         el('tr-run-name').textContent = name;
         var badgeCls = TR_BADGE_CLASS[status] || 'queued';
-        var badgeHtml = '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(status) + '</span>';
+        var badgeHtml = '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(status)) + '</span>';
         if (el('tr-run-badge').innerHTML !== badgeHtml) { el('tr-run-badge').innerHTML = badgeHtml; }
         kgSwapText(el('tr-run-epoch'), 'Epoch ' + epoch + '/' + (total || '?'));
         // D8: the resolved device in the header meta ("· cuda (auto)").
@@ -3768,9 +3768,19 @@
       // ── Previous runs panel (part E) ────────────────────────────────
       var trRunsSelected = '';   // the dropdown selection: the only state this panel keeps
 
+      // Item 5 of the re-check: the dropdown shows each run's UNIQUE name — the Run folder tlc
+      // created (g1_default_0000 beside g1_default), not the requested name — and says
+      // "interrupted", as the banner and the Hub do, never the record's internal "stale".
+      function trStatusLabel(status) {
+        return status === 'stale' ? 'interrupted' : (status || '?');
+      }
+      function trRunFolder(r) {
+        var m = String(r.run_url || '').match(/[\\\/]runs[\\\/]+([^\\\/]+)[\\\/]?$/);
+        return m ? m[1] : (r.run_name || r.id);
+      }
       function trRunLabel(r) {
         var when = r.created_at ? kgFmtAgo(r.created_at) : '';
-        return (r.run_name || r.id) + ' · ' + (r.status || '?') + (when ? ' · ' + when : '');
+        return trRunFolder(r) + ' · ' + trStatusLabel(r.status) + (when ? ' · ' + when : '');
       }
 
       function trRenderRunsPanel() {
@@ -3811,7 +3821,7 @@
         var link = r.run_url ? dashRunLink(r.run_url) : '';
         var projectsHref = kgHubProjectsHref(r.project_name || kgCurrentProject());
         var rows = [
-          ['Status', '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(r.status || '?') + '</span>'],
+          ['Status', '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(r.status)) + '</span>'],
           ['Trained on', rev ? esc(rev) + (typeof r.usable_rows === 'number' ? ' · ' + fmtCount(r.usable_rows) + ' usable rows' : '') : '—'],
           ['Settings', esc(trHpLine(r.params) || '—')],
           ['Best', esc(best)],

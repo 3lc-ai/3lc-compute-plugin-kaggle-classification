@@ -200,6 +200,9 @@ def test_fragment_is_the_exdark_train_tab():
         # a pinned revision with newer ones warns.
         "el('tr-latest').checked = true;   // item 4", "'Pinned to '", "newer revision", "Turn on Use latest revision",
         "'train-state2-pinned'", "followed: useLatest && info.has_revisions, pinned: pinned",
+        # Item 5: the runs dropdown shows the Run folder's unique name and says "interrupted", never "stale".
+        "function trStatusLabel", "return status === 'stale' ? 'interrupted' : (status || '?');", "function trRunFolder",
+        "return trRunFolder(r) + ' · ' + trStatusLabel(r.status)", "esc(trStatusLabel(r.status))", "esc(trStatusLabel(status))",
     ):
         assert needle in html, needle
     assert "Defaults are shown; reload the page to try again." not in html
