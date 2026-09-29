@@ -2885,10 +2885,11 @@
         // Remaining is recomputed on every update: max(0, estimate − elapsed). The per-epoch
         // pace seeds from this machine's history (or the benchmark) until the first epoch
         // boundary lands a measured avg_epoch_s.
+        var terms = trRunEtaTerms(job);
         var perEpoch = (typeof p.avg_epoch_s === 'number' && p.avg_epoch_s > 0)
-          ? p.avg_epoch_s : trEpochSecs;
+          ? p.avg_epoch_s : terms.perEpoch;
         var remaining = (status === 'running' && perEpoch && total && job.created_at)
-          ? Math.max(0, (trSetupSecs || 0) + perEpoch * total + (trCollectSecs || 0) - (now - job.created_at)) : null;
+          ? Math.max(0, (terms.setup || 0) + perEpoch * total + (terms.collect || 0) - (now - job.created_at)) : null;
         el('tr-run-eta').textContent =
           remaining === null ? ''
             : remaining >= 1 ? '≈ ' + fmtDur(remaining) + ' remaining'
@@ -3376,38 +3377,89 @@
         return v.length ? v[Math.floor(v.length / 2)] : null;
       }
 
-      function trLoadDurationStats() {
-        var cls = trDeviceClass();
+      // Item 2 of the re-check: the history and the benchmark are keyed by the RESOLVED device
+      // class — a CPU run never enters a GPU estimate (a mixed median read ~28 s/epoch on a GPU).
+      // Without a class (the worker's device probe has not answered and the field is blank) there
+      // is no estimate rather than a mixed one; trAwaitDeviceProbe fills it in.
+      function trStatsFor(cls) {
+        var out = { cls: cls || null, perRow: null, collectPerRow: null, setup: null, source: null };
+        if (!cls) { return out; }
         var recent = (kgTrainState.runs || [])
           .filter(function (r) {
             return (r.status === 'completed' || r.status === 'cancelled') &&
                    typeof r.epoch_s_per_row === 'number' && r.epoch_s_per_row > 0 &&
-                   (!cls || !r.device_class || r.device_class === cls);
+                   r.device_class === cls;
           })
-          .slice(0, 5);   // newest first: the 5 most recent
-        trPerRow = kgMedian(recent.map(function (r) { return r.epoch_s_per_row; }));
+          .slice(0, 5);   // newest first: the 5 most recent of this class
         var bench = ((kgTraining || {}).benchmark || {}).per_device || {};
-        var b = cls ? bench[cls] : null;
-        if (trPerRow) {
-          trStatsSource = 'history';
+        var b = bench[cls] || null;
+        out.perRow = kgMedian(recent.map(function (r) { return r.epoch_s_per_row; }));
+        if (out.perRow) {
+          out.source = 'history';
           // A term the history cannot supply (records older than the setup / per-row fields) falls
           // to the benchmark's, so the estimate never silently drops a phase.
-          trCollectPerRow = kgMedian(recent.map(function (r) {
+          out.collectPerRow = kgMedian(recent.map(function (r) {
             return r.collect_s_per_row || (r.collect_s && r.collect_rows ? r.collect_s / r.collect_rows : null);
           })) || (b && b.collect_s_per_row) || null;
-          trSetupSecs = kgMedian(recent.map(function (r) { return r.setup_s; })) || (b && b.setup_s) || null;
+          out.setup = kgMedian(recent.map(function (r) { return r.setup_s; })) || (b && b.setup_s) || null;
         } else if (b && b.epoch_s_per_row > 0) {
-          trStatsSource = 'benchmark';
-          trPerRow = b.epoch_s_per_row;
-          trCollectPerRow = b.collect_s_per_row || null;
-          trSetupSecs = b.setup_s || null;
-        } else {
-          trStatsSource = null;
-          trPerRow = null;
-          trCollectPerRow = null;
-          trSetupSecs = null;
+          out.source = 'benchmark';
+          out.perRow = b.epoch_s_per_row;
+          out.collectPerRow = b.collect_s_per_row || null;
+          out.setup = b.setup_s || null;
         }
+        return out;
+      }
+
+      var trStatsCls = null;       // the class the form's terms were computed for
+
+      function trLoadDurationStats() {
+        var s = trStatsFor(trDeviceClass());
+        trStatsCls = s.cls;
+        trPerRow = s.perRow;
+        trCollectPerRow = s.collectPerRow;
+        trSetupSecs = s.setup;
+        trStatsSource = s.source;
         trRenderDurationHint();
+      }
+
+      // The device probe runs once per worker process off the request path; the first state read
+      // after a worker start may precede its answer. Poll a few times so the hint appears without
+      // a reload (blank Device field only: a typed device already fixes the class).
+      var trProbeTimer = null;
+      function trAwaitDeviceProbe(tries) {
+        clearTimeout(trProbeTimer);
+        if (kgDevMode || (el('tr-device').value || '').trim() || kgTrainState.device_class || !tries) { return; }
+        trProbeTimer = setTimeout(function () {
+          API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); }).then(function (st) {
+            if (st && st.device_class) { kgTrainState.device_class = st.device_class; kgTrainState.device_probe = st.device_probe; }
+            trLoadDurationStats();
+            trAwaitDeviceProbe(tries - 1);
+          }).catch(function () { trAwaitDeviceProbe(tries - 1); });
+        }, 3000);
+      }
+
+      // The in-run terms come from the RUN's resolved class (a fallback to CPU re-seeds the pace
+      // from CPU history), not from whatever the form's field says now.
+      function trRunEtaTerms(job) {
+        var facts = job.facts || {};
+        var cls = facts.device_class || (facts.device ? trClassOf(facts.device) : null) || trStatsCls;
+        if (!cls || cls === trStatsCls) { return { perEpoch: trEpochSecs, setup: trSetupSecs, collect: trCollectSecs }; }
+        var s = trStatsFor(cls);
+        var rows = (facts.usable || {}).labeled_in_use || (trGate && trGate.ok ? trGate.usable_rows : 0);
+        var valRows = ((((kgImportState || {}).record || {}).tables || {}).val || {}).rows || 0;
+        var total = (trGate && trGate.rows ? trGate.rows : 0) + valRows;
+        return {
+          perEpoch: s.perRow && rows ? s.perRow * rows : null,
+          setup: s.setup,
+          collect: s.collectPerRow && total ? s.collectPerRow * total : 0
+        };
+      }
+      function trClassOf(device) {
+        var d = String(device || '').toLowerCase();
+        if (/^\d+$/.test(d) || d.indexOf('cuda') === 0) { return 'cuda'; }
+        if (d.indexOf('mps') === 0) { return 'mps'; }
+        return d === 'cpu' ? 'cpu' : null;
       }
 
       function trRenderDurationHint() {
@@ -3419,7 +3471,7 @@
         if (!trPerRow || !epochs || epochs < 1 || !rows || trAnyInvalid()) { box.innerHTML = ''; trEpochSecs = null; return; }
         var per = trPerRow * rows;
         trEpochSecs = per;
-        var cls = trDeviceClass();
+        var cls = trStatsCls;
         // F5: the final pass scales with every row collected (train + val) on this device class;
         // the estimate is setup + epochs + collection.
         var valRows = ((((kgImportState || {}).record || {}).tables || {}).val || {}).rows || 0;
@@ -3428,11 +3480,12 @@
         trCollectSecs = collect;
         var totalSecs = (trSetupSecs || 0) + per * epochs + collect;
         var perText = per >= 60 ? '~' + Math.round(per / 60) + ' min/epoch' : '~' + Math.round(per) + ' s/epoch';
+        var clsText = cls === 'cpu' ? 'CPU' : 'GPU';
         if (trStatsSource === 'history') {
-          box.innerHTML = '<div class="form-help">Recent runs averaged ' + esc(perText) + ' on this machine (' +
+          box.innerHTML = '<div class="form-help">Recent ' + clsText + ' runs averaged ' + esc(perText) + ' on this machine (' +
             fmtCount(rows) + ' usable rows). ' + fmtCount(epochs) + ' epochs ≈ ' + esc(fmtDur(totalSecs)) + '.</div>';
         } else {
-          box.innerHTML = '<div class="form-help">Estimated from a reference ' + (cls === 'cpu' ? 'CPU' : 'GPU') +
+          box.innerHTML = '<div class="form-help">Estimated from a reference ' + clsText +
             ' run (' + fmtCount(rows) + ' usable rows): ' + fmtCount(epochs) + ' epochs ≈ ' + esc(fmtDur(totalSecs)) + '.</div>';
         }
       }
@@ -3745,6 +3798,7 @@
               .then(function (st) {
                 kgTrainState = st || kgTrainState;
                 trLoadDurationStats();
+                trAwaitDeviceProbe(10);
                 trRenderRunsPanel();
                 var cur = kgTrainState.current;
                 if (running && !trRunning) {

@@ -181,13 +181,16 @@ def test_fragment_is_the_exdark_train_tab():
         "Cancelling… (stops at the next checkpoint)", "Fix the highlighted fields first.", "Tables verified: ",
         "excluded as undefined", "will be skipped until you label", "cannot be learned in this run",
         "No usable rows: every row is undefined or at weight 0.", "is not derived from the imported train table",
-        "more rows than the competition split", "Recent runs averaged ", "Estimated from a reference ",
+        "more rows than the competition split", "runs averaged ", "Estimated from a reference ",
         "/train/preflight?train_url=", "/train/state", "/tables/list?project=", "/tables/defaults?project=",
         "client_token: trClickToken", "trRunning = true;", "window.PluginJobs.cancel(trainJobId)",
         "'Train loss'", "'Val loss'", "'Val accuracy'", "function trDeviceLabel",
         # Item 1 of the re-check: the header names the reason and Use these settings never copies the device.
         "if (facts.device_label) { return '· ' + facts.device_label; }", "(forced in Advanced)",
         "The device is never copied",
+        # Item 2: the estimate's inputs are keyed by the resolved device class; the in-run terms follow the run's.
+        "function trStatsFor", "r.device_class === cls;", "function trAwaitDeviceProbe", "function trRunEtaTerms",
+        "Recent ' + clsText + ' runs averaged",
     ):
         assert needle in html, needle
     assert "el('tr-device').value = String(p.device)" not in html
@@ -244,6 +247,8 @@ SAFE_IDENTS = {
     "off", "depth",
     # the previous-runs card (part E): rows are [label, pre-escaped value] pairs built above
     "row",
+    # the duration hint's device class word (item 2 of the re-check): 'CPU' or 'GPU', picked over literals
+    "clsText",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"
