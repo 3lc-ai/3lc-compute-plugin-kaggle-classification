@@ -472,7 +472,8 @@
         <div class="form-group" style="margin-top: 10px;">
           <label class="kg-check-label"><input id="tr-latest" type="checkbox" checked> Use latest revision</label>
           <div class="form-help">Trains on the train table's newest revision (<code>.latest()</code>),
-            picking up your label edits from the Dashboard.</div>
+            picking up your label edits from the Dashboard. On for every new run; only "Use these
+            settings" on a previous run pins that run's revision.</div>
         </div>
 
         <hr class="divider">
@@ -2596,9 +2597,11 @@
       // ── Config persistence: last-used values per tab (ExDark's CFG_FIELDS) ───────────
       // Tab snapshots hold TAB-LOCAL fields only; the shared facts (project, table, URLs,
       // device) live in the session. The run name is not persisted: blank generates a fresh one.
+      // Use latest revision is NOT persisted (item 4 of the re-check): a new run — first open and Start
+      // new run — always starts with it on, so labeling in the Dashboard is picked up; only Use these
+      // settings pins a revision, and the gate then warns when newer revisions exist.
       var CFG_FIELDS = {
         train: {
-          'tr-latest': 'use_latest',
           'tr-epochs': 'epochs', 'tr-batch': 'batch_size', 'tr-lr': 'lr', 'tr-wd': 'weight_decay',
           'tr-seed': 'seed', 'tr-workers': 'workers', 'tr-optimizer': 'optimizer', 'tr-schedule': 'schedule'
         }
@@ -3038,6 +3041,7 @@
         trHadChecks = false;
         trNewToken();
         el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+        el('tr-latest').checked = true;   // item 4: a new run follows the newest labels
         if (animate) { kglEnter(el('tr-form')); el('tr-epochs').focus(); }
         trVerifyTables(true);
       }
@@ -3289,10 +3293,22 @@
           trCheckReady();
           return;
         }
+        // Item 4: a pinned revision (Use latest off) with newer revisions behind it is a warning —
+        // the run would not see the newest labels.
+        var pinned = '';
+        if (!useLatest && info.has_revisions && info.latest && !info.latest.error) {
+          var newer = (typeof info.latest.steps_from_seed === 'number' && typeof (info.base || {}).steps_from_seed === 'number')
+            ? info.latest.steps_from_seed - info.base.steps_from_seed : null;
+          pinned = 'Pinned to ' + esc(kgUrlSeg(info.url, 'table') || 'this revision') + '; ' +
+            (newer && newer > 0
+              ? fmtCount(newer) + ' newer revision' + (newer === 1 ? ' exists' : 's exist')
+              : 'newer revisions exist') +
+            ' (latest: ' + esc(kgUrlSeg(info.latest_url, 'table') || '') + '). Turn on Use latest revision to train on your newest labels.';
+        }
         trGate = {
           ok: true, train_url: info.url, resolved_url: rev.url || info.url,
           usable_rows: summary.labeled_in_use, summary: summary, rows: rev.rows,
-          followed: useLatest && info.has_revisions
+          followed: useLatest && info.has_revisions, pinned: pinned
         };
         trRenderGate(trGate);
         trCheckReady();
@@ -3346,7 +3362,9 @@
             : 'trains on this exact revision';
           box.innerHTML = '<div class="' + entering + '"><div class="kg-preflight-ok">' +
             kgIcon('check') + '<span>Tables verified: ' + esc(name) + ' · val locked · ' + esc(resolved) + '</span></div>' +
-            trUsableLine(data.summary) + '</div>';
+            trUsableLine(data.summary) +
+            (data.pinned ? '<div class="kg-callout warn">' + kgIcon('alert-triangle') + '<span>' + data.pinned + '</span></div>' : '') +
+            '</div>';
           return;
         }
         var problems = data.problems || [];
@@ -4081,6 +4099,13 @@
             var ce = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 1,
                        summary: S(labeled - 2 * perClass, pool, 2 * perClass, 0, names.slice(2, 4)) };
             gateWith(INFO({ latest: ce, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-pinned') {
+            // Use these settings pinned the seed while two newer revisions exist (item 4).
+            var newest = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 2, summary: S(labeled + 9, pool - 9, 0, 0) };
+            el('tr-latest').checked = false;
+            el('tr-train-url').value = trainUrl;
+            trTableInfo = INFO({ latest: newest, latest_url: revUrl, has_revisions: true });
+            trEvaluateGate();
           } else if (mode === 'train-state2-lineage') {
             var stranger = base + kgDatasetName('train') + '/tables/my-own-table';
             var st = { url: stranger, rows: labeled, descends_from_seed: false, steps_from_seed: null, summary: S(labeled, 0, 0, 0) };

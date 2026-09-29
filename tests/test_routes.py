@@ -196,9 +196,14 @@ def test_fragment_is_the_exdark_train_tab():
         "function kgApplyLoadedConfig", "function kgConfigFallback", "Loading saved settings… the plugin worker is starting",
         "from the last successful load", "so the form stays hidden rather than empty", "class=\"btn btn-ghost btn-sm kg-cfg-retry\"",
         "if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }",
+        # Item 4: Use latest revision is on for every new run (not persisted; Start new run resets it);
+        # a pinned revision with newer ones warns.
+        "el('tr-latest').checked = true;   // item 4", "'Pinned to '", "newer revision", "Turn on Use latest revision",
+        "'train-state2-pinned'", "followed: useLatest && info.has_revisions, pinned: pinned",
     ):
         assert needle in html, needle
     assert "Defaults are shown; reload the page to try again." not in html
+    assert "'tr-latest': 'use_latest'" not in html
     for needle in ():
         assert needle in html, needle
     assert "el('tr-device').value = String(p.device)" not in html
@@ -259,6 +264,8 @@ SAFE_IDENTS = {
     "clsText",
     # the config-load banners (item 3): the pre-escaped reason and the Retry button markup built above
     "reason", "retryBtn",
+    # the pinned-revision warning (item 4): built from esc / fmtCount above
+    "data.pinned",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"
