@@ -511,3 +511,78 @@ background after the tab open; the GPU collection pass then took 24 s in a fresh
 (it took 49 s in the first attempt, whose pre-warm compiled the small-data path, and 81 s before any
 pre-warm). The history medians still carry the earlier cold passes, so the GPU estimate is high
 until they roll out of the last five runs. Runs added: `eta_gpu` (best 7), `eta_cpu` (best 3).
+
+## 13. The 2026-09-29 re-check (evening): what changed
+
+Passed in the real Hub: the kit-model locked rows, the accuracy-led success banner, provenance with
+backbone and head, the revision tree with LATEST and other imports greyed, the Previous runs panel,
+Use these settings, out-of-bounds hiding the ETA, cancel with the checkpoint sentence, no `prob_*`.
+Eight fixes followed, one commit each (`631d2f7` … `9a98696`).
+
+**1. GPU lost silently (the blocker) — cause.** The cancel-test run recorded
+`device_requested = cpu`: "Use these settings" on `eta_cpu` had copied that run's forced `cpu`
+into the Device field, Start persisted it in the session (`session.device`), and every later run —
+including the cancel test — was therefore *forced* to CPU. Two things hid it: the live header read
+"cpu (auto)" because `device_requested` was never sent over the host job channel (only the durable
+record had it), and the log's "Device: cpu" carried no reason. The services' environment was not
+the cause: the environment block of every running service and worker process was read and carried
+no `CUDA_VISIBLE_DEVICES` or any device override, and a fresh interpreter from the worker's own venv
+answered `torch 2.14.0+cu126, cuda_available=True`. Fixed regardless on both sides: Use these
+settings never copies a device (machine-specific, not a hyperparameter); `resolve_device("")` is
+`cuda` whenever `torch.cuda.is_available()` is True in the worker (the guard that could have
+swallowed an import error is gone); the trainer serves one `device_label` — `cuda (auto)`,
+`cpu (forced in Advanced)`, `cpu (fallback: <error>)` — that the log line, the live header (a
+`set_field`), the run summary and the Previous runs card all use; SETUP.md states that no start
+command carries a device override. Tests: the three wordings in Python, the fragment's own
+`trDeviceLabel` under node, the end-to-end run's label and log line.
+
+**2. ETA per device.** `trStatsFor(cls)` keys the last-five-runs history AND the benchmark by the
+resolved device class with a strict match (no class-less records, no mixing while the worker's probe
+is pending — the tab polls the probe instead), the in-run remaining time follows the run's own class
+(a CPU fallback re-seeds from CPU history), and the hint names the class ("Recent GPU runs averaged
+…"). Gate below.
+
+**3. Cold-start load.** After a reinstall the first `GET /config` outlived the Hub's fetch timeout
+("signal is aborted without reason") and the tab rendered an empty form. Abort / timeout / 502–504
+now count as "the worker is starting": ten retries over ~2 minutes with the form hidden and a
+status line; if the load truly fails, the last successful load (cached in the browser) fills every
+field and locked row and the banner says so, with Retry; with nothing cached the form stays hidden.
+
+**4. Use latest revision** is on for every new run (first open and Start new run; no longer
+persisted). Only Use these settings pins a run's revision, and the gate then warns "Pinned to
+<revision>; N newer revisions exist (latest: …)". Fixture `train-state2-pinned`.
+
+**5. Previous runs dropdown**: the Run folder's unique name (`g1_default_0000` beside `g1_default`)
+and "interrupted" for the record's internal `stale`, in the dropdown, the card and the in-run badge.
+
+**6. Older runs** (before part E) are backfilled once by `train/state`: settings from the Run's own
+`object.3lc.json` parameters (a torch-free JSON read; the schedule key recovered from its
+description), elapsed from the record's timestamps, the device label from the Run's
+`device_requested`; a Run that cannot be read leaves `params_missing`, which disables Use these
+settings for that run with the reason.
+
+**7. Tree layout**: the connector is inline before the name in a nowrap, ellipsised cell. Fixture
+`train-state2-tree` opens the picker on a three-level chain with a long name and another import.
+
+**8. Per-sample columns**: `accuracy` removed as well. The collected columns are label, weight,
+predicted, confidence, loss and Embedding (3D) (PLAN §B).
+
+### Re-check gate (2026-09-29 evening, `3lc-hub-11`, plugin at `9a98696`)
+
+`../3lc-hub-11/gates_recheck.py` on the in-process host (service stopped): the session's persisted
+`device = "cpu"` cleared, the worker's device probe read, one blank-Device run, the estimate
+computed as the fragment computes it (cuda-class history only).
+
+| Check | Result |
+|---|---|
+| `torch.cuda.is_available()` in the running worker | the probe `train/state` serves: `device_probe: done, device_class: cuda` — True |
+| Header / log for a blank Device field | `cuda (auto)` (`device_requested = ""`) — PASS |
+| GPU estimate (10 epochs, 609 usable rows) | **83.4 s** = setup 10.0 + train 37.0 + collect 36.4, from `eta_gpu`, `review-1`, `g5b_first`, `g5a_cancel` only |
+| GPU actual (`recheck_gpu`, best 66.67 % at epoch 7) | **70.1 s** = setup 6.2 + train 37.0 (3.7 s/epoch) + collect 24.1 — within 19 %, PASS |
+| Item 6 backfill | `review-1`, `g1_default` ×2, `g5c_restart`, `g1_cpu`: settings from the Run (`(from the Run's record)`), elapsed 106–160 s, device labels `cuda (auto)` / `cpu (forced in Advanced)`; the schedule key is not recovered for those runs (their Run recorded the schedule under an older description), so their Settings line omits it |
+
+The collect term is still high in the estimate (36 s vs 24 s actual) because the cuda history's
+median carries the earlier cold passes; it rolls out as warm runs accumulate. One transient during
+the run's checkpoint write: tlc's indexer logged "invalid JSON in object file … EOF" for
+`recheck_gpu/object.3lc.json` (read mid-write); the run completed with nine provenance checks green.
+

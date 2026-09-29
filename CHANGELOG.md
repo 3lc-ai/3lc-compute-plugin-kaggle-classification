@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased] — 0.1.0 (sessions 1 to 3)
 
+### Fixed (session 3 re-check, 2026-09-29 evening)
+- Use these settings never copies a run's device; the in-run header and the log name why the run is
+  on its device (`cuda (auto)` / `cpu (forced in Advanced)` / `cpu (fallback: …)`); a blank Device
+  field is CUDA whenever the worker's torch sees a GPU. (A copied forced `cpu` had silently trained
+  later runs on CPU.)
+- The duration estimate's history and benchmark are keyed by the resolved device class; the in-run
+  remaining time follows the run's class.
+- The config load retries with backoff while the worker starts and never renders an empty form (the
+  last successful load fills the form if the load truly fails; nothing cached keeps it hidden).
+- Use latest revision is on for every new run; a pinned revision with newer ones warns.
+- The previous-runs dropdown shows each Run folder's unique name and says "interrupted"; older runs
+  are backfilled from their Runs (or disable Use these settings with a reason).
+- The revision tree's connector sits inline and names never wrap.
+
 ### Changed (session 3 review, 2026-09-29 afternoon)
 - The model is the Intel kit's exactly: torchvision resnet18 with the kit's MLP head, torchvision's
   init, the kit's seeding and creation order; `model.backbone` / `model.head` in schema v1
