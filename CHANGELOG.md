@@ -3,7 +3,31 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] — 0.1.0 (sessions 1 and 2)
+## [Unreleased] — 0.1.0 (sessions 1 to 3)
+
+### Added (session 3, the Train tab — 2026-09-29)
+- The Train tab, ExDark's control for control (`docs/TRAIN_MIRROR.md`): the locked contract (resnet18
+  from random init · 150 px · Adam · StepLR ×0.1 every 5 epochs · single forward pass) as a banner and
+  locked rows; the train table URL with the revision picker and the locked val row; a gate that verifies
+  existence, split identity, the seed lineage and the label map and shows the usable-row summary
+  (labeled in use · excluded as undefined · excluded at weight 0) with warnings for undefined rows at
+  weight > 0 and for classes without rows; Epochs / Batch size / Learning rate / Weight decay with the
+  manifest's bounds, Device / Workers / Seed under Advanced, inline errors that block Start; the in-run
+  view (three chips with sparklines, the resolved device, the ETA), the provenance panel (eight checks
+  read back from the Run), the success / cancelled / failed / interrupted banners, revisit; the
+  duration hint from this machine's history scaled by usable rows, or the bundled benchmark on a first
+  run; `?kgdev=train-*` fixtures.
+- Job kind `train` (`trainer.py`): the Intel kit's recipe on timm's standard-head resnet18; tlc's weighted
+  sampler semantics from in-memory effective weights (undefined forced to 0, never written back; zero
+  usable rows refuses); best (strict `>`) and last checkpoints written atomically under `<run>/model`
+  with sha256 on the Run; end-of-training per-sample metrics on every train and val row (predicted,
+  confidence, per-class probabilities, loss absent for undefined rows, 3-D UMAP fit on train / val
+  transformed, PCA fallback); cooperative cancel keeps the best-so-far checkpoint; CPU retry when the
+  accelerator fails at start; a durable train record with worker-pid orphan detection (a restart reads
+  back as interrupted), a heartbeat and sleep-gap log, and a duplicate-start guard.
+- Routes: `GET /train/preflight`, `GET /train/state`, `GET /tables/list`, `GET /tables/defaults`;
+  `_meta.training` (defaults, effective bounds, the locked optimizer and schedule, the benchmark) and
+  `_meta.train_state` on `GET /config`. Seed bounds `[0, 2147483647]` in the bundled manifest.
 
 ### Changed (session 2.5, the ExDark mirror)
 - The plugin now mirrors 3lc-compute-plugin-kaggle v1.2.15 (`docs/EXDARK_MIRROR.md`): the shell and

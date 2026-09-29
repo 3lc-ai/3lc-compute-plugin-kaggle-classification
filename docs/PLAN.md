@@ -12,10 +12,12 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | License | Apache-2.0. No Ultralytics anywhere. |
 | SDK contract | `3lc-compute-plugin-sdk>=0.3.1,<0.4.0` — resolves on 3lc-compute 1.0.1 (`>=0.3.1,<0.4.0`) and 1.1.0 (`>=0.3.3,<0.4.0`); `tests/test_packaging.py` asserts the overlap against the latest 3lc-compute release metadata. timm's `>=0.4.0,<0.5.0` is not mirrored: no 1.x host accepts 0.4 (STUDY G-2). |
 | tlc | `3lc>=3.3,<4.0` (the Compute Service resolves 3LC >= 3.3.0). 3.x API only: `Table.with_transform`, `tlc.integration.torch.samplers.create_sampler`, `tlc.schemas.*`, `run.add_metrics` (STUDY G-1). |
-| Model | `timm.create_model(arch, pretrained=False, num_classes=N)`; `arch` allowlisted to the single manifest value (this event `resnet18`); `timm==1.0.29` pinned; the timm plugin is NOT imported at runtime. `pretrained: true` in a manifest is rejected. |
+| Model | `timm.create_model(arch, pretrained=False, num_classes=N)` with timm's **standard head**; `arch` allowlisted to the single manifest value (this event `resnet18`); `timm==1.0.29` pinned; the timm plugin is NOT imported at runtime. `pretrained: true` in a manifest is rejected. The Intel kit's custom MLP head (512→256→128→N with dropout) is deliberately NOT replicated (decision 2026-09-29), so baseline accuracy may differ from past HackNova runs. |
 | Competition manifest | Remote `<base>/kaggle/classification-index.json` + `kaggle/<id>/manifest.json` (layout in §A3); base URL is a code constant (`manifest.MANIFEST_BASE_URL` = prod); env override `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL` for dev/local; on-disk cache with fetched-at stamp; bundled `manifests/intel-scene-v1.yaml` as last resort. Unknown fields warn, never fail. |
 | Splits | Unchanged from the Intel kit: 600 seed (100 × 6) + 6,000 `undefined` at weight 0 in `train`; `val` 1,200 (200 × 6) locked; `test` 1,800, flat, never registered. |
-| Labeling | No cap. Undefined rows are filtered out of training regardless of weight. |
+| Labeling | No cap (reaffirmed 2026-09-29, D14: the Intel kit's 3,000 weight-1 refusal is not adopted; the Train gate's usable-row summary is informational). Undefined rows are filtered out of training regardless of weight. |
+| Training recipe | Locked beyond the manifest (session 3, D2/D3/D11): Adam, `StepLR(step_size=5, gamma=0.1)` stepped per epoch, the Intel kit's torchvision augmentation (resize → random crop → horizontal flip → affine shear 10 / scale 0.8–1.2 → ImageNet normalize; val = resize + center crop), seed + cudnn determinism as the kit. Shown as locked rows on the Train tab; the plugin constants live in `trainer.py` and are served, never restated in the fragment. |
+| Checkpoints | `<run>/model/best.pt` (best val accuracy, strict `>`) and `<run>/model/last.pt`, written atomically; sha256 of each on the Run and in the train record. **Predict uses best.** A cancelled run keeps its best-so-far checkpoint and is usable in Predict (D10). |
 | Kit build | `tools/build_kit.py --salt-file` (never `--salt`); the salt is read from a private file, never printed or written; shards `intel-scene-v1-NN.zip`, deterministic; `kit-manifest-block.yaml` beside the kit dir; `mapping.csv` (original_relpath, new_relpath, split, class with class empty for test and `undefined` for pool rows) to the private dir only. |
 | Kit | Images renamed to salted opaque ids (`sha256(salt + original_relpath)[:16]`) and re-encoded (JPEG q92, RGB, EXIF stripped). `mapping.csv` (the judge's key) lives ONLY in the private output dir. |
 | Kit integrity | `files.json` (relpath, sha256, bytes) INSIDE the kit beside the data; the download stage verifies **per file** against it, not shard-only, then checks per-split counts against `manifest.splits`. Shards are sha256-verified from the manifest's `kit{}` block. |
@@ -26,7 +28,7 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | Hosts | `min_service_version = "1.1.0"` (the 1.1.0 torch-backend fix is required for a clean Windows install). |
 | Torch index | Mirrors the timm plugin exactly: `pytorch-cu126` explicit index, `torch`/`torchvision` sourced from it on `linux` and `win32`, PyPI on macOS. |
 | Python | `requires-python = ">=3.11"`, **no upper bound** (verdict 2026-09-28). The host picks the plugin venv's interpreter, never uv's default: compute 1.1.0 `provisioning.resolve_provision_python` passes `--python <host major.minor>` (`sys.version_info` of the service process) to both `uv sync` (folder source) and `uv venv` (catalog/spec install), overridable only by a `[runtime] python` key in `plugin.toml`, which this plugin does not declare. The service itself runs on 3lc, whose wheels are cp310–cp313 with `Requires-Python <3.14` (3.3.0–3.3.2 checked on PyPI), so no participant host can be 3.14 and no plugin venv can be either. The one place a newer interpreter CAN sneak in is a bare `uv sync` in a checkout (uv picks the newest Python on the machine), which is why the dev loop passes `--python 3.12`. The floor stays at 3.11: the timm plugin says `>=3.10`, but `kaggle>=2.2.3` and `scikit-learn>=1.9` floor at 3.11 and uv locks the whole range. |
-| DataLoader workers | `num_workers=0` everywhere data loads (Windows). Device-aware in session 3. |
+| DataLoader workers | Device-aware since session 3: the served default is 0 on Windows and `min(4, cpu_count)` elsewhere (`trainer.default_workers`), bounds 0–16 (a plugin constant); an Advanced field on the Train tab. The import stage still loads nothing through torch. |
 | Paths | Windows host, every path may contain spaces: quote everything. |
 
 ## A2. Manifest resolution (Phase 2 decisions)
@@ -156,9 +158,19 @@ giving it a real class, and it enters the next revision's training set.
   table failing, a post-write verification failing, or a cancel deletes what the job wrote (no
   partial tables). The record (`import_state`) carries the lineage root, the locked val URL,
   checks, timings and the manifest provenance from `resolve_manifest_for_job`.
-- **Trainer (session 3)** — see §B; params = manifest defaults ⊕ form, bounded on the merged
-  kwargs; presets are named partial overrides; run records the contract (arch, image_size,
-  pretrained=false, timm version, seed, table revisions).
+- **Trainer (session 3, shipped)** — see §B and `docs/TRAIN_MIRROR.md`; job kind `train`. Params =
+  manifest defaults ⊕ form, bounded on the merged kwargs (`training.bounds`; seed and workers bounds
+  are plugin fallbacks when the manifest has none); presets stay a manifest fact, not rendered (D13).
+  The train revision must descend from the import record's seed (`GET /train/preflight` walks the
+  lineage; the job refuses otherwise); val is the import record's locked URL. The sampler is tlc's
+  weighted semantics built from in-memory effective weights (undefined → 0; zero usable rows is a
+  refusal, never a fallback to shuffling). The Run records the contract (arch, image_size,
+  pretrained=false, timm version, seed, both table revisions, the checkpoint sha256s, device) and
+  eight provenance checks read it back. A durable record (`train_state` in the session store)
+  carries status, params, facts, checks, result, the log tail, the worker pid and a heartbeat: a
+  compute restart mid-run reads back as `stale` (pid rule), never as complete; a duplicate start
+  (running record, or a consumed client token) is refused. The accelerator failing at model or
+  first-batch time retries on CPU and says so. Tables are never modified.
 - **Predictor + Submit (sessions 4, 5)** — plugin-run-only weights; `submission.csv` with
   `manifest.submission.columns` in `ids_from` order; Kaggle API against `competition.slug`;
   budget `daily_limit`.
@@ -171,7 +183,7 @@ giving it a real class, and it enters the next revision's training set.
 |---|---|---|
 | 1 (this) | scaffold, manifest schema + loader, session, kit stage, kit builder, docs | the salt; the CDN prefix; the Kaggle slug and deadline |
 | 2 | Import tab: kit download UI, table registration, revisit view, pickers | the published kit prefix (Phase 3 output staged) |
-| 3 | Train tab: trainer per §B, bounds, presets, device-aware workers | a GPU box to record the reference trajectory |
+| 3 | Train tab: trainer per §B, bounds, device-aware workers, the ETA benchmark (shipped 2026-09-29) | a GPU box to record the reference trajectory (the laptop's RTX 3070 Ti, gate G1) |
 | 4 | Predict tab: plugin-run-only inference, submission.csv | test-set answer key on the organizer machine (local scoring, optional) |
 | 5 | Submit + ledger + verification bundle | Kaggle credentials on a test account; the competition in draft |
 | 6 | Status tab, release audit run, catalog tag | catalog URL policy on the participants' hosts |

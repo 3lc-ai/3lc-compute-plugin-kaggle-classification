@@ -17,21 +17,27 @@ from __future__ import annotations
 
 from typing import Any
 
-# Filled from gate G1 (2026-09-29): RTX 3070 Ti Laptop GPU (8 GB), CPython 3.12, torch cu126,
-# 603-609 usable rows at 150 px, batch 16, workers 0. CPU: the same laptop, forced ``cpu``.
+# Gate G1 (2026-09-29): RTX 3070 Ti Laptop GPU (8 GB), CPython 3.12.13, torch 2.14 cu126, timm 1.0.29,
+# 609 usable rows at 150 px, batch 16, workers 0: 4.1 s/epoch (0.00673 s/row), the final per-sample
+# pass 75.2 s over 7,800 rows (0.00964 s/row), 148 s end to end for 10 epochs. The collection figure is
+# a FIRST-run figure: it includes UMAP's numba compile (a second run's pass took 22 s); the history
+# median replaces it once a run has finished. CPU (gate G1-cpu, the same laptop, forced ``cpu``):
+# 25.8 s/epoch (0.04231 s/row), the pass 81.8 s (0.01049 s/row). No Apple silicon was measured; ``mps``
+# carries the CPU figures until it is.
 BENCHMARK: dict[str, dict[str, float]] = {
-    "cuda": {"epoch_s_per_row": 0.0, "collect_s_per_row": 0.0},
-    "mps": {"epoch_s_per_row": 0.0, "collect_s_per_row": 0.0},
-    "cpu": {"epoch_s_per_row": 0.0, "collect_s_per_row": 0.0},
+    "cuda": {"epoch_s_per_row": 0.00673, "collect_s_per_row": 0.00964},
+    "mps": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049},
+    "cpu": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049},
 }
 
 REFERENCE: dict[str, Any] = {
-    "machine": "",
-    "date": "",
-    # The default run's val accuracy at its best epoch, for the Epochs help (calibrated after G1).
-    "val_accuracy": None,
-    "best_epoch": None,
-    "epochs": None,
+    "machine": "NVIDIA GeForce RTX 3070 Ti Laptop GPU (8 GB)",
+    "date": "2026-09-29",
+    # The default run's val accuracy at its best epoch, for the Epochs help (gate G1: 10 epochs,
+    # 609 usable rows of the manual-test revision).
+    "val_accuracy": 57.58,
+    "best_epoch": 9,
+    "epochs": 10,
 }
 
 

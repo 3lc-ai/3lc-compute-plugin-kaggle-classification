@@ -312,12 +312,22 @@ with the same message.
 - **New routes**: `GET /train/preflight` (#8–#10), `GET /train/state`, `GET /tables/list`,
   `GET /tables/defaults` (ExDark's, ported). No `/validate/train` (EXDARK_MIRROR #36).
 
-## 8. Decisions needed before code
+## 8. Decisions (taken by Rishikesh on 2026-09-29; the recommendations below were all accepted)
 
 Re-checked against the Intel kit's original scripts on 2026-09-29 (§2): the kit confirms the values
 behind D2 (StepLR 5 / 0.1), D3 (Adam only), D4 (no early stopping), D6 (seed 42) and D11 (the
 torchvision recipe at 150 px). No recommendation changed. One decision was added: **D14**, the kit's
 3,000-row labeling budget, which PLAN §A rules out ("Labeling: No cap") and the manifest does not carry.
+
+**Taken:** D1 gate block · D2 (a) fixed StepLR as a locked row "LR schedule: ×0.1 every 5 epochs"
+with a tooltip · D3 (a) Adam as a locked row · D4 (a) dropped · D5 core grid · D6 Advanced field,
+bounds `[0, 2147483647]` in the bundled manifest (plugin fallback when a manifest lacks them),
+default 42, the kit's determinism · D7 (a) dropped · D8 header meta · D9 verbatim · D10 (a) ·
+D11 the kit's recipe verbatim · D12 SDK layout, sha256 of best and last on the Run and in the record,
+PLAN.md "Predict uses best" · D13 not rendered · D14 (a) No cap. Plus: the model is timm resnet18
+with its standard head (the kit's MLP head is not replicated; PLAN §A notes that baseline accuracy
+may differ from past HackNova runs). Implemented in `aaa58a9` (Phase 1); §9 lists what still
+differs from ExDark beyond the four allowed differences.
 
 | # | Question | ExDark | Recommendation |
 |---|---|---|---|
@@ -335,3 +345,53 @@ torchvision recipe at 150 px). No recommendation changed. One decision was added
 | D12 | Checkpoint location | `<plugin home>/runs/<name>/weights/best.pt` (Ultralytics layout) | `<run>/model/best.pt` + `last.pt` via the SDK helper, sha256 recorded on the run and in the record; PLAN.md gets "Predict uses best" |
 | D13 | Manifest presets (`quick / standard / long`) | none | not rendered (no ExDark control); presets stay a manifest fact for later |
 | D14 | **Labeling budget.** The Intel kit refuses to train (exit before any Run) on a revision with more than 3,000 `weight > 0` rows (`MAX_WEIGHT1_ROWS`, `config.yaml` `constraints.max_weight1_rows`, README "at most 3,000 rows with weight = 1, the 600 seed rows count"). PLAN §A locks "Labeling: No cap"; the manifest has no such field. Options: (a) keep No cap (PLAN §A stands; the gate's usable-row summary is informational only); (b) adopt the cap as a competition rule: a schema-v1 manifest field (`splits.train.max_weight1_rows`, absent = no cap — a competition constant never lives in code), a hard stop in `GET /train/preflight` with ExDark's row-budget geometry (amber problem row, Start disabled: "This revision has N labeled rows in use; the competition allows at most 3,000. Set weights back to 0 in the Dashboard or pick an earlier revision."), counted as labeled rows at weight > 0 (#9's "labeled rows in use", which is what the kit's count means once undefined rows are excluded), recorded in `run.parameters` and the ledger, and PLAN §A's Labeling row rewritten | ExDark's only budget is the table row count (`max_rows`) | **(a)** unless the new competition's published rules keep the 3,000 cap. This is a competition-design decision (CLAUDE.md A5), not mine: PLAN §A was locked with the kit in view and says No cap. If the rules keep it, (b) exactly as written, and the count must be the labeled-at-weight->0 number, not the kit's literal `weight > 0` (which would count undefined rows the plugin never trains on) |
+
+## 9. What the port differs in, beyond the four allowed differences (for Rishikesh, not invented)
+
+Everything below is a place where the shipped Train tab is NOT ExDark's, and why. Each is either a
+consequence of a decision above, of the brief, or of the plumbing (the host job channel instead of a
+polled job store). Anything you want copied back verbatim is a one-line change.
+
+| # | Ours | ExDark | Why |
+|---|---|---|---|
+| 1 | **Val table** is a locked row in the Tables grid (revision name · row count · Copy), no URL field, no picker | a second URL field + picker | the brief locks val to the import record (#3, #6) |
+| 2 | **Six locked rows** rendered from `/config`: Model (arch · timm version), Init, Image size, Optimizer, LR schedule, Inference | three static rows: Model, Init (checkpoint sha), Image size | D2, D3 and the brief's "single forward pass at inference"; the values are served, so the rows render rather than sit in markup |
+| 3 | The gate's green block carries the **usable-row line** and the two amber warnings (undefined at weight > 0, empty classes); the amber problems add **not in the seed lineage** and **class map not the imported one** | table names + revision choice + not-on-disk / same-table / row budget | D1; the brief's lineage rule and label-map verification |
+| 4 | Training parameters = **Epochs · Batch size · Learning rate · Weight decay**; Advanced = **Device · Workers · Seed** | Epochs · Batch · lr0 · lrf · Optimizer · Patience; Advanced = Device · Workers · Extra args | D2–D6; no free-form kwargs exist in our trainer |
+| 5 | 3LC settings = Project + Run name only; **no Metrics-collection disclosure** | + Conf threshold · Max detections; a 12-control disclosure | task-inherent (no detections); D7 |
+| 6 | In-run chips: **Train loss · Val loss · Val accuracy (%)**; the header meta shows **"· cuda (auto)"** (or "· cpu after a GPU failure"); the stage note also shows during the final per-sample pass | four detection chips; device only in the log; the note only during the checkpoint fetch at epoch 0 | task-inherent; D8; the brief's collection pass |
+| 7 | The **ETA hint** scales the history median per usable row by the gate's row count and adds the final pass; a first run uses the bundled per-device benchmark ("Estimated from a reference GPU run") | median `avg_epoch_s` of the last five runs, no scaling, no first-run hint | the brief (§5) |
+| 8 | The in-run "remaining" adds the collection pass to the epoch estimate | epochs only | our final pass is a fixed cost ExDark does not have |
+| 9 | **Provenance = eight checks** (arch, image size, pretrained, timm version, seed, train revision, locked val, best checkpoint sha256 == file on disk) | four (model, imgsz, pretrained, checkpoint sha) | the from-scratch contract records different facts |
+| 10 | Success banner: "Training complete: **best checkpoint saved**", Copy "checkpoint path"; **Open Run in Projects** renders only on `hub.3lc.ai` / `hub-beta.3lc.ai` | "best.pt saved", "weights path"; the Projects link always renders | naming; the Import tab's origin rule |
+| 11 | Terminal state comes from the **durable train record** (`GET /train/state`): checks, result, facts and the last 300 log lines; on revisit the log shows from that record | the job store's full record and log | the host keeps records in memory only (PLAN §A3) |
+| 12 | A running record the host no longer lists renders as **"Training was interrupted"** (`stale`), never as running or complete; the server marks it stale by worker pid and by a 15-minute heartbeat gap | `_mark_if_orphaned` by service pid at read time | the brief's restart / sleep rule; same shape, our record |
+| 13 | **Cancel** disables its button until the cancel request returns; the state text switches to "Cancelling…" from the response | the button stays enabled; the text switches immediately | a double-cancel guard; cosmetic |
+| 14 | Start posts a **client token**; the worker refuses a second start carrying a consumed token or while a run is in progress | the synchronous button disable only | the brief's double-click rule through the host's serial GPU queue |
+| 15 | No `/validate/train` (no fail-fast 400): the gate is the preflight and the job's refusal (`ctx.fail`) carries the message verbatim | `POST /validate/train` before `/run` | EXDARK_MIRROR #36 |
+| 16 | The Loop's **fix labels** link follows the import record's latest train revision (session 2.5 decision), not the Train field's value | `kgRenderLoopFixLabels` follows the train field | already decided in EXDARK_MIRROR #4 |
+| 17 | `kgApplyDerivedUrls` derives only the train field; `KG_URL_FIELDS` has one entry | three fields (train, val, test) | #1 and no test table |
+| 18 | The **Epochs help** reads the reference accuracy from the served benchmark ("A from-scratch run reached about X % by epoch N on the reference GPU") once gate G1 seeds it; until then the range only | a hand-written pretrained calibration sentence | the fragment carries no literal |
+
+## 10. Gates (2026-09-29, laptop, `3lc-hub-11`, catalog install pinned to `aaa58a9`)
+
+Driven by `../3lc-hub-11/gates_session3.py` through the in-process host (live auth exempt, the
+service stopped, the redirected home), after `reinstall_pinned.py` (30 s, plugin state kept). The
+tables are the real ones under `C:/Users/rishi/AppData/Local/3LC/3LC/projects/intel-scene`; the
+`manual-test` EditedTable is `latest()` of `intel-scene_train/initial`. RTX 3070 Ti Laptop GPU (8 GB),
+CPython 3.12.13, torch 2.14 cu126, timm 1.0.29, tlc 3.3.2, batch 16, workers 0.
+
+| Gate | Result |
+|---|---|
+| G1 default run (auto → `cuda`, 10 epochs, use latest) | **PASS** — trained on `manual-test`, 609 usable rows; 4.1 s/epoch (0.00673 s/row); best val accuracy **57.58 %** at epoch 9; final per-sample pass 75.2 s over 7,800 rows (includes UMAP's numba compile; a later run's pass took 22 s); **148 s end to end**; 8/8 provenance checks; best.pt and last.pt under the run |
+| G1b ETA accuracy (2 epochs) | history hint ≈ 70 s vs actual 32 s (train 7.2 s + pass 22.3 s): the hint carried the first run's cold 75 s collection pass; the median self-corrects after two runs. In-run "remaining" uses the measured `avg_epoch_s` from epoch 1 |
+| G1-cpu (forced `cpu`, 3 epochs) | **PASS** — 25.8 s/epoch (0.04231 s/row), best val accuracy 47.08 % at epoch 3, pass 81.8 s, 162 s end to end; device recorded `cpu`, requested `cpu` |
+| G2 Run + per-sample metrics | **PASS** — the Run under `intel-scene` carries two metrics tables: train 6,600 rows and val 1,200 rows with `predicted`, `confidence`, `prob_<6 classes>`, `loss`, `embeddings` (3-D), `epoch`; the 5,991 undefined rows have predictions, confidence and embeddings and **no loss** (NaN); every val row has a loss. Dashboard colouring by confidence / predicted / loss is Rishikesh's visual check |
+| G3 labeling loop | **PASS** — `use_latest` resolved `initial` → `manual-test`, usable rows **609** (the laptop's revision has 9 pool images labeled; the brief's 603 was the office count) |
+| G4 weight semantics | **PASS** — `tests/test_trainer.py::test_weight_semantics_gate_g4` (weight 0 never drawn, undefined at weight > 0 never drawn and warned, weight 2 drawn 2.0× ± 10 %, epoch length = usable rows, table bytes unchanged); the preflight on the real seed: 600 in use / 6,000 undefined; on `manual-test`: 609 / 5,991, `buildings` 109 |
+| G5a cancel mid-run | **PASS** — cancelled during epoch 2 of 5, record `cancelled`, best.pt from epoch 1 kept on disk, the Run's status `cancelled`, provenance checks recorded, no collection pass |
+| G5b double-click Start | **PASS** — two `POST /run` with the same client token: the first completed, the second (queued behind it on the GPU queue) failed with "This Start request was already used by the previous run (a double click?). Press Start again." and left no run |
+| G5c compute restart mid-run | **PASS** — the host shut down at epoch 1 (workers killed); a fresh host's `GET /train/state` answered `stale` with "Interrupted: the compute service restarted while this run was training.", the host listed no running job, best.pt from epoch 1 on disk |
+
+Found and fixed along the way: none in the plugin. The gate script itself needed UTF-8 stdout
+(the console is cp1252) and a worker-kill filter that does not match its own PowerShell process.

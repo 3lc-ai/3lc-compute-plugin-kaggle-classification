@@ -47,7 +47,9 @@ environments, credential locations); it points here at the repo boundary.
 - **Never derive a path from HOME first.** Everything the plugin writes goes under
   `storage.plugin_home()` (the redirected-home lesson). `Path.home()` appears only as
   the last rule in `storage.py`.
-- **`workers=0` anywhere data loads.** Windows host. Device-aware in session 3.
+- **Workers are device-aware** (session 3): `trainer.default_workers()` serves 0 on Windows and
+  `min(4, cpu_count)` elsewhere, bounded 0–16; the import stage loads nothing through torch. Never
+  hard-code a worker count in a loader.
 - **Fragment rule.** Any change to `ui/ui.html` or `plugin.toml` means the
   running install is stale. End the task by stating which applies: worker
   **reload** (code/fragment edits on a folder source), venv **re-provision**
