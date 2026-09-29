@@ -624,6 +624,10 @@ def run_summary(record: dict[str, Any]) -> dict[str, Any]:
         "last_checkpoint_sha256": facts.get("last_checkpoint_sha256") or "",
         "device_class": facts.get("device_class"),
         "device": facts.get("device"),
+        "device_label": facts.get("device_label") or (
+            device_label(facts["device"], facts.get("device_requested"), str(facts.get("device_fallback_reason") or ""))
+            if facts.get("device") else None
+        ),
         "usable_rows": (facts.get("usable") or {}).get("labeled_in_use"),
         "avg_epoch_s": progress.get("avg_epoch_s"),
         "epoch_s_per_row": result.get("epoch_s_per_row"),
@@ -792,22 +796,39 @@ def resolve_device(raw: Any) -> str:
     Blank = auto: CUDA -> MPS -> CPU. A bare index (``"0"``) means that CUDA
     device; any other non-blank string passes through (``"cpu"``, ``"cuda:1"``).
     Must NOT be called from the host request path (validation stays torch-free).
+    Auto resolves to ``cuda`` whenever ``torch.cuda.is_available()`` is True in
+    this process: nothing else (no environment switch, no earlier forced-CPU run)
+    can turn auto into CPU on a machine with a working GPU.
     """
     s = str(raw).strip() if raw is not None else ""
     if s.isdigit():
         return f"cuda:{int(s)}"
     if s:
         return s
-    try:
-        import torch
+    import torch
 
-        if torch.cuda.is_available():
-            return "cuda"
+    if torch.cuda.is_available():
+        return "cuda"
+    try:
         if torch.backends.mps.is_available():
             return "mps"
     except Exception:
         pass
     return "cpu"
+
+
+def device_label(device: str, requested: Any, fallback_reason: str = "") -> str:
+    """The one sentence the log line and the in-run header share: WHY the run is on this device.
+
+    ``"cuda (auto)"`` — blank field, resolved; ``"cpu (forced in Advanced)"`` — the participant typed
+    it; ``"cpu (fallback: OutOfMemoryError: …)"`` — the accelerator failed at start and the run
+    retried on CPU. A forced device that falls back still names the fallback."""
+    dev = str(device)
+    if fallback_reason:
+        return f"{dev} (fallback: {fallback_reason})"
+    if str(requested or "").strip():
+        return f"{dev} (forced in Advanced)"
+    return f"{dev} (auto)"
 
 
 def device_class(device: str) -> str:
@@ -1259,7 +1280,7 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
         "use_latest": kw["use_latest"], "device_requested": kw["device"],
     })
     rec.flush()
-    for k in ("run_name", "project_name", "train_table_url", "val_table_url"):
+    for k in ("run_name", "project_name", "train_table_url", "val_table_url", "device_requested"):
         set_field(k, rec.record["facts"][k])
     set_field("usable", summary)
 
@@ -1338,11 +1359,13 @@ def _train_and_collect(
         cuda_state = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
         rng_after_init[:] = [torch.get_rng_state(), cuda_state]
 
-    def announce_device(dev: str, note: str = "") -> None:
-        rec.record["facts"].update({"device": dev, "device_class": device_class(dev)})
+    def announce_device(dev: str, reason: str = "") -> None:
+        label = device_label(dev, device_requested, reason)
+        rec.record["facts"].update({"device": dev, "device_class": device_class(dev), "device_label": label})
         set_field("device", dev)
         set_field("device_class", device_class(dev))
-        log(f"Device: {dev}{' (auto)' if not device_requested else ''}{note}")
+        set_field("device_label", label)
+        log(f"Device: {label}")
 
     def flush_progress(*, force: bool = False, stage_note: str | None = None, stage: str | None = None) -> None:
         now = time.time()
@@ -1383,7 +1406,7 @@ def _train_and_collect(
     while True:
         try:
             build_stack(attempt_device)
-            announce_device(attempt_device)
+            announce_device(attempt_device, fallback_reason)
             model.train()
             images, labels_b = next(iter(train_loader))
             images, labels_b = images.to(attempt_device), labels_b.to(attempt_device)
@@ -1735,6 +1758,6 @@ def state_for_json(obj: Any) -> Any:
 __all__ = [
     "INFERENCE", "OPTIMIZERS", "SCHEDULES", "TrainRefused", "build_train_kwargs", "check_provenance",
     "default_workers", "descends_from_seed", "effective_bounds", "effective_weights", "preflight",
-    "probe_device_async", "read_record", "resolve_device", "run_summary", "run_training", "scan_rows",
+    "probe_device_async", "read_record", "resolve_device", "run_summary", "run_training", "scan_rows", "device_label",
     "summarize_rows", "train_state", "training_facts", "validate_train_url",
 ]

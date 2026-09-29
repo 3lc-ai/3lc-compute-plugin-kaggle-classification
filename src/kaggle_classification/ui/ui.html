@@ -544,7 +544,9 @@
                   <div class="form-help">Blank = auto-select: CUDA GPU if available, else <code>mps</code>
                     (Apple silicon GPU), else CPU. Or set a GPU index (<code>0</code> for the first NVIDIA
                     GPU), <code>mps</code>, or <code>cpu</code>. Training on CPU is very slow. If the
-                    accelerator fails at start, the run retries on CPU and says so.</div>
+                    accelerator fails at start, the run retries on CPU and says so. The run header names
+                    the reason: <code>cuda (auto)</code>, <code>cpu (forced in Advanced)</code> or
+                    <code>cpu (fallback: …)</code>. Use these settings never copies a run's device.</div>
                 </div>
                 <div class="form-group" data-field="workers">
                   <label class="form-label" for="tr-workers">Workers</label>
@@ -2837,11 +2839,15 @@
       var TR_BADGE_CLASS = { running: 'running', completed: 'completed',
                              failed: 'failed', cancelled: 'queued', stale: 'queued' };
 
+      // The in-run header's device: WHY the run is on it (item 1 of the re-check). The worker serves
+      // device_label ("cuda (auto)" / "cpu (forced in Advanced)" / "cpu (fallback: <error>)"); a
+      // record from before that field derives the same wording from its parts.
       function trDeviceLabel(facts) {
         facts = facts || {};
         if (!facts.device) { return ''; }
-        return '· ' + facts.device + (facts.device_requested ? '' : ' (auto)') +
-               (facts.device_fallback_reason ? ' after a GPU failure' : '');
+        if (facts.device_label) { return '· ' + facts.device_label; }
+        if (facts.device_fallback_reason) { return '· ' + facts.device + ' (fallback: ' + facts.device_fallback_reason + ')'; }
+        return '· ' + facts.device + (facts.device_requested ? ' (forced in Advanced)' : ' (auto)');
       }
 
       function trRenderRunView(job) {
@@ -3659,7 +3665,7 @@
           ['Trained on', rev ? esc(rev) + (typeof r.usable_rows === 'number' ? ' · ' + fmtCount(r.usable_rows) + ' usable rows' : '') : '—'],
           ['Settings', esc(trHpLine(r.params) || '—')],
           ['Best', esc(best)],
-          ['Device', esc(r.device || r.device_class || '—')],
+          ['Device', esc(r.device_label || r.device || r.device_class || '—')],
           ['Elapsed', r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '—']
         ];
         var html = '<div class="kg-locked-rows" style="margin-top:6px">' + rows.map(function (row) {
@@ -3691,7 +3697,8 @@
           applied.push(key);
           if (TR_BOUNDS[id]) { trValidateField(id); }
         });
-        if (p.device !== undefined && p.device !== null) { el('tr-device').value = String(p.device); }
+        // The device is never copied (item 1 of the re-check): it is this machine's choice, not a
+        // hyperparameter — copying eta_cpu's forced "cpu" silently trained every later run on CPU.
         var note = el('tr-run-use-note');
         note.textContent = applied.length ? 'Applied: ' + applied.join(', ') + '.' : 'Nothing to apply.';
         if (!r.train_table_url) { return; }
@@ -3964,8 +3971,9 @@
             if (mode === 'train-state3-cpu-retry') {
               job.facts.device = 'cpu';
               job.facts.device_fallback_reason = 'OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.';
+              job.facts.device_label = 'cpu (fallback: OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.)';
               job.progress.avg_epoch_s = 612.0;
-              job.log = LOG.slice(0, 5).concat(['Device: cuda (auto)', 'Accelerator failed (OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.). Retrying on CPU from epoch 1.', 'Device: cpu']).concat(LOG.slice(6));
+              job.log = LOG.slice(0, 5).concat(['Device: cuda (auto)', 'Accelerator failed (OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.). Retrying on CPU from epoch 1.', 'Device: cpu (fallback: OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.)']).concat(LOG.slice(6));
             }
             trRenderRunView(job);
             el('tr-log').textContent = job.log.join('\n');

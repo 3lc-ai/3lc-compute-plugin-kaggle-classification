@@ -185,7 +185,13 @@ def test_fragment_is_the_exdark_train_tab():
         "/train/preflight?train_url=", "/train/state", "/tables/list?project=", "/tables/defaults?project=",
         "client_token: trClickToken", "trRunning = true;", "window.PluginJobs.cancel(trainJobId)",
         "'Train loss'", "'Val loss'", "'Val accuracy'", "function trDeviceLabel",
+        # Item 1 of the re-check: the header names the reason and Use these settings never copies the device.
+        "if (facts.device_label) { return '· ' + facts.device_label; }", "(forced in Advanced)",
+        "The device is never copied",
     ):
+        assert needle in html, needle
+    assert "el('tr-device').value = String(p.device)" not in html
+    for needle in ():
         assert needle in html, needle
     for state in ("train-state1", "train-state2", "train-state2-missing", "train-state2-rows", "train-state2-invalid",
                   "train-state2-undefined-weight", "train-state2-zero-rows", "train-state2-class-empty",

@@ -162,12 +162,42 @@ def test_run_summary_carries_what_predict_and_the_eta_need(store):
     assert s["provenance_ok"] is True and s["weights"] == "C:/x/best.pt" and s["device_class"] == "cpu"
 
 
+def test_device_label_names_the_reason_in_each_case():
+    """Item 1 of the 2026-09-29 re-check: the log line and the in-run header share one sentence
+    that says WHY the run is on its device."""
+    assert trainer.device_label("cuda", "") == "cuda (auto)"
+    assert trainer.device_label("cuda", None) == "cuda (auto)"
+    assert trainer.device_label("cpu", "cpu") == "cpu (forced in Advanced)"
+    assert trainer.device_label("cuda:1", "1") == "cuda:1 (forced in Advanced)"
+    assert trainer.device_label("cpu", "", "OutOfMemoryError: CUDA out of memory") == "cpu (fallback: OutOfMemoryError: CUDA out of memory)"
+    assert trainer.device_label("cpu", "cuda", "RuntimeError: x") == "cpu (fallback: RuntimeError: x)"
+    # A record from before the field derives the same label in run_summary.
+    rec = _record(status="completed", finished_at=time.time())
+    rec["facts"].update({"device": "cpu", "device_requested": "cpu"})
+    assert trainer.run_summary(rec)["device_label"] == "cpu (forced in Advanced)"
+    rec["facts"].update({"device_requested": "", "device_fallback_reason": "E: boom"})
+    assert trainer.run_summary(rec)["device_label"] == "cpu (fallback: E: boom)"
+
+
 # ── Heavy: the real tlc, torch and torchvision on the synthetic kit ────────────
 
 tlc = pytest.importorskip("tlc")
 torch = pytest.importorskip("torch")
 pytest.importorskip("torchvision")
 pytest.importorskip("PIL")
+
+
+def test_auto_never_resolves_to_cpu_while_cuda_is_available(monkeypatch):
+    """Item 1: with torch.cuda.is_available() True in this process, a blank Device field is cuda —
+    no environment switch or earlier forced-CPU run can turn auto into CPU."""
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    assert trainer.resolve_device("") == "cuda"
+    assert trainer.resolve_device(None) == "cuda"
+    assert trainer.resolve_device("cpu") == "cpu"          # forced stays forced
+    assert trainer.resolve_device("0") == "cuda:0"
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+    assert trainer.resolve_device("") == "cpu"
 
 
 @pytest.fixture
@@ -384,6 +414,10 @@ def test_run_training_end_to_end_on_cpu(imported, project_root):
     # Facts the fragment and session 4 read.
     assert ctx.facts["run_url"] == run_url and ctx.facts["weights"] == result["weights"]
     assert ctx.facts["device"] == "cpu"
+    # Item 1: the header and the log say why (this run forced cpu); the requested device reaches the host.
+    assert ctx.facts["device_label"] == "cpu (forced in Advanced)" and ctx.facts["device_requested"] == "cpu"
+    assert "Device: cpu (forced in Advanced)" in ctx.logs
+    assert st["runs"][0]["device_label"] == "cpu (forced in Advanced)"
 
 
 def test_a_second_start_is_refused_while_a_run_is_in_progress_and_a_reused_click_token_is_refused(imported, store):
