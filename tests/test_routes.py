@@ -165,7 +165,7 @@ def test_fragment_is_the_exdark_train_tab():
         assert needle in train_panel, needle
     # Dropped per the decisions: no val URL field (locked), no lrf / optimizer select / patience (D2–D4),
     # no extra args, no conf / max-det, no metrics-collection disclosure (D7), no presets (D13).
-    for gone in ('for="tr-val-url"', 'id="tr-lrf"', 'id="tr-optimizer"', 'id="tr-patience"', 'id="tr-extra"',
+    for gone in ('for="tr-val-url"', 'id="tr-lrf"', 'id="tr-patience"', 'id="tr-extra"',
                  'id="tr-conf"', 'id="tr-maxdet"', 'id="tr-mc-toggle"', 'id="tr-embdim"', "preset"):
         assert gone not in train_panel, gone
     for needle in (
@@ -196,6 +196,15 @@ def test_fragment_is_the_exdark_train_tab():
     # The fragment defines no training literal: defaults, bounds, the optimizer and the schedule are served.
     for gone in ('value="10"', 'value="16"', 'value="0.0001"', "StepLR(5", "step_size: 5", "'adam'"):
         assert gone not in train_panel, gone
+    # Part B: every training field group is tagged; the two choice fields are selects that render only
+    # when the manifest lists them under training.editable (locked rows otherwise); the Start body
+    # carries editable fields only.
+    for needle in ('data-field="epochs"', 'data-field="seed"', 'data-field="optimizer" hidden', 'data-field="schedule" hidden',
+                   'id="tr-optimizer"', 'id="tr-schedule"'):
+        assert needle in train_panel, needle
+    for needle in ("function trIsEditable", "function trLockedFieldRows", "group.hidden = !trIsEditable(key)",
+                   "if (key === 'workers' || trIsEditable(key)) { body[key] = el(id).value; }"):
+        assert needle in html, needle
 
 
 ESC = "function esc(s) {"

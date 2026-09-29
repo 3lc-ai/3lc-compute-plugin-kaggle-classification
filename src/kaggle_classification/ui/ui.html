@@ -195,6 +195,10 @@
 .kg-pop-row .rows { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 .kg-pop-badge { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; }
 .kg-usable { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.kg-select-wrap { position: relative; }
+.kg-select-wrap select { appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 28px; width: 100%; cursor: pointer; }
+.kg-select-wrap select::-ms-expand { display: none; }
+.kg-select-caret { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); display: flex; }
 /* Hub fallbacks for the locked-contract banner (plugin-common.css styles it inside the Hub) */
 .kgc .format-selected-banner { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); background: var(--accent-light, rgba(42,74,97,.05)); margin-bottom: 12px; }
 .kgc .fmt-icon { display: flex; color: var(--text-muted); margin-top: 2px; }
@@ -467,7 +471,7 @@
         <hr class="divider">
         <div class="kg-sec-head">Training parameters</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
-          <div class="form-group">
+          <div class="form-group" data-field="epochs">
             <label class="form-label" for="tr-epochs">Epochs</label>
             <input id="tr-epochs" type="number" class="form-control" step="1">
             <div class="form-help">Passes over the usable rows. <span id="tr-epochs-ref"></span>
@@ -475,7 +479,7 @@
             <div id="tr-duration"></div>
             <div class="kg-field-slot" data-for="tr-epochs"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-field="batch_size">
             <label class="form-label" for="tr-batch">Batch size</label>
             <input id="tr-batch" type="number" class="form-control" step="1">
             <div class="form-help">Images per training step. Raise it until GPU memory runs out;
@@ -483,19 +487,39 @@
               <span data-range="batch_size"></span></div>
             <div class="kg-field-slot" data-for="tr-batch"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-field="lr">
             <label class="form-label" for="tr-lr">Learning rate</label>
             <input id="tr-lr" type="number" class="form-control" step="0.00001">
             <div class="form-help">Initial learning rate for Adam. Higher learns faster but can diverge;
               <span id="tr-lr-sched"></span> <span data-range="lr"></span></div>
             <div class="kg-field-slot" data-for="tr-lr"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-field="weight_decay">
             <label class="form-label" for="tr-wd">Weight decay</label>
             <input id="tr-wd" type="number" class="form-control" step="0.001">
-            <div class="form-help">L2 penalty on the weights (Adam's <code>weight_decay</code>). 0 is the
+            <div class="form-help">L2 penalty on the weights (the optimizer's <code>weight_decay</code>). 0 is the
               baseline; a small value regularises a from-scratch model. <span data-range="weight_decay"></span></div>
             <div class="kg-field-slot" data-for="tr-wd"></div>
+          </div>
+          <!-- The choice fields render only when the manifest lists them as editable (part B);
+               otherwise they are locked rows above. Options and labels are served. -->
+          <div class="form-group" data-field="optimizer" hidden>
+            <label class="form-label" for="tr-optimizer">Optimizer</label>
+            <div class="kg-select-wrap">
+              <select id="tr-optimizer" class="form-control"></select>
+              <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
+            </div>
+            <div class="form-help">Which optimizer updates the weights. Switching applies that optimizer's
+              usual learning rate above when the field still holds the previous default.</div>
+          </div>
+          <div class="form-group" data-field="schedule" hidden>
+            <label class="form-label" for="tr-schedule">LR schedule</label>
+            <div class="kg-select-wrap">
+              <select id="tr-schedule" class="form-control"></select>
+              <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
+            </div>
+            <div class="form-help">How the learning rate changes over the run: the kit\'s step decay, a
+              cosine decay to zero, or constant.</div>
           </div>
         </div>
 
@@ -515,14 +539,14 @@
                     GPU), <code>mps</code>, or <code>cpu</code>. Training on CPU is very slow. If the
                     accelerator fails at start, the run retries on CPU and says so.</div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" data-field="workers">
                   <label class="form-label" for="tr-workers">Workers</label>
                   <input id="tr-workers" type="number" class="form-control" step="1">
                   <div class="form-help">Dataloader worker processes. <span id="tr-workers-note"></span>
                     <span data-range="workers"></span></div>
                   <div class="kg-field-slot" data-for="tr-workers"></div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" data-field="seed">
                   <label class="form-label" for="tr-seed">Seed</label>
                   <input id="tr-seed" type="number" class="form-control" step="1">
                   <div class="form-help">Random seed for the initialisation, the augmentation and the
@@ -2191,7 +2215,7 @@
         if (kgDevMode || dlRunning) { return; }
         dlRunning = true;
         el('kg-dl-banner').innerHTML = '';
-        // U1: a red not-found on the kit's own path is stale the moment a download for that
+        // U1: a red not-found on the kit\'s own path is stale the moment a download for that
         // path starts. Idle the gate; success re-gates through dlAdoptSessionKit.
         var destEl = dlMode === 'top_up' ? null : el('kg-dl-dest');
         var dest = destEl ? destEl.textContent : '';
@@ -2442,7 +2466,7 @@
         train: {
           'tr-latest': 'use_latest',
           'tr-epochs': 'epochs', 'tr-batch': 'batch_size', 'tr-lr': 'lr', 'tr-wd': 'weight_decay',
-          'tr-seed': 'seed', 'tr-workers': 'workers'
+          'tr-seed': 'seed', 'tr-workers': 'workers', 'tr-optimizer': 'optimizer', 'tr-schedule': 'schedule'
         }
       };
 
@@ -2541,14 +2565,45 @@
       // ── The locked contract and the bounded fields, rendered from GET /config ────────
       function trOptimizerLabel(name) {
         var n = String(name || '').toLowerCase();
-        return n === 'adam' ? 'Adam' : n === 'adamw' ? 'AdamW' : n === 'sgd' ? 'SGD' : (name || '');
+        var labels = ((kgTraining || {}).option_labels || {}).optimizer || {};
+        return (labels[n] && labels[n].label) || (n === 'adam' ? 'Adam' : n === 'adamw' ? 'AdamW' : n === 'sgd' ? 'SGD' : (name || ''));
       }
       function trScheduleLabel(sch) {
         sch = sch || {};
         if (sch.kind === 'step' && sch.step_size) {
           return '×' + sch.gamma + ' every ' + fmtCount(sch.step_size) + ' epochs';
         }
-        return sch.kind ? String(sch.kind) : '';
+        return sch.label ? String(sch.label) : (sch.kind ? String(sch.kind) : '');
+      }
+
+      // The training fields, in form order, with the copy a locked row carries (part B: whatever the
+      // manifest does not list under training.editable renders here instead of as an input).
+      var TR_FIELDS = ['epochs', 'batch_size', 'lr', 'weight_decay', 'seed', 'optimizer', 'schedule'];
+      var TR_FIELD_LABELS = { epochs: 'Epochs', batch_size: 'Batch size', lr: 'Learning rate', weight_decay: 'Weight decay',
+                              seed: 'Seed', optimizer: 'Optimizer', schedule: 'LR schedule' };
+      var TR_FIELD_TIPS = {
+        epochs: 'Locked for this competition: every run makes the same number of passes over the usable rows.',
+        batch_size: 'Locked for this competition: every run trains with the same batch size.',
+        lr: 'Locked for this competition: every run starts from the same learning rate.',
+        weight_decay: 'Locked for this competition: the same L2 penalty for every run.',
+        seed: 'Locked for this competition: the same seed for every run, so only the data differs.',
+        optimizer: 'The starter kit\'s optimizer. The learning rate and weight decay are yours to tune.',
+        schedule: 'The starter kit\'s step schedule (StepLR): the learning rate is multiplied by the factor at every step. Fixed so runs stay comparable.'
+      };
+      function trIsEditable(key) {
+        var t = kgTraining || {};
+        return (t.editable || []).indexOf(key) !== -1;
+      }
+      function trLockedValue(key) {
+        var t = kgTraining || {}, d = t.defaults || {};
+        if (key === 'optimizer') { return trOptimizerLabel(t.optimizer); }
+        if (key === 'schedule') { return trScheduleLabel(t.schedule); }
+        return (key in d) ? String(d[key]) : '';
+      }
+      function trLockedFieldRows() {
+        return TR_FIELDS.filter(function (key) { return !trIsEditable(key); }).map(function (key) {
+          return [TR_FIELD_LABELS[key], trLockedValue(key), TR_FIELD_TIPS[key]];
+        });
       }
 
       function trApplyContract() {
@@ -2557,18 +2612,15 @@
           ? (mf.backbone_label || model.arch) + ' from random init · ' + model.image_size + 'px' : '';
         var rows = [
           ['Model', model.arch ? (mf.backbone_label || model.arch) + (mf.head_label ? ' · ' + mf.head_label : '') : '',
-           'The starter kit's model, exactly: torchvision ResNet-18 from scratch with the kit's MLP head. Identical for every participant; the leaderboard measures your data work, not your compute.'],
+           'The starter kit\'s model, exactly: torchvision ResNet-18 from scratch with the kit\'s MLP head. Identical for every participant; the leaderboard measures your data work, not your compute.'],
           ['Init', model.arch ? (mf.init_label || 'random (pretrained = false)') + (mf.torchvision_version ? ' · torchvision ' + mf.torchvision_version : '') : '',
            'No pretrained weights anywhere: every participant starts from the same random initialisation rule. The Run records pretrained = false and the framework version as proof.'],
           ['Image size', model.image_size ? String(model.image_size) : '',
            'Locked so results are comparable across participants.'],
-          ['Optimizer', trOptimizerLabel(t.optimizer),
-           'The starter kit\'s optimizer. The learning rate and weight decay below are yours to tune.'],
-          ['LR schedule', trScheduleLabel(t.schedule),
-           'The starter kit\'s step schedule (StepLR): the learning rate is multiplied by the factor at every step. Fixed so runs stay comparable.'],
+        ].concat(trLockedFieldRows(), [
           ['Inference', t.inference || '',
            'Predictions come from one forward pass at the locked image size: no test-time augmentation, no ensembling.']
-        ];
+        ]);
         el('tr-locked-rows').innerHTML = rows.filter(function (r) { return r[1]; }).map(function (r) {
           return '<div class="kg-locked-row" title="' + esc(r[2]) + '"><span class="lbl">' + esc(r[0]) +
                  '</span><span class="val">' + esc(r[1]) + '</span>' + kgIcon('lock', 'kgi-12') + '</div>';
@@ -2597,31 +2649,62 @@
       var TR_BOUNDS = {};
       var TR_FIELD_KEYS = {
         'tr-epochs': 'epochs', 'tr-batch': 'batch_size', 'tr-lr': 'lr', 'tr-wd': 'weight_decay',
-        'tr-seed': 'seed', 'tr-workers': 'workers'
+        'tr-seed': 'seed', 'tr-workers': 'workers', 'tr-optimizer': 'optimizer', 'tr-schedule': 'schedule'
       };
 
       function trApplyFields(keepValues) {
         var t = kgTraining || {};
         var defaults = t.defaults || {}, bounds = t.bounds || {};
+        var options = t.options || {}, optLabels = t.option_labels || {};
         Object.keys(TR_FIELD_KEYS).forEach(function (id) {
           var key = TR_FIELD_KEYS[id];
           var node = el(id);
-          var b = bounds[key];
-          if (b) {
-            TR_BOUNDS[id] = [key, b[0], b[1]];
-            node.min = String(b[0]);
-            node.max = String(b[1]);
-          }
-          if (key in defaults) {
-            node.defaultValue = String(defaults[key]);
-            if (!keepValues || node.value === '') { node.value = String(defaults[key]); }
+          if (node.tagName === 'SELECT') {
+            // The choice fields: options and labels are served; the default is selected.
+            var current = node.value;
+            var names = options[key] || [];
+            node.innerHTML = names.map(function (v) {
+              var lab = (optLabels[key] || {})[v];
+              return '<option value="' + esc(v) + '">' + esc((lab && lab.label) || v) + '</option>';
+            }).join('');
+            var want = (keepValues && names.indexOf(current) !== -1) ? current : String(defaults[key] || names[0] || '');
+            node.value = want;
+            node.setAttribute('data-default', String(defaults[key] || ''));
+          } else {
+            var b = bounds[key];
+            if (b) {
+              TR_BOUNDS[id] = [key, b[0], b[1]];
+              node.min = String(b[0]);
+              node.max = String(b[1]);
+            }
+            if (key in defaults) {
+              node.defaultValue = String(defaults[key]);
+              if (!keepValues || node.value === '') { node.value = String(defaults[key]); }
+            }
           }
           ROOT_EL.querySelectorAll('[data-range="' + key + '"]').forEach(function (span) {
-            span.textContent = b ? 'Range ' + b[0] + ' to ' + b[1] + '.' : '';
+            span.textContent = bounds[key] ? 'Range ' + bounds[key][0] + ' to ' + bounds[key][1] + '.' : '';
           });
+          // Part B: a field renders only when the manifest opens it; otherwise it is a locked row.
+          var group = ROOT_EL.querySelector('.form-group[data-field="' + key + '"]');
+          if (group && TR_FIELDS.indexOf(key) !== -1) { group.hidden = !trIsEditable(key); }
         });
         trRenderDurationHint();
       }
+
+      // Switching the optimizer applies its usual learning rate when the LR field still holds the
+      // previous optimizer's default (a typed value is never overwritten).
+      el('tr-optimizer').addEventListener('change', function () {
+        var labels = ((kgTraining || {}).option_labels || {}).optimizer || {};
+        var lr = el('tr-lr');
+        var was = lr.getAttribute('data-opt-default') || lr.defaultValue;
+        var next = labels[el('tr-optimizer').value] && labels[el('tr-optimizer').value].default_lr;
+        if (next !== undefined && next !== null && String(lr.value) === String(was)) {
+          lr.value = String(next);
+          lr.setAttribute('data-opt-default', String(next));
+          trValidateField('tr-lr');
+        }
+      });
 
       function trRenderValLocked() {
         var box = el('tr-val-locked');
@@ -3327,7 +3410,8 @@
 
       function trValidateField(id) {
         var spec = TR_BOUNDS[id];
-        if (!spec) { return true; }
+        var fkey = TR_FIELD_KEYS[id];
+        if (!spec || (fkey && fkey !== 'workers' && !trIsEditable(fkey))) { trInvalid[id] = false; trCheckReady(); return true; }
         var slot = ROOT_EL.querySelector('.kg-field-slot[data-for="' + id + '"]');
         var raw = el(id).value;
         var v = parseFloat(raw);
@@ -3347,6 +3431,8 @@
       function trValidateAll() {
         var firstBad = null;
         Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+          var key = TR_FIELD_KEYS[id];
+          if (key !== 'workers' && !trIsEditable(key)) { trInvalid[id] = false; return; }
           if (!trValidateField(id) && !firstBad) { firstBad = id; }
         });
         return firstBad;
@@ -3378,17 +3464,16 @@
         var body = {
           train_table_url: el('tr-train-url').value.trim(),
           use_latest: el('tr-latest').checked,
-          epochs: el('tr-epochs').value,
-          batch_size: el('tr-batch').value,
-          lr: el('tr-lr').value,
-          weight_decay: el('tr-wd').value,
-          seed: el('tr-seed').value,
           device: el('tr-device').value,
           workers: el('tr-workers').value,
           project_name: kgCurrentProject(),
           run_name: el('tr-runname').value.trim(),
           client_token: trClickToken
         };
+        Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+          var key = TR_FIELD_KEYS[id];
+          if (key === 'workers' || trIsEditable(key)) { body[key] = el(id).value; }
+        });
         trLastParams = body;
         trRunning = true;                 // synchronously: the second click of a double click lands here
         trCancelling = false;

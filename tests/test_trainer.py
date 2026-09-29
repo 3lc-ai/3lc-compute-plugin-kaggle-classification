@@ -31,7 +31,13 @@ def test_training_facts_serve_defaults_bounds_and_the_locked_facts(manifest):
     assert facts["defaults"]["seed"] == 42 and facts["defaults"]["workers"] == trainer.default_workers()
     assert facts["bounds"]["epochs"] == [1, 50] and facts["bounds"]["seed"] == [0, 2147483647]
     assert facts["bounds"]["workers"] == [0, 16]
-    assert facts["optimizer"] == "adam" and facts["schedule"] == {"kind": "step", "step_size": 5, "gamma": 0.1}
+    assert facts["optimizer"] == "adam" and facts["schedule"]["kind"] == "step"
+    assert facts["schedule"]["step_size"] == 5 and facts["schedule"]["gamma"] == 0.1
+    # Part B: what the form opens and what a manifest may allow; this event locks the choice fields.
+    assert facts["editable"] == ["epochs", "batch_size", "lr", "weight_decay", "seed"]
+    assert facts["options"] == {"optimizer": ["adam"], "schedule": ["steplr"]}
+    assert set(facts["option_labels"]["optimizer"]) == {"adam", "adamw", "sgd"}
+    assert set(facts["option_labels"]["schedule"]) == {"steplr", "cosine", "none"}
     assert facts["max_rows"]["train"] == manifest.expected_rows("train")
     assert set(facts["benchmark"]["per_device"]) == {"cuda", "mps", "cpu"}
 
@@ -48,7 +54,7 @@ def test_build_train_kwargs_merges_defaults_and_locks_the_contract(home, manifes
     kw = trainer.build_train_kwargs({"epochs": "3", "lr": "", "batch_size": "16.0"}, manifest)
     assert kw["epochs"] == 3 and kw["batch_size"] == 16 and kw["lr"] == 0.0001 and kw["weight_decay"] == 0.0
     assert kw["seed"] == 42 and kw["workers"] == trainer.default_workers()
-    assert kw["optimizer"] == "adam" and kw["schedule"]["step_size"] == 5
+    assert kw["optimizer"] == "adam" and kw["schedule"] == "steplr" and kw["schedule_params"]["step_size"] == 5
     assert kw["backbone"] == manifest.model.backbone and kw["head"] == manifest.model.head
     assert kw["arch"] == manifest.model.arch and kw["image_size"] == manifest.model.image_size
     assert kw["pretrained"] is False and kw["use_latest"] is True
@@ -66,7 +72,7 @@ def test_build_train_kwargs_merges_defaults_and_locks_the_contract(home, manifes
         ({"workers": "99"}, "workers must be between 0 and 16"),
         ({"epochs": "2.5"}, "whole number"),
         ({"epochs": "abc"}, "Invalid value for epochs"),
-        ({"optimizer": "sgd"}, "optimizer is locked to adam"),
+        ({"optimizer": "sgd"}, "optimizer is locked for this competition"),
         ({"run_name": "a/b"}, "run name must be a plain name"),
         ({"use_latest": "false", "epochs": "1"}, None),
     ],
@@ -405,3 +411,79 @@ def test_cancel_mid_run_keeps_the_best_checkpoint_and_marks_the_run_cancelled(im
     # Provenance still recorded (Predict may use a cancelled run's best checkpoint, D10).
     assert ctx.checks and all(c["ok"] for c in ctx.checks)
     assert not any(p.get("stage") == "collect" for p in ctx.progress)
+
+
+# ── Part B: manifest-driven editability ────────────────────────────────────────
+
+
+def _opened(manifest, **over):
+    """The bundled manifest with the choice fields opened (what another event's document would say)."""
+    import dataclasses
+
+    data = manifest_mod.load_yaml_text(manifest_mod.bundled_path().read_text(encoding="utf-8"))
+    data["training"]["editable"] = ["epochs", "batch_size", "lr", "weight_decay", "seed", "optimizer", "schedule"]
+    data["training"]["options"] = {"optimizer": ["adam", "adamw", "sgd"], "schedule": ["steplr", "cosine", "none"]}
+    for k, v in over.items():
+        data["training"][k] = v
+    m = manifest_mod.parse_manifest(data)
+    assert not any("editable" in w for w in m.warnings)
+    return dataclasses.replace(m)
+
+
+def test_the_bundled_manifest_locks_the_choice_fields_and_the_server_refuses_them(home, manifest):
+    assert not manifest.training.is_editable("optimizer") and not manifest.training.is_editable("schedule")
+    kw = trainer.build_train_kwargs({"epochs": "2"}, manifest)
+    assert kw["optimizer"] == "adam" and kw["schedule"] == "steplr" and kw["schedule_params"]["step_size"] == 5
+    for locked in ({"optimizer": "sgd"}, {"optimizer": "adam"}, {"schedule": "cosine"}, {"schedule": "steplr"}):
+        with pytest.raises(trainer.TrainRefused, match="is locked for this competition"):
+            trainer.build_train_kwargs(locked, manifest)
+
+
+def test_a_manifest_that_opens_the_choice_fields_accepts_and_validates_them(home, manifest):
+    m = _opened(manifest)
+    assert trainer.training_facts(m)["editable"][-2:] == ["optimizer", "schedule"]
+    kw = trainer.build_train_kwargs({"optimizer": "SGD", "schedule": "cosine", "lr": "0.01"}, m)
+    assert kw["optimizer"] == "sgd" and kw["schedule"] == "cosine" and kw["lr"] == 0.01
+    with pytest.raises(trainer.TrainRefused, match="optimizer must be one of adam, adamw, sgd"):
+        trainer.build_train_kwargs({"optimizer": "lamb"}, m)
+    with pytest.raises(trainer.TrainRefused, match="schedule must be one of steplr, cosine, none"):
+        trainer.build_train_kwargs({"schedule": "plateau"}, m)
+    # A manifest may lock a numeric field too: then the client must not send it.
+    locked_epochs = _opened(manifest, editable=["batch_size", "lr"])
+    with pytest.raises(trainer.TrainRefused, match="epochs is locked"):
+        trainer.build_train_kwargs({"epochs": "3"}, locked_epochs)
+    assert trainer.build_train_kwargs({}, locked_epochs)["epochs"] == 10
+
+
+def test_the_manifest_validates_editable_and_options(manifest):
+    data = manifest_mod.load_yaml_text(manifest_mod.bundled_path().read_text(encoding="utf-8"))
+    data["training"]["editable"] = ["epochs", "momentum"]
+    with pytest.raises(manifest_mod.ManifestError, match="training.editable: 'momentum'"):
+        manifest_mod.parse_manifest(data)
+    data["training"]["editable"] = ["epochs"]
+    data["training"]["options"] = {"optimizer": ["lamb"]}
+    with pytest.raises(manifest_mod.ManifestError, match="training.options.optimizer"):
+        manifest_mod.parse_manifest(data)
+    data["training"]["options"] = {"optimizer": ["sgd"]}   # the default adam is not in the allowed list
+    with pytest.raises(manifest_mod.ManifestError, match="training.defaults.optimizer"):
+        manifest_mod.parse_manifest(data)
+    # Absent editable/options (a pre-part-B document): the numeric fields open, the choices lock.
+    del data["training"]["editable"], data["training"]["options"]
+    m = manifest_mod.parse_manifest(data)
+    assert m.training.editable == manifest_mod.DEFAULT_EDITABLE
+    assert m.training.options == {"optimizer": ("adam",), "schedule": ("steplr",)}
+
+
+def test_an_opened_manifest_trains_with_the_chosen_optimizer_and_schedule(imported):
+    manifest, train_url, _ = imported
+    m = _opened(manifest)
+    ctx = FakeCtx()
+    result = trainer.run_training(
+        {"epochs": "1", "batch_size": "8", "device": "cpu", "workers": "0", "run_name": "t_sgd",
+         "optimizer": "sgd", "schedule": "cosine", "lr": "0.01"}, ctx, m,
+    )
+    assert result["cancelled"] is False and result["contract"]["optimizer"] == "sgd"
+    assert result["contract"]["schedule"] == "cosine"
+    p = trainer.get_run_parameters(tlc.Run.from_url(tlc.Url(result["run_url"])))
+    assert p["optimizer"] == "sgd" and p["schedule"] == "cosine" and p["lr"] == 0.01
+    assert any("sgd, cosine" in line for line in ctx.logs)

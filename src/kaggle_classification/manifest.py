@@ -215,12 +215,30 @@ class Embeddings:
     n_components: int
 
 
+# The training fields a manifest may open to participants (session 3 part B): the numeric ones plus
+# the optimizer and the LR schedule. Anything not listed in ``training.editable`` renders as a locked
+# row and is refused server-side when a client sends it. The values a manifest may allow for the two
+# choice fields are what the trainer implements (``trainer.OPTIMIZERS`` / ``SCHEDULES``).
+EDITABLE_FIELDS = ("epochs", "batch_size", "lr", "weight_decay", "seed", "optimizer", "schedule")
+OPTIMIZER_VALUES = ("adam", "adamw", "sgd")
+SCHEDULE_VALUES = ("steplr", "cosine", "none")
+OPTION_FIELDS = {"optimizer": OPTIMIZER_VALUES, "schedule": SCHEDULE_VALUES}
+DEFAULT_EDITABLE = ("epochs", "batch_size", "lr", "weight_decay", "seed")
+
+
 @dataclass(frozen=True)
 class Training:
     defaults: dict[str, Any]
     bounds: dict[str, tuple[float, float]]
     presets: dict[str, dict[str, Any]]
     embeddings: Embeddings
+    # Which fields the form renders as inputs (the rest are locked rows).
+    editable: tuple[str, ...] = DEFAULT_EDITABLE
+    # Allowed values per choice field; a locked choice field lists its default only.
+    options: dict[str, tuple[str, ...]] = field(default_factory=dict)
+
+    def is_editable(self, name: str) -> bool:
+        return name in self.editable
 
 
 @dataclass(frozen=True)
@@ -602,11 +620,55 @@ def parse_manifest(
 
     # training — bounds are [lo, hi] with lo <= hi; defaults and presets must sit inside them
     raw_training = _require(data, "training", "manifest")
-    _warn_unknown(raw_training, {"defaults", "bounds", "presets", "embeddings"}, "training", warnings)
+    _warn_unknown(
+        raw_training, {"defaults", "bounds", "presets", "embeddings", "editable", "options"}, "training", warnings
+    )
     defaults = _require(raw_training, "defaults", "training")
     if not isinstance(defaults, dict):
         msg = "training.defaults: expected a mapping"
         raise ManifestError(msg)
+    # editable + options (part B). Absent → the numeric fields are editable and each choice field is
+    # locked to its default (the pre-part-B documents on the CDN keep loading).
+    raw_editable = raw_training.get("editable", list(DEFAULT_EDITABLE))
+    if not isinstance(raw_editable, list) or not all(isinstance(x, str) for x in raw_editable):
+        msg = "training.editable: expected a list of field names"
+        raise ManifestError(msg)
+    for name in raw_editable:
+        if name not in EDITABLE_FIELDS:
+            msg = f"training.editable: {name!r} is not a training field ({', '.join(EDITABLE_FIELDS)})"
+            raise ManifestError(msg)
+    editable = tuple(dict.fromkeys(raw_editable))
+    raw_options = raw_training.get("options", {})
+    if not isinstance(raw_options, dict):
+        msg = "training.options: expected a mapping"
+        raise ManifestError(msg)
+    options: dict[str, tuple[str, ...]] = {}
+    for key, values in raw_options.items():
+        if key not in OPTION_FIELDS:
+            msg = f"training.options.{key}: not a choice field ({', '.join(OPTION_FIELDS)})"
+            raise ManifestError(msg)
+        if not isinstance(values, list) or not values or not all(isinstance(v, str) for v in values):
+            msg = f"training.options.{key}: expected a non-empty list of names"
+            raise ManifestError(msg)
+        bad = [v for v in values if v not in OPTION_FIELDS[key]]
+        if bad:
+            msg = f"training.options.{key}: {bad} not implemented ({', '.join(OPTION_FIELDS[key])})"
+            raise ManifestError(msg)
+        options[key] = tuple(dict.fromkeys(values))
+    for key, allowed in OPTION_FIELDS.items():
+        chosen = str(defaults.get(key) or allowed[0])
+        if chosen not in allowed:
+            msg = f"training.defaults.{key}: {chosen!r} not implemented ({', '.join(allowed)})"
+            raise ManifestError(msg)
+        defaults[key] = chosen
+        options.setdefault(key, (chosen,))
+        if chosen not in options[key]:
+            msg = f"training.defaults.{key}: {chosen!r} is not in training.options.{key} {list(options[key])}"
+            raise ManifestError(msg)
+        if key in editable and len(options[key]) < 2:
+            note = f"training.editable: {key} is editable but training.options.{key} allows only {chosen!r}"
+            warnings.append(note)
+            _log.warning("manifest: %s", note)
     raw_bounds = _require(raw_training, "bounds", "training")
     if not isinstance(raw_bounds, dict):
         msg = "training.bounds: expected a mapping"
@@ -656,7 +718,10 @@ def parse_manifest(
     if embeddings.n_components > 3:
         msg = f"training.embeddings.n_components: the Dashboard plots 2 or 3, got {embeddings.n_components}"
         raise ManifestError(msg)
-    training = Training(defaults=dict(defaults), bounds=bounds, presets=presets, embeddings=embeddings)
+    training = Training(
+        defaults=dict(defaults), bounds=bounds, presets=presets, embeddings=embeddings, editable=editable,
+        options=options,
+    )
 
     # submission
     raw_sub = _require(data, "submission", "manifest")

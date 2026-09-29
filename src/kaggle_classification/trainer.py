@@ -62,8 +62,18 @@ if TYPE_CHECKING:
     from kaggle_classification.manifest import Manifest
 
 # ── Locked baseline facts (plugin constants the manifest does not carry; D2, D3) ────────────
-OPTIMIZER = "adam"
-SCHEDULE: dict[str, Any] = {"kind": "step", "step_size": 5, "gamma": 0.1}
+# The optimizers and LR schedules the trainer implements (part B): a manifest opens them through
+# ``training.editable`` + ``training.options``; this event locks Adam + the kit's StepLR (D2, D3).
+OPTIMIZERS: dict[str, dict[str, Any]] = {
+    "adam": {"label": "Adam", "default_lr": 0.0001},
+    "adamw": {"label": "AdamW", "default_lr": 0.0001},
+    "sgd": {"label": "SGD (momentum 0.9)", "default_lr": 0.01},
+}
+SCHEDULES: dict[str, dict[str, Any]] = {
+    "steplr": {"kind": "step", "label": "×0.1 every 5 epochs (StepLR)", "step_size": 5, "gamma": 0.1},
+    "cosine": {"kind": "cosine", "label": "cosine decay to 0 over the run"},
+    "none": {"kind": "none", "label": "constant"},
+}
 INFERENCE = "single forward pass"
 # ImageNet normalisation, spelled out like the kit.
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -121,9 +131,14 @@ def effective_bounds(manifest: Manifest) -> dict[str, tuple[float, float]]:
 def effective_defaults(manifest: Manifest) -> dict[str, Any]:
     out = dict(manifest.training.defaults)
     out.setdefault("seed", SEED_BOUNDS_FALLBACK[0])
+    out.setdefault("optimizer", "adam")
+    out.setdefault("schedule", "steplr")
     out["workers"] = default_workers()
-    out["optimizer"] = OPTIMIZER
     return out
+
+
+def schedule_facts(name: str) -> dict[str, Any]:
+    return dict(SCHEDULES.get(name) or SCHEDULES["none"])
 
 
 def _dist_version(name: str) -> str:
@@ -168,8 +183,16 @@ def training_facts(manifest: Manifest) -> dict[str, Any]:
     return {
         "defaults": effective_defaults(manifest),
         "bounds": {k: [v[0], v[1]] for k, v in bounds.items()},
-        "optimizer": OPTIMIZER,
-        "schedule": dict(SCHEDULE),
+        # The choice fields: the default, whether the manifest opens them, and the allowed values
+        # with their labels (and per-optimizer default learning rates the form applies on a switch).
+        "optimizer": effective_defaults(manifest)["optimizer"],
+        "schedule": schedule_facts(effective_defaults(manifest)["schedule"]),
+        "editable": list(manifest.training.editable),
+        "options": {k: list(v) for k, v in manifest.training.options.items()},
+        "option_labels": {
+            "optimizer": {k: dict(v) for k, v in OPTIMIZERS.items()},
+            "schedule": {k: {"label": v["label"], "kind": v["kind"]} for k, v in SCHEDULES.items()},
+        },
         "inference": INFERENCE,
         "model": model_facts(manifest),
         "workers_default": default_workers(),
@@ -219,17 +242,29 @@ def default_run_name(manifest: Manifest) -> str:
 def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     """Manifest defaults ⊕ the form, bounded on the MERGED values; the locked facts are added last
     so nothing a participant sends can change them. Raises ``TrainRefused`` (participant-facing)."""
+    from kaggle_classification.manifest import EDITABLE_FIELDS
+
     defaults = effective_defaults(manifest)
     bounds = effective_bounds(manifest)
+    editable = manifest.training.editable
+    # A locked field sent by a client is refused outright (part B): the fragment renders locked rows
+    # for these and never posts them, so a value here is a stale or tampered client.
+    for key in EDITABLE_FIELDS:
+        if key not in editable and key in params:
+            msg = f"{key} is locked for this competition ({defaults.get(key)!r}) and cannot be sent."
+            raise TrainRefused(msg)
     kwargs: dict[str, Any] = {}
     for key in (*MANIFEST_FIELDS, "seed", "workers"):
         kwargs[key] = _coerce(key, params.get(key), defaults.get(key))
     for key, val in kwargs.items():
         _check_bound(key, val, bounds)
-    optimizer = str(params.get("optimizer") or OPTIMIZER).strip().lower()
-    if optimizer != OPTIMIZER:
-        msg = f"optimizer is locked to {OPTIMIZER} for this competition (got {optimizer!r})."
-        raise TrainRefused(msg)
+    for key, table in (("optimizer", OPTIMIZERS), ("schedule", SCHEDULES)):
+        value = str(params.get(key) or defaults.get(key)).strip().lower()
+        allowed = manifest.training.options.get(key, (str(defaults.get(key)),))
+        if value not in allowed or value not in table:
+            msg = f"{key} must be one of {', '.join(allowed)} (got {value!r})."
+            raise TrainRefused(msg)
+        kwargs[key] = value
     device = str(params.get("device") or "").strip()
     run_name = str(params.get("run_name") or "").strip() or default_run_name(manifest)
     project = str(params.get("project_name") or session.populated_session(manifest)["project_name"]).strip()
@@ -242,8 +277,7 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
         use_latest = use_latest.strip().lower() not in ("false", "0", "no", "")
     return {
         **kwargs,
-        "optimizer": OPTIMIZER,
-        "schedule": dict(SCHEDULE),
+        "schedule_params": schedule_facts(kwargs["schedule"]),
         "device": device,
         "run_name": run_name,
         "project_name": project,
@@ -848,6 +882,41 @@ def worker_init(worker_id: int) -> None:
     np.random.seed(seed)
 
 
+def make_optimizer(name: str, params: Any, lr: float, weight_decay: float) -> Any:
+    import torch
+
+    if name == "adam":
+        return torch.optim.Adam(params, lr=lr, weight_decay=weight_decay)
+    if name == "adamw":
+        return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
+    if name == "sgd":
+        return torch.optim.SGD(params, lr=lr, momentum=0.9, weight_decay=weight_decay)
+    msg = f"optimizer {name!r} is not implemented"
+    raise TrainRefused(msg)
+
+
+def make_scheduler(name: str, optimizer: Any, epochs: int) -> Any:
+    """Stepped once per epoch after validation (the kit's placement). ``none`` returns None."""
+    import torch
+
+    if name == "steplr":
+        spec = SCHEDULES["steplr"]
+        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(spec["step_size"]), gamma=float(spec["gamma"]))
+    if name == "cosine":
+        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(int(epochs), 1))
+    if name == "none":
+        return None
+    msg = f"schedule {name!r} is not implemented"
+    raise TrainRefused(msg)
+
+
+def describe_schedule(name: str) -> str:
+    spec = SCHEDULES.get(name) or {}
+    if name == "steplr":
+        return f"steplr(step_size={spec['step_size']}, gamma={spec['gamma']})"
+    return name
+
+
 def build_model(backbone: str, head: str, num_classes: int) -> Any:
     """The manifest's model, allowlisted: torchvision ``resnet18(weights=None)`` with either the Intel
     kit's MLP head (``fc = Identity`` + 512 → 256 → ReLU → Dropout 0.3 → 128 → ReLU → Dropout 0.3 → N,
@@ -1170,10 +1239,8 @@ def _train_and_collect(
         set_seed(seed)
         train_loader, val_loader = loaders()
         model = build_model(backbone, head, manifest.num_classes).to(dev)
-        optimizer = torch.optim.Adam(model.parameters(), lr=float(kw["lr"]), weight_decay=float(kw["weight_decay"]))
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=int(SCHEDULE["step_size"]), gamma=float(SCHEDULE["gamma"])
-        )
+        optimizer = make_optimizer(kw["optimizer"], model.parameters(), float(kw["lr"]), float(kw["weight_decay"]))
+        scheduler = make_scheduler(kw["schedule"], optimizer, epochs)
         cuda_state = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
         rng_after_init[:] = [torch.get_rng_state(), cuda_state]
 
@@ -1265,7 +1332,7 @@ def _train_and_collect(
         "backbone": backbone, "head": head, "arch": arch, "image_size": image_size, "pretrained": False,
         "torch_version": fw["torch_version"], "torchvision_version": fw["torchvision_version"], "seed": seed,
         "epochs": epochs, "batch_size": batch_size, "lr": float(kw["lr"]), "weight_decay": float(kw["weight_decay"]),
-        "optimizer": OPTIMIZER, "schedule": f"step(step_size={SCHEDULE['step_size']}, gamma={SCHEDULE['gamma']})",
+        "optimizer": kw["optimizer"], "schedule": describe_schedule(kw["schedule"]),
         "train_table_url": resolved_url, "val_table_url": val_url, "usable_rows": n_usable,
         "undefined_excluded": int(summary["excluded_undefined"]),
         "sampler": "weighted, exclude_zero_weights, undefined forced to 0 (in memory)",
@@ -1278,7 +1345,7 @@ def _train_and_collect(
         f"Locked: backbone={backbone} · head={head} · image_size={image_size} · pretrained=False · "
         f"torchvision {fw['torchvision_version']} · seed {seed}. "
         f"Training {epochs} epochs, batch {batch_size}, lr {kw['lr']}, weight decay {kw['weight_decay']}, "
-        f"{OPTIMIZER}, StepLR({SCHEDULE['step_size']}, {SCHEDULE['gamma']}), workers {workers}."
+        f"{kw['optimizer']}, {describe_schedule(kw['schedule'])}, workers {workers}."
     )
     log(f"Run: {run_url}")
     run.set_parameters(
@@ -1329,7 +1396,8 @@ def _train_and_collect(
                 v_correct += int((out.argmax(1) == labels_b).sum().item())
                 v_seen += int(images.size(0))
                 heartbeat()
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
         train_loss = running_loss / max(seen, 1)
         val_loss = v_loss / max(v_seen, 1)
         val_acc = 100.0 * v_correct / max(v_seen, 1)
@@ -1560,7 +1628,7 @@ def state_for_json(obj: Any) -> Any:
 
 
 __all__ = [
-    "INFERENCE", "OPTIMIZER", "SCHEDULE", "TrainRefused", "build_train_kwargs", "check_provenance",
+    "INFERENCE", "OPTIMIZERS", "SCHEDULES", "TrainRefused", "build_train_kwargs", "check_provenance",
     "default_workers", "descends_from_seed", "effective_bounds", "effective_weights", "preflight",
     "probe_device_async", "read_record", "resolve_device", "run_summary", "run_training", "scan_rows",
     "summarize_rows", "train_state", "training_facts", "validate_train_url",

@@ -59,8 +59,16 @@ training:
     batch_size: 16
     lr: 0.0001
     weight_decay: 0.0
-    optimizer: adam
+    optimizer: adam        # the kit's; locked for this event (not in `editable`)
+    schedule: steplr       # the kit's StepLR(5, 0.1); locked for this event
     seed: 42
+  # The fields the Train form opens (part B, 2026-09-29). Everything else renders as a locked row and
+  # is refused server-side. Choice fields the plugin implements: optimizer adam | adamw | sgd,
+  # schedule steplr | cosine | none — list them under `options` to open them for another event.
+  editable: [epochs, batch_size, lr, weight_decay, seed]
+  options:
+    optimizer: [adam]
+    schedule: [steplr]
   bounds:
     epochs: [1, 50]
     batch_size: [8, 128]
