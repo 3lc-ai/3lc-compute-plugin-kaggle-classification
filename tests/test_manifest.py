@@ -56,7 +56,7 @@ def test_to_dict_is_json_serializable(manifest):
         (lambda d: d["model"].__setitem__("pretrained", True), "pretrained"),
         (lambda d: d["classes"].__setitem__(2, {"id": 7, "name": "glacier"}), "contiguous"),
         (lambda d: d["training"]["bounds"].__setitem__("epochs", [50, 1]), "min 50 > max 1"),
-        (lambda d: d["model"].pop("arch"), "model.arch"),
+        (lambda d: d["model"].pop("backbone"), "model.backbone"),
         (lambda d: d.__setitem__("schema_version", 2), "schema_version"),
         (lambda d: d["classes"].__setitem__(1, {"id": 1, "name": "buildings"}), "unique"),
         (lambda d: d["training"]["defaults"].__setitem__("epochs", 999), "outside bounds"),

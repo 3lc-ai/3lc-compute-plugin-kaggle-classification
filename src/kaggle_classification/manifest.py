@@ -187,11 +187,25 @@ class Splits:
     test: TestSplit
 
 
+# The locked model, manifest-driven for reuse and allowlisted server-side (session 3 part A,
+# 2026-09-29): the backbone names the torchvision constructor, the head the classifier on top of it.
+# ``kit_mlp_512_256_128_d03`` is the Intel kit's ``ResNet18Classifier`` head (512 → 256 → ReLU →
+# Dropout(0.3) → 128 → ReLU → Dropout(0.3) → N); ``linear`` is torchvision's own ``fc``.
+BACKBONES = ("torchvision_resnet18",)
+HEADS = ("kit_mlp_512_256_128_d03", "linear")
+
+
 @dataclass(frozen=True)
 class Model:
-    arch: str
+    backbone: str
+    head: str
     pretrained: bool
     image_size: int
+
+    @property
+    def arch(self) -> str:
+        """The display name (``resnet18``): the backbone without its library prefix."""
+        return self.backbone.split("_", 1)[1] if "_" in self.backbone else self.backbone
 
 
 @dataclass(frozen=True)
@@ -314,7 +328,9 @@ class Manifest:
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-ready copy (served on ``GET /config`` under ``_meta.manifest``)."""
-        return asdict(self)
+        out = asdict(self)
+        out["model"]["arch"] = self.model.arch  # the display name the fragment renders
+        return out
 
 
 # ── Validation ─────────────────────────────────────────────────────────────
@@ -552,15 +568,34 @@ def parse_manifest(
         ),
     )
 
-    # model — pretrained must be false (the fairness contract), arch required
+    # model — pretrained must be false (the fairness contract); backbone + head allowlisted. The
+    # pre-session-3 ``arch: resnet18`` spelling is accepted as the kit's model (torchvision resnet18
+    # with the kit MLP head) with a warning, so a document on the CDN keeps loading until re-uploaded.
     raw_model = _require(data, "model", "manifest")
-    _warn_unknown(raw_model, {"arch", "pretrained", "image_size"}, "model", warnings)
+    _warn_unknown(raw_model, {"arch", "backbone", "head", "pretrained", "image_size"}, "model", warnings)
     pretrained = _bool(_require(raw_model, "pretrained", "model"), "model.pretrained")
     if pretrained:
         msg = "model.pretrained: must be false — every participant trains from random init"
         raise ManifestError(msg)
+    if "backbone" in raw_model or "head" in raw_model:
+        backbone = _str(_require(raw_model, "backbone", "model"), "model.backbone")
+        head = _str(_require(raw_model, "head", "model"), "model.head")
+    else:
+        # Legacy spelling: ``arch: <name>`` means torchvision's <name> with the kit's head (HEADS[0]).
+        arch = _str(_require(raw_model, "arch", "model"), "model.arch")
+        backbone, head = f"torchvision_{arch}", HEADS[0]
+        note = f"model.arch: deprecated spelling, read as backbone {backbone} + head {head}"
+        warnings.append(note)
+        _log.warning("manifest: %s", note)
+    if backbone not in BACKBONES:
+        msg = f"model.backbone: {backbone!r} is not an allowed backbone ({', '.join(BACKBONES)})"
+        raise ManifestError(msg)
+    if head not in HEADS:
+        msg = f"model.head: {head!r} is not an allowed head ({', '.join(HEADS)})"
+        raise ManifestError(msg)
     model = Model(
-        arch=_str(_require(raw_model, "arch", "model"), "model.arch"),
+        backbone=backbone,
+        head=head,
         pretrained=False,
         image_size=_int(_require(raw_model, "image_size", "model"), "model.image_size", minimum=1),
     )

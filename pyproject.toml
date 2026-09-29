@@ -38,11 +38,11 @@ kaggle-classification = [
     # The SDK already brings 3lc[pandas]>=3.3.0; stated again because the Compute Service resolves
     # 3LC >= 3.3.0 for this plugin (docs/PLAN.md) and the floor must be visible here, not inherited.
     "3lc>=3.3,<4.0",
+    # The model is torchvision's resnet18 with the Intel kit's MLP head (docs/PLAN.md §A, part A of
+    # the 2026-09-29 review); timm is no longer a runtime dependency. The versions are recorded on
+    # every Run and read back by the provenance checks.
     "torch",
     "torchvision",
-    # Exact pin: the trainer is a per-participant input in a competition with prizes. The timm
-    # plugin only floors this (>=1.0); 1.0.29 is what its lockfile resolves and PyPI's latest.
-    "timm==1.0.29",
     # Embedding reduction: UMAP fit on train, transformed onto val; PCA is the fallback.
     "umap-learn",
     "scikit-learn",

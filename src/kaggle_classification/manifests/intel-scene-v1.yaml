@@ -46,7 +46,10 @@ splits:
     ids_from: sample_submission.csv
 
 model:
-  arch: resnet18
+  # The Intel kit's model, exactly: torchvision resnet18 from random init with the kit's MLP head
+  # (512 -> 256 -> ReLU -> Dropout 0.3 -> 128 -> ReLU -> Dropout 0.3 -> 6). Allowlisted in manifest.py.
+  backbone: torchvision_resnet18
+  head: kit_mlp_512_256_128_d03
   pretrained: false
   image_size: 150
 

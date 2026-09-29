@@ -33,11 +33,14 @@ BENCHMARK: dict[str, dict[str, float]] = {
 REFERENCE: dict[str, Any] = {
     "machine": "NVIDIA GeForce RTX 3070 Ti Laptop GPU (8 GB)",
     "date": "2026-09-29",
-    # The default run's val accuracy at its best epoch, for the Epochs help (gate G1: 10 epochs,
-    # 609 usable rows of the manual-test revision).
-    "val_accuracy": 57.58,
-    "best_epoch": 9,
+    # The default run's val accuracy at its best epoch, for the Epochs help: the parity gate's
+    # seed-42 run of the kit's model on the INITIAL seed revision (600 labeled rows, 10 epochs), the
+    # clean baseline (docs/TRAIN_MIRROR.md §10; the manual-test revision is not one).
+    "val_accuracy": 69.5,
+    "best_epoch": 8,
     "epochs": 10,
+    "revision": "initial",
+    "labeled_rows": 600,
 }
 
 

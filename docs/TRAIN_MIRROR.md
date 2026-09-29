@@ -127,7 +127,7 @@ Components the fragment still lacks and ports verbatim from ExDark for this tab:
 | Undefined rows in training | excluded ONLY through weight 0; there is no label filter. An `undefined` row given weight > 0 in the Dashboard IS sampled, and `CrossEntropyLoss` with target 6 against 6 logits raises (`IndexError` on CPU, a device-side assert on CUDA): the kit crashes mid-epoch. Only the post-training metrics pass masks label 6 (`labels < num_logits`) | `train()` / `metrics_fn` | filtered out regardless of weight (PLAN §A, brief); #9 warns "N unlabeled rows have weight > 0 and will be skipped" instead of failing | brief (a deliberate softening of a kit defect) |
 | Labeling budget | `MAX_WEIGHT1_ROWS = 3000`: `sum(1 for row in train_table.table_rows if row["weight"] > 0)` over the loaded revision (every `weight > 0` row counts, undefined included, though the message says "weight = 1"); over the cap → printed remedy (set weights back to 0, or pin an earlier revision by URL), `sys.exit(1)`, no Run created. `config.yaml` `constraints.max_weight1_rows: 3000`; README: "your final train table may have at most 3,000 rows with weight = 1 (the 600 seed rows count toward this)" | `train()` before `tlc.init` | **not in PLAN §A ("Labeling: No cap") and not in the manifest** — D14 | competition-design decision |
 | Table revisions | train AND val loaded by name with `.latest()` (OPTION 1, default); OPTION 2 (commented out) pins both by URL; the budget check runs on either path | `train()` | train: latest by default with the picker (#6, #11); val: LOCKED to the import record's URL (brief; PLAN §A "val 1,200 … locked") — the kit would follow val edits, ours does not | brief |
-| Model | torchvision `resnet18(weights=None)`, `fc = Identity`, custom head 512→256→ReLU→Dropout(0.3)→128→ReLU→Dropout(0.3)→6 | `ResNet18Classifier` | `timm.create_model("resnet18", pretrained=False, num_classes=6)` — the plain timm head (PLAN §A, locked). The kit's MLP head is NOT mirrored | **yes** (the locked contract names timm) |
+| Model | torchvision `resnet18(weights=None)`, `fc = Identity`, custom head 512→256→ReLU→Dropout(0.3)→128→ReLU→Dropout(0.3)→6 | `ResNet18Classifier` | **the same module, exactly** (`trainer.build_model`, manifest `model.backbone` = `torchvision_resnet18`, `model.head` = `kit_mlp_512_256_128_d03`; part A of the 2026-09-29 review reversed the morning's timm decision) | no |
 | Loss | `CrossEntropyLoss()` (mean reduction) | | same | no |
 | Best checkpoint | by val accuracy (strict `>`, so epoch 1 always becomes the first best), state dict kept in memory, saved once at the end as `best_model.pth` beside the script (overwritten each run) | | best by val accuracy + last, saved under the run (§4, D12) | brief |
 | Per-epoch logging | `tlc.log({"epoch", "val_accuracy"})` only; train loss is never aggregated and val loss never computed | | train loss · val loss · val accuracy per epoch (#33, brief) | brief |
@@ -140,8 +140,8 @@ Components the fragment still lacks and ports verbatim from ExDark for this tab:
 `run.add_metrics(metrics, schema=, foreign_table_url=, constants=)` (signature confirmed in 3.3.2).
 `run.reduce_embeddings_by_foreign_table_url` still exists in 3.3 but swallows failures
 (returns `{}` on exception) and offers no PCA fallback, so the reducer is hand-rolled as in the timm plugin.
-**timm forces** nothing beyond the model call; `model.pretrained_cfg` still resolves for a from-scratch
-resnet18 (test_timm_model.py), so ImageNet mean/std can come from it or be spelled out as the kit does.
+**timm** is no longer used (part A): the model is the kit's torchvision module and the ImageNet mean/std are
+spelled out as the kit does.
 
 ## 3. Sample weights: tlc 3.3's sampler
 
@@ -414,3 +414,53 @@ the competition opens.
    "remaining" already add `collect_s` from history or the benchmark's per-row figure; verify the
    CPU class is picked when the device field is blank on a CPU-only machine, and that the
    per-row figure scales with the total rows collected (train + val), not the usable rows.
+
+## 11. Parity with the kit (part A of the 2026-09-29 review): what still differs, and its expected effect
+
+The plugin now runs the kit's model (torchvision resnet18 + the kit's MLP head, torchvision's default
+init), the kit's `set_seed` (same order: `random`, numpy, `torch.manual_seed`, `cuda.manual_seed_all`,
+`cudnn.deterministic=True`, `cudnn.benchmark=False`, `PYTHONHASHSEED`), the kit's transforms and
+normalisation, the kit's sampler call (`WeightedRandomSampler` over the weight column with
+`exclude_zero_weights`), Adam with the kit's defaults, `StepLR(5, 0.1)` stepped once per epoch after
+validation, and best-by-val-accuracy with a strict `>`. Creation order is the kit's: seed → tables →
+transforms → sampler → loaders → model → criterion → optimizer → scheduler → the Run → the loop, and
+nothing draws from torch's RNG between the seed and the model init. What still differs:
+
+| # | Difference | Expected effect |
+|---|---|---|
+| 1 | **Row order.** The plugin's tables come from the kit v1 (salted opaque filenames, JPEG re-encoded at q92) and the importer sorts files by name within a class; the kit's `register_tables.py` sorts the original filenames. Same images, different row order → the sampler's seeded draws pick different rows per step | trajectories differ per seed; the distribution over seeds is the same. This is why the gate is statistical (mean ± std over seeds), not bitwise |
+| 2 | **Pixels.** Kit v1 images are re-encoded (q92, EXIF stripped); the kit reads the originals | sub-1 % per-pixel differences; no measurable effect on accuracy |
+| 3 | **First-batch device probe.** The plugin runs one forward/backward before epoch 1 to detect an accelerator failure (CPU retry). It consumes no persisted state (no optimizer step) and the RNG generators are restored to their post-init state afterwards | none on the stream; the probe costs one batch of time |
+| 4 | **Undefined rows at weight > 0** are forced to weight 0 in memory (the kit would crash on them) | none for a kit-valid table; the plugin trains where the kit stops |
+| 5 | **Val loss** is computed per epoch (the kit computes accuracy only) | none on training (`no_grad`, eval mode) |
+| 6 | **Checkpoints** are written at every epoch (`last.pt`) and on every new best (`best.pt`); the kit keeps the best state dict in memory and writes once | none on training; disk writes only |
+| 7 | **Collection** runs on train AND val with the val transform, from the restored best model, writing loss (NaN for undefined), predicted, confidence, accuracy and 3-D UMAP embeddings via `run.add_metrics`; the kit collects train only through `tlc.collect_metrics` (2.x) and sets masked losses to 1.0 | none on training; the metrics differ in shape as PLAN §B specifies |
+| 8 | **Workers > 0** get a `worker_init_fn` seeding `random` and numpy per worker; the kit never uses workers | none at the default (0); reproducible loading when raised |
+| 9 | **tlc 3.3 vs 2.22** (`with_transform` views vs `table.map`, `tlc.init(root_url=…)`) | none on the tensors the model sees |
+| 10 | **`tlc.init` position**: the plugin creates the Run after the model and optimizer (the kit does too); `run.set_parameters` is called before the loop | none (no torch RNG use) |
+
+### Parity gate (part A, 2026-09-29) — PASS
+
+Kit side: copies of `intel-kit/register_tables.py` + `train.py` (the only edit: `RANDOM_SEED = <seed>`)
+in a throwaway venv (3lc **2.22.3.1**, torch 2.14.0+cu126, torchvision 0.29.0+cu126 — the plugin's
+framework build) against the original images at `data-source\…\data` (a junction), each seed in its
+own project root via `TLC_CONFIG_PROJECT_ROOT_URL` (2.22's name for the option; the key came from the
+user's key file through `TLC_API_KEY` at run time), 600 labeled rows, 10 epochs, batch 16, lr 1e-4,
+GPU. Plugin side: `trainer.run_training` on a COPY of the `initial` seed tables in a scratch project
+root (600 labeled rows, Use latest off), the same hyperparameters and seeds, the kit's model.
+
+| Seed | Kit best val acc | Plugin best val acc (epoch) |
+|---|---|---|
+| 42 | 68.75 % | 69.50 % (8) |
+| 43 | 71.83 % | 72.92 % (10) |
+| 44 | 71.00 % | 69.17 % (9) |
+| **mean ± std** | **70.53 ± 1.59** | **70.53 ± 2.08** |
+
+Difference of means 0.00 points; the pass threshold (the larger std + 2) is 4.08. The per-epoch
+curves have the same shape (a dip around epochs 3–5, the step at epoch 6 when the LR drops, ~70 %
+by epoch 8–10). Per-seed trajectories differ because the row order differs (§11 #1), as expected.
+Elapsed (job, first run includes the UMAP compile): kit 165 / 208 / 217 s, plugin 189 / 102 / 92 s.
+
+**Reference baseline:** the Epochs help now quotes the plugin's seed-42 run on `initial`: **69.5 % at
+epoch 8** of 10 on 600 labeled rows (`benchmark.REFERENCE`); the earlier 57.6 % figure came from the
+timm head on the randomly relabeled `manual-test` revision and is superseded.

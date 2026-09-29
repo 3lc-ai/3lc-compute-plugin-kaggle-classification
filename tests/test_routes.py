@@ -25,7 +25,10 @@ def test_config_payload_is_populated_and_served_not_restated(home, manifest):
     assert meta["version"] == kaggle_classification.__version__
     assert meta["repository_url"] == kaggle_classification.REPOSITORY_URL
     assert meta["manifest_source"] == "bundled"
-    assert meta["manifest"]["model"] == {"arch": "resnet18", "pretrained": False, "image_size": 150}
+    assert meta["manifest"]["model"] == {
+        "backbone": "torchvision_resnet18", "head": "kit_mlp_512_256_128_d03", "arch": "resnet18",
+        "pretrained": False, "image_size": 150,
+    }
     assert [c["name"] for c in meta["manifest"]["classes"]] == manifest.class_names
     assert meta["kit_dest"] == str(home / "data" / manifest.competition.id)
     assert meta["kit_state"] == {"state": "empty"}

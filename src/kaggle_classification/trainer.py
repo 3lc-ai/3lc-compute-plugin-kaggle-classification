@@ -6,10 +6,18 @@
 
 Contract (docs/PLAN.md §B and §C "Trainer", docs/TRAIN_MIRROR.md, decisions D1–D14 of 2026-09-29):
 
-* Model: ``timm.create_model(manifest.model.arch, pretrained=False, num_classes=manifest.num_classes)``
-  with timm's standard head (the kit's MLP head is NOT replicated); ``arch`` is the single manifest
-  value, ``pretrained`` is never a parameter. Image size, the optimizer (Adam, D3) and the LR
+* Model: the Intel kit's, exactly (part A of the 2026-09-29 review, which reversed the timm
+  decision): torchvision ``resnet18(weights=None)`` with ``fc = Identity`` and the kit's MLP head
+  (512 → 256 → ReLU → Dropout 0.3 → 128 → ReLU → Dropout 0.3 → N), torchvision's default init.
+  ``manifest.model.backbone`` / ``head`` name it and are allowlisted (``manifest.BACKBONES`` /
+  ``HEADS``); ``pretrained`` is never a parameter. Image size, the optimizer (Adam, D3) and the LR
   schedule (StepLR 5 / 0.1, D2) are locked; the Run records every locked fact.
+* RNG parity with the kit: ``set_seed`` (random, numpy, torch, cuda, cudnn deterministic, no
+  benchmark, PYTHONHASHSEED) first, then tables → transforms → sampler → loaders → model →
+  criterion → optimizer → scheduler → the Run, in the kit's order; the model and the optimizer are
+  created from the freshly seeded state and nothing draws from torch's RNG before the first
+  training batch. A CPU retry re-seeds and starts over, so the stream a participant's run follows
+  is the kit's for the same seed.
 * Data: ``tlc.Table.from_url`` (``.latest()`` when asked); the train revision must descend from the
   import record's seed; the val table is the import record's LOCKED URL. Undefined rows
   (``label == manifest.undefined_label_id``) are treated as weight 0 regardless of their weight
@@ -31,7 +39,7 @@ Contract (docs/PLAN.md §B and §C "Trainer", docs/TRAIN_MIRROR.md, decisions D1
   model or first-batch time, a duplicate-start guard (running record + client token). Tables are
   never modified.
 
-Import-light: torch / timm / tlc / numpy / PIL are imported inside functions. Everything the host
+Import-light: torch / torchvision / tlc / numpy / PIL are imported inside functions. Everything the host
 request path calls (``training_facts``, ``build_train_kwargs``, ``train_state``) stays torch-free.
 """
 
@@ -57,7 +65,7 @@ if TYPE_CHECKING:
 OPTIMIZER = "adam"
 SCHEDULE: dict[str, Any] = {"kind": "step", "step_size": 5, "gamma": 0.1}
 INFERENCE = "single forward pass"
-# ImageNet normalisation, spelled out like the kit (identical to timm's resnet18 pretrained_cfg).
+# ImageNet normalisation, spelled out like the kit.
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 AFFINE_SHEAR = 10
@@ -118,14 +126,39 @@ def effective_defaults(manifest: Manifest) -> dict[str, Any]:
     return out
 
 
-def timm_pin() -> str:
-    """The installed timm version (the pyproject pins it exactly); "" outside the heavy venv."""
+def _dist_version(name: str) -> str:
+    """The installed version of a heavy dependency, "" outside the heavy venv (metadata only)."""
     try:
         from importlib.metadata import version
 
-        return version("timm")
+        return version(name)
     except Exception:
         return ""
+
+
+def framework_versions() -> dict[str, str]:
+    """The framework the model is built with; recorded on the Run, served to the fragment."""
+    return {"torch_version": _dist_version("torch"), "torchvision_version": _dist_version("torchvision")}
+
+
+HEAD_LABELS = {
+    "kit_mlp_512_256_128_d03": "the kit's MLP head (512 → 256 → 128, dropout 0.3)",
+    "linear": "a linear head",
+}
+
+
+def model_facts(manifest: Manifest) -> dict[str, Any]:
+    """Display strings for the locked model rows (the fragment renders, never defines)."""
+    m = manifest.model
+    return {
+        "backbone": m.backbone,
+        "head": m.head,
+        "arch": m.arch,
+        "backbone_label": f"torchvision {m.arch}",
+        "head_label": HEAD_LABELS.get(m.head, m.head),
+        "init_label": "random (pretrained = false, torchvision default init)",
+        **framework_versions(),
+    }
 
 
 def training_facts(manifest: Manifest) -> dict[str, Any]:
@@ -138,7 +171,7 @@ def training_facts(manifest: Manifest) -> dict[str, Any]:
         "optimizer": OPTIMIZER,
         "schedule": dict(SCHEDULE),
         "inference": INFERENCE,
-        "timm_version": timm_pin(),
+        "model": model_facts(manifest),
         "workers_default": default_workers(),
         "platform": sys.platform,
         "benchmark": benchmark.facts(),
@@ -218,6 +251,8 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
         "train_table_url": str(params.get("train_table_url") or "").strip().strip('"'),
         "client_token": str(params.get("client_token") or "").strip(),
         # Locked, from the manifest — merged last, never from the form.
+        "backbone": manifest.model.backbone,
+        "head": manifest.model.head,
         "arch": manifest.model.arch,
         "image_size": int(manifest.model.image_size),
         "pretrained": False,
@@ -562,7 +597,8 @@ def run_summary(record: dict[str, Any]) -> dict[str, Any]:
         "provenance_ok": bool(checks) and all(c.get("ok") for c in checks),
         "train_table_url": facts.get("train_table_url"),
         "val_table_url": facts.get("val_table_url"),
-        "contract": {k: (record.get("params") or {}).get(k) for k in ("arch", "image_size", "pretrained", "seed")},
+        "contract": {k: (record.get("params") or {}).get(k)
+                     for k in ("backbone", "head", "arch", "image_size", "pretrained", "seed")},
     }
 
 
@@ -727,7 +763,7 @@ def save_checkpoint(run_url: str, state_dict: dict[str, Any], name: str) -> tupl
 
 class _SampleTransform:
     """Picklable ``TableView`` transform: ``{image, label, weight}`` row -> ``(tensor, label)``.
-    Top-level so DataLoader workers > 0 can pickle it (the timm plugin's shape)."""
+    Top-level so DataLoader workers > 0 can pickle it."""
 
     def __init__(self, transform: Any, image_column: str = "image", label_column: str = "label") -> None:
         self.transform = transform
@@ -783,7 +819,7 @@ def build_transforms(image_size: int) -> tuple[Any, Any]:
 
 
 def set_seed(seed: int) -> None:
-    """The kit's determinism procedure (D6)."""
+    """The kit's determinism procedure (D6), in the kit's order."""
     import random
 
     import numpy as np
@@ -796,6 +832,87 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     os.environ["PYTHONHASHSEED"] = str(seed)
+
+
+def worker_init(worker_id: int) -> None:
+    """DataLoader worker seeding for ``workers > 0`` (the kit never uses workers, so this is the one
+    place the plugin goes beyond it): torch seeds each worker from the base seed itself; ``random``
+    and numpy are seeded here from that per-worker torch seed so the PIL/numpy paths are reproducible."""
+    import random
+
+    import numpy as np
+    import torch
+
+    seed = (torch.initial_seed() + worker_id) % 2**32
+    random.seed(seed)
+    np.random.seed(seed)
+
+
+def build_model(backbone: str, head: str, num_classes: int) -> Any:
+    """The manifest's model, allowlisted: torchvision ``resnet18(weights=None)`` with either the Intel
+    kit's MLP head (``fc = Identity`` + 512 → 256 → ReLU → Dropout 0.3 → 128 → ReLU → Dropout 0.3 → N,
+    exactly ``intel-kit/train.py``'s ``ResNet18Classifier``) or torchvision's own linear ``fc``.
+    Module creation order matches the kit so the seeded init draws the same numbers."""
+    import torch
+    from torch import nn
+    from torchvision import models
+
+    if backbone != "torchvision_resnet18":
+        msg = f"backbone {backbone!r} is not allowed"
+        raise TrainRefused(msg)
+    if head == "kit_mlp_512_256_128_d03":
+
+        class ResNet18Classifier(nn.Module):
+            """The kit's model: ResNet-18 backbone, ``fc`` replaced by Identity, the MLP head on top."""
+
+            def __init__(self, num_classes: int) -> None:
+                super().__init__()
+                self.resnet = models.resnet18(weights=None)
+                resnet_features = self.resnet.fc.in_features
+                self.resnet.fc = nn.Identity()
+                self.classifier = nn.Sequential(
+                    nn.Linear(resnet_features, 256),
+                    nn.ReLU(),
+                    nn.Dropout(0.3),
+                    nn.Linear(256, 128),
+                    nn.ReLU(),
+                    nn.Dropout(0.3),
+                    nn.Linear(128, num_classes),
+                )
+
+            def features(self, x: torch.Tensor) -> torch.Tensor:
+                return self.resnet(x)
+
+            def head(self, feats: torch.Tensor) -> torch.Tensor:
+                return self.classifier(feats)
+
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return self.classifier(self.resnet(x))
+
+        return ResNet18Classifier(num_classes)
+    if head == "linear":
+
+        class ResNet18Linear(nn.Module):
+            def __init__(self, num_classes: int) -> None:
+                super().__init__()
+                self.resnet = models.resnet18(weights=None)
+                self.resnet.fc = nn.Linear(self.resnet.fc.in_features, num_classes)
+
+            def features(self, x: torch.Tensor) -> torch.Tensor:
+                m = self.resnet
+                x = m.maxpool(m.relu(m.bn1(m.conv1(x))))
+                x = m.layer4(m.layer3(m.layer2(m.layer1(x))))
+                return torch.flatten(m.avgpool(x), 1)
+
+            def head(self, feats: torch.Tensor) -> torch.Tensor:
+                return self.resnet.fc(feats)
+
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                return self.resnet(x)
+
+        return ResNet18Linear(num_classes)
+    msg = f"head {head!r} is not allowed"
+    raise TrainRefused(msg)
 
 
 def build_sampler(eff: list[float]) -> Any:
@@ -833,7 +950,7 @@ def check_provenance(run_url: str, manifest: Manifest, expected: dict[str, Any])
     best_path = str(expected.get("weights") or "")
     on_disk = _sha256_file(Path(best_path)) if best_path and Path(best_path).is_file() else ""
     pretrained = p.get("pretrained")
-    timm_version = expected.get("timm_version")
+    tv_version = expected.get("torchvision_version")
     train_ok = bool(p.get("train_table_url")) and _same_url(
         str(p.get("train_table_url")), str(expected.get("train_table_url"))
     )
@@ -843,15 +960,17 @@ def check_provenance(run_url: str, manifest: Manifest, expected: dict[str, Any])
         "" if best_sha == on_disk else f", on disk {short(on_disk)}"
     )
     return [
-        {"label": f"run records arch == {manifest.model.arch}", "ok": p.get("arch") == manifest.model.arch,
-         "detail": f"arch={p.get('arch')!r}"},
+        {"label": f"run records backbone == {manifest.model.backbone}",
+         "ok": p.get("backbone") == manifest.model.backbone, "detail": f"backbone={p.get('backbone')!r}"},
+        {"label": f"run records head == {manifest.model.head}", "ok": p.get("head") == manifest.model.head,
+         "detail": f"head={p.get('head')!r}"},
         {"label": f"run records image_size == {manifest.model.image_size}",
          "ok": p.get("image_size") == manifest.model.image_size, "detail": f"image_size={p.get('image_size')!r}"},
         {"label": "run records pretrained == False (random init)", "ok": pretrained in (False, "False", 0),
          "detail": f"pretrained={pretrained!r}"},
-        {"label": f"run records timm_version == {timm_version}",
-         "ok": bool(timm_version) and p.get("timm_version") == timm_version,
-         "detail": f"timm_version={p.get('timm_version')!r}"},
+        {"label": f"run records torchvision_version == {tv_version}",
+         "ok": bool(tv_version) and p.get("torchvision_version") == tv_version,
+         "detail": f"torchvision_version={p.get('torchvision_version')!r}, torch_version={p.get('torch_version')!r}"},
         {"label": "run records the seed",
          "ok": isinstance(p.get("seed"), int) and p.get("seed") == expected.get("seed"),
          "detail": f"seed={p.get('seed')!r}"},
@@ -1002,15 +1121,17 @@ def _train_and_collect(
     is_cancelled: Any, manifest: Manifest, train_table: Any, val_table: Any, resolved_url: str,
     val_url: str, eff: list[float], summary: dict[str, Any],
 ) -> dict[str, Any]:
-    import timm
     import tlc
     import torch
     from torch import nn
     from torch.utils.data import DataLoader
 
-    arch, image_size, seed = kw["arch"], kw["image_size"], int(kw["seed"])
+    backbone, head, arch = kw["backbone"], kw["head"], kw["arch"]
+    image_size, seed = kw["image_size"], int(kw["seed"])
     epochs, batch_size, workers = int(kw["epochs"]), int(kw["batch_size"]), int(kw["workers"])
-    timm_version = timm_pin()
+    fw = framework_versions()
+    # The kit's order from here: seed → tables → transforms → sampler → loaders → model → criterion →
+    # optimizer → scheduler → the Run → the loop. Nothing between set_seed and the model draws RNG.
     set_seed(seed)
     device_requested = kw["device"]
     device = resolve_device(device_requested)
@@ -1024,38 +1145,13 @@ def _train_and_collect(
     n_usable = len(sampler)
 
     def loaders() -> tuple[Any, Any]:
+        winit = worker_init if workers > 0 else None
         tl = DataLoader(train_view, batch_size=batch_size, sampler=sampler, num_workers=workers,
-                        drop_last=False, pin_memory=False)
-        vl = DataLoader(val_view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False)
+                        drop_last=False, pin_memory=False, worker_init_fn=winit)
+        vl = DataLoader(val_view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False,
+                        worker_init_fn=winit)
         return tl, vl
 
-    # ── The Run: under the same project root the importer writes to (the tests' seam) ────────
-    run = tlc.init(
-        project_name=kw["project_name"], run_name=kw["run_name"],
-        description=f"{manifest.competition.display_name} — {arch} from scratch, kaggle-classification",
-        root_url=importer.project_root_url(),
-    )
-    run_url = str(run.url)
-    rec.record["facts"]["run_url"] = run_url
-    set_field("run_url", run_url)
-    contract = {
-        "arch": arch, "image_size": image_size, "pretrained": False, "timm_version": timm_version, "seed": seed,
-        "epochs": epochs, "batch_size": batch_size, "lr": float(kw["lr"]), "weight_decay": float(kw["weight_decay"]),
-        "optimizer": OPTIMIZER, "schedule": f"step(step_size={SCHEDULE['step_size']}, gamma={SCHEDULE['gamma']})",
-        "train_table_url": resolved_url, "val_table_url": val_url, "usable_rows": n_usable,
-        "undefined_excluded": int(summary["excluded_undefined"]),
-        "sampler": "weighted, exclude_zero_weights, undefined forced to 0 (in memory)",
-        "augmentation": "resize/random-crop/hflip/affine(shear 10, scale 0.8-1.2)/imagenet-normalize",
-        "plugin": "kaggle-classification", "job_id": rec.record["id"],
-        **{k: v for k, v in (manifest.provenance or {}).items() if isinstance(v, (str, int, float, bool, type(None)))},
-    }
-    run.set_parameters(contract)
-    log(
-        f"Locked: arch={arch} · image_size={image_size} · pretrained=False · timm {timm_version} · seed {seed}. "
-        f"Training {epochs} epochs, batch {batch_size}, lr {kw['lr']}, weight decay {kw['weight_decay']}, "
-        f"{OPTIMIZER}, StepLR({SCHEDULE['step_size']}, {SCHEDULE['gamma']}), workers {workers}."
-    )
-    log(f"Run: {run_url}")
 
     criterion = nn.CrossEntropyLoss()
     model: Any = None
@@ -1064,15 +1160,22 @@ def _train_and_collect(
     train_loader: Any = None
     val_loader: Any = None
 
-    def build_model(dev: str) -> None:
+    rng_after_init: list[Any] = []
+
+    def build_stack(dev: str) -> None:
+        """The kit's creation order from a freshly seeded state: loaders (no RNG), model (the seeded
+        init), criterion, optimizer, scheduler. The RNG state after the init is captured so the
+        first-batch probe below can hand the loop exactly the stream the kit's loop would see."""
         nonlocal model, optimizer, scheduler, train_loader, val_loader
         set_seed(seed)
-        model = timm.create_model(arch, pretrained=False, num_classes=manifest.num_classes).to(dev)
+        train_loader, val_loader = loaders()
+        model = build_model(backbone, head, manifest.num_classes).to(dev)
         optimizer = torch.optim.Adam(model.parameters(), lr=float(kw["lr"]), weight_decay=float(kw["weight_decay"]))
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=int(SCHEDULE["step_size"]), gamma=float(SCHEDULE["gamma"])
         )
-        train_loader, val_loader = loaders()
+        cuda_state = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
+        rng_after_init[:] = [torch.get_rng_state(), cuda_state]
 
     def announce_device(dev: str, note: str = "") -> None:
         rec.record["facts"].update({"device": dev, "device_class": device_class(dev)})
@@ -1118,7 +1221,7 @@ def _train_and_collect(
     attempt_device = device
     while True:
         try:
-            build_model(attempt_device)
+            build_stack(attempt_device)
             announce_device(attempt_device)
             model.train()
             images, labels_b = next(iter(train_loader))
@@ -1143,6 +1246,41 @@ def _train_and_collect(
                 continue
             raise
     device = attempt_device
+    # The probe drew from the RNG (a sampler draw, the augmentation, dropout); put the generators back
+    # to the state right after the init so the loop's stream is the kit's for this seed.
+    torch.set_rng_state(rng_after_init[0])
+    if rng_after_init[1] is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(rng_after_init[1])
+
+    # ── The Run: under the same project root the importer writes to (the tests' seam) ────────
+    run = tlc.init(
+        project_name=kw["project_name"], run_name=kw["run_name"],
+        description=f"{manifest.competition.display_name} — {arch} from scratch, kaggle-classification",
+        root_url=importer.project_root_url(),
+    )
+    run_url = str(run.url)
+    rec.record["facts"]["run_url"] = run_url
+    set_field("run_url", run_url)
+    contract = {
+        "backbone": backbone, "head": head, "arch": arch, "image_size": image_size, "pretrained": False,
+        "torch_version": fw["torch_version"], "torchvision_version": fw["torchvision_version"], "seed": seed,
+        "epochs": epochs, "batch_size": batch_size, "lr": float(kw["lr"]), "weight_decay": float(kw["weight_decay"]),
+        "optimizer": OPTIMIZER, "schedule": f"step(step_size={SCHEDULE['step_size']}, gamma={SCHEDULE['gamma']})",
+        "train_table_url": resolved_url, "val_table_url": val_url, "usable_rows": n_usable,
+        "undefined_excluded": int(summary["excluded_undefined"]),
+        "sampler": "weighted, exclude_zero_weights, undefined forced to 0 (in memory)",
+        "augmentation": "resize/random-crop/hflip/affine(shear 10, scale 0.8-1.2)/imagenet-normalize",
+        "plugin": "kaggle-classification", "job_id": rec.record["id"],
+        **{k: v for k, v in (manifest.provenance or {}).items() if isinstance(v, (str, int, float, bool, type(None)))},
+    }
+    run.set_parameters(contract)
+    log(
+        f"Locked: backbone={backbone} · head={head} · image_size={image_size} · pretrained=False · "
+        f"torchvision {fw['torchvision_version']} · seed {seed}. "
+        f"Training {epochs} epochs, batch {batch_size}, lr {kw['lr']}, weight decay {kw['weight_decay']}, "
+        f"{OPTIMIZER}, StepLR({SCHEDULE['step_size']}, {SCHEDULE['gamma']}), workers {workers}."
+    )
+    log(f"Run: {run_url}")
     run.set_parameters(
         {"device": device, "device_requested": device_requested, "device_fallback_reason": fallback_reason}
     )
@@ -1227,8 +1365,8 @@ def _train_and_collect(
         "epochs_completed": st.epoch,
     }
     run.set_parameters(checkpoints)
-    expected = {"timm_version": timm_version, "seed": seed, "train_table_url": resolved_url, "val_table_url": val_url,
-                "weights": st.best_path}
+    expected = {"torchvision_version": fw["torchvision_version"], "seed": seed, "train_table_url": resolved_url,
+                "val_table_url": val_url, "weights": st.best_path}
 
     def finish_result(status: str, collect_s: float | None, collect_rows: int | None, reducer: str | None) -> dict:
         per_row_collect = (
@@ -1338,9 +1476,9 @@ def _collect(
         with torch.no_grad():
             for images, labels_b in loader:
                 images, labels_b = images.to(device), labels_b.to(device)
-                feats = model.forward_features(images)
-                emb = model.forward_head(feats, pre_logits=True)
-                logits = model.forward_head(feats)
+                feats = model.features(images)   # the 512-d backbone output: the kit's embedding layer (fc = Identity)
+                emb = feats
+                logits = model.head(feats)
                 p = torch.softmax(logits, dim=1)
                 pred = logits.argmax(dim=1)
                 conf = torch.gather(p, 1, pred.unsqueeze(1)).squeeze(1)

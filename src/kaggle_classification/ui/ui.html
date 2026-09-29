@@ -2552,14 +2552,14 @@
       }
 
       function trApplyContract() {
-        var m = kgManifest || {}, t = kgTraining || {}, model = m.model || {};
+        var m = kgManifest || {}, t = kgTraining || {}, model = m.model || {}, mf = t.model || {};
         el('tr-contract-name').textContent = model.arch
-          ? model.arch + ' from random init (timm) · ' + model.image_size + 'px' : '';
+          ? (mf.backbone_label || model.arch) + ' from random init · ' + model.image_size + 'px' : '';
         var rows = [
-          ['Model', model.arch ? model.arch + (t.timm_version ? ' · timm ' + t.timm_version : '') : '',
-           'Identical architecture for every participant. The leaderboard measures your data work, not your compute.'],
-          ['Init', model.arch ? 'random (pretrained = false)' : '',
-           'No pretrained weights anywhere: every participant starts from random initialisation. The Run records pretrained = false as proof.'],
+          ['Model', model.arch ? (mf.backbone_label || model.arch) + (mf.head_label ? ' · ' + mf.head_label : '') : '',
+           'The starter kit's model, exactly: torchvision ResNet-18 from scratch with the kit's MLP head. Identical for every participant; the leaderboard measures your data work, not your compute.'],
+          ['Init', model.arch ? (mf.init_label || 'random (pretrained = false)') + (mf.torchvision_version ? ' · torchvision ' + mf.torchvision_version : '') : '',
+           'No pretrained weights anywhere: every participant starts from the same random initialisation rule. The Run records pretrained = false and the framework version as proof.'],
           ['Image size', model.image_size ? String(model.image_size) : '',
            'Locked so results are comparable across participants.'],
           ['Optimizer', trOptimizerLabel(t.optimizer),
@@ -3523,7 +3523,8 @@
         var runUrl = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/runs/' + devRun;
         var weights = runUrl + '/model/best.pt';
         var sha = '5f8a1c0e7b3d92a46e1f0c3b8d7a5e2f91c4b6d8e0a2f4c6b8d0e2a4c6e8f0a1';
-        var timmV = (kgTraining || {}).timm_version || '1.0.x';
+        var mf = (kgTraining || {}).model || {};
+        var tvV = mf.torchvision_version || '0.x';
 
         // Deterministic from-scratch curve: loss falls, val accuracy climbs, a mild wobble.
         function HIST(n) {
@@ -3555,10 +3556,11 @@
           return info;
         }
         var PROV = [
-          { label: 'run records arch == ' + arch, ok: true, detail: 'arch=' + JSON.stringify(arch) },
+          { label: 'run records backbone == ' + (mf.backbone || 'torchvision_' + arch), ok: true, detail: 'backbone=' + JSON.stringify(mf.backbone || 'torchvision_' + arch) },
+          { label: 'run records head == ' + (mf.head || 'head'), ok: true, detail: 'head=' + JSON.stringify(mf.head || 'head') },
           { label: 'run records image_size == ' + px, ok: true, detail: 'image_size=' + px },
           { label: 'run records pretrained == False (random init)', ok: true, detail: 'pretrained=False' },
-          { label: 'run records timm_version == ' + timmV, ok: true, detail: 'timm_version=' + JSON.stringify(timmV) },
+          { label: 'run records torchvision_version == ' + tvV, ok: true, detail: 'torchvision_version=' + JSON.stringify(tvV) },
           { label: 'run records the seed', ok: true, detail: 'seed=42' },
           { label: 'run records the train revision trained on', ok: true, detail: 'train_table_url=' + JSON.stringify(trainUrl.slice(-48)) },
           { label: 'run records val_table_url == the locked val', ok: true, detail: 'val_table_url=' + JSON.stringify(valUrl.slice(-48)) },
@@ -3569,7 +3571,7 @@
           'train: ' + trainUrl + ' (' + fmtCount(trainRows) + ' rows)',
           'val (locked): ' + valUrl + ' (' + fmtCount(valRows) + ' rows)',
           'rows: ' + fmtCount(labeled) + ' labeled in use · ' + fmtCount(pool) + ' excluded as undefined · 0 excluded at weight 0',
-          'Locked: arch=' + arch + ' · image_size=' + px + ' · pretrained=False · timm ' + timmV + ' · seed 42. Training 10 epochs, batch 16, lr 0.0001, weight decay 0.0, adam, StepLR(5, 0.1), workers 0.',
+          'Locked: backbone=' + (mf.backbone || 'torchvision_' + arch) + ' · head=' + (mf.head || 'head') + ' · image_size=' + px + ' · pretrained=False · torchvision ' + tvV + ' · seed 42. Training 10 epochs, batch 16, lr 0.0001, weight decay 0.0, adam, StepLR(5, 0.1), workers 0.',
           'Device: cuda (auto)',
           'epoch 1/10 — train_loss=1.7512, val_loss=1.6890, val_accuracy=31.42% (new best)',
           'epoch 2/10 — train_loss=1.4021, val_loss=1.4210, val_accuracy=45.08% (new best)'

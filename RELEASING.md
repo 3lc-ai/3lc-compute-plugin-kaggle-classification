@@ -11,7 +11,7 @@ uv run python scripts/release_version.py
 ```
 
 The suite must be green in the **heavy** venv (`uv sync --extra kaggle-classification --group dev`);
-`test_timm_model.py` skips in a light venv and a skip is not a pass. The version
+`test_kit_model.py` skips in a light venv and a skip is not a pass. The version
 script checks that `pyproject.toml` and `src/kaggle_classification/plugin.toml`
 agree; `--stamp X.Y.Z` moves both together. Update `CHANGELOG.md`, run `uv lock`,
 commit.

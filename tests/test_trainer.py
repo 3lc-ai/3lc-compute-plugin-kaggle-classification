@@ -5,7 +5,7 @@ with the heavy extra — the preflight's lineage and usable-row summary, the wei
 brief pins (gate G4), an end-to-end CPU run on the synthetic kit (checkpoints, provenance, the
 per-sample metrics contract, tables never modified), the duplicate-start guard and cancel.
 
-The heavy tests need tlc + torch + timm; they skip without them, so a green run in a light venv
+The heavy tests need tlc + torch + torchvision; they skip without them, so a green run in a light venv
 is not a green run for this module (CLAUDE.md §B)."""
 
 from __future__ import annotations
@@ -49,6 +49,7 @@ def test_build_train_kwargs_merges_defaults_and_locks_the_contract(home, manifes
     assert kw["epochs"] == 3 and kw["batch_size"] == 16 and kw["lr"] == 0.0001 and kw["weight_decay"] == 0.0
     assert kw["seed"] == 42 and kw["workers"] == trainer.default_workers()
     assert kw["optimizer"] == "adam" and kw["schedule"]["step_size"] == 5
+    assert kw["backbone"] == manifest.model.backbone and kw["head"] == manifest.model.head
     assert kw["arch"] == manifest.model.arch and kw["image_size"] == manifest.model.image_size
     assert kw["pretrained"] is False and kw["use_latest"] is True
     assert kw["run_name"].startswith(f"{manifest.competition.id}_run_")
@@ -109,7 +110,7 @@ def _record(**over):
     base = {
         "id": "job1", "kind": "train", "status": "running", "pid": os.getpid(), "created_at": time.time() - 30,
         "started_at": time.time() - 30, "heartbeat": time.time(), "finished_at": None, "cancelled": False,
-        "params": {"epochs": 3, "arch": "x", "image_size": 1, "pretrained": False, "seed": 42},
+        "params": {"epochs": 3, "backbone": "x", "head": "y", "arch": "x", "image_size": 1, "pretrained": False, "seed": 42},
         "client_token": "tok1", "progress": {"epoch": 1, "total_epochs": 3, "history": [], "batch_i": 0, "batch_n": 2},
         "facts": {"run_name": "r1", "project_name": "p", "usable": {"labeled_in_use": 12}}, "checks": [],
         "result": None, "error": None, "log": [], "gaps": [],
@@ -155,11 +156,11 @@ def test_run_summary_carries_what_predict_and_the_eta_need(store):
     assert s["provenance_ok"] is True and s["weights"] == "C:/x/best.pt" and s["device_class"] == "cpu"
 
 
-# ── Heavy: the real tlc, torch and timm on the synthetic kit ──────────────────
+# ── Heavy: the real tlc, torch and torchvision on the synthetic kit ────────────
 
 tlc = pytest.importorskip("tlc")
 torch = pytest.importorskip("torch")
-pytest.importorskip("timm")
+pytest.importorskip("torchvision")
 pytest.importorskip("PIL")
 
 
@@ -323,10 +324,11 @@ def test_run_training_end_to_end_on_cpu(imported, project_root):
     assert not list((run_dir / "model").glob("*.tmp"))
     # Provenance: eight checks, all green, read back from the Run's own record.
     checks = ctx.checks
-    assert len(checks) == 8 and all(c["ok"] for c in checks), [c for c in checks if not c["ok"]]
+    assert len(checks) == 9 and all(c["ok"] for c in checks), [c for c in checks if not c["ok"]]
     run = tlc.Run.from_url(tlc.Url(run_url))
     p = trainer.get_run_parameters(run)
-    assert p["arch"] == manifest.model.arch and p["pretrained"] is False and p["seed"] == 42
+    assert p["backbone"] == manifest.model.backbone and p["head"] == manifest.model.head and p["arch"] == manifest.model.arch
+    assert p["pretrained"] is False and p["seed"] == 42 and p["torchvision_version"]
     assert p["train_table_url"] == train_url and p["val_table_url"] == val_url
     assert p["best_checkpoint_sha256"] == result["best_checkpoint_sha256"] and p["optimizer"] == "adam"
     assert p["manifest_sha256"] == manifest.sha256 or p.get("manifest_source") == "test"

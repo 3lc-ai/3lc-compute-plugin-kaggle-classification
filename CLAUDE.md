@@ -58,7 +58,7 @@ environments, credential locations); it points here at the repo boundary.
 - **Tests.** `uv run pytest` before any push. The suite is a divergence guard
   first: version strings, description parity, SDK-window overlap with the
   latest 3lc-compute, wheel contents, import weight, licence headers, the
-  manifest-literal census. `test_timm_model.py` needs the heavy extra; it
+  manifest-literal census. `test_kit_model.py` needs the heavy extra; it
   skips without it, so a green run in a light venv is not a green run.
 - **Windows-first.** Paths contain spaces: quote everything. Files are LF,
   BOM-less. Docs speak PowerShell.

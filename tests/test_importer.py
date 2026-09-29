@@ -3,7 +3,7 @@
 """The import stage against a synthetic kit and the REAL tlc (3.3.x) in an isolated project root.
 
 Needs the heavy extra (tlc + PIL); skips without it, so a green run in a light venv is not a
-green run for this module (CLAUDE.md §B, the ``test_timm_model.py`` rule).
+green run for this module (CLAUDE.md §B, the ``test_kit_model.py`` rule).
 """
 
 from __future__ import annotations
