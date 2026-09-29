@@ -16,7 +16,9 @@ Train fixture map; `../reference/3lc-compute-plugin-timm/src/tlc_plugin_timm/{tr
 and `tlc/_core/objects/mutable_objects/run.py` in this repo's `.venv`; SDK 0.3.3
 `tlc_plugin_sdk/{worker.py,job_context.py,shared/model_storage.py,shared/job_tracker.py}`; compute 1.1.0
 `tlc_compute/plugins/job_manager.py` in `../3lc-hub-11/.venv`;
-`../hackathon_starter/Starter_Kit/{train.py,config.yaml}`.
+`../hackathon_starter/intel-kit/{train.py,config.yaml,predict.py,register_tables.py,README.md}` (the Intel
+kit's original scripts, read-only, on the laptop since 2026-09-29); `../hackathon_starter/Starter_Kit/`
+(the Chihuahua vs Muffin predecessor the Phase 0 study used as a stand-in).
 
 Legend: **V** ported verbatim · **A(n)** adapted under allowed difference n (how) ·
 **X** dropped (why) · **D** needs decision · **+brief** required by the session-3 brief, no ExDark
@@ -33,7 +35,7 @@ equivalent.
 | 5 | `#tr-banner` success/failure slot (810) | verbatim | V |
 | 6 | **Tables** section: `.kg-sec-head` "Tables"; two columns, each `.form-group.kg-pick-wrap` with a required label, a `.kg-url-row` (text input + `kgi-btn` picker button `title="Pick a table revision"` `aria-haspopup="listbox"`) and a `.kg-pop` popover listing the split's dataset and its lineage-ordered revisions with a LATEST badge and row counts (`kgBindTablePicker` 1805, `GET /tables/list`) (812) | **Train table URL** verbatim (picker scoped to `manifest.dataset_name("train")`, `GET /tables/list` ported from ExDark's `list_project_tables`); **Val table URL** is NOT a field: it renders as the locked row in #3 (the brief locks val to the import record's URL). The right column keeps its place with the locked val row so the two-column geometry holds | A(3) |
 | 7 | Field handlers on both URL inputs: 500 ms debounce, blur, Enter, paste → `kgSetUrlOverride` (session `overrides.train_table_url`, `classify_override` keep/suppress/drop) + `trVerifyTables` (5010) | verbatim for the train field; `session.py` already carries `URL_SEG_PATTERNS` and `classify_override`; the fragment gains `kgUrlSeg` (the JS/Python regex parity test `test_url_regex_parity.py` goes live) | V |
-| 8 | `#tr-tables-gate` (`trVerifyTables` 4877 → `trEvaluateGate` 4765 → `trRenderGate` 4825): states idle ("Run Import (tab 1) to create the competition tables, or paste table URLs from the Dashboard."), checking, green `.kg-preflight-ok` "Tables verified: exdark_train/initial · exdark_val/initial · trains on the latest revision of each / these exact revisions", amber `.kg-callout.warn` with per-problem rows: split identity (DP-11, `kgUrlSeg` dataset segment), same-table, not on disk (+ Go to Import), row budget (`_meta.contract.max_rows`, evaluated against `latest_row_count` when Use latest is on; unknown counts never refuse) via `GET /import/revisions` | same states and renderer, fed by a new read-only `GET /train/preflight?train_url=&use_latest=` that returns what ExDark's `/import/revisions` returns (exists, row_count, latest_url, latest_row_count, revisions) PLUS: `descends_from_seed` (lineage walk from the resolved revision back to `import_state.lineage_root.train_url`; a revision outside that lineage is an amber problem, +brief), the usable-row summary (#9) and class coverage (#10). Split identity kept (a pasted `intel-scene_val` URL is refused). Row budget: ceiling = `manifest.expected_rows("train")` = 6,600 (labeling a pool row never changes the count, so the rule transfers unchanged) | V / +brief |
+| 8 | `#tr-tables-gate` (`trVerifyTables` 4877 → `trEvaluateGate` 4765 → `trRenderGate` 4825): states idle ("Run Import (tab 1) to create the competition tables, or paste table URLs from the Dashboard."), checking, green `.kg-preflight-ok` "Tables verified: exdark_train/initial · exdark_val/initial · trains on the latest revision of each / these exact revisions", amber `.kg-callout.warn` with per-problem rows: split identity (DP-11, `kgUrlSeg` dataset segment), same-table, not on disk (+ Go to Import), row budget (`_meta.contract.max_rows`, evaluated against `latest_row_count` when Use latest is on; unknown counts never refuse) via `GET /import/revisions` | same states and renderer, fed by a new read-only `GET /train/preflight?train_url=&use_latest=` that returns what ExDark's `/import/revisions` returns (exists, row_count, latest_url, latest_row_count, revisions) PLUS: `descends_from_seed` (lineage walk from the resolved revision back to `import_state.lineage_root.train_url`; a revision outside that lineage is an amber problem, +brief), the usable-row summary (#9) and class coverage (#10). Split identity kept (a pasted `intel-scene_val` URL is refused). Row budget: ceiling = `manifest.expected_rows("train")` = 6,600 (labeling a pool row never changes the count, so the rule transfers unchanged). The Intel kit's own cap on weight-1 rows (3,000) is a different rule — D14 | V / +brief |
 | 9 | — (no equivalent: ExDark's gate shows only table names and the revision choice) | **Usable-row summary** under the green line, in the gate block, re-evaluated with the Use-latest checkbox like the row budget: "603 labeled rows in use · 5,997 excluded as undefined · 0 excluded at weight 0". Amber `.kg-callout.warn` when undefined rows carry weight > 0: "N unlabeled rows have weight > 0 and will be skipped until you label them." Hard stop (amber, Start disabled) when 0 usable rows: "No usable rows: every row is undefined or at weight 0. Label images in the Dashboard first." Placement is my proposal (the gate is the one surface that already re-evaluates per revision) | +brief · D1 (placement) |
 | 10 | — | **Class coverage warning** (amber, does not block): "No usable rows for: glacier, sea. Those classes cannot be learned in this run." | +brief |
 | 11 | "Use latest revision" checkbox (checked) + help "Trains on each table's newest revision (`.latest()`), picking up your label edits from the Dashboard." (834); picking a non-latest revision unchecks it; toggling re-evaluates the gate (5057) | verbatim, train table only ("Trains on the train table's newest revision…"); default = latest (the brief) | V |
@@ -83,42 +85,55 @@ Components the fragment still lacks and ports verbatim from ExDark for this tab:
 
 ## 2. The baseline: training defaults
 
-### What is on this machine
+### The kit (re-checked against the Intel kit's original scripts, 2026-09-29)
 
-- `../hackathon_starter/Starter_Kit/train.py` + `config.yaml` — the Hack[AI]thon 2.0 kit
-  (Chihuahua vs Muffin, tlc 2.22 API). Readable; defaults below.
-- `../data-source/3-lc-hack-nova-scene-classification-challenge/` — **only `data/`** (train/val/test
-  images). The Intel kit's `train.py` and `config.yaml` are NOT on the laptop (a find over the workspace
-  outside `plugin-research`/`datasets` returns only the two files above).
-  `docs/STUDY.md` §(e), written on the office machine, records what its scripts did: `train` = 600
-  labeled at weight 1.0 + 6,000 `undefined` (label 6) at weight 0.0, `val` 1,200, test never
-  registered; `create_sampler(exclude_zero_weights=True)`; undefined masked out of the per-sample
-  loss; collection on train; UMAP 3D; seed 42; `num_workers=0`. It does not record the Intel kit's
-  epochs, batch, lr or schedule.
-- The bundled manifest (`manifests/intel-scene-v1.yaml`, session 1 commit `1fd83fc`) already carries
-  `training.defaults` = epochs 10, batch_size 16, lr 0.0001, weight_decay 0.0, optimizer adam,
-  seed 42, image_size 150 — identical to the Chihuahua kit's constants (the two kits share an
-  author and shape), with 150 = the Intel images' native size.
+- `../hackathon_starter/intel-kit/{train.py, config.yaml, predict.py, register_tables.py, README.md,
+  sample_submission.csv}` — the Intel Scene kit as shipped (read-only reference, never modified). The
+  table below is read from these files.
+- `../hackathon_starter/Starter_Kit/` — the Hack[AI]thon 2.0 kit (Chihuahua vs Muffin, tlc 2.22 API)
+  the Phase 0 study used as a stand-in. A `diff` of the two `train.py` files shows the Intel kit is the
+  same script with three changes: six classes (`NUM_CLASSES = 6`, `undefined` = index 6 and "MUST remain
+  last"), image size **150** in both transform stacks (Chihuahua: 128), and a **labeling budget** block
+  (`MAX_WEIGHT1_ROWS = 3000`) that counts the `weight > 0` rows of the loaded train revision and exits
+  before any Run is created when the count exceeds 3,000. `config.yaml` differs the same way
+  (`constraints.max_weight1_rows: 3000`, `training.image_size: 150`, six class names, split counts) and
+  says of itself "informational only — scripts use their own constants". Every other training default is
+  byte-identical, so the Phase 0 table needed one value corrected (image size, already the manifest's)
+  and four rows added (budget, undefined-with-weight behaviour, val revision, per-epoch logging).
+- The bundled manifest (`manifests/intel-scene-v1.yaml`) `training.defaults` = epochs 10, batch_size 16,
+  lr 0.0001, weight_decay 0.0, optimizer adam, seed 42; `model.image_size` 150 — all confirmed against
+  the kit. The manifest carries **no** labeling budget, and PLAN §A locks "Labeling: No cap" (D14).
+- Native image sizes (measured over `../data-source/3-lc-hack-nova-scene-classification-challenge/data`,
+  2026-09-29): 150 × 150 for 6,582 of 6,600 train, 1,193 of 1,200 val and 1,797 of 1,800 test images;
+  the other 28 are 150 wide and 72–149 high. `Resize(150)` resizes the shorter side, so the
+  resize-then-crop pair is an identity on every 150 × 150 image.
 
-### Chihuahua kit defaults (`train.py` constants; `config.yaml` "reference" block agrees)
+### Intel kit defaults (`train.py` constants; `config.yaml` "reference" block agrees)
 
 | Setting | Kit value | Where | Ours (proposed) | Forced change? |
 |---|---|---|---|---|
 | Epochs | 10 | `EPOCHS` | 10 (manifest) | no |
-| Batch size | 16 | `BATCH_SIZE` | 16 (manifest) | no |
-| Optimizer | `torch.optim.Adam(lr=1e-4)`, no weight decay | `train()` | adam, lr 1e-4, wd 0.0 (manifest) | no |
-| Schedule | `StepLR(step_size=5, gamma=0.1)` stepped per epoch | `train()` | not in the manifest — D2 | no (a schema-v1 addition if exposed) |
-| Seed | 42; `random`/`numpy`/`torch`/`cuda` seeded, `cudnn.deterministic=True`, `benchmark=False`, `PYTHONHASHSEED` | `set_seed` | 42 (manifest), same procedure | no |
-| Image size | 128: `Resize(128)` → `RandomCrop(128)` (train) / `CenterCrop(128)` (val) | transforms | 150 (manifest, locked): `Resize(150)` → crops at 150 | no (the size is the manifest's; the recipe is the kit's) |
-| Augmentation | `RandomHorizontalFlip()`, `RandomAffine(0, shear=10, scale=(0.8, 1.2))`, ImageNet mean/std normalize; val = resize + center crop + normalize | transforms | the kit's, fixed (not fields). The timm plugin would instead use `timm.data.create_transform` (RandomResizedCrop + flip + colour jitter) — a different baseline. Recommend the kit's recipe | D11 (kit vs timm pipeline) |
-| Workers | 0 | `DataLoader` | device-aware (brief) | brief |
-| `drop_last` | not set (False) | `DataLoader` | False (the timm plugin uses True; with 600 rows / 16 that would drop 8 rows per epoch) | no |
-| Sampler | `train_table.create_sampler(exclude_zero_weights=True)` (2.x Table method; `weighted=True` by default) | `train()` | `tlc.integration.torch.samplers` semantics, effective weights in memory (§3) | **yes** (tlc 3.x: the Table method is gone) |
-| Model | torchvision `resnet18(weights=None)` with `fc = Identity` and a custom head 512→256→ReLU→Dropout(0.3)→128→ReLU→Dropout(0.3)→N | `ResNet18Classifier` | `timm.create_model("resnet18", pretrained=False, num_classes=6)` — the plain timm head (PLAN §A, locked). The kit's MLP head is NOT mirrored | **yes** (the locked contract names timm) |
-| Loss | `CrossEntropyLoss()` | | same | no |
-| Best checkpoint | by val accuracy (`>`), state dict kept in memory, saved once at the end (`best_model.pth`, overwritten each run) | | best by val accuracy + last, saved under the run (§4, D12) | brief |
-| Per-sample metrics | after training, TRAIN only: loss (masked to `labels < num_logits`, others set to 1.0), predicted, accuracy, confidence via `FunctionalMetricsCollector`; embeddings from the `fc` layer via `EmbeddingsMetricsCollector` + `tlc.Predictor`; `run.reduce_embeddings_by_foreign_table_url(train_url, method="umap", n_neighbors=15, n_components=3)` | | train AND val, hand-rolled per the timm plugin, loss masked (absent, not 1.0), per-class probabilities added, UMAP fit on train / transform val, PCA fallback (§4) | **yes** (tlc 3.x removed `table.map()`; `Predictor`/collectors are not used by the reference trainer, STUDY G-1) |
+| Batch size | 16 for the train and val loaders and for collection (`predict.py` uses 32) | `BATCH_SIZE` | 16 (manifest) | no |
+| Optimizer | `torch.optim.Adam(lr=1e-4)`: no weight decay (Adam's default 0), default betas; `optimizer.zero_grad()` per batch, no grad clipping, no AMP | `train()` | adam, lr 1e-4, wd 0.0 (manifest) | no |
+| Schedule | `StepLR(step_size=5, gamma=0.1)`, `scheduler.step()` once per epoch after validation: lr 1e-4 for epochs 1–5, 1e-5 for 6–10 | `train()` | not in the manifest — D2 | no (a schema-v1 addition if exposed) |
+| Seed / determinism | 42: `random`, `numpy`, `torch.manual_seed`, `torch.cuda.manual_seed_all`; `cudnn.deterministic=True`, `cudnn.benchmark=False`; `PYTHONHASHSEED` | `set_seed` | 42 (manifest), same procedure | no |
+| Image size | **150**: `Resize(150)` → `RandomCrop(150)` (train) / `CenterCrop(150)` (val, collection and `predict.py`) | transforms | 150 (manifest, locked), same recipe; on this data the pair only rescales-and-crops the 28 shorter images | no (corrected: Phase 0 carried the Chihuahua 128) |
+| Augmentation | `RandomHorizontalFlip()`, `RandomAffine(0, shear=10, scale=(0.8, 1.2))`, `ToTensor`; val = resize + center crop + `ToTensor` | transforms | the kit's, fixed (not fields). Effective train augmentation here is flip + affine (the crop is an identity on 150 × 150). The timm plugin's `create_transform` (RandomResizedCrop + flip + colour jitter) would be a different baseline | D11 (kit vs timm pipeline) |
+| Normalization | ImageNet mean/std spelled out, `[0.485, 0.456, 0.406]` / `[0.229, 0.224, 0.225]`, on every path; images converted to RGB first | `train_fn`/`val_fn` | the same constants (spelled out, or from `model.pretrained_cfg` — identical values for timm resnet18) | no |
+| Workers | 0 in every loader (`config.yaml` `num_workers: 0`) | `DataLoader` | device-aware (brief) | brief |
+| `drop_last` / `pin_memory` | not set (False / False) | `DataLoader` | False / False (the timm plugin uses True / True; `drop_last=True` would drop 8 of 600 rows per epoch) | no |
+| Sampler | `train_table.create_sampler(exclude_zero_weights=True)` (2.x Table method; `weighted=True` by default → `WeightedRandomSampler`, epoch = non-zero-weight rows); val loader `shuffle=False` | `train()` | `tlc.integration.torch.samplers` semantics, effective weights in memory (§3) | **yes** (tlc 3.x: the Table method is gone) |
+| Weights at registration | labels 0–5 → weight 1.0; `undefined` (label 6) → weight 0.0; `SampleWeightSchema` column | `register_tables.py` | the importer writes the same | no |
+| Undefined rows in training | excluded ONLY through weight 0; there is no label filter. An `undefined` row given weight > 0 in the Dashboard IS sampled, and `CrossEntropyLoss` with target 6 against 6 logits raises (`IndexError` on CPU, a device-side assert on CUDA): the kit crashes mid-epoch. Only the post-training metrics pass masks label 6 (`labels < num_logits`) | `train()` / `metrics_fn` | filtered out regardless of weight (PLAN §A, brief); #9 warns "N unlabeled rows have weight > 0 and will be skipped" instead of failing | brief (a deliberate softening of a kit defect) |
+| Labeling budget | `MAX_WEIGHT1_ROWS = 3000`: `sum(1 for row in train_table.table_rows if row["weight"] > 0)` over the loaded revision (every `weight > 0` row counts, undefined included, though the message says "weight = 1"); over the cap → printed remedy (set weights back to 0, or pin an earlier revision by URL), `sys.exit(1)`, no Run created. `config.yaml` `constraints.max_weight1_rows: 3000`; README: "your final train table may have at most 3,000 rows with weight = 1 (the 600 seed rows count toward this)" | `train()` before `tlc.init` | **not in PLAN §A ("Labeling: No cap") and not in the manifest** — D14 | competition-design decision |
+| Table revisions | train AND val loaded by name with `.latest()` (OPTION 1, default); OPTION 2 (commented out) pins both by URL; the budget check runs on either path | `train()` | train: latest by default with the picker (#6, #11); val: LOCKED to the import record's URL (brief; PLAN §A "val 1,200 … locked") — the kit would follow val edits, ours does not | brief |
+| Model | torchvision `resnet18(weights=None)`, `fc = Identity`, custom head 512→256→ReLU→Dropout(0.3)→128→ReLU→Dropout(0.3)→6 | `ResNet18Classifier` | `timm.create_model("resnet18", pretrained=False, num_classes=6)` — the plain timm head (PLAN §A, locked). The kit's MLP head is NOT mirrored | **yes** (the locked contract names timm) |
+| Loss | `CrossEntropyLoss()` (mean reduction) | | same | no |
+| Best checkpoint | by val accuracy (strict `>`, so epoch 1 always becomes the first best), state dict kept in memory, saved once at the end as `best_model.pth` beside the script (overwritten each run) | | best by val accuracy + last, saved under the run (§4, D12) | brief |
+| Per-epoch logging | `tlc.log({"epoch", "val_accuracy"})` only; train loss is never aggregated and val loss never computed | | train loss · val loss · val accuracy per epoch (#33, brief) | brief |
+| Per-sample metrics | after training, on the best model, TRAIN only: loss (masked to `labels < num_logits`, masked rows set to 1.0), predicted, accuracy, confidence via `FunctionalMetricsCollector`; embeddings from the `fc` (Identity) layer via `EmbeddingsMetricsCollector` + `tlc.Predictor`, batch 16, workers 0; `run.reduce_embeddings_by_foreign_table_url(train_url, method="umap", n_neighbors=15, n_components=3)` inside a try/except that only warns | `train()` | train AND val, hand-rolled per the timm plugin, loss masked (absent, not 1.0), per-class probabilities added, UMAP fit on train / transform val, PCA fallback (§4) | **yes** (tlc 3.x removed `table.map()`; `Predictor`/collectors are not used by the reference trainer, STUDY G-1) |
 | tlc API | `tlc.init(project_name, description)`, `tlc.log({epoch, val_accuracy})`, `run.set_status_completed()`, `register_project_url_alias` | | `tlc.init(project_name, run_name, description)`, `tlc.log` per epoch, `run.set_parameters(contract)`, `set_status_collecting/completed/cancelled`; no alias | no |
+| Device | `cuda` if available else `cpu`, chosen at import time; no `mps`, no retry | module level | ExDark's `resolve_device` + the CPU retry (#22) | brief |
 
 **tlc 3.3 forces**: `table.map(fn)` → `table.with_transform(fn)` (`TableView`, not a `Table`);
 `Table.create_sampler` → the `tlc.integration.torch.samplers` factories; metrics via
@@ -299,18 +314,24 @@ with the same message.
 
 ## 8. Decisions needed before code
 
+Re-checked against the Intel kit's original scripts on 2026-09-29 (§2): the kit confirms the values
+behind D2 (StepLR 5 / 0.1), D3 (Adam only), D4 (no early stopping), D6 (seed 42) and D11 (the
+torchvision recipe at 150 px). No recommendation changed. One decision was added: **D14**, the kit's
+3,000-row labeling budget, which PLAN §A rules out ("Labeling: No cap") and the manifest does not carry.
+
 | # | Question | ExDark | Recommendation |
 |---|---|---|---|
 | D1 | Where the usable-row summary and its warnings render | no equivalent | inside the gate block under the green line (re-evaluates with the revision) |
-| D2 | Learning-rate schedule | `lrf` field (Ultralytics decay) | fixed `StepLR(5, 0.1)` from the kit, no field |
-| D3 | Optimizer choices | Auto / SGD / Adam / AdamW select | `adam` only (the kit) as a locked-looking select, or `training.optimizers` in schema v1 |
-| D4 | Patience / early stopping | field, 0–100 | drop (no baseline support) |
-| D5 | Weight decay placement | — | core grid, fourth field |
-| D6 | Seed | — | Advanced field, bounds added to schema v1 |
+| D2 | Learning-rate schedule | `lrf` field (Ultralytics decay) | fixed `StepLR(5, 0.1)` from the kit, no field (kit-confirmed: stepped once per epoch, lr 1e-4 → 1e-5 at epoch 6) |
+| D3 | Optimizer choices | Auto / SGD / Adam / AdamW select | `adam` only (the kit; no other optimizer appears in it) as a locked-looking select, or `training.optimizers` in schema v1 |
+| D4 | Patience / early stopping | field, 0–100 | drop (kit-confirmed: no early stopping; best-by-val-accuracy only) |
+| D5 | Weight decay placement | — | core grid, fourth field (the kit has no knob and uses 0.0; the manifest already bounds it 0–0.1) |
+| D6 | Seed | — | Advanced field, bounds added to schema v1 (kit-confirmed default 42 and the full determinism procedure, §2) |
 | D7 | Metrics-collection disclosure | 12 controls | drop; the facts are stated in the contract tooltip and the result callout |
 | D8 | Where the resolved device shows during a run | log line only | in-run header meta "· cuda (auto)" |
 | D9 | Success CTA label | "Continue to Submit" | "Continue to Submit" verbatim (the tab is Predict + Submit in both plugins) |
 | D10 | Cancelled run keeps its best-so-far checkpoint and is usable in Predict | yes | yes (mirror); "no half-written best" is guaranteed by atomic writes |
-| D11 | Augmentation recipe | n/a | the kit's torchvision recipe, fixed |
+| D11 | Augmentation recipe | n/a | the kit's torchvision recipe, fixed: `Resize(150)` → `RandomCrop(150)` → flip → `RandomAffine(0, shear=10, scale=(0.8, 1.2))` → ImageNet normalize; val/collection `Resize(150)` → `CenterCrop(150)` → normalize. Kept verbatim although the crop pair is an identity on the 99.7 % of images that are natively 150 × 150 (§2): it is the kit's recipe and it handles the 28 shorter images the same way the kit does |
 | D12 | Checkpoint location | `<plugin home>/runs/<name>/weights/best.pt` (Ultralytics layout) | `<run>/model/best.pt` + `last.pt` via the SDK helper, sha256 recorded on the run and in the record; PLAN.md gets "Predict uses best" |
 | D13 | Manifest presets (`quick / standard / long`) | none | not rendered (no ExDark control); presets stay a manifest fact for later |
+| D14 | **Labeling budget.** The Intel kit refuses to train (exit before any Run) on a revision with more than 3,000 `weight > 0` rows (`MAX_WEIGHT1_ROWS`, `config.yaml` `constraints.max_weight1_rows`, README "at most 3,000 rows with weight = 1, the 600 seed rows count"). PLAN §A locks "Labeling: No cap"; the manifest has no such field. Options: (a) keep No cap (PLAN §A stands; the gate's usable-row summary is informational only); (b) adopt the cap as a competition rule: a schema-v1 manifest field (`splits.train.max_weight1_rows`, absent = no cap — a competition constant never lives in code), a hard stop in `GET /train/preflight` with ExDark's row-budget geometry (amber problem row, Start disabled: "This revision has N labeled rows in use; the competition allows at most 3,000. Set weights back to 0 in the Dashboard or pick an earlier revision."), counted as labeled rows at weight > 0 (#9's "labeled rows in use", which is what the kit's count means once undefined rows are excluded), recorded in `run.parameters` and the ledger, and PLAN §A's Labeling row rewritten | ExDark's only budget is the table row count (`max_rows`) | **(a)** unless the new competition's published rules keep the 3,000 cap. This is a competition-design decision (CLAUDE.md A5), not mine: PLAN §A was locked with the kit in view and says No cap. If the rules keep it, (b) exactly as written, and the count must be the labeled-at-weight->0 number, not the kit's literal `weight > 0` (which would count undefined rows the plugin never trains on) |
