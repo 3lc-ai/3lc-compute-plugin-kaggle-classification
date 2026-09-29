@@ -89,7 +89,7 @@ prod:
 uv run python tools/verify_cdn.py https://competitions.3lc.ai
 ```
 
-Keys, sizes and sha256s of the current build (kit v1, 2026-09-22):
+Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regenerated 2026-09-29):
 
 | Key | Bytes | sha256 |
 |---|---|---|
@@ -98,15 +98,17 @@ Keys, sizes and sha256s of the current build (kit v1, 2026-09-22):
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-02.zip` | 53,237,641 | `908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-03.zip` | 24,511,747 | `ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-04.zip` | 14,208,813 | `4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2` |
-| `kaggle/intel-scene/manifest.json` | 2,691 | `6a10e44f6d41157dc1148f914a1dc522701c3431c1c77637dfc8a609983efed2` |
+| `kaggle/intel-scene/manifest.json` | 2,732 | `aa797f7f13b48d25da1b2143c4ca8951af78b287d4a0e98f797991c8cc9c855a` |
 | `kaggle/classification-index.json` | 203 | `e0e9c4bce89460607277fa7a57eead1d65c39be38a1d53d151a5eb63073f262d` |
 
-The two mutable documents above are the **session 2.5 build** (display name "3LC Scene
-Classification Challenge", `submission.daily_limit` 100 instead of the session-1 placeholder 3,
-`cdn/` regenerated 2026-09-28, not yet uploaded). Until they are
-re-uploaded and the two paths invalidated, the dev tier still serves the earlier documents
-(manifest 2,699 B `2dd97576…4b38`, index 213 B `64c8fa92…41b0e`, verified in §6). The shards
-are unchanged; both manifests describe the same kit v1.
+The manifest above is the **session 3 build** (`cdn/` regenerated 2026-09-29 from the bundled
+manifest): the session 2.5 document (display name "3LC Scene Classification Challenge",
+`submission.daily_limit` 100) plus `training.bounds.seed: [0, 2147483647]` (the Train tab's Seed
+field, decision D6). It supersedes the 2,691 B `6a10e44f…efed2` copy that is on the dev tier now; the
+index (203 B `e0e9c4bc…f262d`) and the five shards are byte-identical to what is uploaded, so the
+re-upload is the one key `kaggle/intel-scene/manifest.json` (Cache-Control `max-age=60`) followed by
+an invalidation of that path. Until then the dev tier serves the seed-less document; the plugin
+falls back to the same seed range, so nothing breaks. Both manifests describe the same kit v1.
 
 Nothing on prod changes during session 2; this section is the hand-off for later.
 

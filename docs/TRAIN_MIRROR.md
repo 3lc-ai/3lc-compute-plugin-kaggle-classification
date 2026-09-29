@@ -395,3 +395,22 @@ CPython 3.12.13, torch 2.14 cu126, timm 1.0.29, tlc 3.3.2, batch 16, workers 0.
 
 Found and fixed along the way: none in the plugin. The gate script itself needed UTF-8 stdout
 (the console is cp1252) and a worker-kill filter that does not match its own PowerShell process.
+
+**Caveat on the numbers (Rishikesh, 2026-09-29):** the `manual-test` revision's 9 relabeled pool
+rows were labeled at random, so the gate accuracies above (57.6 % GPU, 47.1 % CPU) are pipeline
+timings, not a clean baseline. **Any published reference baseline must be trained on the initial
+seed revision** (`intel-scene_train/initial`, 600 labeled rows, Use latest revision off), and the
+`benchmark.REFERENCE` accuracy the Epochs help quotes should be re-recorded from such a run before
+the competition opens.
+
+**Follow-ups (the fix list; no action yet):**
+
+1. **Pre-warm UMAP's first-use compile** in the background (during Import, or on the first open of
+   the Train tab) so a participant's first run does not pay the ~75 s numba compile in its
+   collection pass (a warm pass took 22 s, G1b).
+2. **ETA must include the end-of-training collection pass** over all train and val rows, scaled per
+   device: at 3,000 labeled rows a CPU run is dominated by it (81.8 s over 7,800 rows on this
+   laptop's CPU, 0.0105 s/row, vs 25.8 s per training epoch). The pre-run hint and the in-run
+   "remaining" already add `collect_s` from history or the benchmark's per-row figure; verify the
+   CPU class is picked when the device field is blank on a CPU-only machine, and that the
+   per-row figure scales with the total rows collected (train + val), not the usable rows.
