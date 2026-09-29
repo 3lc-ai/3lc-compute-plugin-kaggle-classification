@@ -524,3 +524,43 @@ def test_tables_list_is_the_seed_lineage_tree_with_counts(imported, store):
     assert val_ds["tables"][0]["labeled_rows"] is None
     # Cached by URL: a second listing does not re-scan the rows.
     assert importer._LABELED_ROWS_CACHE[importer._norm(train_url)] == 12
+
+
+# ── Part F: the Run's status on interruption; the numba cache; the pre-warm ──────
+
+
+def test_an_interrupted_run_is_marked_on_the_run_itself(imported, store):
+    """F4: a running record whose worker died reads back stale AND the Run it created is set to
+    cancelled with interrupted = True, so the Hub's Runs list stops showing EMPTY."""
+    manifest, train_url, _ = imported
+    result = trainer.run_training(
+        {"epochs": "1", "batch_size": "8", "device": "cpu", "workers": "0", "run_name": "t_interrupted"}, FakeCtx(), manifest
+    )
+    state = trainer.read_state()
+    state["current"].update({"status": "running", "pid": 999_999_999, "finished_at": None})
+    store.save({"train_state": state})
+    st = trainer.train_state()
+    assert st["state"] == "stale"
+    run = tlc.Run.from_url(tlc.Url(result["run_url"]))
+    assert 'status="cancelled"' in repr(run)
+    p = trainer.get_run_parameters(run)
+    assert p["interrupted"] is True and "restarted" in p["interrupted_reason"]
+    assert any("marked cancelled (interrupted)" in line for line in st["current"]["log"])
+
+
+def test_numba_cache_lives_under_the_plugin_home_and_the_prewarm_is_idempotent(home, monkeypatch):
+    monkeypatch.delenv("NUMBA_CACHE_DIR", raising=False)
+    path = trainer.numba_cache_env()
+    assert Path(path) == home / trainer.NUMBA_CACHE_DIR_NAME and Path(path).is_dir()
+    assert trainer.numba_cache_env() == path
+    # The pre-warm runs once per process; a second call reports the same state.
+    first = trainer.prewarm_umap_async()
+    assert first["state"] in ("running", "done")
+    second = trainer.prewarm_umap_async()
+    assert second["state"] in ("running", "done")
+    deadline = time.time() + 300
+    while trainer.prewarm_status()["state"] == "running" and time.time() < deadline:
+        time.sleep(1)
+    status = trainer.prewarm_status()
+    assert status["state"] == "done", status
+    assert trainer.train_state()["umap_prewarm"]["state"] == "done"

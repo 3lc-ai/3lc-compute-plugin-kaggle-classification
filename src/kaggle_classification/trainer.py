@@ -629,6 +629,9 @@ def run_summary(record: dict[str, Any]) -> dict[str, Any]:
         "epoch_s_per_row": result.get("epoch_s_per_row"),
         "collect_s": result.get("collect_s"),
         "collect_rows": result.get("collect_rows"),
+        "collect_s_per_row": result.get("collect_s_per_row"),
+        "setup_s": result.get("setup_s"),
+        "last_val_accuracy": (progress.get("history") or [{}])[-1].get("va") if progress.get("history") else None,
         "provenance_ok": bool(checks) and all(c.get("ok") for c in checks),
         "train_table_url": facts.get("train_table_url"),
         "val_table_url": facts.get("val_table_url"),
@@ -667,6 +670,7 @@ def _mark_if_orphaned(record: dict[str, Any]) -> dict[str, Any]:
     )
     if record.get("finished_at") is None:
         record["finished_at"] = time.time()
+    _mark_run_interrupted(record)
     state = read_state()
     state["current"] = record
     runs = [r for r in (state.get("runs") or []) if isinstance(r, dict) and r.get("id") != record["id"]]
@@ -674,6 +678,79 @@ def _mark_if_orphaned(record: dict[str, Any]) -> dict[str, Any]:
     state["runs"] = runs[:RUNS_KEEP]
     _write_state(state)
     return record
+
+
+def _mark_run_interrupted(record: dict[str, Any]) -> None:
+    """F4: the Run of an interrupted job is set to ``cancelled`` (tlc has no "interrupted" status)
+    with ``interrupted = True`` in its parameters, so the Hub's Runs list stops showing EMPTY."""
+    run_url = str((record.get("facts") or {}).get("run_url") or "")
+    if not run_url:
+        return
+    try:
+        import tlc
+
+        run = tlc.Run.from_url(tlc.Url(run_url))
+        run.set_parameters({"interrupted": True, "interrupted_reason": str(record.get("error") or "")})
+        run.set_status_cancelled()
+        record.setdefault("log", []).append("Run marked cancelled (interrupted) so the Hub lists it.")
+    except Exception as exc:
+        record.setdefault("log", []).append(f"Could not mark the Run interrupted: {type(exc).__name__}: {exc}")
+
+
+NUMBA_CACHE_DIR_NAME = "numba-cache"
+_prewarm: dict[str, Any] = {"state": "idle", "seconds": None, "error": None}
+_prewarm_lock = threading.Lock()
+
+
+def numba_cache_env() -> str:
+    """F5: a persistent on-disk numba cache under the plugin home, so UMAP's compiled kernels survive
+    a worker restart / reinstall (numba reads ``NUMBA_CACHE_DIR`` when it is imported)."""
+    from kaggle_classification import storage
+
+    path = storage.plugin_home() / NUMBA_CACHE_DIR_NAME
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    os.environ.setdefault("NUMBA_CACHE_DIR", str(path))
+    return os.environ["NUMBA_CACHE_DIR"]
+
+
+def prewarm_umap_async() -> dict[str, Any]:
+    """F5: compile UMAP's fit + transform paths on a thread once per worker process (a tiny fit), so
+    a participant's first run does not pay the compile inside its collection pass. Idempotent."""
+    with _prewarm_lock:
+        if _prewarm["state"] in ("running", "done"):
+            return dict(_prewarm)
+        _prewarm["state"] = "running"
+
+    def _run() -> None:
+        t0 = time.time()
+        try:
+            numba_cache_env()
+            import numpy as np
+            import umap
+
+            rng = np.random.default_rng(0)
+            data = rng.normal(size=(60, 16)).astype(np.float32)
+            reducer = umap.UMAP(n_components=3, n_neighbors=min(15, len(data) - 1), min_dist=0.1, random_state=42)
+            reducer.fit(data)
+            reducer.transform(rng.normal(size=(8, 16)).astype(np.float32))
+            with _prewarm_lock:
+                _prewarm.update({"state": "done", "seconds": round(time.time() - t0, 1), "error": None})
+        except Exception as exc:
+            with _prewarm_lock:
+                _prewarm.update({
+                    "state": "failed", "seconds": round(time.time() - t0, 1), "error": f"{type(exc).__name__}: {exc}"
+                })
+
+    threading.Thread(target=_run, name="kaggle-classification-umap-prewarm", daemon=True).start()
+    return dict(_prewarm)
+
+
+def prewarm_status() -> dict[str, Any]:
+    with _prewarm_lock:
+        return dict(_prewarm)
 
 
 def train_state() -> dict[str, Any]:
@@ -692,6 +769,7 @@ def train_state() -> dict[str, Any]:
         "runs": runs,
         "device_class": _device_probe.get("device_class"),
         "device_probe": _device_probe.get("state", "idle"),
+        "umap_prewarm": prewarm_status(),
         "workers_default": default_workers(),
     }
 
@@ -1334,6 +1412,10 @@ def _train_and_collect(
         root_url=importer.project_root_url(),
     )
     run_url = str(run.url)
+    try:
+        run.set_status_running()   # F4: the Hub's Runs list shows RUNNING, not EMPTY, from the start
+    except Exception:
+        pass
     rec.record["facts"]["run_url"] = run_url
     set_field("run_url", run_url)
     contract = {
@@ -1364,6 +1446,9 @@ def _train_and_collect(
 
     # ── Epochs ──────────────────────────────────────────────────────────────
     st.train_start = time.time()
+    setup_s = round(st.train_start - float(rec.record.get("created_at") or st.train_start), 1)
+    rec.record["facts"]["setup_s"] = setup_s
+    set_field("setup_s", setup_s)
     st.last_hb = st.train_start
     st.batch_n = len(train_loader)
     flush_progress(force=True)
@@ -1458,7 +1543,7 @@ def _train_and_collect(
             "avg_epoch_s": round(avg_epoch_s, 1) if avg_epoch_s else None,
             "epoch_s_per_row": round(avg_epoch_s / max(n_usable, 1), 5) if avg_epoch_s else None,
             "collect_s": round(collect_s, 1) if collect_s is not None else None, "collect_rows": collect_rows,
-            "collect_s_per_row": per_row_collect,
+            "collect_s_per_row": per_row_collect, "setup_s": setup_s,
             "reducer": reducer, "contract": contract, "checks": rec.record["checks"],
         }
 
@@ -1529,7 +1614,8 @@ def _collect(
     val_view: Any, train_url: str, val_url: str, batch_size: int, workers: int, epoch: int, log: Any,
     heartbeat: Any, is_cancelled: Any,
 ) -> str:
-    """PLAN §B (part C): predicted, confidence, accuracy, loss (accuracy and loss NaN for undefined), 3-D embeddings — UMAP
+    """PLAN §B (part C): predicted, confidence, accuracy, loss (accuracy and loss NaN for undefined rows),
+    3-D embeddings — UMAP
     fit on train (labeled + undefined together), val transformed into the same space, PCA fallback.
     Returns the reducer that produced the coordinates."""
     import copy
@@ -1541,7 +1627,6 @@ def _collect(
     from torch.utils.data import DataLoader
 
     n_classes = manifest.num_classes
-    names = manifest.class_names
     n_comp = int(manifest.training.embeddings.n_components)
     ce = nn.CrossEntropyLoss(reduction="none")
     splits: list[dict[str, Any]] = []
@@ -1611,6 +1696,7 @@ def _fit_reducer(train_emb: Any, n_comp: int, method: str, fallback: str, log: A
     n = len(train_emb)
     if method == "umap":
         try:
+            numba_cache_env()
             import umap
 
             reducer = umap.UMAP(n_components=n_comp, n_neighbors=min(15, max(2, n - 1)), min_dist=0.1, random_state=42)

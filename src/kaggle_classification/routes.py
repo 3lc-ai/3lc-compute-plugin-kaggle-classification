@@ -175,6 +175,7 @@ def get_route_handlers() -> list[Any]:
         from kaggle_classification import trainer
 
         trainer.probe_device_async()
+        trainer.prewarm_umap_async()
         return _train_state_safe()
 
     @get("/tables/list", sync_to_thread=True)

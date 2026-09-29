@@ -24,10 +24,13 @@ from typing import Any
 # median replaces it once a run has finished. CPU (gate G1-cpu, the same laptop, forced ``cpu``):
 # 25.8 s/epoch (0.04231 s/row), the pass 81.8 s (0.01049 s/row). No Apple silicon was measured; ``mps``
 # carries the CPU figures until it is.
+# ``setup_s`` is the time from the job's creation to the first training batch (table loads, the
+# model, the device probe); ``collect_s_per_row`` is a WARM pass now that the numba cache persists
+# and the worker pre-warms UMAP (the cold first-run figure was 0.00964 s/row on cuda).
 BENCHMARK: dict[str, dict[str, float]] = {
-    "cuda": {"epoch_s_per_row": 0.00673, "collect_s_per_row": 0.00964},
-    "mps": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049},
-    "cpu": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049},
+    "cuda": {"epoch_s_per_row": 0.00673, "collect_s_per_row": 0.00285, "setup_s": 12.0},
+    "mps": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049, "setup_s": 12.0},
+    "cpu": {"epoch_s_per_row": 0.04231, "collect_s_per_row": 0.01049, "setup_s": 12.0},
 }
 
 REFERENCE: dict[str, Any] = {

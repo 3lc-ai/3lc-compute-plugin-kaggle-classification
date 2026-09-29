@@ -175,7 +175,7 @@ def test_fragment_is_the_exdark_train_tab():
         "function trRenderTerminal", "function trEvaluateGate", "function trRenderGate", "function trVerifyTables",
         "function trRenderDurationHint", "function trLoadDurationStats", "function trInitTrainTab", "function trDevForce",
         "function trApplyContract", "function trApplyFields", "function trUsableLine", "var CFG_FIELDS", "var TR_BOUNDS",
-        "Verified provenance recorded", "Training complete: best checkpoint saved", "Continue to Submit",
+        "Verified provenance recorded", "Training complete", "the checkpoint Predict uses", "Continue to Submit",
         "Open Run in Dashboard", "Open Run in Projects", "Start new run", "Training was interrupted",
         "Training cancelled after", "Stop this training run?", "Training… (safe to navigate away)",
         "Cancelling… (stops at the next checkpoint)", "Fix the highlighted fields first.", "Tables verified: ",

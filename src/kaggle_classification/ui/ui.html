@@ -2348,6 +2348,13 @@
           var o = ov[KG_URL_FIELDS[id][0]];
           if (o) { el(id).value = o; } else { derived.push(id); }
         });
+        // F1: the import record's seed IS the derivation for the train field (the project/table
+        // layout is the fallback for a record-less install).
+        var seed = ((((kgImportState || {}).record || {}).lineage_root) || {}).train_url || '';
+        if (seed && derived.indexOf('tr-train-url') !== -1) {
+          el('tr-train-url').value = seed;
+          derived = derived.filter(function (id) { return id !== 'tr-train-url'; });
+        }
         if (!derived.length) { return Promise.resolve(true); }
         var tbl = (kgSession.table_name || '').trim();
         return API.authFetch(PLUGIN_ROOT + '/tables/defaults?project=' + encodeURIComponent(kgCurrentProject()) +
@@ -2875,7 +2882,7 @@
         var perEpoch = (typeof p.avg_epoch_s === 'number' && p.avg_epoch_s > 0)
           ? p.avg_epoch_s : trEpochSecs;
         var remaining = (status === 'running' && perEpoch && total && job.created_at)
-          ? Math.max(0, perEpoch * total + (trCollectSecs || 0) - (now - job.created_at)) : null;
+          ? Math.max(0, (trSetupSecs || 0) + perEpoch * total + (trCollectSecs || 0) - (now - job.created_at)) : null;
         el('tr-run-eta').textContent =
           remaining === null ? ''
             : remaining >= 1 ? '≈ ' + fmtDur(remaining) + ' remaining'
@@ -2968,7 +2975,7 @@
         var banner = '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
           '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
           '<div style="flex:1;min-width:0">' +
-          '<strong>Training complete: best checkpoint saved</strong>' +
+          '<strong>Training complete' + (trAccuracyHeadline(job) ? ': ' + esc(trAccuracyHeadline(job)) : ': best checkpoint saved') + '</strong>' +
           (weights
             ? '<div style="margin-top:4px;font-size:12px;display:flex;gap:6px;align-items:center;min-width:0">' +
               '<span style="min-width:0;overflow:hidden;white-space:nowrap;color:var(--text-secondary)" ' +
@@ -3003,14 +3010,36 @@
         kgBindDiag(el('tr-banner'), trBuildDiagnostics);
       }
 
+      // F2: whether a best-so-far checkpoint exists, for the cancelled and interrupted banners.
+      function trCheckpointSentence(job) {
+        var facts = job.facts || {}, result = job.result || {};
+        var has = !!(facts.weights || result.weights) && job.weights_on_disk !== false;
+        var epoch = result.best_epoch;
+        if (!has) { return 'No checkpoint was saved.'; }
+        return 'Checkpoint from epoch ' + (epoch ? fmtCount(epoch) : '?') + ' is usable in Predict.';
+      }
+
+      // F3: the headline of a finished run: the best val accuracy and its epoch (the checkpoint
+      // Predict uses), the last epoch's value secondary.
+      function trAccuracyHeadline(job) {
+        var result = job.result || {};
+        var hist = ((job.progress || {}).history) || [];
+        var last = hist.length ? hist[hist.length - 1] : null;
+        if (typeof result.best_val_accuracy !== 'number') { return ''; }
+        var s = result.best_val_accuracy.toFixed(1) + '% val accuracy at epoch ' + fmtCount(result.best_epoch) +
+                ' (the checkpoint Predict uses)';
+        if (last && typeof last.va === 'number' && last.e !== result.best_epoch) {
+          s += ' · last epoch ' + last.va.toFixed(1) + '%';
+        }
+        return s;
+      }
+
       function trRenderCancelledBanner(job, animate) {
         var epochs = (job.result || {}).epochs_completed || (job.progress || {}).epoch || 0;
-        var weights = (job.facts || {}).weights || '';
         el('tr-banner').innerHTML = '<div class="' + (animate ? 'kgl-enter' : '') + '">' +
           '<div class="kg-callout info">' + kgIcon('info') +
-          '<span>Training cancelled after ' + fmtCount(epochs) + ' epoch' + (epochs === 1 ? '' : 's') + '.' +
-          (weights ? ' The best checkpoint so far was kept.' : '') +
-          ' Start Training begins a new run.</span></div></div>';
+          '<span>Training cancelled after ' + fmtCount(epochs) + ' epoch' + (epochs === 1 ? '' : 's') + '. ' +
+          esc(trCheckpointSentence(job)) + ' Start Training begins a new run.</span></div></div>';
       }
 
       // Terminal orchestrator, shared by the live finish and revisit. Success on revisit hides
@@ -3043,7 +3072,8 @@
           el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
         } else {   // failed or stale
           trRenderFailBanner(
-            kgErrorText(job.error) || 'Training failed. See the log below.', animate,
+            (kgErrorText(job.error) || 'Training failed. See the log below.') +
+              (job.status === 'stale' ? ' ' + trCheckpointSentence(job) : ''), animate,
             job.status === 'stale' ? 'Training was interrupted' : 'Training failed');
           trShowForm(true);
           el('tr-start-btn').innerHTML = KG_BTN_TRAIN_RERUN;
@@ -3321,7 +3351,9 @@
       // ── Expected duration (ExDark's hint, scaled by usable rows and epochs; a bundled
       // per-device benchmark seeds a machine's first run — docs/TRAIN_MIRROR.md §5) ─────
       var trEpochSecs = null;      // seconds per epoch for the run being configured (in-run seed)
-      var trCollectSecs = null;    // the final per-sample pass, seconds
+      var trCollectSecs = null;    // the final per-sample pass, seconds (scaled from rows at render time)
+      var trCollectPerRow = null;  // seconds per row of the final pass (history median or benchmark)
+      var trSetupSecs = null;      // job start -> first batch (history median or benchmark)
       var trPerRow = null;         // seconds per usable row per epoch
       var trStatsSource = null;    // 'history' | 'benchmark'
 
@@ -3352,15 +3384,18 @@
         var b = cls ? bench[cls] : null;
         if (trPerRow) {
           trStatsSource = 'history';
-          trCollectSecs = kgMedian(recent.map(function (r) { return r.collect_s; }));
+          trCollectPerRow = kgMedian(recent.map(function (r) { return r.collect_s_per_row; }));
+          trSetupSecs = kgMedian(recent.map(function (r) { return r.setup_s; }));
         } else if (b && b.epoch_s_per_row > 0) {
           trStatsSource = 'benchmark';
           trPerRow = b.epoch_s_per_row;
-          trCollectSecs = null;   // scaled by rows at render time
+          trCollectPerRow = b.collect_s_per_row || null;
+          trSetupSecs = b.setup_s || null;
         } else {
           trStatsSource = null;
           trPerRow = null;
-          trCollectSecs = null;
+          trCollectPerRow = null;
+          trSetupSecs = null;
         }
         trRenderDurationHint();
       }
@@ -3370,18 +3405,18 @@
         if (!box) { return; }
         var epochs = parseInt(el('tr-epochs').value, 10);
         var rows = trGate && trGate.ok ? trGate.usable_rows : null;
-        if (!trPerRow || !epochs || epochs < 1 || !rows) { box.innerHTML = ''; trEpochSecs = null; return; }
+        // F6: no estimate while a field is out of bounds (the run cannot start as configured).
+        if (!trPerRow || !epochs || epochs < 1 || !rows || trAnyInvalid()) { box.innerHTML = ''; trEpochSecs = null; return; }
         var per = trPerRow * rows;
         trEpochSecs = per;
         var cls = trDeviceClass();
-        var collect = trCollectSecs;
-        if (collect === null && trStatsSource === 'benchmark') {
-          var b = (((kgTraining || {}).benchmark || {}).per_device || {})[cls] || {};
-          var valRows = ((((kgImportState || {}).record || {}).tables || {}).val || {}).rows || 0;
-          var total = (trGate.rows || 0) + valRows;
-          collect = b.collect_s_per_row > 0 && total ? b.collect_s_per_row * total : 0;
-        }
-        var totalSecs = per * epochs + (collect || 0);
+        // F5: the final pass scales with every row collected (train + val) on this device class;
+        // the estimate is setup + epochs + collection.
+        var valRows = ((((kgImportState || {}).record || {}).tables || {}).val || {}).rows || 0;
+        var total = (trGate.rows || 0) + valRows;
+        var collect = (trCollectPerRow && total) ? trCollectPerRow * total : 0;
+        trCollectSecs = collect;
+        var totalSecs = (trSetupSecs || 0) + per * epochs + collect;
         var perText = per >= 60 ? '~' + Math.round(per / 60) + ' min/epoch' : '~' + Math.round(per) + ' s/epoch';
         if (trStatsSource === 'history') {
           box.innerHTML = '<div class="form-help">Recent runs averaged ' + esc(perText) + ' on this machine (' +
@@ -3472,6 +3507,7 @@
             : '';
         }
         trCheckReady();
+        trRenderDurationHint();
         return !bad;
       }
 
@@ -3723,6 +3759,7 @@
                   renderPipeline();
                   return;
                 }
+                kgApplyDerivedUrls(['tr-train-url']).then(function () { trVerifyTables(true); });
                 if (cur && cur.status && cur.status !== 'running') {
                   trainJobId = cur.id;
                   trRenderTerminal(cur, false, true);

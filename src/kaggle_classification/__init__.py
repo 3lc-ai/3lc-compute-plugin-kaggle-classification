@@ -165,6 +165,10 @@ class KaggleClassificationPlugin(ComputePlugin):
                 ctx.fail(str(exc))
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
+                # F5: compile UMAP in the background now, so the first Train run's collection pass is warm.
+                from kaggle_classification import trainer
+
+                trainer.prewarm_umap_async()
             return
         if kind == "train":
             from kaggle_classification import trainer
