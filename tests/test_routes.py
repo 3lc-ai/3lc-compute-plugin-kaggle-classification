@@ -236,6 +236,8 @@ SAFE_IDENTS = {
     "p", "h", "bad",
     # the revision tree (part D): the out-of-lineage flag and the indentation depth
     "off", "depth",
+    # the previous-runs card (part E): rows are [label, pre-escaped value] pairs built above
+    "row",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

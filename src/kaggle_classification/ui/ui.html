@@ -608,6 +608,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Previous runs (part E): read-only, from the train records; the dropdown selection is
+           the only state. The Status tab's history table comes later from the same records. -->
+      <div id="tr-runs" hidden>
+        <hr class="divider">
+        <div class="kg-sec-head">Previous runs</div>
+        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          <div class="form-group">
+            <label class="form-label" for="tr-runs-select">Run</label>
+            <div class="kg-select-wrap">
+              <select id="tr-runs-select" class="form-control"></select>
+              <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
+            </div>
+            <div class="form-help">This project's plugin runs, newest first.</div>
+          </div>
+        </div>
+        <div id="tr-run-card"></div>
+      </div>
     </div>
   </div>
   <div class="kg-footer" data-kg-footer></div>
@@ -3085,6 +3103,7 @@
             trCheckReady();
             renderPipeline();
             trLoadDurationStats();
+            trRenderRunsPanel();
             trNewToken();
           })
           .catch(function () {
@@ -3383,7 +3402,7 @@
           kgApplyDerivedUrls(['tr-train-url'])
             .then(function () { trVerifyTables(true); });
           API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); })
-            .then(function (st) { kgTrainState = st || kgTrainState; trLoadDurationStats(); renderPipeline(); })
+            .then(function (st) { kgTrainState = st || kgTrainState; trLoadDurationStats(); trRenderRunsPanel(); renderPipeline(); })
             .catch(function () { /* hint is optional */ });
         });
       }
@@ -3550,6 +3569,113 @@
           .catch(function () { btn.disabled = false; });
       });
 
+      // ── Previous runs panel (part E) ────────────────────────────────
+      var trRunsSelected = '';   // the dropdown selection: the only state this panel keeps
+
+      function trRunLabel(r) {
+        var when = r.created_at ? kgFmtAgo(r.created_at) : '';
+        return (r.run_name || r.id) + ' · ' + (r.status || '?') + (when ? ' · ' + when : '');
+      }
+
+      function trRenderRunsPanel() {
+        var box = el('tr-runs');
+        if (!box) { return; }
+        var runs = (kgTrainState.runs || []).filter(function (r) { return r && r.id; });
+        box.hidden = !runs.length;
+        if (!runs.length) { el('tr-run-card').innerHTML = ''; return; }
+        var sel = el('tr-runs-select');
+        sel.innerHTML = runs.map(function (r) {
+          return '<option value="' + esc(r.id) + '">' + esc(trRunLabel(r)) + '</option>';
+        }).join('');
+        if (!runs.some(function (r) { return r.id === trRunsSelected; })) { trRunsSelected = runs[0].id; }
+        sel.value = trRunsSelected;
+        trRenderRunCard(runs.filter(function (r) { return r.id === trRunsSelected; })[0]);
+      }
+
+      function trHpLine(p) {
+        p = p || {};
+        var parts = [];
+        if (p.epochs != null) { parts.push(fmtCount(p.epochs) + ' epochs'); }
+        if (p.batch_size != null) { parts.push('batch ' + fmtCount(p.batch_size)); }
+        if (p.lr != null) { parts.push('lr ' + p.lr); }
+        if (p.weight_decay != null) { parts.push('weight decay ' + p.weight_decay); }
+        if (p.optimizer) { parts.push(trOptimizerLabel(p.optimizer)); }
+        if (p.schedule) { parts.push('schedule ' + p.schedule); }
+        if (p.seed != null) { parts.push('seed ' + p.seed); }
+        return parts.join(' · ');
+      }
+
+      function trRenderRunCard(r) {
+        var box = el('tr-run-card');
+        if (!r) { box.innerHTML = ''; return; }
+        var badgeCls = TR_BADGE_CLASS[r.status] || 'queued';
+        var rev = r.train_table_url ? kgTableRef(r.train_table_url) : '';
+        var best = (typeof r.best_val_accuracy === 'number')
+          ? r.best_val_accuracy.toFixed(1) + '% val accuracy at epoch ' + fmtCount(r.best_epoch) : 'no checkpoint';
+        var link = r.run_url ? dashRunLink(r.run_url) : '';
+        var projectsHref = kgHubProjectsHref(r.project_name || kgCurrentProject());
+        var rows = [
+          ['Status', '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(r.status || '?') + '</span>'],
+          ['Trained on', rev ? esc(rev) + (typeof r.usable_rows === 'number' ? ' · ' + fmtCount(r.usable_rows) + ' usable rows' : '') : '—'],
+          ['Settings', esc(trHpLine(r.params) || '—')],
+          ['Best', esc(best)],
+          ['Device', esc(r.device || r.device_class || '—')],
+          ['Elapsed', r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '—']
+        ];
+        var html = '<div class="kg-locked-rows" style="margin-top:6px">' + rows.map(function (row) {
+          return '<div class="kg-locked-row"><span class="lbl">' + esc(row[0]) + '</span><span class="val">' + row[1] + '</span></div>';
+        }).join('') + '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
+          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+                  '"><span>Open in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+                  '"><span>Open in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+          '<button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-run-use">' + kgIcon('refresh-cw', 'kgi-12') +
+          '<span>Use these settings</span></button>' +
+          '<span id="tr-run-use-note" class="form-help" style="margin:0"></span></div>';
+        box.innerHTML = html;
+        el('tr-run-use').addEventListener('click', function () { trUseRunSettings(r); });
+      }
+
+      // Loads that run's EDITABLE settings into the form; never the locked ones, and never a train
+      // table outside the current lineage (the preflight's lineage verdict decides).
+      function trUseRunSettings(r) {
+        if (kgDevMode) { return; }
+        var p = r.params || {};
+        var applied = [];
+        Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+          var key = TR_FIELD_KEYS[id];
+          if (!(key in p) || p[key] === null || p[key] === undefined) { return; }
+          if (key !== 'workers' && !trIsEditable(key)) { return; }
+          el(id).value = String(p[key]);
+          applied.push(key);
+          if (TR_BOUNDS[id]) { trValidateField(id); }
+        });
+        if (p.device !== undefined && p.device !== null) { el('tr-device').value = String(p.device); }
+        var note = el('tr-run-use-note');
+        note.textContent = applied.length ? 'Applied: ' + applied.join(', ') + '.' : 'Nothing to apply.';
+        if (!r.train_table_url) { return; }
+        API.authFetch(PLUGIN_ROOT + '/train/preflight?train_url=' + encodeURIComponent(r.train_table_url))
+          .then(function (x) { return x.json(); })
+          .then(function (pf) {
+            var inLineage = pf && pf.exists && pf.base && pf.base.descends_from_seed === true;
+            if (inLineage) {
+              el('tr-train-url').value = r.train_table_url;
+              el('tr-latest').checked = !!p.use_latest;
+              kgSetUrlOverride('tr-train-url');
+              trVerifyTables(true);
+              note.textContent += ' Train table set to ' + kgTableRef(r.train_table_url) + '.';
+            } else {
+              note.textContent += ' That run\'s train table is not in the current lineage; the table field was left as is.';
+            }
+          })
+          .catch(function () { /* settings applied; the table stays */ });
+      }
+      el('tr-runs-select').addEventListener('change', function () {
+        trRunsSelected = el('tr-runs-select').value;
+        trRenderRunCard((kgTrainState.runs || []).filter(function (r) { return r.id === trRunsSelected; })[0]);
+      });
+
       // ── Tab-open resolution (Train) ──────────────────────────────────
       // Same precedence as Import: a still-running job on the host wins (reconnect → in-run
       // view), then the durable record's terminal state renders static (completed hides the
@@ -3572,6 +3698,7 @@
               .then(function (st) {
                 kgTrainState = st || kgTrainState;
                 trLoadDurationStats();
+                trRenderRunsPanel();
                 var cur = kgTrainState.current;
                 if (running && !trRunning) {
                   trainJobId = running.id;

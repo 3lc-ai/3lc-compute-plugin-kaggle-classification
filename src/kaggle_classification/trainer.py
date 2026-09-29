@@ -634,6 +634,13 @@ def run_summary(record: dict[str, Any]) -> dict[str, Any]:
         "val_table_url": facts.get("val_table_url"),
         "contract": {k: (record.get("params") or {}).get(k)
                      for k in ("backbone", "head", "arch", "image_size", "pretrained", "seed")},
+        # The settings a later run may reuse (part E: "Use these settings"): the training fields as
+        # the run trained with them plus workers; the locked facts stay out.
+        "params": {k: (record.get("params") or {}).get(k)
+                   for k in ("epochs", "batch_size", "lr", "weight_decay", "seed", "optimizer", "schedule",
+                             "workers", "use_latest", "device")},
+        "elapsed_s": (round(float(record["finished_at"]) - float(record["created_at"]), 1)
+                      if record.get("finished_at") and record.get("created_at") else None),
     }
 
 
