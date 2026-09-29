@@ -31,7 +31,8 @@ Contract (docs/PLAN.md §B and §C "Trainer", docs/TRAIN_MIRROR.md, decisions D1
 * Per epoch: train loss, val loss, val accuracy (``tlc.log``, the progress channel); best by val
   accuracy (strict ``>``) saved atomically as ``<run>/model/best.pt``, ``last.pt`` every epoch (D12).
 * End of training only: per-sample metrics on ALL train rows and all val rows — ``predicted``
-  (class map), ``confidence``, ``prob_<class>``, ``loss`` (NaN for undefined rows, never fabricated),
+  (class map), ``confidence``, ``accuracy`` (1 / 0, NaN for undefined rows), ``loss`` (NaN for undefined rows,
+  never fabricated),
   3-D ``embeddings`` (UMAP fit on train, val transformed; PCA fallback) — via ``run.add_metrics``.
 * Robustness: a durable train record in the session store (``train_state``), worker-pid orphan
   detection (a compute restart mid-run reads back as ``stale``), sleep gaps logged, cooperative
@@ -1521,7 +1522,7 @@ def _collect(
     val_view: Any, train_url: str, val_url: str, batch_size: int, workers: int, epoch: int, log: Any,
     heartbeat: Any, is_cancelled: Any,
 ) -> str:
-    """PLAN §B: predicted, confidence, prob_<class>, loss (NaN for undefined), 3-D embeddings — UMAP
+    """PLAN §B (part C): predicted, confidence, accuracy, loss (accuracy and loss NaN for undefined), 3-D embeddings — UMAP
     fit on train (labeled + undefined together), val transformed into the same space, PCA fallback.
     Returns the reducer that produced the coordinates."""
     import copy
@@ -1540,7 +1541,7 @@ def _collect(
     targets = (("train", train_table, train_view, train_url), ("val", val_table, val_view, val_url))
     for split, table, view, url in targets:
         loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False)
-        embs, preds, confs, probs, losses = [], [], [], [], []
+        embs, preds, confs, accs, losses = [], [], [], [], []
         with torch.no_grad():
             for images, labels_b in loader:
                 images, labels_b = images.to(device), labels_b.to(device)
@@ -1557,13 +1558,16 @@ def _collect(
                 embs.append(emb.float().cpu().numpy())
                 preds.append(pred.cpu().numpy())
                 confs.append(conf.float().cpu().numpy())
-                probs.append(p.float().cpu().numpy())
+                acc = torch.full((int(labels_b.shape[0]),), float("nan"), dtype=torch.float32, device=device)
+                if bool(mask.any()):
+                    acc[mask] = (pred[mask] == labels_b[mask]).float()
+                accs.append(acc.cpu().numpy())
                 losses.append(loss.cpu().numpy())
                 heartbeat()
         splits.append({
             "split": split, "url": url, "table": table,
             "emb": np.vstack(embs), "pred": np.concatenate(preds).astype(np.int64),
-            "conf": np.concatenate(confs).astype(np.float32), "prob": np.vstack(probs).astype(np.float32),
+            "conf": np.concatenate(confs).astype(np.float32), "acc": np.concatenate(accs).astype(np.float32),
             "loss": np.concatenate(losses).astype(np.float32),
         })
         log(f"collected {split}: {len(splits[-1]['pred']):,} rows")
@@ -1581,8 +1585,7 @@ def _collect(
             "loss": s["loss"],
             "embeddings": [row.astype(np.float32) for row in s["reduced"]],
         }
-        for i, name in enumerate(names):
-            metrics[f"prob_{name}"] = s["prob"][:, i]
+        metrics["accuracy"] = s["acc"]   # the kit's per-sample accuracy: 1 correct, 0 wrong, absent for undefined
         schema: dict[str, Any] = {
             "embeddings": tlc.schemas.Float32Schema(shape=(n_comp,), display_name=f"Embedding ({n_comp}D)"),
         }

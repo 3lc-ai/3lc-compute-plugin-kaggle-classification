@@ -355,7 +355,7 @@ def test_run_training_end_to_end_on_cpu(imported, project_root):
             assert 0 <= int(r["predicted"]) < manifest.num_classes
             assert 0.0 <= float(r["confidence"]) <= 1.0
             assert len(r["embeddings"]) == 3
-            assert abs(sum(float(r[f"prob_{n}"]) for n in names) - 1.0) < 1e-3
+            assert not any(k.startswith("prob_") for k in r)
             assert r["epoch"] == result["best_epoch"]
     # Loss: present for labeled rows, NaN (absent) for the three undefined rows — never fabricated.
     labeled = [r for r in train_rows if int(r["example_id"]) < 12]
@@ -363,6 +363,10 @@ def test_run_training_end_to_end_on_cpu(imported, project_root):
     assert len(pool) == 3 and all(math.isnan(float(r["loss"])) for r in pool)
     assert all(not math.isnan(float(r["loss"])) and float(r["loss"]) >= 0 for r in labeled)
     assert all(not math.isnan(float(r["loss"])) for r in val_rows)
+    # The kit's per-sample accuracy: 1 correct / 0 wrong on labeled rows, absent for undefined rows.
+    assert all(math.isnan(float(r["accuracy"])) for r in pool)
+    assert all(float(r["accuracy"]) in (0.0, 1.0) for r in labeled + val_rows)
+    assert names
     # The record: completed, in the history, with the ETA stats and the checkpoint facts.
     st = trainer.train_state()
     assert st["state"] == "completed" and st["current"]["weights_on_disk"] is True

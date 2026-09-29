@@ -117,11 +117,11 @@ per split, computed on the restored best-epoch model with the val (non-augmented
 |---|---|---|
 | `predicted` | categorical, same value map as the table's `label` column (class names) | yes |
 | `confidence` | float32, max softmax | yes |
-| `prob_<class>` × N | float32 per class (per-class probabilities) | yes |
+| `accuracy` | float32, 1 correct / 0 wrong (the kit's per-sample accuracy) | **masked** — NaN, like `loss` |
 | `loss` | float32 cross-entropy, `reduction="none"` | **masked** — no value fabricated; the column is written only for rows with `label < num_classes` (a NaN/absent value, never 0 or a placeholder) |
 | `embeddings` | float32 vector, shape `(n_components,)` = 3 | yes |
 
-Embeddings come from `model.forward_head(model.forward_features(x), pre_logits=True)`
+Embeddings are the 512-d backbone output (the kit's `fc = Identity` layer, `model.features(x)`)
 (512-d for resnet18). The reducer (`manifest.training.embeddings.method`, UMAP) is **fit on the
 train embeddings — the 600 labeled and the 6,000 undefined rows together** — and val is
 `transform`ed into that same space, so both splits share one coordinate system and the
