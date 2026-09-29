@@ -234,6 +234,8 @@ SAFE_IDENTS = {
     # inline-error flag, the usable-row parts (all built from fmtCount / esc above)
     "t.latest", "parts.join", "problems.length", "problems.map", "data.help.map", "function", "return", "join",
     "p", "h", "bad",
+    # the revision tree (part D): the out-of-lineage flag and the indentation depth
+    "off", "depth",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

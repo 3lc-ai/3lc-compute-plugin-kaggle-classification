@@ -503,19 +503,48 @@ def latest_url(url: str, *, timeout: float = 30.0) -> str:
             return url
 
 
-def list_project_tables(manifest: Manifest, project: str) -> dict[str, Any]:
-    """``GET /tables/list``: datasets -> lineage-ordered revision chains for the revision picker.
+# Labeled-row counts per table URL (part D). Tables are immutable, so a URL's count never changes
+# while the worker lives; the cache is per process and bounded by the tables the picker lists.
+_LABELED_ROWS_CACHE: dict[str, int] = {}
+
+
+def labeled_rows(url: str, manifest: Manifest) -> int | None:
+    """Rows with a real label and weight > 0 (what the sampler draws), cached by URL."""
+    import tlc
+
+    key = _norm(url)
+    if key in _LABELED_ROWS_CACHE:
+        return _LABELED_ROWS_CACHE[key]
+    try:
+        table = tlc.Table.from_url(tlc.Url(url))
+        undefined = int(manifest.undefined_label_id)
+        n = sum(1 for r in table.table_rows if int(r["label"]) != undefined and float(r["weight"]) > 0)
+    except Exception:
+        return None
+    _LABELED_ROWS_CACHE[key] = n
+    return n
+
+
+def list_project_tables(
+    manifest: Manifest, project: str, *, seed_url: str = "", runs_used: dict[str, int] | None = None
+) -> dict[str, Any]:
+    """``GET /tables/list``: datasets -> the revision TREE for the picker (part D).
 
     Layout-derived: ``table_url`` rebuilds ``<root>/<project>/datasets/<dataset>/tables/<table>``,
-    so the datasets root is walked directly. Chain order is lineage, root first, following the
-    newest child at each step; off-chain branches append in mtime order. ``latest`` comes from
-    ``latest_url`` on the chain root — the resolution ``use_latest`` training follows.
-    Read-only; an unreadable table folder is skipped, never a failure."""
+    so the datasets root is walked directly. Rows come in tree order: a root first, then its
+    children depth-first (newest last), each row with ``depth`` (0 = a root), ``parent`` (the URL
+    it was derived from), ``in_lineage`` (descends from ``seed_url``, the import record's seed —
+    the only tables Train accepts), ``labeled_rows`` (cached by URL) and ``runs_used`` (from the
+    train records). ``latest`` marks what ``latest_url`` resolves to from the seed (or the first
+    root) — the resolution ``use_latest`` training follows. Read-only; an unreadable table folder
+    is skipped, never a failure."""
     probe = table_url(project, "__probe__", "initial")
     datasets_root = Path(probe).parent.parent.parent
-    out: dict[str, Any] = {"project": project, "datasets": []}
+    out: dict[str, Any] = {"project": project, "datasets": [], "seed_url": seed_url}
     if not datasets_root.is_dir():
         return out
+    runs_used = {_norm(k): v for k, v in (runs_used or {}).items()}
+    seed_key = _norm(seed_url) if seed_url else ""
     for ds_dir in sorted(p for p in datasets_root.iterdir() if p.is_dir()):
         tables_dir = ds_dir / "tables"
         if not tables_dir.is_dir():
@@ -524,21 +553,46 @@ def list_project_tables(manifest: Manifest, project: str) -> dict[str, Any]:
         if not entries:
             continue
         roots = [k for k, e in entries.items() if not (e["_parent"] and e["_parent"] in entries)]
-        ordered: list[dict[str, Any]] = []
+        ordered: list[tuple[str, int]] = []
         seen: set[str] = set()
-        for root in sorted(roots, key=lambda k: entries[k]["_mtime"]):
-            cur: str | None = root
-            while cur and cur not in seen:
-                seen.add(cur)
-                ordered.append(entries[cur])
-                kids = sorted(children.get(cur, []), key=lambda k: entries[k]["_mtime"])
-                cur = kids[-1] if kids else None
-        for key, e in sorted(entries.items(), key=lambda kv: kv[1]["_mtime"]):
-            if key not in seen:
-                ordered.append(e)
-        latest = latest_url(ordered[0]["url"], timeout=_LATEST_TIMEOUT_ROUTE_S)
-        rows = [{"name": e["name"], "url": e["url"], "rows": e["rows"], "latest": _norm(e["url"]) == _norm(latest)}
-                for e in ordered]
+
+        def walk(key: str, depth: int) -> None:
+            if key in seen:
+                return
+            seen.add(key)
+            ordered.append((key, depth))
+            for kid in sorted(children.get(key, []), key=lambda k: entries[k]["_mtime"]):
+                walk(kid, depth + 1)
+
+        # The seed's tree first (it is what Train accepts), then the other roots by age.
+        for root in sorted(roots, key=lambda k: (k != seed_key, entries[k]["_mtime"])):
+            walk(root, 0)
+        for key in sorted(entries, key=lambda k: entries[k]["_mtime"]):
+            walk(key, 0)
+        in_lineage: set[str] = set()
+        if seed_key in entries:
+            stack = [seed_key]
+            while stack:
+                k = stack.pop()
+                if k in in_lineage:
+                    continue
+                in_lineage.add(k)
+                stack.extend(children.get(k, []))
+        latest_from = seed_url if seed_key in entries else entries[ordered[0][0]]["url"]
+        latest = latest_url(latest_from, timeout=_LATEST_TIMEOUT_ROUTE_S)
+        is_train = ds_dir.name == manifest.dataset_name("train")
+        rows = [
+            {
+                "name": entries[k]["name"], "url": entries[k]["url"], "rows": entries[k]["rows"],
+                "depth": depth,
+                "parent": entries[entries[k]["_parent"]]["url"] if entries[k]["_parent"] in entries else "",
+                "in_lineage": (k in in_lineage) if seed_key else True,
+                "labeled_rows": labeled_rows(entries[k]["url"], manifest) if is_train else None,
+                "runs_used": runs_used.get(k, 0),
+                "latest": _norm(entries[k]["url"]) == _norm(latest),
+            }
+            for k, depth in ordered
+        ]
         out["datasets"].append({"name": ds_dir.name, "tables": rows, "latest_url": latest})
     return out
 

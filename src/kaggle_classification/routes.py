@@ -180,12 +180,19 @@ def get_route_handlers() -> list[Any]:
     @get("/tables/list", sync_to_thread=True)
     def tables_list(project: str = "") -> dict[str, Any]:
         """Datasets -> ordered revision chains (the revision picker)."""
-        from kaggle_classification import importer, manifest, session
+        from kaggle_classification import importer, manifest, session, trainer
 
         current = manifest.resolve(network=False).manifest
         project = project.strip() or session.populated_session(current)["project_name"]
+        record = importer.read_record() or {}
+        seed_url = str(((record.get("lineage_root") or {}).get("train_url")) or "")
+        used: dict[str, int] = {}
+        for r in trainer.read_state().get("runs") or []:
+            u = str(r.get("train_table_url") or "")
+            if u:
+                used[u] = used.get(u, 0) + 1
         try:
-            return importer.list_project_tables(current, project)
+            return importer.list_project_tables(current, project, seed_url=seed_url, runs_used=used)
         except Exception as exc:
             return {"project": project, "datasets": [], "error": f"{type(exc).__name__}: {exc}"}
 

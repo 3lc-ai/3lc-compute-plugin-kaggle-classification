@@ -491,3 +491,36 @@ def test_an_opened_manifest_trains_with_the_chosen_optimizer_and_schedule(import
     p = trainer.get_run_parameters(tlc.Run.from_url(tlc.Url(result["run_url"])))
     assert p["optimizer"] == "sgd" and p["schedule"] == "cosine" and p["lr"] == 0.01
     assert any("sgd, cosine" in line for line in ctx.logs)
+
+
+# ── Part D: the revision tree the picker renders ─────────────────────────────
+
+
+def test_tables_list_is_the_seed_lineage_tree_with_counts(imported, store):
+    manifest, train_url, val_url = imported
+    a = _edit(train_url, "weight", {0: 2.0}, "round-1")
+    b = _edit(a, "weight", {1: 0.0}, "round-2")
+    stranger = tlc.Table.from_dict(
+        {"image": [], "label": [], "weight": []}, schema=importer._schema(manifest),
+        table_url=tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("train"), "initial-2")),
+        if_exists="raise", add_weight_column=False,
+    )
+    used = {a: 2, str(stranger.url): 1}
+    listing = importer.list_project_tables(manifest, "intel-scene", seed_url=train_url, runs_used=used)
+    ds = next(d for d in listing["datasets"] if d["name"] == manifest.dataset_name("train"))
+    by_name = {t["name"]: t for t in ds["tables"]}
+    assert [t["name"] for t in ds["tables"]][:3] == ["initial", "round-1", "round-2"]
+    assert [t["depth"] for t in ds["tables"]][:3] == [0, 1, 2]
+    assert by_name["round-1"]["parent"] == train_url and by_name["round-2"]["parent"] == a
+    assert by_name["initial"]["in_lineage"] and by_name["round-2"]["in_lineage"]
+    assert by_name["initial-2"]["in_lineage"] is False and by_name["initial-2"]["depth"] == 0
+    assert ds["tables"][-1]["name"] == "initial-2"   # a different import sorts last
+    assert by_name["initial"]["labeled_rows"] == 12 and by_name["round-2"]["labeled_rows"] == 11
+    assert by_name["round-1"]["runs_used"] == 2 and by_name["initial"]["runs_used"] == 0
+    assert by_name["round-2"]["latest"] is True and by_name["initial"]["latest"] is False
+    assert ds["latest_url"] == b
+    # The val dataset lists no labeled counts (val is locked) and is in lineage by default.
+    val_ds = next(d for d in listing["datasets"] if d["name"] == manifest.dataset_name("val"))
+    assert val_ds["tables"][0]["labeled_rows"] is None
+    # Cached by URL: a second listing does not re-scan the rows.
+    assert importer._LABELED_ROWS_CACHE[importer._norm(train_url)] == 12

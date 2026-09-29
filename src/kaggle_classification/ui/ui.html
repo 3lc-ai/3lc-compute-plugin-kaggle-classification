@@ -194,6 +194,13 @@
 .kg-pop-row:hover { background: var(--accent-light, rgba(42,74,97,.06)); }
 .kg-pop-row .rows { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 .kg-pop-badge { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; }
+.kg-pop-tree { color: var(--text-muted); font-family: ui-monospace, monospace; }
+.kg-pop-row-off { color: var(--text-muted); cursor: not-allowed; opacity: .7; }
+.kg-pop-row-off:hover { background: none; }
+.kg-pop-off { font-size: 10px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--border-light, rgba(0,0,0,.08)); color: var(--text-muted); white-space: nowrap; }
+.kg-pop-foot { border-top: 1px solid var(--border-light, rgba(0,0,0,.06)); margin-top: 4px; padding: 6px 8px 2px; font-size: 11.5px; }
+.kg-pop-foot a { color: var(--text-secondary); text-decoration: none; display: inline-flex; gap: 4px; align-items: center; }
+.kg-pop-foot a:hover { color: var(--accent); }
 .kg-usable { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
 .kg-select-wrap { position: relative; }
 .kg-select-wrap select { appearance: none; -webkit-appearance: none; -moz-appearance: none; padding-right: 28px; width: 100%; cursor: pointer; }
@@ -2400,18 +2407,39 @@
                 return !want || ds.name === want;
               }).forEach(function (ds) {
                 html += '<div class="kg-pop-ds">' + esc(ds.name) + '</div>';
-                (ds.tables || []).forEach(function (t) {
-                  html += '<button type="button" class="kg-pop-row" data-url="' + esc(t.url) +
-                          '" data-latest="' + (t.latest ? '1' : '0') + '">' +
-                          '<span>' + esc(t.name) + '</span>' +
+                // The seed lineage as an indented tree (part D): a root, then its revisions under
+                // their parents; tables from another import greyed at the bottom.
+                var tables = (ds.tables || []).slice().sort(function (a, b) {
+                  return (a.in_lineage === false ? 1 : 0) - (b.in_lineage === false ? 1 : 0);
+                });
+                tables.forEach(function (t) {
+                  var off = t.in_lineage === false;
+                  var depth = Math.min(6, t.depth || 0);
+                  var counts = [];
+                  if (typeof t.labeled_rows === 'number') { counts.push(fmtCount(t.labeled_rows) + ' labeled'); }
+                  else { counts.push(fmtCount(t.rows) + ' rows'); }
+                  if (typeof t.runs_used === 'number' && t.runs_used > 0) {
+                    counts.push('used by ' + fmtCount(t.runs_used) + ' run' + (t.runs_used === 1 ? '' : 's'));
+                  }
+                  html += '<button type="button" class="kg-pop-row' + (off ? ' kg-pop-row-off' : '') +
+                          '" data-url="' + esc(t.url) + '" data-latest="' + (t.latest ? '1' : '0') + '"' +
+                          (off ? ' disabled title="Different import: can\'t be trained on (not a revision of the imported table)"' : '') +
+                          ' style="padding-left:' + (8 + depth * 14) + 'px">' +
+                          '<span>' + (depth ? '<span class="kg-pop-tree">└─</span> ' : '') + esc(t.name) + '</span>' +
                           (t.latest ? '<span class="kg-pop-badge">LATEST</span>' : '') +
-                          '<span class="rows">' + fmtCount(t.rows) + ' rows</span></button>';
+                          (off ? '<span class="kg-pop-off">different import</span>' : '') +
+                          '<span class="rows">' + esc(counts.join(' · ')) + '</span></button>';
                 });
               });
+              var graph = kgHubProjectsHref(kgCurrentProject(), 'datasets');
+              if (html && graph) {
+                html += '<div class="kg-pop-foot"><a class="kgi-btn" target="_blank" href="' + esc(graph) +
+                        '"><span>Open revision graph in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>';
+              }
               pop.innerHTML = html ||
                 '<div class="form-help" style="padding:4px 8px">No ' + (want ? esc(want) + ' ' : '') +
                 'tables in this project yet. Run Import first.</div>';
-              pop.querySelectorAll('.kg-pop-row').forEach(function (row) {
+              pop.querySelectorAll('.kg-pop-row:not([disabled])').forEach(function (row) {
                 row.addEventListener('click', function () {
                   input.value = row.getAttribute('data-url');
                   close();
@@ -2903,11 +2931,11 @@
         trVerifyTables(true);
       }
 
-      function kgHubProjectsHref(project) {
+      function kgHubProjectsHref(project, view) {
         // Only on the Hub itself: the /projects route belongs to hub.3lc.ai / hub-beta.3lc.ai.
         var host = String(window.location.hostname || '');
         if (!project || !/^(hub|hub-beta)\.3lc\.ai$/.test(host)) { return ''; }
-        return '/projects/' + encodeURIComponent(project) + '#runs';
+        return '/projects/' + encodeURIComponent(project) + '#' + (view || 'runs');
       }
 
       function trRenderSuccessBanner(job, animate, revisit) {
