@@ -13,7 +13,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - `training.editable` + `training.options` in schema v1: a field renders only when the manifest opens
   it, else as a locked row and refused server-side; optimizers adam / adamw / sgd, schedules steplr /
   cosine / none. This event opens epochs, batch_size, lr, weight_decay, seed.
-- Per-sample columns: `prob_*` removed, `accuracy` added (absent for undefined rows).
+- Per-sample columns: `prob_*` removed; `accuracy` added and, in the same day's re-check, removed
+  again — the collected columns are label, weight, predicted, confidence, loss and Embedding (3D).
 - The table picker shows the seed lineage as a tree with labeled-row counts and runs-used, greys
   other imports, links the Hub project's Datasets view; a Previous runs panel (dropdown + card,
   Use these settings); the train URL prefills from the seed; banners name the checkpoint and lead

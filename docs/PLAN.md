@@ -117,9 +117,12 @@ per split, computed on the restored best-epoch model with the val (non-augmented
 |---|---|---|
 | `predicted` | categorical, same value map as the table's `label` column (class names) | yes |
 | `confidence` | float32, max softmax | yes |
-| `accuracy` | float32, 1 correct / 0 wrong (the kit's per-sample accuracy) | **masked** — NaN, like `loss` |
 | `loss` | float32 cross-entropy, `reduction="none"` | **masked** — no value fabricated; the column is written only for rows with `label < num_classes` (a NaN/absent value, never 0 or a placeholder) |
 | `embeddings` | float32 vector, shape `(n_components,)` = 3 | yes |
+
+Those five, beside the table's own `label` and `weight`, are the collected columns: no `prob_*`
+(2026-09-29 review, part C) and no `accuracy` (the same day's re-check, item 8 — a 1 / 0 column
+adds nothing the Dashboard cannot derive from `predicted` and `label`).
 
 Embeddings are the 512-d backbone output (the kit's `fc = Identity` layer, `model.features(x)`)
 (512-d for resnet18). The reducer (`manifest.training.embeddings.method`, UMAP) is **fit on the

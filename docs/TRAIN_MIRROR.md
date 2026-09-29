@@ -478,7 +478,9 @@ cancel, completed revisit, fixtures. Six parts followed, one commit each:
   optimizers adam / adamw / sgd(0.9), schedules steplr / cosine / none; a field renders only when
   the manifest opens it, else a locked row; a locked field sent by a client is refused. This event
   opens epochs, batch_size, lr, weight_decay, seed and locks Adam + StepLR.
-- **C. Per-sample columns** — `prob_*` removed; `accuracy` (1 / 0, absent for undefined) added.
+- **C. Per-sample columns** — `prob_*` removed; `accuracy` (1 / 0, absent for undefined) added,
+  then removed again in the re-check (§13, item 8): label, weight, predicted, confidence, loss,
+  Embedding (3D).
 - **D. Revision tree in the picker** — the seed lineage indented under its parents with labeled-row
   counts (cached by URL) and runs-used; tables from another import greyed at the bottom (disabled);
   "Open revision graph in Projects" (Hub origin). LATEST on what `latest()` resolves to.
