@@ -98,17 +98,17 @@ Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regen
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-02.zip` | 53,237,641 | `908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-03.zip` | 24,511,747 | `ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-04.zip` | 14,208,813 | `4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2` |
-| `kaggle/intel-scene/manifest.json` | 2,732 | `aa797f7f13b48d25da1b2143c4ca8951af78b287d4a0e98f797991c8cc9c855a` |
+| `kaggle/intel-scene/manifest.json` | 2,989 | `8ffcdccc657595dff627b8789a196f316df864d80174a2f43d25d9e804e7a55a` |
 | `kaggle/classification-index.json` | 203 | `e0e9c4bce89460607277fa7a57eead1d65c39be38a1d53d151a5eb63073f262d` |
 
-The manifest above is the **session 3 build** (`cdn/` regenerated 2026-09-29 from the bundled
-manifest): the session 2.5 document (display name "3LC Scene Classification Challenge",
-`submission.daily_limit` 100) plus `training.bounds.seed: [0, 2147483647]` (the Train tab's Seed
-field, decision D6). It supersedes the 2,691 B `6a10e44f…efed2` copy that is on the dev tier now; the
-index (203 B `e0e9c4bc…f262d`) and the five shards are byte-identical to what is uploaded, so the
-re-upload is the one key `kaggle/intel-scene/manifest.json` (Cache-Control `max-age=60`) followed by
-an invalidation of that path. Until then the dev tier serves the seed-less document; the plugin
-falls back to the same seed range, so nothing breaks. Both manifests describe the same kit v1.
+The manifest above is the **session 3 build** (`cdn/` regenerated 2026-09-29 after the review, from
+the bundled manifest): the session 2.5 document plus `training.bounds.seed`, `model.backbone` /
+`model.head` (the kit's model, part A) and `training.editable` / `training.options` (part B). It
+supersedes the 2,691 B `6a10e44f…efed2` copy on the dev tier (which still loads: `arch: resnet18` is
+read as the kit's model and absent editable/options mean the numeric fields open, the choices lock).
+The index (203 B `e0e9c4bc…f262d`) and the five shards are byte-identical to what is uploaded, so
+the re-upload is the one key `kaggle/intel-scene/manifest.json` (Cache-Control `max-age=60`) followed
+by an invalidation of that path. Both manifests describe the same kit v1.
 
 Nothing on prod changes during session 2; this section is the hand-off for later.
 

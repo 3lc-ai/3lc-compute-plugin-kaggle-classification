@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased] — 0.1.0 (sessions 1 to 3)
 
+### Changed (session 3 review, 2026-09-29 afternoon)
+- The model is the Intel kit's exactly: torchvision resnet18 with the kit's MLP head, torchvision's
+  init, the kit's seeding and creation order; `model.backbone` / `model.head` in schema v1
+  (allowlisted; `arch: resnet18` still read as the kit's model); timm dropped. Parity gate against
+  `intel-kit/train.py` (3lc 2.22.3, seeds 42-44): kit 70.53 +/- 1.59, plugin 70.53 +/- 2.08 val accuracy.
+- `training.editable` + `training.options` in schema v1: a field renders only when the manifest opens
+  it, else as a locked row and refused server-side; optimizers adam / adamw / sgd, schedules steplr /
+  cosine / none. This event opens epochs, batch_size, lr, weight_decay, seed.
+- Per-sample columns: `prob_*` removed, `accuracy` added (absent for undefined rows).
+- The table picker shows the seed lineage as a tree with labeled-row counts and runs-used, greys
+  other imports, links the Hub project's Datasets view; a Previous runs panel (dropdown + card,
+  Use these settings); the train URL prefills from the seed; banners name the checkpoint and lead
+  with the best val accuracy; interrupted runs are marked on the Run; a persistent numba cache and
+  a UMAP pre-warm; the duration estimate = setup + training + collection, hidden while a field is
+  out of bounds.
+
 ### Added (session 3, the Train tab — 2026-09-29)
 - The Train tab, ExDark's control for control (`docs/TRAIN_MIRROR.md`): the locked contract (resnet18
   from random init · 150 px · Adam · StepLR ×0.1 every 5 epochs · single forward pass) as a banner and

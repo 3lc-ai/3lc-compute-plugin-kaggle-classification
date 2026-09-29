@@ -464,3 +464,31 @@ Elapsed (job, first run includes the UMAP compile): kit 165 / 208 / 217 s, plugi
 **Reference baseline:** the Epochs help now quotes the plugin's seed-42 run on `initial`: **69.5 % at
 epoch 8** of 10 on 600 labeled rows (`benchmark.REFERENCE`); the earlier 57.6 % figure came from the
 timm head on the randomly relabeled `manual-test` revision and is superseded.
+
+## 12. The 2026-09-29 review (after the visual review): what changed
+
+Passed in the real Hub: interrupted revisit, lineage gate, inline bounds, live run, success with
+provenance, Dashboard 3-D embeddings coloured by confidence, Open Run in Dashboard / Projects,
+cancel, completed revisit, fixtures. Six parts followed, one commit each:
+
+- **A. Parity with the kit** — the model is the kit's exactly (torchvision resnet18 + the kit's MLP
+  head), the kit's RNG order; timm dropped; `model.backbone` / `model.head` in schema v1 with a
+  server-side allowlist; parity gate PASS (above). Reverses the morning's model-head decision.
+- **B. Manifest-driven editability** — `training.editable` and `training.options` in schema v1;
+  optimizers adam / adamw / sgd(0.9), schedules steplr / cosine / none; a field renders only when
+  the manifest opens it, else a locked row; a locked field sent by a client is refused. This event
+  opens epochs, batch_size, lr, weight_decay, seed and locks Adam + StepLR.
+- **C. Per-sample columns** — `prob_*` removed; `accuracy` (1 / 0, absent for undefined) added.
+- **D. Revision tree in the picker** — the seed lineage indented under its parents with labeled-row
+  counts (cached by URL) and runs-used; tables from another import greyed at the bottom (disabled);
+  "Open revision graph in Projects" (Hub origin). LATEST on what `latest()` resolves to.
+- **E. Previous runs panel** — a dropdown + card (status, revision + usable rows, settings, best,
+  device, elapsed; Open in Dashboard / Projects; Use these settings, editable fields only and the
+  train table only when in the current lineage) from the train records.
+- **F. Fixes** — F1 the train URL prefills from the import record's seed on first open; F2 the
+  cancelled / interrupted banners name the checkpoint; F3 the success view leads with the best val
+  accuracy and epoch; F4 an interrupted run is marked on the Run (cancelled + `interrupted = True`)
+  and a run is set running at start; F5 a persistent numba cache under the plugin home plus a
+  background UMAP pre-warm (after Import, on the first Train tab open), and the estimate = setup +
+  training + collection (collection scaled by rows collected and device class); F6 the hint hides
+  while a field is out of bounds. The ETA gate record follows.
