@@ -194,7 +194,8 @@
 .kg-pop-row:hover { background: var(--accent-light, rgba(42,74,97,.06)); }
 .kg-pop-row .rows { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 .kg-pop-badge { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; }
-.kg-pop-tree { color: var(--text-muted); font-family: ui-monospace, monospace; }
+.kg-pop-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kg-pop-tree { display: inline; color: var(--text-muted); font-family: ui-monospace, monospace; margin-right: 4px; }
 .kg-pop-row-off { color: var(--text-muted); cursor: not-allowed; opacity: .7; }
 .kg-pop-row-off:hover { background: none; }
 .kg-pop-off { font-size: 10px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--border-light, rgba(0,0,0,.08)); color: var(--text-muted); white-space: nowrap; }
@@ -2479,6 +2480,7 @@
 
       // Revision picker popover: the project's tables and their lineage-ordered revisions,
       // scoped to the field's split (DP-11). Raw URL entry stays the escape hatch.
+      var kgDevTables = null;   // a forced state's /tables/list answer (item 7's three-level chain)
       function kgBindTablePicker(inputId, popId, btnId, onPick, split) {
         var btn = el(btnId);
         var pop = el(popId);
@@ -2504,8 +2506,11 @@
           kglEnter(pop);
           document.addEventListener('mousedown', onDocDown, true);
           document.addEventListener('keydown', onKeyDown, true);
-          API.authFetch(PLUGIN_ROOT + '/tables/list?project=' + encodeURIComponent(kgCurrentProject()))
-            .then(function (r) { return r.json(); })
+          var listing = (kgDevMode && kgDevTables)
+            ? Promise.resolve(kgDevTables)   // the fixture's tree (no fetch in a forced state)
+            : API.authFetch(PLUGIN_ROOT + '/tables/list?project=' + encodeURIComponent(kgCurrentProject()))
+                .then(function (r) { return r.json(); });
+          listing
             .then(function (data) {
               if (pop.hidden) { return; }
               var want = split ? kgSplitDataset(split) : null;
@@ -2532,7 +2537,7 @@
                           '" data-url="' + esc(t.url) + '" data-latest="' + (t.latest ? '1' : '0') + '"' +
                           (off ? ' disabled title="Different import: can\'t be trained on (not a revision of the imported table)"' : '') +
                           ' style="padding-left:' + (8 + depth * 14) + 'px">' +
-                          '<span>' + (depth ? '<span class="kg-pop-tree">└─</span> ' : '') + esc(t.name) + '</span>' +
+                          '<span class="kg-pop-name">' + (depth ? '<span class="kg-pop-tree">└─</span>' : '') + esc(t.name) + '</span>' +
                           (t.latest ? '<span class="kg-pop-badge">LATEST</span>' : '') +
                           (off ? '<span class="kg-pop-off">different import</span>' : '') +
                           '<span class="rows">' + esc(counts.join(' · ')) + '</span></button>';
@@ -4113,6 +4118,25 @@
             var ce = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 1,
                        summary: S(labeled - 2 * perClass, pool, 2 * perClass, 0, names.slice(2, 4)) };
             gateWith(INFO({ latest: ce, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-tree') {
+            // Item 7: a three-level chain (initial -> a -> b) plus another import, the picker open —
+            // the connector inline before the name, names never wrapping.
+            var ds = kgDatasetName('train');
+            var aUrl = base + ds + '/tables/labels-round-1-with-a-deliberately-long-revision-name';
+            var bUrl = base + ds + '/tables/labels-round-2';
+            kgDevTables = { project: id, seed_url: trainUrl, datasets: [
+              { name: ds, latest_url: bUrl, tables: [
+                { name: 'initial', url: trainUrl, rows: trainRows, depth: 0, parent: '', in_lineage: true, labeled_rows: labeled, runs_used: 3, latest: false },
+                { name: 'labels-round-1-with-a-deliberately-long-revision-name', url: aUrl, rows: trainRows, depth: 1, parent: trainUrl, in_lineage: true, labeled_rows: labeled + 9, runs_used: 1, latest: false },
+                { name: 'labels-round-2', url: bUrl, rows: trainRows, depth: 2, parent: aUrl, in_lineage: true, labeled_rows: labeled + 21, runs_used: 0, latest: true },
+                { name: 'initial-2', url: base + ds + '/tables/initial-2', rows: trainRows, depth: 0, parent: '', in_lineage: false, labeled_rows: labeled, runs_used: 0, latest: false }
+              ] },
+              { name: kgDatasetName('val'), latest_url: valUrl, tables: [
+                { name: 'initial', url: valUrl, rows: valRows, depth: 0, parent: '', in_lineage: true, labeled_rows: null, runs_used: 0, latest: true }
+              ] }
+            ] };
+            gateGreen();
+            if (el('tr-train-pop').hidden) { el('tr-train-pick').click(); }
           } else if (mode === 'train-state2-pinned') {
             // Use these settings pinned the seed while two newer revisions exist (item 4).
             var newest = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 2, summary: S(labeled + 9, pool - 9, 0, 0) };

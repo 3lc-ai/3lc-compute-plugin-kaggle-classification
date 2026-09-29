@@ -205,6 +205,9 @@ def test_fragment_is_the_exdark_train_tab():
         "return trRunFolder(r) + ' · ' + trStatusLabel(r.status)", "esc(trStatusLabel(r.status))", "esc(trStatusLabel(status))",
         # Item 6: older runs show backfilled settings; unrecoverable ones disable Use these settings with a reason.
         "r.params_missing ? 'not recorded'", "(from the Run\\'s record)", "if (!r.params_missing) { el('tr-run-use')",
+        # Item 7: the tree connector is inline before the name and names never wrap; a three-level fixture.
+        '<span class="kg-pop-name">', ".kg-pop-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }",
+        ".kg-pop-tree { display: inline;", "'train-state2-tree'", "depth: 2, parent: aUrl", "var kgDevTables = null;",
     ):
         assert needle in html, needle
     assert "Defaults are shown; reload the page to try again." not in html
@@ -216,7 +219,7 @@ def test_fragment_is_the_exdark_train_tab():
         assert needle in html, needle
     for state in ("train-state1", "train-state2", "train-state2-missing", "train-state2-rows", "train-state2-invalid",
                   "train-state2-undefined-weight", "train-state2-zero-rows", "train-state2-class-empty",
-                  "train-state2-lineage", "train-state3", "train-state3-collecting", "train-state3-cpu-retry",
+                  "train-state2-lineage", "train-state2-pinned", "train-state2-tree", "train-state3", "train-state3-collecting", "train-state3-cpu-retry",
                   "train-state4", "train-state4-noproject", "train-state5", "train-state5-stale", "train-state6",
                   "train-state6-cancelled"):
         assert f"'{state}'" in html, state
