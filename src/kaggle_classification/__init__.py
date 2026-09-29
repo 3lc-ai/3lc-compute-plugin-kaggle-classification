@@ -110,7 +110,7 @@ class KaggleClassificationPlugin(ComputePlugin):
             "plugin": "kaggle-classification",
             "version": __version__,
             "tabs": list(TABS),
-            "implemented": ["download_kit", "import"],
+            "implemented": ["download_kit", "import", "train"],
         }
 
     def get_route_handlers(self) -> list[Any]:
@@ -166,6 +166,18 @@ class KaggleClassificationPlugin(ComputePlugin):
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
             return
-        if kind in ("train", "predict", "submit"):
+        if kind == "train":
+            from kaggle_classification import trainer
+
+            try:
+                result = trainer.run_training(params, adapter, current)
+            except trainer.TrainRefused as exc:
+                # A refusal (bad table, nothing to train on, a duplicate start) is a message for the
+                # participant, not a fault: verbatim, no type prefix (the SDK's JobFailed contract).
+                ctx.fail(str(exc))
+            if not result.get("cancelled"):
+                ctx.progress(percent=100.0, label="Done")
+            return
+        if kind in ("predict", "submit"):
             ctx.fail(f"The {kind} step is not implemented in this build ({__version__}).")
         ctx.fail(f"Unknown job kind: {kind!r}. Expected one of download_kit, import, train, predict, submit.")

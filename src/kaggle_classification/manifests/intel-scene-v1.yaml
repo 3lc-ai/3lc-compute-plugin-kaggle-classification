@@ -63,6 +63,9 @@ training:
     batch_size: [8, 128]
     lr: [0.00001, 0.01]
     weight_decay: [0.0, 0.1]
+    # The seed is an Advanced field (session 3, D6); a manifest without this bound gets the
+    # plugin's fallback of the same range.
+    seed: [0, 2147483647]
   presets:
     quick: {epochs: 2}
     standard: {epochs: 10}

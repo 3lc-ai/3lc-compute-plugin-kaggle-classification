@@ -61,7 +61,10 @@ def test_route_handlers_build_when_litestar_is_present():
     pytest.importorskip("litestar")
     handlers = routes.get_route_handlers()
     paths = {p for h in handlers for p in h.paths}
-    assert paths == {"/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify"}
+    assert paths == {
+        "/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify",
+        "/train/preflight", "/train/state", "/tables/list", "/tables/defaults",
+    }
 
 
 def test_route_handler_annotations_resolve_like_litestar_does():
@@ -81,7 +84,7 @@ def test_route_handler_annotations_resolve_like_litestar_does():
 def test_plugin_compute_and_fragment():
     plugin = kaggle_classification.KaggleClassificationPlugin()
     info = plugin.compute({})
-    assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit", "import"]
+    assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit", "import", "train"]
     html = plugin.get_ui_fragment()
     assert 'class="kgc"' in html and "kaggle-classification" in html
     for needle in ("buildings", "resnet18", "6000", "1800", "HackNova"):
@@ -114,8 +117,11 @@ def test_fragment_is_the_exdark_import_tab():
         "function dlRenderQuiet", "function dlRenderSuperseded", "function dlRenderProgress", "prefers-reduced-motion: no-preference",
     ):
         assert needle in html, needle
-    # Dropped on purpose (allowed difference 4): the Ultralytics band and the YOLO format banner.
-    for gone in ("kg-license-note", "format-selected-banner", "Ultralytics", "YOLO", "exdark_", "dataset.yaml", "Explore test"):
+    # Dropped on purpose (allowed difference 4): the Ultralytics band and the YOLO format banner on
+    # the Import tab (the Train tab reuses the banner geometry for the locked contract, TRAIN_MIRROR #2).
+    import_panel = html[html.index('id="kg-panel-import"') : html.index('id="kg-panel-train"')]
+    assert "format-selected-banner" not in import_panel
+    for gone in ("kg-license-note", "Ultralytics", "YOLO", "exdark_", "dataset.yaml", "Explore test"):
         assert gone not in html, gone
     # Plumbing that stays ours: the host job channel, the provisioning state, the remote manifest.
     for needle in ("PluginJobs.start(", "PluginJobs.track(", "PluginJobs.on(NS, 'checks'", "PluginJobs.on(NS, 'stage_progress'",
@@ -139,13 +145,63 @@ def test_fragment_is_the_exdark_import_tab():
     assert "function kgClearStaleResult()" in html and "if (transitioned && (kind === 'mismatch' || kind === 'error')) { kgClearStaleResult(); }" in html
 
 
+def test_fragment_is_the_exdark_train_tab():
+    """The Train tab elements ExDark renders, in ExDark's ids and copy, under the session-3 decisions
+    (docs/TRAIN_MIRROR.md §1, D1–D14 of 2026-09-29)."""
+    html = FRAGMENT.read_text(encoding="utf-8")
+    train_panel = html[html.index('id="kg-panel-train"') : html.index('id="kg-panel-submit"')]
+    for needle in (
+        "format-selected-banner", 'id="tr-contract-name"', 'id="tr-locked-rows"', 'id="tr-conn-banner"', 'id="tr-banner"',
+        'id="tr-form"', 'for="tr-train-url"', 'id="tr-train-pick"', 'id="tr-train-pop"', 'id="tr-val-locked"',
+        'id="tr-tables-gate"', 'id="tr-latest"', "Use latest revision", 'for="tr-epochs"', 'for="tr-batch"', 'for="tr-lr"',
+        'for="tr-wd"', 'id="tr-duration"', 'id="tr-adv-toggle"', 'for="tr-device"', 'for="tr-workers"', 'for="tr-seed"',
+        'id="tr-project-fact"', 'for="tr-runname"', 'id="tr-start-btn"', 'id="tr-cancel-btn"', 'id="tr-spinner"',
+        'id="tr-state"', 'id="tr-progress"', 'id="tr-checks"', 'id="tr-result"', 'id="tr-log-toggle"',
+        'data-range="epochs"', 'data-range="seed"', 'data-range="weight_decay"',
+    ):
+        assert needle in train_panel, needle
+    # Dropped per the decisions: no val URL field (locked), no lrf / optimizer select / patience (D2–D4),
+    # no extra args, no conf / max-det, no metrics-collection disclosure (D7), no presets (D13).
+    for gone in ('for="tr-val-url"', 'id="tr-lrf"', 'id="tr-optimizer"', 'id="tr-patience"', 'id="tr-extra"',
+                 'id="tr-conf"', 'id="tr-maxdet"', 'id="tr-mc-toggle"', 'id="tr-embdim"', "preset"):
+        assert gone not in train_panel, gone
+    for needle in (
+        "function kgBindTablePicker", "function kgUrlSeg", "function kgOverrideDisposition", "function kgApplyDerivedUrls",
+        "function kgSetUrlOverride", "function kgSparkline", "function trRenderRunView", "function trRenderProvenance",
+        "function trRenderSuccessBanner", "function trRenderFailBanner", "function trRenderCancelledBanner",
+        "function trRenderTerminal", "function trEvaluateGate", "function trRenderGate", "function trVerifyTables",
+        "function trRenderDurationHint", "function trLoadDurationStats", "function trInitTrainTab", "function trDevForce",
+        "function trApplyContract", "function trApplyFields", "function trUsableLine", "var CFG_FIELDS", "var TR_BOUNDS",
+        "Verified provenance recorded", "Training complete: best checkpoint saved", "Continue to Submit",
+        "Open Run in Dashboard", "Open Run in Projects", "Start new run", "Training was interrupted",
+        "Training cancelled after", "Stop this training run?", "Training… (safe to navigate away)",
+        "Cancelling… (stops at the next checkpoint)", "Fix the highlighted fields first.", "Tables verified: ",
+        "excluded as undefined", "will be skipped until you label", "cannot be learned in this run",
+        "No usable rows: every row is undefined or at weight 0.", "is not derived from the imported train table",
+        "more rows than the competition split", "Recent runs averaged ", "Estimated from a reference ",
+        "/train/preflight?train_url=", "/train/state", "/tables/list?project=", "/tables/defaults?project=",
+        "client_token: trClickToken", "trRunning = true;", "window.PluginJobs.cancel(trainJobId)",
+        "'Train loss'", "'Val loss'", "'Val accuracy'", "function trDeviceLabel",
+    ):
+        assert needle in html, needle
+    for state in ("train-state1", "train-state2", "train-state2-missing", "train-state2-rows", "train-state2-invalid",
+                  "train-state2-undefined-weight", "train-state2-zero-rows", "train-state2-class-empty",
+                  "train-state2-lineage", "train-state3", "train-state3-collecting", "train-state3-cpu-retry",
+                  "train-state4", "train-state4-noproject", "train-state5", "train-state5-stale", "train-state6",
+                  "train-state6-cancelled"):
+        assert f"'{state}'" in html, state
+    # The fragment defines no training literal: defaults, bounds, the optimizer and the schedule are served.
+    for gone in ('value="10"', 'value="16"', 'value="0.0001"', "StepLR(5", "step_size: 5", "'adam'"):
+        assert gone not in train_panel, gone
+
+
 ESC = "function esc(s) {"
 
 # Values that may enter a markup template unescaped: calls that emit markup they built themselves
 # or text they escaped/formatted, our own accumulators and constants, and the numbers, enum values
 # and boolean flags the fragment itself computes (used in ternaries over literals).
 SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon(", "kgDiagBtn(", "kgClassTint(",
-              "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(")
+              "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(")
 SAFE_IDENTS = {
     # markup accumulators / constants the fragment builds from literals and the calls above
     "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
@@ -157,6 +213,15 @@ SAFE_IDENTS = {
     "animate", "allOk", "c.ok", "t.reused", "dashboardUrl", "kgRevisitActive", "resume", "dlMode", "isCur", "isDone",
     "model.pretrained", "pool", "files", "have", "current", "first", "res.updated", "icon", "prov", "prov.state", "repo",
     "p.detail", "c.detail", "d.detail", "remedy", "matched", "fileCount", "v.error", "true", "false", "null", "undefined",
+    # Train tab (session 3): sparkline geometry numbers, the flags and enum values its templates branch on
+    "w", "h", "cx", "cy", "coords", "open", "revisit", "problems", "data.help", "data.noProjectHint", "parts",
+    "summary.labeled_in_use", "summary.undefined_with_weight", "summary.excluded_undefined",
+    "summary.excluded_zero_weight", "empty.length", "epochs", "weights", "link", "projectsHref", "showNote",
+    "p.stage_note", "c.ok", "allOk", "checks", "html",
+    # ExDark's gate and picker templates: pre-escaped problem rows and help lines, the LATEST flag, the
+    # inline-error flag, the usable-row parts (all built from fmtCount / esc above)
+    "t.latest", "parts.join", "problems.length", "problems.map", "data.help.map", "function", "return", "join",
+    "p", "h", "bad",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

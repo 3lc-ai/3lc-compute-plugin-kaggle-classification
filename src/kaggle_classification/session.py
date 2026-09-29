@@ -54,7 +54,9 @@ def config_path() -> Path:
 _lock = threading.RLock()
 
 # Keys the UI/backend may persist; anything else is dropped.
-_ALLOWED_TABS = ("session", "competition", "train", "predict", "import_state", "predict_state", "submit_state")
+_ALLOWED_TABS = (
+    "session", "competition", "train", "predict", "import_state", "train_state", "predict_state", "submit_state",
+)
 
 # Retired keys — one logical fact must not reappear under a second key. Kept as data so save()
 # can enforce it; empty until a migration retires something.

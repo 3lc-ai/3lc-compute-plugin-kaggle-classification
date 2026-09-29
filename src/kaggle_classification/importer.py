@@ -230,7 +230,7 @@ def decode_images(paths: list[Path], report: Any = None) -> tuple[int, list[str]
             with Image.open(path) as im:
                 im.verify()
             ok += 1
-        except Exception as exc:  # noqa: BLE001 - any decode failure is a defect to name
+        except Exception as exc:
             if len(failures) < 20:
                 failures.append(f"{path.name}: {type(exc).__name__}")
         if report is not None and i % 500 == 0:
@@ -259,7 +259,7 @@ def _url_exists(url: str) -> bool:
 
     try:
         return bool(tlc.Url(url).exists())
-    except Exception:  # noqa: BLE001 - an unreadable URL is "not a table we can see"
+    except Exception:
         return False
 
 
@@ -268,7 +268,7 @@ def _row_count(url: str) -> int | None:
 
     try:
         return int(tlc.Table.from_url(tlc.Url(url)).row_count)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
 
 
@@ -424,9 +424,132 @@ def delete_tables(urls: list[str]) -> list[str]:
             if u.exists():
                 u.delete()
                 removed.append(url)
-        except Exception:  # noqa: BLE001 - report what could be removed; the message names the rest
+        except Exception:
             continue
     return removed
+
+
+# ── Table listing for the revision picker and the derived defaults (ExDark's, ported) ─────
+
+
+def table_defaults(manifest: Manifest, project: str, table_name: str) -> dict[str, Any]:
+    """``GET /tables/defaults``: the canonical URL per registered split for the given project /
+    table pair, with an exists flag — what the Train field derives when no override is stored."""
+    out: dict[str, Any] = {"project": project, "table": table_name}
+    for split in REGISTERED_SPLITS:
+        url = table_url(project, manifest.dataset_name(split), table_name)
+        out[split] = {"url": url, "exists": _url_exists(url)}
+    return out
+
+
+def _dataset_lineage(tables_dir: Path) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]]]:
+    """Every readable table under ``<dataset>/tables`` keyed by normalised URL, with its parent
+    (``input_table_url`` on FromTable subclasses such as the Dashboard's EditedTable, else the first
+    ``input_tables`` entry) and the children map. Read-only; unreadable folders are skipped."""
+    import tlc
+
+    entries: dict[str, dict[str, Any]] = {}
+    for tdir in tables_dir.iterdir():
+        if not tdir.is_dir():
+            continue
+        try:
+            table = tlc.Table.from_url(tlc.Url(tdir.as_posix()))
+            raw_parent = getattr(table, "input_table_url", None)
+            if not raw_parent:
+                inputs = getattr(table, "input_tables", None) or []
+                raw_parent = inputs[0] if inputs else None
+            parent = str(tlc.Url(str(raw_parent)).to_absolute(table.url)) if raw_parent else ""
+            entries[_norm(str(table.url))] = {
+                "name": tdir.name,
+                "url": str(table.url),
+                "rows": int(table.row_count),
+                "_parent": _norm(parent),
+                "_mtime": tdir.stat().st_mtime,
+            }
+        except Exception:
+            continue
+    children: dict[str, list[str]] = {}
+    for key, e in entries.items():
+        if e["_parent"] and e["_parent"] in entries:
+            children.setdefault(e["_parent"], []).append(key)
+    return entries, children
+
+
+def newest_descendant(url: str) -> str:
+    """The newest revision derived from ``url`` by the directory walk: follow the newest child at
+    each step (the picker's chain order). ``url`` itself when it has no children."""
+    entries, children = _dataset_lineage(Path(url).parent)
+    cur = _norm(url)
+    seen: set[str] = set()
+    while cur in children and cur not in seen:
+        seen.add(cur)
+        kids = sorted(children[cur], key=lambda k: entries[k]["_mtime"])
+        cur = kids[-1]
+    return entries[cur]["url"] if cur in entries else url
+
+
+def latest_url(url: str, *, timeout: float = 30.0) -> str:
+    """The newest revision descending from ``url``: tlc's lineage index first (what the kit's
+    ``.latest()`` follows), waiting at most ``timeout`` seconds for an indexing cycle; the
+    directory walk when the index cannot answer (a root no scan URL covers, the tests' tmp root)."""
+    import tlc
+
+    try:
+        return str(tlc.Table.from_url(tlc.Url(url)).latest(timeout=timeout).url)
+    except Exception:
+        try:
+            return newest_descendant(url)
+        except Exception:
+            return url
+
+
+def list_project_tables(manifest: Manifest, project: str) -> dict[str, Any]:
+    """``GET /tables/list``: datasets -> lineage-ordered revision chains for the revision picker.
+
+    Layout-derived: ``table_url`` rebuilds ``<root>/<project>/datasets/<dataset>/tables/<table>``,
+    so the datasets root is walked directly. Chain order is lineage, root first, following the
+    newest child at each step; off-chain branches append in mtime order. ``latest`` comes from
+    ``latest_url`` on the chain root — the resolution ``use_latest`` training follows.
+    Read-only; an unreadable table folder is skipped, never a failure."""
+    probe = table_url(project, "__probe__", "initial")
+    datasets_root = Path(probe).parent.parent.parent
+    out: dict[str, Any] = {"project": project, "datasets": []}
+    if not datasets_root.is_dir():
+        return out
+    for ds_dir in sorted(p for p in datasets_root.iterdir() if p.is_dir()):
+        tables_dir = ds_dir / "tables"
+        if not tables_dir.is_dir():
+            continue
+        entries, children = _dataset_lineage(tables_dir)
+        if not entries:
+            continue
+        roots = [k for k, e in entries.items() if not (e["_parent"] and e["_parent"] in entries)]
+        ordered: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for root in sorted(roots, key=lambda k: entries[k]["_mtime"]):
+            cur: str | None = root
+            while cur and cur not in seen:
+                seen.add(cur)
+                ordered.append(entries[cur])
+                kids = sorted(children.get(cur, []), key=lambda k: entries[k]["_mtime"])
+                cur = kids[-1] if kids else None
+        for key, e in sorted(entries.items(), key=lambda kv: kv[1]["_mtime"]):
+            if key not in seen:
+                ordered.append(e)
+        latest = latest_url(ordered[0]["url"], timeout=_LATEST_TIMEOUT_ROUTE_S)
+        rows = [{"name": e["name"], "url": e["url"], "rows": e["rows"], "latest": _norm(e["url"]) == _norm(latest)}
+                for e in ordered]
+        out["datasets"].append({"name": ds_dir.name, "tables": rows, "latest_url": latest})
+    return out
+
+
+# A route must not sit on the indexer's 30 s default: the fast path answers at once for revisions
+# this process has seen, and a few seconds covers one scheduler cycle for the rest.
+_LATEST_TIMEOUT_ROUTE_S = 5.0
+
+
+def _norm(url: str) -> str:
+    return str(url).replace("\\", "/").rstrip("/").lower()
 
 
 # ── Record, revisit and preflight ──────────────────────────────────────────
@@ -464,12 +587,7 @@ def import_state() -> dict[str, Any]:
 
 
 def _latest_url(url: str) -> str:
-    import tlc
-
-    try:
-        return str(tlc.Table.from_url(tlc.Url(url)).latest().url)
-    except Exception:  # noqa: BLE001 - the seed is always a valid answer
-        return url
+    return latest_url(url, timeout=_LATEST_TIMEOUT_ROUTE_S)
 
 
 def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:

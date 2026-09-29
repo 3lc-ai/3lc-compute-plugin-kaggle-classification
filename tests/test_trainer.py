@@ -1,0 +1,405 @@
+# Copyright 2026 3LC Inc.
+# SPDX-License-Identifier: Apache-2.0
+"""The Train stage: params and bounds (light), the durable record and orphan rule (light), and —
+with the heavy extra — the preflight's lineage and usable-row summary, the weight semantics the
+brief pins (gate G4), an end-to-end CPU run on the synthetic kit (checkpoints, provenance, the
+per-sample metrics contract, tables never modified), the duplicate-start guard and cancel.
+
+The heavy tests need tlc + torch + timm; they skip without them, so a green run in a light venv
+is not a green run for this module (CLAUDE.md §B)."""
+
+from __future__ import annotations
+
+import os
+import time
+from pathlib import Path
+
+import pytest
+from conftest import table_url
+from helpers import FakeCtx, make_kit_tree, small_manifest_data
+
+import build_kit  # tools/ is on sys.path (conftest)
+from kaggle_classification import importer, session, trainer
+from kaggle_classification import manifest as manifest_mod
+
+# ── Light: facts, params, bounds ──────────────────────────────────────────────
+
+
+def test_training_facts_serve_defaults_bounds_and_the_locked_facts(manifest):
+    facts = trainer.training_facts(manifest)
+    assert facts["defaults"]["epochs"] == 10 and facts["defaults"]["optimizer"] == "adam"
+    assert facts["defaults"]["seed"] == 42 and facts["defaults"]["workers"] == trainer.default_workers()
+    assert facts["bounds"]["epochs"] == [1, 50] and facts["bounds"]["seed"] == [0, 2147483647]
+    assert facts["bounds"]["workers"] == [0, 16]
+    assert facts["optimizer"] == "adam" and facts["schedule"] == {"kind": "step", "step_size": 5, "gamma": 0.1}
+    assert facts["max_rows"]["train"] == manifest.expected_rows("train")
+    assert set(facts["benchmark"]["per_device"]) == {"cuda", "mps", "cpu"}
+
+
+def test_seed_bound_falls_back_when_the_manifest_has_none(manifest):
+    import dataclasses
+
+    bounds = {k: v for k, v in manifest.training.bounds.items() if k != "seed"}
+    m = dataclasses.replace(manifest, training=dataclasses.replace(manifest.training, bounds=bounds))
+    assert trainer.effective_bounds(m)["seed"] == (0.0, 2147483647.0)
+
+
+def test_build_train_kwargs_merges_defaults_and_locks_the_contract(home, manifest):
+    kw = trainer.build_train_kwargs({"epochs": "3", "lr": "", "batch_size": "16.0"}, manifest)
+    assert kw["epochs"] == 3 and kw["batch_size"] == 16 and kw["lr"] == 0.0001 and kw["weight_decay"] == 0.0
+    assert kw["seed"] == 42 and kw["workers"] == trainer.default_workers()
+    assert kw["optimizer"] == "adam" and kw["schedule"]["step_size"] == 5
+    assert kw["arch"] == manifest.model.arch and kw["image_size"] == manifest.model.image_size
+    assert kw["pretrained"] is False and kw["use_latest"] is True
+    assert kw["run_name"].startswith(f"{manifest.competition.id}_run_")
+    assert kw["project_name"] == manifest.default_project
+
+
+@pytest.mark.parametrize(
+    ("params", "needle"),
+    [
+        ({"epochs": "999"}, "epochs must be between 1 and 50 (got 999)."),
+        ({"batch_size": "4"}, "batch_size must be between 8 and 128"),
+        ({"lr": "1"}, "lr must be between"),
+        ({"seed": "-1"}, "seed must be between 0 and 2147483647"),
+        ({"workers": "99"}, "workers must be between 0 and 16"),
+        ({"epochs": "2.5"}, "whole number"),
+        ({"epochs": "abc"}, "Invalid value for epochs"),
+        ({"optimizer": "sgd"}, "optimizer is locked to adam"),
+        ({"run_name": "a/b"}, "run name must be a plain name"),
+        ({"use_latest": "false", "epochs": "1"}, None),
+    ],
+)
+def test_build_train_kwargs_refuses_out_of_bounds_and_locked_overrides(home, manifest, params, needle):
+    if needle is None:
+        assert trainer.build_train_kwargs(params, manifest)["use_latest"] is False
+        return
+    with pytest.raises(trainer.TrainRefused, match=__import__("re").escape(needle)):
+        trainer.build_train_kwargs(params, manifest)
+
+
+def test_validate_train_url_enforces_split_identity(tmp_path, manifest, root_shape):
+    ok = table_url(tmp_path, root_shape, "intel-scene", manifest.dataset_name("train"), "initial")
+    trainer.validate_train_url(ok, manifest)
+    val = table_url(tmp_path, root_shape, "intel-scene", manifest.dataset_name("val"), "initial")
+    with pytest.raises(trainer.TrainRefused, match="points at intel-scene_val; expected intel-scene_train"):
+        trainer.validate_train_url(val, manifest)
+    with pytest.raises(trainer.TrainRefused, match="Missing the train table URL"):
+        trainer.validate_train_url("", manifest)
+
+
+def test_effective_weights_and_the_usable_row_summary(manifest):
+    n = manifest.num_classes
+    undefined = manifest.undefined_label_id
+    labels = [0, 1, 2, 3, 4, 5, undefined, undefined, 0]
+    weights = [1.0, 2.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.5, 1.0]
+    eff = trainer.effective_weights(labels, weights, manifest)
+    assert eff == [1.0, 2.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0]
+    s = trainer.summarize_rows(labels, weights, manifest)
+    assert s["total"] == 9 and s["labeled_in_use"] == 6 and s["excluded_undefined"] == 2
+    assert s["excluded_zero_weight"] == 1 and s["undefined_with_weight"] == 1
+    assert s["per_class"][manifest.class_names[0]] == 2 and s["classes_without_rows"] == [manifest.class_names[2]]
+    assert n == 6
+
+
+# ── Light: the durable record and the orphan rule ──────────────────────────
+
+
+def _record(**over):
+    base = {
+        "id": "job1", "kind": "train", "status": "running", "pid": os.getpid(), "created_at": time.time() - 30,
+        "started_at": time.time() - 30, "heartbeat": time.time(), "finished_at": None, "cancelled": False,
+        "params": {"epochs": 3, "arch": "x", "image_size": 1, "pretrained": False, "seed": 42},
+        "client_token": "tok1", "progress": {"epoch": 1, "total_epochs": 3, "history": [], "batch_i": 0, "batch_n": 2},
+        "facts": {"run_name": "r1", "project_name": "p", "usable": {"labeled_in_use": 12}}, "checks": [],
+        "result": None, "error": None, "log": [], "gaps": [],
+    }
+    base.update(over)
+    return base
+
+
+def test_train_state_is_empty_without_a_record(store):
+    st = trainer.train_state()
+    assert st["state"] == "empty" and st["current"] is None and st["runs"] == []
+
+
+def test_a_running_record_from_another_worker_process_reads_back_as_stale(store):
+    store.save({"train_state": {"current": _record(pid=999_999_999)}})
+    st = trainer.train_state()
+    assert st["state"] == "stale" and st["current"]["status"] == "stale"
+    assert "restarted" in st["current"]["error"]
+    # Persisted, and moved into the run history so the ETA never counts it as running.
+    assert store.load()["train_state"]["current"]["status"] == "stale"
+    assert store.load()["train_state"]["runs"][0]["status"] == "stale"
+
+
+def test_a_running_record_of_this_process_with_a_fresh_heartbeat_stays_running(store):
+    store.save({"train_state": {"current": _record()}})
+    assert trainer.train_state()["state"] == "running"
+
+
+def test_a_running_record_of_this_process_without_a_heartbeat_reads_back_as_stale(store):
+    store.save({"train_state": {"current": _record(heartbeat=time.time() - trainer.STALE_HEARTBEAT_S - 1)}})
+    st = trainer.train_state()
+    assert st["state"] == "stale" and "stopped reporting" in st["current"]["error"]
+
+
+def test_run_summary_carries_what_predict_and_the_eta_need(store):
+    rec = _record(status="completed", finished_at=time.time(), result={
+        "best_epoch": 2, "best_val_accuracy": 50.0, "epoch_s_per_row": 0.01, "collect_s": 3.0, "collect_rows": 20,
+    })
+    rec["facts"].update({"weights": "C:/x/best.pt", "best_checkpoint_sha256": "ab", "device_class": "cpu"})
+    rec["checks"] = [{"label": "a", "ok": True}]
+    s = trainer.run_summary(rec)
+    assert s["usable_rows"] == 12 and s["best_epoch"] == 2 and s["epoch_s_per_row"] == 0.01
+    assert s["provenance_ok"] is True and s["weights"] == "C:/x/best.pt" and s["device_class"] == "cpu"
+
+
+# ── Heavy: the real tlc, torch and timm on the synthetic kit ──────────────────
+
+tlc = pytest.importorskip("tlc")
+torch = pytest.importorskip("torch")
+pytest.importorskip("timm")
+pytest.importorskip("PIL")
+
+
+@pytest.fixture
+def project_root(tmp_path, monkeypatch):
+    root = tmp_path / "3lc-root"
+    root.mkdir()
+    monkeypatch.setattr(importer, "project_root_url", lambda: root.as_posix())
+    return root
+
+
+@pytest.fixture
+def imported(tmp_path, home, project_root):
+    """A tiny REAL-image kit imported into the isolated project root: the seed tables + record."""
+    data = small_manifest_data("v1")
+    kit_root = make_kit_tree(tmp_path / "tree", data, real_images=True)
+    build_kit.write_files_index(kit_root, competition_id=data["competition"]["id"], kit_version="v1")
+    manifest = manifest_mod.parse_manifest(data, source="test", source_detail="synthetic")
+    session.publish_kit_dir(manifest, kit_root)
+    result = importer.run_import({}, FakeCtx(), manifest)
+    return manifest, result["tables"]["train"]["url"], result["tables"]["val"]["url"]
+
+
+def _edit(train_url: str, column: str, edits: dict[int, float], name: str) -> str:
+    """An EditedTable revision beside the train table (the Dashboard's shape)."""
+    from tlc._core.objects.tables.from_table.edited_table import EditedTable
+
+    parent = tlc.Table.from_url(tlc.Url(train_url))
+    runs_and_values: list = []
+    for idx, value in edits.items():
+        runs_and_values += [[idx], value]
+    edited = EditedTable(
+        input_table_url=parent, edits={column: {"runs_and_values": runs_and_values}},
+        url=parent.url.create_sibling(name),
+    )
+    edited.ensure_fully_defined()
+    edited.write_to_url()
+    return str(edited.url)
+
+
+def _snapshot(url: str) -> dict[str, str]:
+    """Every file under a table folder by content hash. Content, not mtime: reading a table through
+    a ``TableView`` re-stamps ``object.3lc.json`` with byte-identical bytes (tlc 3.3 behaviour)."""
+    import hashlib
+
+    root = Path(url)
+    return {
+        p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in root.rglob("*") if p.is_file()
+    }
+
+
+def test_preflight_reports_existence_lineage_and_the_usable_row_summary(imported):
+    manifest, train_url, val_url = imported
+    pf = trainer.preflight({"train_url": train_url}, manifest)
+    assert pf["exists"] and pf["split_ok"] and pf["import_state"] == "success"
+    assert pf["seed_url"] == train_url and pf["val_locked_url"] == val_url
+    assert pf["base"]["descends_from_seed"] is True and pf["base"]["steps_from_seed"] == 0
+    s = pf["base"]["summary"]
+    assert s["labeled_in_use"] == 12 and s["excluded_undefined"] == 3 and s["excluded_zero_weight"] == 0
+    assert s["undefined_with_weight"] == 0 and s["classes_without_rows"] == []
+    assert pf["label_map_ok"] is True and pf["has_revisions"] is False and pf["max_rows"] == 15
+    # A revision that gives an undefined row weight 1 and zero-weights a labeled one: latest differs.
+    undefined_row = 12  # rows are labeled first, the pool last
+    rev = _edit(train_url, "weight", {undefined_row: 1.0, 0: 0.0}, "initial_w")
+    pf2 = trainer.preflight({"train_url": train_url}, manifest)
+    assert pf2["has_revisions"] and pf2["latest_url"] == rev and pf2["latest"]["descends_from_seed"] is True
+    assert pf2["latest"]["steps_from_seed"] == 1
+    s2 = pf2["latest"]["summary"]
+    assert s2["labeled_in_use"] == 11 and s2["undefined_with_weight"] == 1 and s2["excluded_zero_weight"] == 1
+    assert s2["classes_without_rows"] == []
+    # The base revision's summary is unchanged (the picker can still choose it).
+    assert pf2["base"]["summary"]["labeled_in_use"] == 12
+    # A val URL in the train slot is refused (split identity), and a missing table says so.
+    bad = trainer.preflight({"train_url": val_url}, manifest)
+    assert bad["split_ok"] is False and "expected" in bad["error"]
+    gone = trainer.preflight({"train_url": train_url + "-nope"}, manifest)
+    assert gone["exists"] is False and gone["split_ok"] is True
+
+
+def test_a_table_outside_the_seed_lineage_is_reported_and_refused(imported):
+    manifest, _train_url, _ = imported
+    # A fresh table in the same dataset that was NOT derived from the seed.
+    stranger = tlc.Table.from_dict(
+        {"image": [], "label": [], "weight": []}, schema=importer._schema(manifest),
+        table_url=tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("train"), "stranger")),
+        if_exists="raise", add_weight_column=False,
+    )
+    pf = trainer.preflight({"train_url": str(stranger.url)}, manifest)
+    assert pf["base"]["descends_from_seed"] is False
+    params = {"train_table_url": str(stranger.url), "use_latest": False, "device": "cpu"}
+    with pytest.raises(trainer.TrainRefused, match="does not descend from the imported seed"):
+        trainer.run_training(params, FakeCtx(), manifest)
+
+
+def test_weight_semantics_gate_g4(imported):
+    """weight 0 excluded; undefined at weight > 0 skipped (and warned); weight 2 drawn about twice as
+    often; the epoch length is the usable-row count; the table's weights are never written."""
+    manifest, train_url, _ = imported
+    rev = _edit(train_url, "weight", {0: 2.0, 1: 0.0, 12: 1.0}, "initial_g4")
+    table = tlc.Table.from_url(tlc.Url(rev))
+    before = _snapshot(train_url)
+    labels, weights = trainer.scan_rows(table, manifest)
+    s = trainer.summarize_rows(labels, weights, manifest)
+    assert s["labeled_in_use"] == 11 and s["excluded_zero_weight"] == 1 and s["undefined_with_weight"] == 1
+    eff = trainer.effective_weights(labels, weights, manifest)
+    assert eff[1] == 0.0 and eff[12] == 0.0 and eff[0] == 2.0
+    trainer.set_seed(42)
+    sampler = trainer.build_sampler(eff)
+    assert len(sampler) == 11
+    draws = 40_000
+    counts = [0] * len(eff)
+    torch.manual_seed(42)
+    idx = torch.multinomial(torch.as_tensor(eff, dtype=torch.double), draws, replacement=True)
+    for i in idx.tolist():
+        counts[i] += 1
+    assert counts[1] == 0 and counts[12] == 0, "weight 0 and undefined-at-weight-1 rows must never be drawn"
+    others = [counts[i] for i in range(len(eff)) if eff[i] == 1.0]
+    mean_one = sum(others) / len(others)
+    ratio = counts[0] / mean_one
+    assert 1.8 < ratio < 2.2, f"weight 2 should be drawn about twice as often ({ratio:.2f}x)"
+    # The sampler the trainer uses draws the same way (same generator, same semantics).
+    drawn = list(iter(sampler))
+    assert len(drawn) == 11 and 1 not in drawn and 12 not in drawn
+    # Reading weights, summarising and sampling never touched the table on disk.
+    assert _snapshot(train_url) == before
+    assert list(tlc.Table.from_url(tlc.Url(rev)).table_rows)[1]["weight"] == 0.0
+
+
+def test_zero_usable_rows_is_a_refusal_before_any_run_exists(imported, project_root):
+    manifest, train_url, _ = imported
+    rev = _edit(train_url, "weight", dict.fromkeys(range(12), 0.0), "initial_zero")
+    runs_dir = project_root / "intel-scene" / "runs"
+    runs_before = sorted(runs_dir.glob("*")) if runs_dir.is_dir() else []
+    with pytest.raises(trainer.TrainRefused, match="No usable rows"):
+        trainer.run_training({"train_table_url": rev, "use_latest": False, "device": "cpu"}, FakeCtx(), manifest)
+    runs_after = sorted(runs_dir.glob("*")) if runs_dir.is_dir() else []
+    assert runs_after == runs_before
+    assert trainer.train_state()["state"] == "empty"
+
+
+def test_run_training_end_to_end_on_cpu(imported, project_root):
+    """Two epochs on the synthetic kit: checkpoints under the run, eight provenance checks, the
+    per-sample metrics contract on train (undefined rows: no loss) and val, the durable record."""
+    import math
+
+    manifest, train_url, val_url = imported
+    before_train, before_val = _snapshot(train_url), _snapshot(val_url)
+    ctx = FakeCtx()
+    params = {"epochs": "2", "batch_size": "8", "device": "cpu", "workers": "0", "run_name": "t_e2e",
+              "use_latest": True, "client_token": "click-1"}
+    result = trainer.run_training(params, ctx, manifest)
+    assert result["cancelled"] is False and result["epochs_completed"] == 2 and result["best_epoch"] in (1, 2)
+    assert result["device"] == "cpu" and result["usable_rows"] == 12 and result["reducer"] in ("umap", "pca")
+    run_url = result["run_url"]
+    run_dir = trainer.run_local_dir(run_url)
+    assert run_dir is not None and (run_dir / "model" / "best.pt").is_file()
+    assert (run_dir / "model" / "last.pt").is_file()
+    assert result["weights"] == str(run_dir / "model" / "best.pt")
+    assert trainer._sha256_file(run_dir / "model" / "best.pt") == result["best_checkpoint_sha256"]
+    assert not list((run_dir / "model").glob("*.tmp"))
+    # Provenance: eight checks, all green, read back from the Run's own record.
+    checks = ctx.checks
+    assert len(checks) == 8 and all(c["ok"] for c in checks), [c for c in checks if not c["ok"]]
+    run = tlc.Run.from_url(tlc.Url(run_url))
+    p = trainer.get_run_parameters(run)
+    assert p["arch"] == manifest.model.arch and p["pretrained"] is False and p["seed"] == 42
+    assert p["train_table_url"] == train_url and p["val_table_url"] == val_url
+    assert p["best_checkpoint_sha256"] == result["best_checkpoint_sha256"] and p["optimizer"] == "adam"
+    assert p["manifest_sha256"] == manifest.sha256 or p.get("manifest_source") == "test"
+    # Per-sample metrics: one table per split with the contract's columns.
+    infos = list(run.metrics_tables) if hasattr(run, "metrics_tables") else []
+    assert len(infos) == 2
+    tables = {}
+    for info in infos:
+        url = getattr(info, "url", None) or (info.get("url") if isinstance(info, dict) else None)
+        t = tlc.Table.from_url(tlc.Url(str(url)).to_absolute(run.url))
+        t.ensure_fully_defined()
+        rows = list(t.table_rows)
+        tables[len(rows)] = rows
+    train_rows, val_rows = tables[15], tables[6]
+    names = manifest.class_names
+    for rows in (train_rows, val_rows):
+        for r in rows:
+            assert 0 <= int(r["predicted"]) < manifest.num_classes
+            assert 0.0 <= float(r["confidence"]) <= 1.0
+            assert len(r["embeddings"]) == 3
+            assert abs(sum(float(r[f"prob_{n}"]) for n in names) - 1.0) < 1e-3
+            assert r["epoch"] == result["best_epoch"]
+    # Loss: present for labeled rows, NaN (absent) for the three undefined rows — never fabricated.
+    labeled = [r for r in train_rows if int(r["example_id"]) < 12]
+    pool = [r for r in train_rows if int(r["example_id"]) >= 12]
+    assert len(pool) == 3 and all(math.isnan(float(r["loss"])) for r in pool)
+    assert all(not math.isnan(float(r["loss"])) and float(r["loss"]) >= 0 for r in labeled)
+    assert all(not math.isnan(float(r["loss"])) for r in val_rows)
+    # The record: completed, in the history, with the ETA stats and the checkpoint facts.
+    st = trainer.train_state()
+    assert st["state"] == "completed" and st["current"]["weights_on_disk"] is True
+    assert st["current"]["facts"]["train_table_url"] == train_url and st["current"]["client_token"] == "click-1"
+    assert st["current"]["progress"]["epoch"] == 2 and len(st["current"]["progress"]["history"]) == 2
+    assert {"e", "tl", "vl", "va"} <= set(st["current"]["progress"]["history"][0])
+    assert st["runs"][0]["id"] == st["current"]["id"] and st["runs"][0]["epoch_s_per_row"] > 0
+    assert st["runs"][0]["collect_s"] is not None and st["runs"][0]["provenance_ok"] is True
+    # The train and val tables were never modified.
+    assert _snapshot(train_url) == before_train and _snapshot(val_url) == before_val
+    # The progress channel carried ExDark's shape: epochs, history, batch counters, the ETA fields.
+    epoch_payloads = [p for p in ctx.progress if p.get("epoch") == 2 and p.get("phase") == "train"]
+    assert epoch_payloads and "avg_epoch_s" in epoch_payloads[-1] and epoch_payloads[-1]["total_epochs"] == 2
+    assert any(p.get("stage") == "collect" for p in ctx.progress)
+    # Facts the fragment and session 4 read.
+    assert ctx.facts["run_url"] == run_url and ctx.facts["weights"] == result["weights"]
+    assert ctx.facts["device"] == "cpu"
+
+
+def test_a_second_start_is_refused_while_a_run_is_in_progress_and_a_reused_click_token_is_refused(imported, store):
+    manifest, _train_url, _ = imported
+    store.save({"train_state": {"current": _record(client_token="click-9", facts={"run_name": "busy"})}})
+    with pytest.raises(trainer.TrainRefused, match="already in progress \\(busy\\)"):
+        trainer.run_training({"device": "cpu", "client_token": "click-10"}, FakeCtx(), manifest)
+    rec = _record(status="completed", client_token="click-9", finished_at=time.time())
+    store.save({"train_state": {"current": rec}})
+    with pytest.raises(trainer.TrainRefused, match="already used"):
+        trainer.run_training({"device": "cpu", "client_token": "click-9"}, FakeCtx(), manifest)
+
+
+def test_cancel_mid_run_keeps_the_best_checkpoint_and_marks_the_run_cancelled(imported):
+    manifest, _train_url, _ = imported
+    # FakeCtx cancels from its Nth is_cancelled() call: after epoch 1 has completed (2 batches +
+    # the epoch check + the first-batch probe), so epoch 2 stops at its first batch.
+    ctx = FakeCtx(cancel_on_call=6)
+    result = trainer.run_training(
+        {"epochs": "3", "batch_size": "8", "device": "cpu", "workers": "0", "run_name": "t_cancel"}, ctx, manifest
+    )
+    assert result["cancelled"] is True and 1 <= result["epochs_completed"] < 3
+    assert Path(result["weights"]).is_file() and result["best_checkpoint_sha256"]
+    run = tlc.Run.from_url(tlc.Url(result["run_url"]))
+    assert 'status="cancelled"' in repr(run), repr(run)
+    st = trainer.train_state()
+    assert st["state"] == "cancelled" and st["current"]["weights_on_disk"] is True
+    assert st["runs"][0]["status"] == "cancelled"
+    # Provenance still recorded (Predict may use a cancelled run's best checkpoint, D10).
+    assert ctx.checks and all(c["ok"] for c in ctx.checks)
+    assert not any(p.get("stage") == "collect" for p in ctx.progress)

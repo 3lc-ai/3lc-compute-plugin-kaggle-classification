@@ -166,6 +166,40 @@
 .kg-callout.info > .kgi { color: var(--text-muted); }
 .kg-callout.ok { background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.25); }
 .kg-callout.ok > .kgi { color: var(--success); }
+/* ── Train tab (ExDark's blocks, verbatim where used): locked rows, inline bounds error,
+   in-run metric strip + sparkline, the revision picker popover, the usable-row line ── */
+.kg-locked-rows { margin: -4px 0 14px; }
+.kg-locked-row { display: flex; align-items: center; gap: 10px; padding: 5px 2px; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); font-size: 12.5px; }
+.kg-locked-row .lbl { color: var(--text-muted); font-size: 11px; min-width: 84px; }
+.kg-locked-row .val { color: var(--text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kg-locked-row .kgi { color: var(--text-muted); margin-left: auto; }
+.kg-locked-row .kg-lock-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.kg-locked-row .kg-lock-actions .kgi { margin-left: 0; }
+.kg-check-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; padding: 3px 0; }
+.kg-field-err { display: flex; gap: 6px; align-items: flex-start; margin-top: 4px; color: var(--danger, #ef4444); font-size: 11px; line-height: 1.4; }
+.kg-field-err .kgi { margin-top: 1px; }
+.kg-metric-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.kg-metric { border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 6px; padding: 6px 10px; min-width: 96px; }
+.kg-metric .lbl { font-size: 10.5px; color: var(--text-muted); }
+.kg-metric .val { font-size: 14px; font-weight: 600; color: var(--text); }
+.kg-spark { display: block; margin-top: 3px; color: var(--accent); opacity: .8; }
+.kg-spark polyline { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.kg-spark circle { fill: currentColor; stroke: none; }
+.kg-url-row { display: flex; gap: 6px; align-items: stretch; }
+.kg-url-row .form-control { flex: 1; min-width: 0; }
+.kg-pick-wrap { position: relative; }
+.kg-pop { position: absolute; z-index: 30; top: 100%; left: 0; right: 0; margin-top: 4px; background: var(--bg-card, #fff); border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 6px; max-height: 280px; overflow: auto; }
+.kg-pop-ds { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); padding: 6px 8px 2px; }
+.kg-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: 6px; background: none; cursor: pointer; font: inherit; font-size: 12.5px; color: var(--text); text-align: left; }
+.kg-pop-row:hover { background: var(--accent-light, rgba(42,74,97,.06)); }
+.kg-pop-row .rows { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.kg-pop-badge { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; }
+.kg-usable { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+/* Hub fallbacks for the locked-contract banner (plugin-common.css styles it inside the Hub) */
+.kgc .format-selected-banner { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); background: var(--accent-light, rgba(42,74,97,.05)); margin-bottom: 12px; }
+.kgc .fmt-icon { display: flex; color: var(--text-muted); margin-top: 2px; }
+.kgc .fmt-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.kgc .fmt-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 /* Fallbacks for the Hub's shared classes, so the fragment also reads outside the Hub theme */
 .kgc .card { border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); background: var(--bg-card); }
 .kgc .card-header { padding: 12px 16px 0; }
@@ -376,15 +410,179 @@
   <div class="kg-footer" data-kg-footer></div>
   </div>
 
-  <!-- ── 2. Train · 3. Predict + Submit · 4. Status: ExDark's gate card until their sessions ── -->
+  <!-- ── 2. Train (ExDark's Train tab, control for control: docs/TRAIN_MIRROR.md) ─────────── -->
   <div class="kg-panel" id="kg-panel-train">
   <div class="card" style="margin-bottom: 16px;">
-    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">2</span> Train</div>
-      <div class="card-subtitle" id="kg-train-subtitle"></div></div></div>
-    <div class="card-body"><div id="tr-conn-banner" role="status" aria-live="polite"></div><div id="tr-gate"></div></div>
+    <div class="card-header"><div>
+      <div class="card-title"><span class="plugin-section-number">2</span> Train</div>
+      <div class="card-subtitle" id="kg-train-subtitle">Trains the competition baseline on your imported tables and
+        records verified provenance (the locked from-scratch contract) on the 3LC Run.</div>
+    </div></div>
+    <div class="card-body">
+      <!-- Locked contract: ExDark's banner geometry; every value renders from GET /config -->
+      <div class="format-selected-banner" title="Identical architecture, initialisation rule and resolution for every participant. The leaderboard measures your data work, not your compute. The locked facts are enforced server-side and recorded on the Run as proof.">
+        <span class="fmt-icon"><svg class="kgi kgi-16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.25" y="7.25" width="9.5" height="6.25" rx="1.5"/><path d="M5.5 7.25V5a2.5 2.5 0 0 1 5 0v2.25"/></svg></span>
+        <div style="flex: 1;">
+          <div class="fmt-name" id="tr-contract-name"></div>
+          <div class="fmt-desc">Enforced server-side; identical architecture, init rule and resolution for every participant.</div>
+        </div>
+      </div>
+      <!-- Locked parameters: read-only rows, never fake-editable inputs. No ids are collected
+           into the POST body; the lock is enforced server-side (build_train_kwargs). -->
+      <div class="kg-locked-rows" id="tr-locked-rows"></div>
+
+      <!-- Connection guard banner (network-level failures only) -->
+      <div id="tr-conn-banner" role="status" aria-live="polite"></div>
+
+      <!-- Success / failure banner (rendered by JS) -->
+      <div id="tr-banner"></div>
+
+      <form id="tr-form" onsubmit="return false;">
+        <div class="kg-sec-head">Tables</div>
+        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          <div class="form-group kg-pick-wrap">
+            <label class="form-label required" for="tr-train-url">Train table URL</label>
+            <div class="kg-url-row">
+              <input id="tr-train-url" type="text" class="form-control" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-train-pick"
+                      title="Pick a table revision" aria-label="Pick a table revision"
+                      aria-haspopup="listbox" aria-expanded="false"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l6 3-6 3-6-3z"/><path d="M2 8.75l6 3 6-3"/><path d="M2 11.75l6 3 6-3"/></svg></button>
+            </div>
+            <div class="kg-pop" id="tr-train-pop" hidden></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Val table</label>
+            <div class="kg-locked-rows" style="margin: 0 0 4px;" id="tr-val-locked"></div>
+            <div class="form-help">Locked to the revision Import created: every run is scored against
+              the same validation split.</div>
+          </div>
+        </div>
+        <div id="tr-tables-gate"></div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="kg-check-label"><input id="tr-latest" type="checkbox" checked> Use latest revision</label>
+          <div class="form-help">Trains on the train table's newest revision (<code>.latest()</code>),
+            picking up your label edits from the Dashboard.</div>
+        </div>
+
+        <hr class="divider">
+        <div class="kg-sec-head">Training parameters</div>
+        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          <div class="form-group">
+            <label class="form-label" for="tr-epochs">Epochs</label>
+            <input id="tr-epochs" type="number" class="form-control" step="1">
+            <div class="form-help">Passes over the usable rows. <span id="tr-epochs-ref"></span>
+              <span data-range="epochs"></span></div>
+            <div id="tr-duration"></div>
+            <div class="kg-field-slot" data-for="tr-epochs"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tr-batch">Batch size</label>
+            <input id="tr-batch" type="number" class="form-control" step="1">
+            <div class="form-help">Images per training step. Raise it until GPU memory runs out;
+              lower it on CUDA out-of-memory. 16 fits any card at <span id="tr-batch-px"></span>px.
+              <span data-range="batch_size"></span></div>
+            <div class="kg-field-slot" data-for="tr-batch"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tr-lr">Learning rate</label>
+            <input id="tr-lr" type="number" class="form-control" step="0.00001">
+            <div class="form-help">Initial learning rate for Adam. Higher learns faster but can diverge;
+              <span id="tr-lr-sched"></span> <span data-range="lr"></span></div>
+            <div class="kg-field-slot" data-for="tr-lr"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tr-wd">Weight decay</label>
+            <input id="tr-wd" type="number" class="form-control" step="0.001">
+            <div class="form-help">L2 penalty on the weights (Adam's <code>weight_decay</code>). 0 is the
+              baseline; a small value regularises a from-scratch model. <span data-range="weight_decay"></span></div>
+            <div class="kg-field-slot" data-for="tr-wd"></div>
+          </div>
+        </div>
+
+        <div class="kg-log-details" style="margin-top: 2px;">
+          <button type="button" class="kgl-acc-summary" id="tr-adv-toggle"
+                  aria-expanded="false" aria-controls="tr-adv-panel">
+            <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Advanced
+          </button>
+          <div class="kgl-acc" id="tr-adv-panel" hidden>
+            <div class="kgl-acc-inner">
+              <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; margin-top: 10px;">
+                <div class="form-group">
+                  <label class="form-label" for="tr-device">Device</label>
+                  <input id="tr-device" type="text" class="form-control" value="" placeholder="auto">
+                  <div class="form-help">Blank = auto-select: CUDA GPU if available, else <code>mps</code>
+                    (Apple silicon GPU), else CPU. Or set a GPU index (<code>0</code> for the first NVIDIA
+                    GPU), <code>mps</code>, or <code>cpu</code>. Training on CPU is very slow. If the
+                    accelerator fails at start, the run retries on CPU and says so.</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="tr-workers">Workers</label>
+                  <input id="tr-workers" type="number" class="form-control" step="1">
+                  <div class="form-help">Dataloader worker processes. <span id="tr-workers-note"></span>
+                    <span data-range="workers"></span></div>
+                  <div class="kg-field-slot" data-for="tr-workers"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="tr-seed">Seed</label>
+                  <input id="tr-seed" type="number" class="form-control" step="1">
+                  <div class="form-help">Random seed for the initialisation, the augmentation and the
+                    sampler. The same seed, data and settings reproduce a run; the Run records it.
+                    <span data-range="seed"></span></div>
+                  <div class="kg-field-slot" data-for="tr-seed"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="kg-sec-head">3LC settings</div>
+        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          <div class="form-group">
+            <label class="form-label">Project</label>
+            <div class="kg-locked-rows" style="margin: 0 0 4px;">
+              <div class="kg-locked-row" title="The run is created in the session project, the same one Import created the tables in. The project name is edited on the Import tab."><span class="lbl">Session</span>
+                <span class="val" id="tr-project-fact"></span>
+                <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.25" y="7.25" width="9.5" height="6.25" rx="1.5"/><path d="M5.5 7.25V5a2.5 2.5 0 0 1 5 0v2.25"/></svg></div>
+            </div>
+            <div class="form-help">The run lands in the same project as the imported tables.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tr-runname">Run name</label>
+            <input id="tr-runname" type="text" class="form-control">
+            <div class="form-help">Blank generates a timestamped name.</div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" id="tr-start-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Start Training</button>
+          <button type="button" id="tr-cancel-btn" class="btn btn-secondary" disabled>Cancel</button>
+          <span class="spinner" id="tr-spinner" style="display: none;"></span>
+          <span id="tr-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
+        </div>
+      </form>
+
+      <div id="tr-progress" style="margin-top: 12px;"></div>
+      <div id="tr-checks"></div>
+      <div id="tr-result"></div>
+      <div class="kg-log-details" id="tr-log-details" style="display: none;">
+        <button type="button" class="kgl-acc-summary" id="tr-log-toggle"
+                aria-expanded="false" aria-controls="tr-log-panel">
+          <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
+        </button>
+        <div class="kgl-acc" id="tr-log-panel" hidden>
+          <div class="kgl-acc-inner">
+            <pre id="tr-log"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="kg-footer" data-kg-footer></div>
   </div>
+
+  <!-- ── 3. Predict + Submit · 4. Status: ExDark's gate card until their sessions ── -->
   <div class="kg-panel" id="kg-panel-submit">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div>
@@ -424,7 +622,11 @@
       // Dev affordance (ExDark's): ?kgdev=<state> renders a UI state from static fixtures —
       // no fetches, no job side effects. Values: state1, state2, state2-mismatch, state2-error,
       // state3, state4, state5, state6, state6-superseded, dl-empty, dl-running, dl-verify,
-      // dl-success, dl-fail, dl-cancelled, dl-revisit, dl-superseded.
+      // dl-success, dl-fail, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
+      // train-state2-missing, train-state2-rows, train-state2-invalid, train-state2-undefined-weight,
+      // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state3,
+      // train-state3-collecting, train-state3-cpu-retry, train-state4, train-state4-noproject,
+      // train-state5, train-state5-stale, train-state6, train-state6-cancelled.
       var kgDevMode = new URLSearchParams(window.location.search).get('kgdev');
 
       // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
@@ -492,6 +694,13 @@
         var pr = job.progress; var now = Date.now() / 1000;
         pr.phase = p.phase || pr.phase; pr.label = p.label || pr.label; pr.percent = p.percent;
         pr.bytes_done = p.bytes_done; pr.bytes_total = p.bytes_total; pr.archive = p.archive;
+        if (job.kind === 'train') {
+          // ExDark's train progress shape (epoch, history, batch counters, the ETA fields, the
+          // stage note of the final pass) arrives whole on every flush.
+          ['epoch', 'total_epochs', 'history', 'batch_i', 'batch_n', 'avg_epoch_s', 'eta_s', 'stage', 'stage_note']
+            .forEach(function (k) { if (k in p) { pr[k] = p[k]; } else if (k === 'stage' || k === 'stage_note') { delete pr[k]; } });
+          return;
+        }
         if (job.kind !== 'import') { return; }
         pr.stages = KG_IMPORT_STAGES;
         var current = null;
@@ -523,6 +732,7 @@
       function kgOnRecord(job, terminal) {
         if (job.kind === 'download_kit') { dlOnRecord(job, terminal); }
         else if (job.kind === 'import') { kgOnImportRecord(job, terminal); }
+        else if (job.kind === 'train') { trOnRecord(job, terminal); }
       }
       // Strip the host's appended worker traceback: the first line is the participant sentence.
       function kgErrorText(raw) {
@@ -563,6 +773,7 @@
         // no-more-F5 rule. The stepper refreshes on every switch.
         renderPipeline();
         if (name !== 'import' && kgConfigDone) { kgRenderGates(); }
+        if (name === 'train' && kgConfigDone) { trOnTabEnter(); }
       }
 
       Array.prototype.forEach.call(
@@ -653,6 +864,7 @@
         'circle': '<circle cx="8" cy="8" r="6.25"/>',
         'dot': '<circle cx="8" cy="8" r="4" fill="currentColor" stroke="none"/>',
         'refresh-cw': '<path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.97"/><path d="M13.5 2.5V6H10"/>',
+        'play': '<path d="M5 3.5v9l7.5-4.5z"/>',
         'chevron-right': '<path d="M6 3.5L10.5 8 6 12.5"/>',
         'external-link': '<path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/>'
       };
@@ -926,9 +1138,18 @@
       function kgApplySession(cfg) {
         kgSession = cfg.session || { project_name: '', table_name: '', kit_dir: '', device: '', overrides: {} };
         if (!kgSession.overrides) { kgSession.overrides = {}; }
+        // Validate on read: drop any stored override today's write predicate would refuse
+        // (ExDark's kgApplySession; nearly vacuous by design).
+        Object.keys(KG_URL_FIELDS).forEach(function (id) {
+          var key = KG_URL_FIELDS[id][0];
+          var u = kgSession.overrides[key];
+          if (u && kgOverrideDisposition(id, u) !== 'keep') { delete kgSession.overrides[key]; }
+        });
         el('kg-project').value = kgSession.project_name;
         el('kg-table').value = kgSession.table_name;
         if (kgSession.kit_dir) { el('kg-kit').value = kgSession.kit_dir; }
+        el('tr-device').value = kgSession.device || '';
+        kgRenderProjectFact();
       }
 
       // Version footer on every tab, from the config _meta block.
@@ -999,6 +1220,7 @@
             if (st === 'running') { kgPollManifest(remaining - 1); return; }
             if (kgMeta) { kgMeta.manifest_refresh = p.refresh || kgMeta.manifest_refresh; kgMeta.manifest_provenance = p.provenance || kgMeta.manifest_provenance; }
             kgRenderContract(p.manifest || kgManifest);
+            trApplyContract();
           }).catch(function () { /* the first render stands */ });
         }, 1000);
       }
@@ -1035,6 +1257,11 @@
           kgPluginVersion = String(kgMeta.version || '');
           kgRenderFooters(kgMeta);
           kgRenderContract(kgMeta.manifest);
+          kgTraining = kgMeta.training || kgTraining;
+          kgTrainState = kgMeta.train_state || kgTrainState;
+          trApplyContract();
+          trApplyFields(false);
+          applyConfig(cfg);
           if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
           kgRenderLoopLinks();
           if ((kgMeta.manifest_refresh || {}).state === 'running') { kgPollManifest(8); }
@@ -1070,7 +1297,9 @@
       // check-circle done, filled dot on the FIRST not-done step, outline circle upcoming. Done
       // comes from the import record (Train/Submit stay not-done until their sessions).
       function renderPipeline() {
-        var p = { import: kgImportState.state === 'success', train: false, submit: false };
+        var trainDone = !!((kgTrainState.current && kgTrainState.current.weights_on_disk) ||
+                           (kgTrainState.runs || []).some(function (r) { return !!r.weights; }));
+        var p = { import: kgImportState.state === 'success', train: trainDone, submit: false };
         var steps = ['import', 'train', 'submit'];
         var currentSeen = false;
         steps.forEach(function (s) {
@@ -1093,7 +1322,7 @@
       // Gate card on the tabs that need the imported tables (ExDark's Train gate).
       function kgRenderGates() {
         var imported = kgImportState.state === 'success';
-        [['tr-gate', 'Train'], ['ps-gate', 'Predict + Submit'], ['st-gate', 'Status']].forEach(function (pair) {
+        [['ps-gate', 'Predict + Submit'], ['st-gate', 'Status']].forEach(function (pair) {
           var box = el(pair[0]);
           if (!box) { return; }
           if (imported) {
@@ -2032,6 +2261,1465 @@
           });
       }
 
+
+      // ── Table URL helpers, revision picker, session overrides (ExDark's, verbatim) ─────
+      // field id -> [session.overrides key, /tables/defaults split key]. Only the train field
+      // is a URL field here: val is locked to the import record (docs/TRAIN_MIRROR.md #6).
+      var KG_URL_FIELDS = { 'tr-train-url': ['train_table_url', 'train'] };
+
+      // JS mirror of session.URL_SEG_PATTERNS (tests/test_url_regex_parity.py pins the pair).
+      // "projects" is NOT a literal segment — the project root is configurable — so the project
+      // is the segment before datasets/<ds>/tables/<t>, anchored at end-of-string.
+      function kgUrlSeg(url, kind) {
+        var re = { project: /([^\\\/]+)[\\\/]datasets[\\\/][^\\\/]+[\\\/]tables[\\\/][^\\\/]+[\\\/]?$/,
+                   dataset: /[\\\/]datasets[\\\/]([^\\\/]+)[\\\/]tables[\\\/]/,
+                   table: /[\\\/]tables[\\\/]([^\\\/]+)[\\\/]?$/ }[kind];
+        var m = String(url).trim().match(re);
+        return m ? m[1] : null;
+      }
+      function kgSplitDataset(split) { return kgDatasetName(split); }
+
+      // "drop" | "suppress" | "keep" — see session.classify_override.
+      function kgOverrideDisposition(id, url) {
+        if (!kgManifest || !kgManifest.competition) { return 'keep'; }   // degraded: no mapping served
+        var split = KG_URL_FIELDS[id][1];
+        if (kgUrlSeg(url, 'project') !== kgSession.project_name ||
+            kgUrlSeg(url, 'dataset') !== kgSplitDataset(split)) { return 'drop'; }
+        if (kgUrlSeg(url, 'table') === kgSession.table_name) { return 'suppress'; }
+        return 'keep';
+      }
+
+      // Render the URL fields from the session: an explicit override verbatim, else the
+      // canonical derivation for the session project + table. Writes the DOM only.
+      function kgApplyDerivedUrls(fieldIds) {
+        if (!kgSession) { return Promise.resolve(false); }
+        var ov = kgSession.overrides || {};
+        var derived = [];
+        fieldIds.forEach(function (id) {
+          var o = ov[KG_URL_FIELDS[id][0]];
+          if (o) { el(id).value = o; } else { derived.push(id); }
+        });
+        if (!derived.length) { return Promise.resolve(true); }
+        var tbl = (kgSession.table_name || '').trim();
+        return API.authFetch(PLUGIN_ROOT + '/tables/defaults?project=' + encodeURIComponent(kgCurrentProject()) +
+                             (tbl ? '&table=' + encodeURIComponent(tbl) : ''))
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            derived.forEach(function (id) {
+              var s = d[KG_URL_FIELDS[id][1]];
+              if (s && s.url) { el(id).value = s.url; }
+            });
+            return true;
+          })
+          .catch(function () { return false; });
+      }
+
+      // A user edit to a URL field becomes an override ONLY if it passes the predicate.
+      function kgSetUrlOverride(id) {
+        if (!kgSession || kgDevMode) { return; }
+        var key = KG_URL_FIELDS[id][0];
+        var v = el(id).value.trim();
+        var ov = kgSession.overrides || (kgSession.overrides = {});
+        if (!v) {
+          if (key in ov) { delete ov[key]; kgSessionSave(); }
+          kgApplyDerivedUrls([id]);
+          return;
+        }
+        var disp = kgOverrideDisposition(id, v);
+        if (disp === 'keep' && ov[key] !== v) {
+          ov[key] = v;
+          kgSessionSave();
+        } else if (disp === 'suppress' && (key in ov)) {
+          delete ov[key];
+          kgSessionSave();
+        }
+      }
+
+      function kgRenderProjectFact() {
+        el('tr-project-fact').textContent = kgCurrentProject();
+      }
+
+      // Revision picker popover: the project's tables and their lineage-ordered revisions,
+      // scoped to the field's split (DP-11). Raw URL entry stays the escape hatch.
+      function kgBindTablePicker(inputId, popId, btnId, onPick, split) {
+        var btn = el(btnId);
+        var pop = el(popId);
+        var input = el(inputId);
+
+        function onDocDown(e) {
+          if (!pop.contains(e.target) && !btn.contains(e.target)) { close(); }
+        }
+        function onKeyDown(e) {
+          if (e.key === 'Escape') { close(); btn.focus(); }
+        }
+        function close() {
+          if (pop.hidden) { return; }
+          pop.hidden = true;
+          btn.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('mousedown', onDocDown, true);
+          document.removeEventListener('keydown', onKeyDown, true);
+        }
+        function open() {
+          pop.hidden = false;
+          btn.setAttribute('aria-expanded', 'true');
+          pop.innerHTML = '<div class="form-help" style="padding:4px 8px">Loading tables…</div>';
+          kglEnter(pop);
+          document.addEventListener('mousedown', onDocDown, true);
+          document.addEventListener('keydown', onKeyDown, true);
+          API.authFetch(PLUGIN_ROOT + '/tables/list?project=' + encodeURIComponent(kgCurrentProject()))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (pop.hidden) { return; }
+              var want = split ? kgSplitDataset(split) : null;
+              var html = '';
+              (data.datasets || []).filter(function (ds) {
+                return !want || ds.name === want;
+              }).forEach(function (ds) {
+                html += '<div class="kg-pop-ds">' + esc(ds.name) + '</div>';
+                (ds.tables || []).forEach(function (t) {
+                  html += '<button type="button" class="kg-pop-row" data-url="' + esc(t.url) +
+                          '" data-latest="' + (t.latest ? '1' : '0') + '">' +
+                          '<span>' + esc(t.name) + '</span>' +
+                          (t.latest ? '<span class="kg-pop-badge">LATEST</span>' : '') +
+                          '<span class="rows">' + fmtCount(t.rows) + ' rows</span></button>';
+                });
+              });
+              pop.innerHTML = html ||
+                '<div class="form-help" style="padding:4px 8px">No ' + (want ? esc(want) + ' ' : '') +
+                'tables in this project yet. Run Import first.</div>';
+              pop.querySelectorAll('.kg-pop-row').forEach(function (row) {
+                row.addEventListener('click', function () {
+                  input.value = row.getAttribute('data-url');
+                  close();
+                  onPick(row.getAttribute('data-url'), row.getAttribute('data-latest') === '1');
+                });
+              });
+            })
+            .catch(function (e) {
+              if (pop.hidden) { return; }
+              pop.innerHTML = '<div class="form-help" style="padding:4px 8px">Could not list tables: ' +
+                              esc(e.message) + '</div>';
+              kgConn.fail(e);
+            });
+        }
+        btn.addEventListener('click', function () { if (pop.hidden) { open(); } else { close(); } });
+      }
+
+      // dataset/revision display name from a table URL
+      function kgTableRef(url) {
+        var ds = String(url).match(/datasets[\\\/]+([^\\\/]+)/);
+        var rev = String(url).match(/tables[\\\/]+([^\\\/]+)/);
+        return ds ? ds[1] + (rev ? '/' + rev[1] : '') : '';
+      }
+
+      function dashRunLink(runUrl) {
+        return dashboardUrl
+          ? kgWithObjectService(dashboardUrl + '?run=' + encodeURIComponent(runUrl)) : '';
+      }
+
+      function kgAccOpenInstant(toggleId, panelId) {
+        el(toggleId).setAttribute('aria-expanded', 'true');
+        el(panelId).classList.add('open');
+        el(panelId).hidden = false;
+      }
+
+      function kgSwapText(elm, text) {
+        if (elm.textContent === text) { return; }
+        if (!kgMotionOK()) { elm.textContent = text; return; }
+        elm.addEventListener('transitionend', function h(e) {
+          if (e.propertyName !== 'opacity') { return; }
+          elm.removeEventListener('transitionend', h);
+          elm.textContent = text;
+          elm.style.opacity = '';
+        });
+        elm.style.opacity = '0';
+      }
+
+      // ── Config persistence: last-used values per tab (ExDark's CFG_FIELDS) ───────────
+      // Tab snapshots hold TAB-LOCAL fields only; the shared facts (project, table, URLs,
+      // device) live in the session. The run name is not persisted: blank generates a fresh one.
+      var CFG_FIELDS = {
+        train: {
+          'tr-latest': 'use_latest',
+          'tr-epochs': 'epochs', 'tr-batch': 'batch_size', 'tr-lr': 'lr', 'tr-wd': 'weight_decay',
+          'tr-seed': 'seed', 'tr-workers': 'workers'
+        }
+      };
+
+      function saveTabConfig(tab) {
+        if (kgDevMode) { return; }
+        var values = {};
+        Object.keys(CFG_FIELDS[tab]).forEach(function (id) {
+          var node = el(id);
+          if (!node) { return; }
+          values[CFG_FIELDS[tab][id]] = node.type === 'checkbox' ? node.checked : node.value;
+        });
+        var body = {}; body[tab] = values;
+        API.authFetch(PLUGIN_ROOT + '/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }).catch(function () { /* persistence is best-effort */ });
+      }
+
+      function applyConfig(cfg) {
+        Object.keys(CFG_FIELDS).forEach(function (tab) {
+          var saved = (cfg || {})[tab] || {};
+          Object.keys(CFG_FIELDS[tab]).forEach(function (id) {
+            var key = CFG_FIELDS[tab][id];
+            var node = el(id);
+            if (!node || !(key in saved) || saved[key] === null) { return; }
+            if (node.type === 'checkbox') { node.checked = !!saved[key]; }
+            else if (saved[key] !== '') { node.value = saved[key]; }
+          });
+        });
+        // Validate on read: a persisted numeric outside the served bounds falls back to the
+        // field's default instead of restoring silently invalid.
+        Object.keys(TR_BOUNDS).forEach(function (id) {
+          var node = el(id), spec = TR_BOUNDS[id];
+          var raw = node.value, v = parseFloat(raw);
+          var bad = raw === '' ? !spec[3] : (isNaN(v) || v < spec[1] || v > spec[2]);
+          if (bad && raw !== node.defaultValue) { node.value = node.defaultValue; }
+        });
+        // Disclosures default collapsed; a saved config that customized an advanced field
+        // reopens its disclosure so nothing saved is invisible.
+        if (el('tr-device').value !== '' || el('tr-workers').value !== el('tr-workers').defaultValue ||
+            el('tr-seed').value !== el('tr-seed').defaultValue) {
+          kgAccOpenInstant('tr-adv-toggle', 'tr-adv-panel');
+        }
+      }
+
+      // ── Train tab ──────────────────────────────────────────────────
+      var trainJobId = null;
+      var kgTraining = null;                                    // _meta.training (served facts)
+      var kgTrainState = { state: 'empty', current: null, runs: [] };   // GET /train/state
+
+      var KG_BTN_TRAIN = kgIcon('play', 'kgi-16') + '<span>Start Training</span>';
+      var KG_BTN_TRAIN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run Training</span>';
+      el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+
+      // One token per form state: the worker refuses a second start carrying a token it has
+      // already consumed, so a double-clicked Start can never train twice even through the
+      // host's serial GPU queue. The button disables synchronously on click as well (ExDark).
+      var trClickToken = '';
+      function trNewToken() {
+        trClickToken = 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+      trNewToken();
+
+      // Train flavor of Copy diagnostics: the submitted HP set, the provenance assertions, and
+      // the training log tail.
+      var trLastParams = null;
+      var trLastChecks = null;
+
+      function trBuildDiagnostics() {
+        var head = [];
+        if (trainJobId) { head.push('job: ' + trainJobId); }
+        return kgBuildDiagnosticsCore([
+          head,
+          trLastParams ? ['', '[train params]', JSON.stringify(trLastParams, null, 1)] : null,
+          kgChecksSection('provenance', trLastChecks),
+          kgLogTailSection(el('tr-log'))
+        ]);
+      }
+
+      function trLogOpen() {
+        return el('tr-log-toggle').getAttribute('aria-expanded') === 'true';
+      }
+
+      function trLogReset() {
+        el('tr-log-details').style.display = 'none';
+        el('tr-log-toggle').setAttribute('aria-expanded', 'false');
+        var panel = el('tr-log-panel');
+        panel.classList.remove('open');
+        panel.hidden = true;
+        el('tr-log').textContent = '';
+      }
+      kgBindAccordion('tr-log-toggle', 'tr-log-panel');
+      kgBindAccordion('tr-adv-toggle', 'tr-adv-panel');
+
+      // ── The locked contract and the bounded fields, rendered from GET /config ────────
+      function trOptimizerLabel(name) {
+        var n = String(name || '').toLowerCase();
+        return n === 'adam' ? 'Adam' : n === 'adamw' ? 'AdamW' : n === 'sgd' ? 'SGD' : (name || '');
+      }
+      function trScheduleLabel(sch) {
+        sch = sch || {};
+        if (sch.kind === 'step' && sch.step_size) {
+          return '×' + sch.gamma + ' every ' + fmtCount(sch.step_size) + ' epochs';
+        }
+        return sch.kind ? String(sch.kind) : '';
+      }
+
+      function trApplyContract() {
+        var m = kgManifest || {}, t = kgTraining || {}, model = m.model || {};
+        el('tr-contract-name').textContent = model.arch
+          ? model.arch + ' from random init (timm) · ' + model.image_size + 'px' : '';
+        var rows = [
+          ['Model', model.arch ? model.arch + (t.timm_version ? ' · timm ' + t.timm_version : '') : '',
+           'Identical architecture for every participant. The leaderboard measures your data work, not your compute.'],
+          ['Init', model.arch ? 'random (pretrained = false)' : '',
+           'No pretrained weights anywhere: every participant starts from random initialisation. The Run records pretrained = false as proof.'],
+          ['Image size', model.image_size ? String(model.image_size) : '',
+           'Locked so results are comparable across participants.'],
+          ['Optimizer', trOptimizerLabel(t.optimizer),
+           'The starter kit\'s optimizer. The learning rate and weight decay below are yours to tune.'],
+          ['LR schedule', trScheduleLabel(t.schedule),
+           'The starter kit\'s step schedule (StepLR): the learning rate is multiplied by the factor at every step. Fixed so runs stay comparable.'],
+          ['Inference', t.inference || '',
+           'Predictions come from one forward pass at the locked image size: no test-time augmentation, no ensembling.']
+        ];
+        el('tr-locked-rows').innerHTML = rows.filter(function (r) { return r[1]; }).map(function (r) {
+          return '<div class="kg-locked-row" title="' + esc(r[2]) + '"><span class="lbl">' + esc(r[0]) +
+                 '</span><span class="val">' + esc(r[1]) + '</span>' + kgIcon('lock', 'kgi-12') + '</div>';
+        }).join('');
+        el('tr-batch-px').textContent = model.image_size ? String(model.image_size) : '';
+        var sch = t.schedule || {};
+        el('tr-lr-sched').textContent = (sch.kind === 'step' && sch.step_size)
+          ? 'the schedule multiplies it by ' + sch.gamma + ' every ' + fmtCount(sch.step_size) + ' epochs.'
+          : '';
+        var ref = ((t.benchmark || {}).reference) || {};
+        el('tr-epochs-ref').textContent = (typeof ref.val_accuracy === 'number' && ref.best_epoch)
+          ? 'A from-scratch run reached about ' + Math.round(ref.val_accuracy) + '% val accuracy by epoch ' +
+            fmtCount(ref.best_epoch) + ' on the reference GPU.'
+          : '';
+        el('tr-workers-note').textContent = t.platform === 'win32'
+          ? 'Keep 0 on Windows (the safe default); raise on Linux for faster loading.'
+          : 'The default is auto-picked for this machine; 0 disables worker processes.';
+        var id = (m.competition || {}).id || '';
+        el('tr-runname').placeholder = id ? id + '_run_<timestamp>' : '';
+        trRenderValLocked();
+      }
+
+      // Client-side mirror of the served bounds (_meta.training.bounds). The server remains the
+      // enforcer; these surface the same message shape inline, on blur, instead of letting
+      // submit fail. Fourth element = blank allowed (falls back to the default).
+      var TR_BOUNDS = {};
+      var TR_FIELD_KEYS = {
+        'tr-epochs': 'epochs', 'tr-batch': 'batch_size', 'tr-lr': 'lr', 'tr-wd': 'weight_decay',
+        'tr-seed': 'seed', 'tr-workers': 'workers'
+      };
+
+      function trApplyFields(keepValues) {
+        var t = kgTraining || {};
+        var defaults = t.defaults || {}, bounds = t.bounds || {};
+        Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+          var key = TR_FIELD_KEYS[id];
+          var node = el(id);
+          var b = bounds[key];
+          if (b) {
+            TR_BOUNDS[id] = [key, b[0], b[1]];
+            node.min = String(b[0]);
+            node.max = String(b[1]);
+          }
+          if (key in defaults) {
+            node.defaultValue = String(defaults[key]);
+            if (!keepValues || node.value === '') { node.value = String(defaults[key]); }
+          }
+          ROOT_EL.querySelectorAll('[data-range="' + key + '"]').forEach(function (span) {
+            span.textContent = b ? 'Range ' + b[0] + ' to ' + b[1] + '.' : '';
+          });
+        });
+        trRenderDurationHint();
+      }
+
+      function trRenderValLocked() {
+        var box = el('tr-val-locked');
+        if (!box) { return; }
+        var rec = (kgImportState || {}).record || {};
+        var url = ((rec.val_locked || {}).url) || (((rec.tables || {}).val || {}).url) || '';
+        var rows = ((rec.tables || {}).val || {}).rows;
+        if (!url) {
+          box.innerHTML = '<div class="kg-locked-row" title="Import (tab 1) creates the val table and locks its revision."><span class="lbl">Locked</span>' +
+            '<span class="val" style="color:var(--text-muted);font-weight:400">Not imported yet</span>' + kgIcon('lock', 'kgi-12') + '</div>';
+          return;
+        }
+        box.innerHTML = '<div class="kg-locked-row" title="' + esc(url) + '"><span class="lbl">Locked</span>' +
+          '<span class="val">' + esc(kgTableRef(url) || midTrunc(url, 40)) + (rows ? ' · ' + fmtCount(rows) + ' rows' : '') + '</span>' +
+          '<span class="kg-lock-actions"><button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(url) +
+          '" title="Copy val table path (a path on the compute service\'s machine)" aria-label="Copy val table path">' + kgIcon('copy', 'kgi-12') + '</button>' +
+          kgIcon('lock', 'kgi-12') + '</span></div>';
+        kgBindCopy(box);
+      }
+
+      // ── In-run view: header row, determinate bar, metrics strip ─────
+      // Structure builds once; values swap in place per update (kgSwapText), so nothing
+      // re-enters on ticks. During epoch 0 the bar runs indeterminate; from epoch 1 it is the
+      // per-epoch fraction folding the batch counter in.
+      var TR_METRICS = [['tl', 'Train loss'], ['vl', 'Val loss'], ['va', 'Val accuracy']];
+      var TR_SPARK_N = 30;   // sparkline window: last N epochs
+
+      // Tiny inline sparkline: polyline, no axes, trend only.
+      function kgSparkline(values, w, h) {
+        w = w || 72; h = h || 18;
+        var pts = values.filter(function (v) { return typeof v === 'number' && isFinite(v); });
+        if (!pts.length) { return ''; }
+        var min = Math.min.apply(null, pts);
+        var max = Math.max.apply(null, pts);
+        var span = max - min;
+        var pad = 2;
+        function y(v) {
+          return span === 0 ? h / 2 : pad + (1 - (v - min) / span) * (h - 2 * pad);
+        }
+        var open = '<svg class="kg-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' +
+                   w + ' ' + h + '" aria-hidden="true">';
+        if (pts.length === 1) {
+          var cx = (w - pad).toFixed(1), cy = y(pts[0]).toFixed(1);
+          return open + '<circle cx="' + cx + '" cy="' + cy + '" r="2"/></svg>';
+        }
+        var step = (w - 2 * pad) / (pts.length - 1);
+        var coords = pts.map(function (v, i) {
+          return (pad + i * step).toFixed(1) + ',' + y(v).toFixed(1);
+        }).join(' ');
+        return open + '<polyline points="' + coords + '"/></svg>';
+      }
+
+      function trFmtMetric(key, v) {
+        if (typeof v !== 'number') { return '?'; }
+        return key === 'va' ? v.toFixed(1) + '%' : v.toFixed(4);
+      }
+
+      function trRenderMetricStrip(history) {
+        var strip = el('tr-metric-strip');
+        if (!strip) { return; }
+        if (!history || !history.length) { strip.innerHTML = ''; return; }
+        if (!strip.childElementCount) {
+          strip.innerHTML = TR_METRICS.map(function (mdef) {
+            return '<div class="kg-metric"><span class="lbl">' + esc(mdef[1]) + '</span>' +
+                   '<div class="val" id="tr-m-' + esc(mdef[0]) + '"></div>' +
+                   '<span id="tr-s-' + esc(mdef[0]) + '"></span></div>';
+          }).join('');
+        }
+        var last = history[history.length - 1];
+        TR_METRICS.forEach(function (mdef) {
+          kgSwapText(el('tr-m-' + mdef[0]), trFmtMetric(mdef[0], last[mdef[0]]));
+          el('tr-s-' + mdef[0]).innerHTML = kgSparkline(
+            history.slice(-TR_SPARK_N).map(function (hrow) { return hrow[mdef[0]]; }));
+        });
+      }
+
+      var TR_BADGE_CLASS = { running: 'running', completed: 'completed',
+                             failed: 'failed', cancelled: 'queued', stale: 'queued' };
+
+      function trDeviceLabel(facts) {
+        facts = facts || {};
+        if (!facts.device) { return ''; }
+        return '· ' + facts.device + (facts.device_requested ? '' : ' (auto)') +
+               (facts.device_fallback_reason ? ' after a GPU failure' : '');
+      }
+
+      function trRenderRunView(job) {
+        var p = job.progress || {};
+        var facts = job.facts || {};
+        var status = job.status || 'running';
+        var name = facts.run_name || (job.params || {}).run_name || 'training run';
+        var total = p.total_epochs || parseInt((job.params || {}).epochs, 10) || 0;
+        var epoch = p.epoch || 0;
+        var box = el('tr-progress');
+        if (!box.querySelector('.kg-run-head')) {
+          box.innerHTML =
+            '<div class="kg-run-head">' +
+            '<span class="name" id="tr-run-name"></span>' +
+            '<span id="tr-run-badge"></span>' +
+            '<span class="kg-run-meta"><span class="epoch" id="tr-run-epoch" aria-live="polite"></span>' +
+            '<span id="tr-run-device"></span>' +
+            '<span id="tr-run-elapsed"></span><span id="tr-run-eta"></span></span></div>' +
+            '<div class="plugin-progress-wrap" id="tr-run-track">' +
+            '<div class="plugin-progress-bar" id="tr-run-bar" style="width:0%"></div></div>' +
+            '<div class="kg-metric-strip" id="tr-metric-strip"></div>' +
+            '<div id="tr-run-note"></div>';
+        }
+        el('tr-run-name').textContent = name;
+        var badgeCls = TR_BADGE_CLASS[status] || 'queued';
+        var badgeHtml = '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(status) + '</span>';
+        if (el('tr-run-badge').innerHTML !== badgeHtml) { el('tr-run-badge').innerHTML = badgeHtml; }
+        kgSwapText(el('tr-run-epoch'), 'Epoch ' + epoch + '/' + (total || '?'));
+        // D8: the resolved device in the header meta ("· cuda (auto)").
+        el('tr-run-device').textContent = trDeviceLabel(facts);
+        var now = Date.now() / 1000;
+        var end = status === 'running' ? now : (job.finished_at || now);
+        el('tr-run-elapsed').textContent = job.created_at
+          ? 'elapsed ' + fmtDur(end - job.created_at) : '';
+        // Remaining is recomputed on every update: max(0, estimate − elapsed). The per-epoch
+        // pace seeds from this machine's history (or the benchmark) until the first epoch
+        // boundary lands a measured avg_epoch_s.
+        var perEpoch = (typeof p.avg_epoch_s === 'number' && p.avg_epoch_s > 0)
+          ? p.avg_epoch_s : trEpochSecs;
+        var remaining = (status === 'running' && perEpoch && total && job.created_at)
+          ? Math.max(0, perEpoch * total + (trCollectSecs || 0) - (now - job.created_at)) : null;
+        el('tr-run-eta').textContent =
+          remaining === null ? ''
+            : remaining >= 1 ? '≈ ' + fmtDur(remaining) + ' remaining'
+            : 'finishing up…';
+        var bar = el('tr-run-bar');
+        var within = (p.batch_n && p.batch_i) ? Math.min(1, p.batch_i / p.batch_n) : 0;
+        if (status === 'running' && epoch === 0 && !within) {
+          bar.classList.add('indeterminate');
+          bar.style.width = '30%';
+        } else {
+          bar.classList.remove('indeterminate');
+          bar.style.width =
+            (total ? Math.min(100, Math.round(100 * (epoch + within) / total)) : 0) + '%';
+        }
+        trRenderMetricStrip(p.history || []);
+        // Stage note: the final per-sample pass after the last epoch (and the CPU retry, the
+        // first-batch probe) would otherwise read as a silent stall. The backend sets
+        // progress.stage_note for those; it clears itself when epoch progress replaces it.
+        var noteBox = el('tr-run-note');
+        if (noteBox) {
+          var showNote = status === 'running' && p.stage_note;
+          noteBox.innerHTML = showNote
+            ? '<div class="form-help">' + esc(p.stage_note) + '</div>'
+            : '';
+        }
+      }
+
+      // ── Provenance panel: the product's whole point, promoted ────────
+      function trRenderProvenance(checks, animate) {
+        var box = el('tr-checks');
+        if (!checks || !checks.length) { box.innerHTML = ''; return; }
+        trLastChecks = checks;
+        var allOk = checks.every(function (c) { return c.ok; });
+        var html = '<div class="kg-verdict">' +
+          (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
+                 : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
+          '<span>' + (allOk ? 'Verified provenance recorded'
+                            : 'Provenance check failed') + '</span></div>' +
+          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '"><div>' +
+          '<div class="kg-checks-head">Provenance verified</div>';
+        checks.forEach(function (c, i) {
+          html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+                  (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
+                        : '<span class="bad">' + kgIcon('x') + '</span>') +
+                  '<span class="kg-check-body">' + esc(c.label) +
+                  (c.detail ? ' <span class="detail">(' + esc(c.detail) + ')</span>' : '') +
+                  '</span></div>';
+        });
+        box.innerHTML = html + '</div></div>';
+      }
+
+      // ── Terminal states (banner vocabulary) + revisit ────────────────
+      function trShowForm(show) {
+        el('tr-form').style.display = show ? '' : 'none';
+      }
+
+      // Back to the form (Start new run / Start over analogue). Saved values are already
+      // applied by the config store; the gate re-runs.
+      function trEnterFormState(animate) {
+        trShowForm(true);
+        el('tr-banner').innerHTML = '';
+        el('tr-progress').innerHTML = '';
+        el('tr-checks').innerHTML = '';
+        el('tr-result').innerHTML = '';
+        el('tr-state').textContent = '';
+        trLogReset();
+        trHadChecks = false;
+        trNewToken();
+        el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+        if (animate) { kglEnter(el('tr-form')); el('tr-epochs').focus(); }
+        trVerifyTables(true);
+      }
+
+      function kgHubProjectsHref(project) {
+        // Only on the Hub itself: the /projects route belongs to hub.3lc.ai / hub-beta.3lc.ai.
+        var host = String(window.location.hostname || '');
+        if (!project || !/^(hub|hub-beta)\.3lc\.ai$/.test(host)) { return ''; }
+        return '/projects/' + encodeURIComponent(project) + '#runs';
+      }
+
+      function trRenderSuccessBanner(job, animate, revisit) {
+        var facts = job.facts || {};
+        var result = job.result || {};
+        var weights = facts.weights || result.weights || '';
+        var link = facts.run_url ? dashRunLink(facts.run_url) : '';
+        // The Projects link derives from the RUN's own recorded project at render time (a job
+        // fact — never the session's current project).
+        var project = facts.project_name || (job.params || {}).project_name || '';
+        var projectsHref = kgHubProjectsHref(project);
+        var banner = '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+          '<strong>Training complete: best checkpoint saved</strong>' +
+          (weights
+            ? '<div style="margin-top:4px;font-size:12px;display:flex;gap:6px;align-items:center;min-width:0">' +
+              '<span style="min-width:0;overflow:hidden;white-space:nowrap;color:var(--text-secondary)" ' +
+              'title="' + esc(weights) + '">' + esc(midTrunc(weights, 64)) + '</span>' +
+              '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(weights) +
+              '" title="Copy checkpoint path (a path on the compute service\'s machine)" aria-label="Copy checkpoint path">' + kgIcon('copy') + '</button></div>'
+            : '') +
+          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="tr-continue-submit">' +
+          '<span>Continue to Submit</span>' + kgIcon('arrow-right') + '</button>' +
+          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+                  '"><span>Open Run in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+                  '"><span>Open Run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+          (revisit ? '<button type="button" class="btn btn-ghost btn-sm" id="tr-start-new">Start new run</button>' : '') +
+          '</div></div></div>';
+        el('tr-banner').innerHTML = banner;
+        kgBindCopy(el('tr-banner'));
+        el('tr-continue-submit').addEventListener('click', function () { showTab('submit'); });
+        if (revisit) {
+          el('tr-start-new').addEventListener('click', function () { trEnterFormState(true); });
+        }
+      }
+
+      function trRenderFailBanner(message, animate, headline) {
+        el('tr-banner').innerHTML =
+          '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
+          '<div style="flex:1;min-width:0"><strong>' + esc(headline || 'Training failed') + '</strong>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
+        kgBindDiag(el('tr-banner'), trBuildDiagnostics);
+      }
+
+      function trRenderCancelledBanner(job, animate) {
+        var epochs = (job.result || {}).epochs_completed || (job.progress || {}).epoch || 0;
+        var weights = (job.facts || {}).weights || '';
+        el('tr-banner').innerHTML = '<div class="' + (animate ? 'kgl-enter' : '') + '">' +
+          '<div class="kg-callout info">' + kgIcon('info') +
+          '<span>Training cancelled after ' + fmtCount(epochs) + ' epoch' + (epochs === 1 ? '' : 's') + '.' +
+          (weights ? ' The best checkpoint so far was kept.' : '') +
+          ' Start Training begins a new run.</span></div></div>';
+      }
+
+      // Terminal orchestrator, shared by the live finish and revisit. Success on revisit hides
+      // the form (Import State-6 parity: Start new run restores it); live success keeps the form
+      // below the results. Failure keeps the form populated and flips the CTA to Re-run.
+      function trRenderTerminal(job, animate, revisit) {
+        if (job.params) { trLastParams = job.params; }   // diagnostics context
+        trRenderRunView(job);
+        var checks = (job.checks && job.checks.length)
+          ? job.checks : ((job.result || {}).checks || []);
+        if (checks.length) {
+          trRenderProvenance(checks, animate && !trHadChecks);
+          trHadChecks = true;
+        }
+        var facts = job.facts || {};
+        if (job.status === 'completed') {
+          trRenderSuccessBanner(job, animate, revisit);
+          if (facts.run_url) {
+            el('tr-result').innerHTML =
+              '<div class="kg-callout info">' + kgIcon('info') + '<span>Review per-sample ' +
+              'losses and embeddings in the Run to find label issues; fix them in the ' +
+              'Dashboard and retrain with "Use latest revision" on. That loop is the ' +
+              'competition.</span></div>';
+          }
+          trShowForm(!revisit);
+          el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+        } else if (job.status === 'cancelled') {
+          trRenderCancelledBanner(job, animate);
+          trShowForm(true);
+          el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+        } else {   // failed or stale
+          trRenderFailBanner(
+            kgErrorText(job.error) || 'Training failed. See the log below.', animate,
+            job.status === 'stale' ? 'Training was interrupted' : 'Training failed');
+          trShowForm(true);
+          el('tr-start-btn').innerHTML = KG_BTN_TRAIN_RERUN;
+        }
+        if (animate) {
+          kgScrollTo(el('tr-banner'));
+          var alertEl = el('tr-banner').firstChild;
+          if (alertEl && alertEl.setAttribute) {
+            alertEl.setAttribute('tabindex', '-1');
+            alertEl.focus({ preventScroll: true });
+          }
+        }
+      }
+
+      var trHadChecks = false;   // cascade only on live arrival
+
+      // ExDark's pollTrain body, driven by the job channel instead of a timer. The live record
+      // carries what the events filled; the terminal render reads the durable train record.
+      function trOnRecord(job, terminal) {
+        el('tr-log-details').style.display = 'block';
+        el('tr-log').textContent = (job.log || []).join('\n');
+        if (trLogOpen()) { el('tr-log').scrollTop = el('tr-log').scrollHeight; }
+        if (!terminal) {
+          if (job.status !== 'running' && job.status !== 'queued') { return; }
+          trRenderRunView(job);
+          if (job.checks && job.checks.length) {
+            trRenderProvenance(job.checks, !trHadChecks);
+            trHadChecks = true;
+          }
+          var tp = job.progress || {};
+          var tTotal = tp.total_epochs || parseInt((job.params || {}).epochs, 10) || 0;
+          if (tTotal) {
+            var tWithin = (tp.batch_n && tp.batch_i) ? Math.min(1, tp.batch_i / tp.batch_n) : 0;
+            kgSetTitleProgress(100 * ((tp.epoch || 0) + tWithin) / tTotal);
+          }
+          el('tr-state').textContent = trCancelling
+            ? 'Cancelling… (stops at the next checkpoint)'
+            : 'Training… (safe to navigate away)';
+          return;
+        }
+        kgClearTitleProgress();
+        trRunning = false;
+        trCancelling = false;
+        el('tr-cancel-btn').disabled = true;
+        el('tr-spinner').style.display = 'none';
+        el('tr-state').textContent = '';   // the banner is the headline
+        // The durable record is the terminal truth (checks, result, facts, the log tail).
+        API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); })
+          .then(function (st) {
+            kgTrainState = st || kgTrainState;
+            var cur = (st && st.current && st.current.id === job.id) ? st.current : null;
+            var rec = cur || job;
+            if (cur && (!cur.log || !cur.log.length)) { cur.log = job.log; }
+            if (cur && cur.log && cur.log.length) { el('tr-log').textContent = cur.log.join('\n'); }
+            trainJobId = rec.id || trainJobId;
+            trRenderTerminal(rec, true, false);
+            trCheckReady();
+            renderPipeline();
+            trLoadDurationStats();
+            trNewToken();
+          })
+          .catch(function () {
+            trRenderTerminal(job, true, false);
+            trCheckReady();
+            renderPipeline();
+            trNewToken();
+          });
+      }
+
+      // ── Train gating: table verification + inline bounds ────────────
+      // Start Training stays disabled until the train table verifies (on disk, the right split,
+      // in the seed's lineage, rows to train on) and every bounded field is in range.
+      var trGate = null;            // truthy {ok: true, ...} only on green
+      var trTableInfo = null;       // last /train/preflight answer, verdict-free
+      var trGateKind = 'idle';      // entrance animates on kind transitions only
+      var trGateTimer = null;
+      var trGateSeq = 0;            // stale-response guard
+      var trLastGateKey = null;
+      var trRunning = false;
+      var trCancelling = false;
+
+      // Derive the gate's verdict from the server's answer plus the Use-latest checkbox: the
+      // checkbox changes WHICH revision's rows apply (.latest() is followed at job start), and
+      // the preflight already returned both revisions, so no round trip is needed.
+      function trEvaluateGate() {
+        if (!trTableInfo) { return; }
+        var useLatest = el('tr-latest').checked;
+        var info = trTableInfo;
+        var rev = (useLatest ? info.latest : info.base) || info.base || {};
+        var summary = rev.summary || {};
+        var maxRows = info.max_rows || null;
+        var problems = [], help = [], noProjectHint = true, headline = '';
+
+        if (rev.error) {
+          problems.push(esc(rev.error));
+          headline = 'Could not read the revision.';
+        }
+        if (rev.descends_from_seed === false) {
+          headline = headline || 'This revision is not derived from the imported train table.';
+          problems.push('Only revisions of ' + esc(kgTableRef(info.seed_url) || 'the imported train table') +
+                        ' can be trained on. Pick one in the field above.');
+        }
+        if (info.label_map_ok === false) {
+          headline = headline || 'This table\'s class map is not the imported one.';
+          problems.push('Label edits must keep the competition classes. Pick a revision of the imported train table.');
+        }
+        if (maxRows && typeof rev.rows === 'number' && rev.rows > maxRows) {
+          headline = headline || 'This table has more rows than the competition split.';
+          problems.push('Train table has ' + fmtCount(rev.rows) + ' rows. The competition train split has ' +
+                        fmtCount(maxRows) + '.');
+          help.push('Training runs on the competition split, so rows cannot be added. Removing rows is fine, ' +
+                    'and so is setting a row’s weight to 0. Neither raises the count.');
+          if (useLatest && info.base && typeof info.base.rows === 'number' && info.base.rows <= maxRows) {
+            help.push('Use latest revision is on, so this is the newest revision of ' +
+                      esc(kgSplitDataset('train')) + '. Clear the checkbox, or pick a revision in the field, ' +
+                      'to train on an earlier one.');
+          }
+        }
+        if (!problems.length && summary.labeled_in_use === 0) {
+          headline = 'No usable rows: every row is undefined or at weight 0.';
+          problems.push('Label images in the Dashboard first, then retrain with Use latest revision on.');
+        }
+        if (problems.length) {
+          trGate = null;
+          trRenderGate({ ok: false, noProjectHint: noProjectHint, headline: headline, problems: problems, help: help });
+          trCheckReady();
+          return;
+        }
+        trGate = {
+          ok: true, train_url: info.url, resolved_url: rev.url || info.url,
+          usable_rows: summary.labeled_in_use, summary: summary, rows: rev.rows,
+          followed: useLatest && info.has_revisions
+        };
+        trRenderGate(trGate);
+        trCheckReady();
+      }
+
+      function trUsableLine(summary) {
+        summary = summary || {};
+        var parts = [
+          fmtCount(summary.labeled_in_use) + ' labeled row' + (summary.labeled_in_use === 1 ? '' : 's') + ' in use',
+          fmtCount(summary.excluded_undefined) + ' excluded as undefined',
+          fmtCount(summary.excluded_zero_weight) + ' excluded at weight 0'
+        ];
+        var html = '<div class="kg-usable">' + parts.join(' · ') + '</div>';
+        if (summary.undefined_with_weight > 0) {
+          html += '<div class="kg-callout warn">' + kgIcon('alert-triangle') + '<span>' +
+                  fmtCount(summary.undefined_with_weight) + ' unlabeled row' + (summary.undefined_with_weight === 1 ? ' has' : 's have') +
+                  ' weight &gt; 0 and will be skipped until you label ' + (summary.undefined_with_weight === 1 ? 'it' : 'them') + '.</span></div>';
+        }
+        var empty = summary.classes_without_rows || [];
+        if (empty.length) {
+          html += '<div class="kg-callout warn">' + kgIcon('alert-triangle') + '<span>No usable rows for: ' +
+                  esc(empty.join(', ')) + '. ' + (empty.length === 1 ? 'That class' : 'Those classes') +
+                  ' cannot be learned in this run.</span></div>';
+        }
+        return html;
+      }
+
+      function trRenderGate(data) {
+        var box = el('tr-tables-gate');
+        var kind = !data ? 'idle'
+          : data.checking ? 'checking'
+          : data.ok ? 'ok' : 'missing';
+        var entering = (kind !== trGateKind && (kind === 'ok' || kind === 'missing'))
+          ? 'kgl-enter' : '';
+        trGateKind = kind;
+        if (!data) {                     // no URL yet
+          box.innerHTML = '<div class="form-help">Run Import (tab 1) to create the competition ' +
+                          'tables, or paste a table URL from the Dashboard.</div>';
+          return;
+        }
+        if (data.checking) {
+          box.innerHTML = '<div class="form-help">Checking tables…</div>';
+          return;
+        }
+        if (data.ok) {
+          var name = kgTableRef(data.train_url) || 'train table';
+          var resolvedName = kgTableRef(data.resolved_url) || '';
+          // Echo the resolved revision choice (the .latest() interplay).
+          var resolved = el('tr-latest').checked
+            ? 'trains on the latest revision' + (data.followed && resolvedName ? ' (' + resolvedName + ')' : '')
+            : 'trains on this exact revision';
+          box.innerHTML = '<div class="' + entering + '"><div class="kg-preflight-ok">' +
+            kgIcon('check') + '<span>Tables verified: ' + esc(name) + ' · val locked · ' + esc(resolved) + '</span></div>' +
+            trUsableLine(data.summary) + '</div>';
+          return;
+        }
+        var problems = data.problems || [];
+        box.innerHTML = '<div class="' + entering + '"><div class="kg-callout warn">' +
+          kgIcon('alert-triangle') +
+          '<span><strong>' + esc(data.headline || 'Tables not found.') + '</strong>' +
+          (problems.length ? '<br>' + problems.map(function (p) { return '• ' + p; }).join('<br>') : '') +
+          (data.help ? data.help.map(function (h) {
+            return '<br><span class="form-help">' + h + '</span>';
+          }).join('') : '') +
+          (data.noProjectHint ? '' :
+            '<br><span class="form-help">Looking in project <code>' + esc(kgCurrentProject()) +
+            '</code> — no import has produced these tables there yet. If you just changed the ' +
+            'Project name, Import (tab 1) needs one run for that project.</span>' +
+            '<div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm kgi-btn" ' +
+            'id="tr-goto-import"><span>Go to Import</span>' + kgIcon('arrow-right', 'kgi-12') +
+            '</button></div>') +
+          '</span></div></div>';
+        var goToImport = el('tr-goto-import');
+        if (goToImport) { goToImport.addEventListener('click', function () { showTab('import'); }); }
+      }
+
+      function trVerifyTables(force) {
+        var trainUrl = el('tr-train-url').value.trim();
+        var key = trainUrl;
+        if (!force && key === trLastGateKey) { return; }
+        trLastGateKey = key;
+        trGate = null;
+        trTableInfo = null;
+        trCheckReady();
+        if (!trainUrl) { trRenderGate(null); return; }
+        // Split identity before existence (DP-11): a cross-split URL is individually valid on
+        // disk, so the existence check alone renders a green gate over the wrong dataset.
+        if (kgManifest && kgManifest.competition) {
+          var got = kgUrlSeg(trainUrl, 'dataset');
+          if (got !== kgSplitDataset('train')) {
+            trRenderGate({ ok: false, noProjectHint: true,
+                           headline: 'This URL doesn’t match its split.',
+                           problems: [esc('Train table URL points at ' + (got || 'an unrecognized dataset') +
+                                          '; expected ' + kgSplitDataset('train') + '.')] });
+            return;
+          }
+        }
+        var seq = ++trGateSeq;
+        trRenderGate({ checking: true });
+        API.authFetch(PLUGIN_ROOT + '/train/preflight?train_url=' + encodeURIComponent(trainUrl))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (seq !== trGateSeq) { return; }   // superseded by newer input
+            if (res && res.status === 'provisioning' && !res.url) { kgEnterProvisioning(res.provisioning); return; }
+            if (res.split_ok === false) {
+              trRenderGate({ ok: false, noProjectHint: true, headline: 'This URL doesn’t match its split.',
+                             problems: [esc(res.error || '')] });
+              return;
+            }
+            if (res.error && !res.base) {
+              trRenderGate({ ok: false, noProjectHint: true, headline: 'Could not verify the table.',
+                             problems: [esc(res.error)] });
+              return;
+            }
+            if (!res.exists) {
+              trRenderGate({ ok: false, headline: 'These tables aren’t on disk yet.',
+                             problems: ['train table not found on disk (<code title="' + esc(trainUrl) +
+                                        '">' + esc(midTrunc(trainUrl, 64)) + '</code>).'] });
+              trCheckReady();
+              return;
+            }
+            // What the SERVER said, kept apart from what the gate CONCLUDES (the Use-latest
+            // checkbox can flip after this lands).
+            trTableInfo = res;
+            trEvaluateGate();
+            trRenderDurationHint();
+          })
+          .catch(function (e) {
+            if (seq !== trGateSeq) { return; }
+            if (kgConn.fail(e, function () { trVerifyTables(true); })) {
+              trRenderGate(null);
+              trCheckReady();
+              return;
+            }
+            trGate = null;
+            trTableInfo = null;
+            trRenderGate({ ok: false, noProjectHint: true, headline: 'Could not verify the tables: ' + esc(e.message) + '.' });
+            trCheckReady();
+          });
+      }
+
+      // ── Expected duration (ExDark's hint, scaled by usable rows and epochs; a bundled
+      // per-device benchmark seeds a machine's first run — docs/TRAIN_MIRROR.md §5) ─────
+      var trEpochSecs = null;      // seconds per epoch for the run being configured (in-run seed)
+      var trCollectSecs = null;    // the final per-sample pass, seconds
+      var trPerRow = null;         // seconds per usable row per epoch
+      var trStatsSource = null;    // 'history' | 'benchmark'
+
+      function trDeviceClass() {
+        var d = (el('tr-device').value || '').trim().toLowerCase();
+        if (/^\d+$/.test(d) || d.indexOf('cuda') === 0) { return 'cuda'; }
+        if (d.indexOf('mps') === 0) { return 'mps'; }
+        if (d === 'cpu') { return 'cpu'; }
+        return kgTrainState.device_class || null;
+      }
+
+      function kgMedian(values) {
+        var v = values.filter(function (x) { return typeof x === 'number' && x > 0; }).sort(function (a, b) { return a - b; });
+        return v.length ? v[Math.floor(v.length / 2)] : null;
+      }
+
+      function trLoadDurationStats() {
+        var cls = trDeviceClass();
+        var recent = (kgTrainState.runs || [])
+          .filter(function (r) {
+            return (r.status === 'completed' || r.status === 'cancelled') &&
+                   typeof r.epoch_s_per_row === 'number' && r.epoch_s_per_row > 0 &&
+                   (!cls || !r.device_class || r.device_class === cls);
+          })
+          .slice(0, 5);   // newest first: the 5 most recent
+        trPerRow = kgMedian(recent.map(function (r) { return r.epoch_s_per_row; }));
+        var bench = ((kgTraining || {}).benchmark || {}).per_device || {};
+        var b = cls ? bench[cls] : null;
+        if (trPerRow) {
+          trStatsSource = 'history';
+          trCollectSecs = kgMedian(recent.map(function (r) { return r.collect_s; }));
+        } else if (b && b.epoch_s_per_row > 0) {
+          trStatsSource = 'benchmark';
+          trPerRow = b.epoch_s_per_row;
+          trCollectSecs = null;   // scaled by rows at render time
+        } else {
+          trStatsSource = null;
+          trPerRow = null;
+          trCollectSecs = null;
+        }
+        trRenderDurationHint();
+      }
+
+      function trRenderDurationHint() {
+        var box = el('tr-duration');
+        if (!box) { return; }
+        var epochs = parseInt(el('tr-epochs').value, 10);
+        var rows = trGate && trGate.ok ? trGate.usable_rows : null;
+        if (!trPerRow || !epochs || epochs < 1 || !rows) { box.innerHTML = ''; trEpochSecs = null; return; }
+        var per = trPerRow * rows;
+        trEpochSecs = per;
+        var cls = trDeviceClass();
+        var collect = trCollectSecs;
+        if (collect === null && trStatsSource === 'benchmark') {
+          var b = (((kgTraining || {}).benchmark || {}).per_device || {})[cls] || {};
+          var valRows = ((((kgImportState || {}).record || {}).tables || {}).val || {}).rows || 0;
+          var total = (trGate.rows || 0) + valRows;
+          collect = b.collect_s_per_row > 0 && total ? b.collect_s_per_row * total : 0;
+        }
+        var totalSecs = per * epochs + (collect || 0);
+        var perText = per >= 60 ? '~' + Math.round(per / 60) + ' min/epoch' : '~' + Math.round(per) + ' s/epoch';
+        if (trStatsSource === 'history') {
+          box.innerHTML = '<div class="form-help">Recent runs averaged ' + esc(perText) + ' on this machine (' +
+            fmtCount(rows) + ' usable rows). ' + fmtCount(epochs) + ' epochs ≈ ' + esc(fmtDur(totalSecs)) + '.</div>';
+        } else {
+          box.innerHTML = '<div class="form-help">Estimated from a reference ' + (cls === 'cpu' ? 'CPU' : 'GPU') +
+            ' run (' + fmtCount(rows) + ' usable rows): ' + fmtCount(epochs) + ' epochs ≈ ' + esc(fmtDur(totalSecs)) + '.</div>';
+        }
+      }
+      el('tr-epochs').addEventListener('input', trRenderDurationHint);
+      el('tr-device').addEventListener('change', function () { trLoadDurationStats(); });
+
+      function trOnTabEnter() {
+        if (kgDevMode) { return; }   // forced states own the gate
+        configLoaded.then(function () {
+          kgRenderProjectFact();
+          trRenderValLocked();
+          kgApplyDerivedUrls(['tr-train-url'])
+            .then(function () { trVerifyTables(true); });
+          API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); })
+            .then(function (st) { kgTrainState = st || kgTrainState; trLoadDurationStats(); renderPipeline(); })
+            .catch(function () { /* hint is optional */ });
+        });
+      }
+
+      ['tr-train-url'].forEach(function (id) {
+        el(id).addEventListener('input', function () {
+          clearTimeout(trGateTimer);
+          trGateTimer = setTimeout(function () { kgSetUrlOverride(id); trVerifyTables(); }, 500);
+        });
+        el(id).addEventListener('blur', function () {
+          clearTimeout(trGateTimer);
+          kgSetUrlOverride(id);
+          trVerifyTables();
+        });
+        el(id).addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(trGateTimer);
+            kgSetUrlOverride(id);
+            trVerifyTables();
+          }
+        });
+        el(id).addEventListener('paste', function () {
+          clearTimeout(trGateTimer);
+          setTimeout(function () { kgSetUrlOverride(id); trVerifyTables(); }, 0);
+        });
+      });
+
+      // Revision picker: choosing an explicit non-latest revision unchecks "Use latest
+      // revision" (the pick means THAT revision); re-checking the box re-implies latest.
+      kgBindTablePicker('tr-train-url', 'tr-train-pop', 'tr-train-pick', function (url, isLatest) {
+        if (!isLatest) { el('tr-latest').checked = false; }
+        kgSetUrlOverride('tr-train-url');
+        trVerifyTables(true);
+      }, 'train');
+      el('tr-latest').addEventListener('change', function () {
+        // Re-EVALUATE, not just re-render: the checkbox changes which revision's rows count.
+        if (trTableInfo) { trEvaluateGate(); trRenderDurationHint(); }
+        else if (trGate && trGate.ok) { trRenderGate(trGate); }
+      });
+
+      var trInvalid = {};
+
+      function trAnyInvalid() {
+        return Object.keys(trInvalid).some(function (id) { return trInvalid[id]; });
+      }
+
+      function trCheckReady() {
+        el('tr-start-btn').disabled =
+          trRunning || !(trGate && trGate.ok) || trAnyInvalid() || !!kgDevMode;
+      }
+
+      function trValidateField(id) {
+        var spec = TR_BOUNDS[id];
+        if (!spec) { return true; }
+        var slot = ROOT_EL.querySelector('.kg-field-slot[data-for="' + id + '"]');
+        var raw = el(id).value;
+        var v = parseFloat(raw);
+        var bad = raw === '' ? !spec[3] : (isNaN(v) || v < spec[1] || v > spec[2]);
+        trInvalid[id] = bad;
+        if (slot) {
+          slot.innerHTML = bad
+            ? '<div class="kg-field-err">' + kgIcon('x-circle', 'kgi-12') + '<span>' +
+              esc(spec[0] + ' must be between ' + spec[1] + ' and ' + spec[2] +
+                  (raw === '' ? '.' : ' (got ' + raw + ').')) + '</span></div>'
+            : '';
+        }
+        trCheckReady();
+        return !bad;
+      }
+
+      function trValidateAll() {
+        var firstBad = null;
+        Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+          if (!trValidateField(id) && !firstBad) { firstBad = id; }
+        });
+        return firstBad;
+      }
+
+      Object.keys(TR_FIELD_KEYS).forEach(function (id) {
+        el(id).addEventListener('blur', function () { trValidateField(id); });
+        el(id).addEventListener('input', function () {
+          if (trInvalid[id]) { trValidateField(id); }   // fixing clears immediately
+        });
+      });
+      trCheckReady();   // Start stays disabled until the gate goes green
+
+      el('tr-start-btn').addEventListener('click', function () {
+        if (kgDevMode || trRunning) { return; }
+        var firstBad = trValidateAll();
+        if (firstBad) {
+          el(firstBad).focus();
+          el('tr-state').textContent = 'Fix the highlighted fields first.';
+          return;
+        }
+        // Safety net — the button is disabled until the gate goes green.
+        if (!(trGate && trGate.ok)) {
+          el('tr-state').textContent = 'Training needs a verified train table. Check the URL above.';
+          return;
+        }
+        saveTabConfig('train');
+        if (kgSession) { kgSession.device = el('tr-device').value.trim(); kgSessionSave(); }
+        var body = {
+          train_table_url: el('tr-train-url').value.trim(),
+          use_latest: el('tr-latest').checked,
+          epochs: el('tr-epochs').value,
+          batch_size: el('tr-batch').value,
+          lr: el('tr-lr').value,
+          weight_decay: el('tr-wd').value,
+          seed: el('tr-seed').value,
+          device: el('tr-device').value,
+          workers: el('tr-workers').value,
+          project_name: kgCurrentProject(),
+          run_name: el('tr-runname').value.trim(),
+          client_token: trClickToken
+        };
+        trLastParams = body;
+        trRunning = true;                 // synchronously: the second click of a double click lands here
+        trCancelling = false;
+        trCheckReady();
+        el('tr-start-btn').innerHTML = KG_BTN_TRAIN;   // reset a Re-run label
+        el('tr-spinner').style.display = 'inline-block';
+        el('tr-state').textContent = 'Starting…';
+        el('tr-banner').innerHTML = '';
+        el('tr-checks').innerHTML = '';
+        el('tr-result').innerHTML = '';
+        trLogReset();
+        kgStartJob('train', body)
+          .then(function (res) {
+            if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
+            trainJobId = res.body.job_id;
+            trHadChecks = false;
+            el('tr-cancel-btn').disabled = false;
+            el('tr-progress').innerHTML = '';   // fresh structure for this run
+            var job = kgJobRecord(trainJobId, 'train');
+            job.params = body;
+            trRenderRunView(job);
+            kgScrollTo(el('tr-progress'));
+            kgTrack(job);
+          })
+          .catch(function (e) {
+            trRunning = false;
+            trCheckReady();
+            el('tr-spinner').style.display = 'none';
+            // No auto-re-run: the user re-triggers once reconnected.
+            el('tr-state').textContent = kgConn.fail(e)
+              ? 'Training didn’t start (service unreachable). Start again once reconnected.'
+              : e.message;
+          });
+      });
+
+      el('tr-cancel-btn').addEventListener('click', function () {
+        if (kgDevMode || !trainJobId) { return; }
+        // Cooperative cancel: the worker stops at the next checkpoint and the Run is marked
+        // cancelled — confirm before asking for it.
+        if (!window.confirm('Stop this training run? It stops at the next checkpoint; ' +
+                            'epochs completed so far are kept.')) { return; }
+        var btn = el('tr-cancel-btn');
+        btn.disabled = true;
+        window.PluginJobs.cancel(trainJobId)
+          .then(function () { trCancelling = true; el('tr-state').textContent = 'Cancelling… (stops at the next checkpoint)'; })
+          .catch(function () { btn.disabled = false; });
+      });
+
+      // ── Tab-open resolution (Train) ──────────────────────────────────
+      // Same precedence as Import: a still-running job on the host wins (reconnect → in-run
+      // view), then the durable record's terminal state renders static (completed hides the
+      // form behind Start new run; failed / stale / cancelled keep the form), else the form.
+      // A record that says running while the host lists no such job is a restart orphan: the
+      // server marks it stale by worker pid, and the fragment never shows it as complete.
+      function trInitTrainTab() {
+        if (kgDevMode) { return; }
+        kgListen();
+        window.PluginJobs.list(PLUGIN_ID)
+          .catch(function (e) { kgConn.fail(e); return []; })
+          .then(function (list) {
+            var running = (list || []).filter(function (j) {
+              return (j.status === 'running' || j.status === 'queued') &&
+                     /epoch|training|collecting|per-sample/i.test(((j.progress || {}).label || '') + (j.subtitle || ''));
+            })[0];
+            return API.authFetch(PLUGIN_ROOT + '/train/state')
+              .then(function (r) { return r.json(); })
+              .catch(function (e) { kgConn.fail(e); return kgTrainState; })
+              .then(function (st) {
+                kgTrainState = st || kgTrainState;
+                trLoadDurationStats();
+                var cur = kgTrainState.current;
+                if (running && !trRunning) {
+                  trainJobId = running.id;
+                  trHadChecks = false;
+                  trRunning = true;
+                  trCheckReady();
+                  el('tr-cancel-btn').disabled = false;
+                  el('tr-spinner').style.display = 'inline-block';
+                  el('tr-state').textContent = 'Training… (safe to navigate away)';
+                  var job = kgJobRecord(running.id, 'train');
+                  if (cur && cur.id === running.id) {
+                    job.params = cur.params || job.params;
+                    job.progress = Object.assign({}, job.progress, cur.progress || {});
+                    job.facts = Object.assign({}, cur.facts || {}, job.facts);
+                    job.created_at = cur.created_at || job.created_at;
+                    if (cur.log && cur.log.length && !job.log.length) { job.log = cur.log.slice(); }
+                  }
+                  trRenderRunView(job);
+                  el('tr-log').textContent = (job.log || []).join('\n');
+                  el('tr-log-details').style.display = job.log.length ? 'block' : 'none';
+                  kgTrack(job);
+                  renderPipeline();
+                  return;
+                }
+                if (cur && cur.status && cur.status !== 'running') {
+                  trainJobId = cur.id;
+                  trRenderTerminal(cur, false, true);
+                  if (cur.log && cur.log.length) {
+                    el('tr-log').textContent = cur.log.join('\n');
+                    el('tr-log-details').style.display = 'block';
+                  }
+                } else if (cur && cur.status === 'running') {
+                  // The host has no such job: interrupted (the pid rule on the server marks it
+                  // stale on the next read; render it that way now).
+                  trainJobId = cur.id;
+                  trRenderTerminal(Object.assign({}, cur, {
+                    status: 'stale', error: cur.error || 'Interrupted: the compute service restarted while this run was training.'
+                  }), false, true);
+                }
+                renderPipeline();
+              });
+          });
+      }
+
+      // Train-tab forced states (?kgdev=train-…): static fixtures, no fetches, no job side
+      // effects. Numbers derive from the served manifest (the literal census stays clean).
+      function trDevForce(mode) {
+        var m = kgManifest || {};
+        var names = (m.classes || []).map(function (c) { return c.name; });
+        var nC = names.length || 1;
+        var perClass = ((m.splits || {}).train || {}).labeled_per_class || 0;
+        var pool = ((m.splits || {}).train || {}).undefined || 0;
+        var valRows = (((m.splits || {}).val || {}).per_class || 0) * nC;
+        var labeled = perClass * nC, trainRows = labeled + pool;
+        var arch = (m.model || {}).arch || 'model', px = (m.model || {}).image_size || 0;
+        var id = (m.competition || {}).id || 'competition';
+        var base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/datasets/';
+        var trainUrl = base + kgDatasetName('train') + '/tables/initial';
+        var revUrl = base + kgDatasetName('train') + '/tables/labels-round-1';
+        var valUrl = base + kgDatasetName('val') + '/tables/initial';
+        var devRun = id + '_run_20260929_090000';
+        var runUrl = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/runs/' + devRun;
+        var weights = runUrl + '/model/best.pt';
+        var sha = '5f8a1c0e7b3d92a46e1f0c3b8d7a5e2f91c4b6d8e0a2f4c6b8d0e2a4c6e8f0a1';
+        var timmV = (kgTraining || {}).timm_version || '1.0.x';
+
+        // Deterministic from-scratch curve: loss falls, val accuracy climbs, a mild wobble.
+        function HIST(n) {
+          var h = [];
+          for (var e = 1; e <= n; e++) {
+            var f = e / Math.max(n, 1);
+            var w = ((e * 37) % 11) / 11;
+            h.push({
+              e: e,
+              tl: +(1.85 - 1.15 * (1 - Math.pow(1 - f, 2)) + 0.03 * w).toFixed(4),
+              vl: +(1.78 - 0.85 * (1 - Math.pow(1 - f, 2)) + 0.05 * w).toFixed(4),
+              va: +(24 + 48 * (1 - Math.pow(1 - f, 3)) + 1.5 * w).toFixed(2)
+            });
+          }
+          return h;
+        }
+        function S(inUse, undef, zero, undefW, empty) {
+          var per = {};
+          names.forEach(function (n) { per[n] = Math.round(inUse / nC); });
+          (empty || []).forEach(function (n) { per[n] = 0; });
+          return { total: inUse + undef + zero, labeled_in_use: inUse, excluded_undefined: undef, excluded_zero_weight: zero,
+                   undefined_with_weight: undefW, per_class: per, classes_without_rows: empty || [] };
+        }
+        function INFO(over) {
+          var rev = { url: trainUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 0, summary: S(labeled, pool, 0, 0) };
+          var info = { url: trainUrl, exists: true, split_ok: true, import_state: 'success', seed_url: trainUrl, val_locked_url: valUrl,
+                       max_rows: trainRows, base: rev, latest: rev, latest_url: trainUrl, has_revisions: false, label_map_ok: true };
+          Object.keys(over || {}).forEach(function (k) { info[k] = over[k]; });
+          return info;
+        }
+        var PROV = [
+          { label: 'run records arch == ' + arch, ok: true, detail: 'arch=' + JSON.stringify(arch) },
+          { label: 'run records image_size == ' + px, ok: true, detail: 'image_size=' + px },
+          { label: 'run records pretrained == False (random init)', ok: true, detail: 'pretrained=False' },
+          { label: 'run records timm_version == ' + timmV, ok: true, detail: 'timm_version=' + JSON.stringify(timmV) },
+          { label: 'run records the seed', ok: true, detail: 'seed=42' },
+          { label: 'run records the train revision trained on', ok: true, detail: 'train_table_url=' + JSON.stringify(trainUrl.slice(-48)) },
+          { label: 'run records val_table_url == the locked val', ok: true, detail: 'val_table_url=' + JSON.stringify(valUrl.slice(-48)) },
+          { label: 'run records the best checkpoint sha256, equal to the file on disk', ok: true, detail: 'best_checkpoint_sha256=' + sha.slice(0, 12) + '...' }
+        ];
+        var LOG = [
+          'Manifest: remote (' + id + ', kit v1)',
+          'train: ' + trainUrl + ' (' + fmtCount(trainRows) + ' rows)',
+          'val (locked): ' + valUrl + ' (' + fmtCount(valRows) + ' rows)',
+          'rows: ' + fmtCount(labeled) + ' labeled in use · ' + fmtCount(pool) + ' excluded as undefined · 0 excluded at weight 0',
+          'Locked: arch=' + arch + ' · image_size=' + px + ' · pretrained=False · timm ' + timmV + ' · seed 42. Training 10 epochs, batch 16, lr 0.0001, weight decay 0.0, adam, StepLR(5, 0.1), workers 0.',
+          'Device: cuda (auto)',
+          'epoch 1/10 — train_loss=1.7512, val_loss=1.6890, val_accuracy=31.42% (new best)',
+          'epoch 2/10 — train_loss=1.4021, val_loss=1.4210, val_accuracy=45.08% (new best)'
+        ];
+        function JOB(status, epoch, total, extra) {
+          var now = Date.now() / 1000;
+          var job = {
+            id: 'devjob', kind: 'train', status: status,
+            created_at: status === 'running' ? now - ((epoch + 21 / 38) * 41.6 + 12) : now - 1500,
+            finished_at: status === 'running' ? null : now - 60,
+            params: { epochs: total, run_name: '', project_name: id, use_latest: true },
+            progress: { epoch: epoch, total_epochs: total, history: HIST(epoch),
+                        batch_i: status === 'running' ? 21 : 0, batch_n: 38, avg_epoch_s: 41.6, eta_s: Math.round(41.6 * (total - epoch)) },
+            facts: { run_name: devRun, project_name: id, device: 'cuda', device_requested: '',
+                     train_table_url: trainUrl, val_table_url: valUrl, usable: S(labeled, pool, 0, 0) },
+            checks: [], result: null, error: null, log: LOG, weights_on_disk: false
+          };
+          Object.keys(extra || {}).forEach(function (k) { job[k] = extra[k]; });
+          return job;
+        }
+        var doneJob = function (omitProject) {
+          var facts = { run_name: devRun, run_url: runUrl, weights: weights, best_checkpoint_sha256: sha, device: 'cuda',
+                        device_requested: '', train_table_url: trainUrl, val_table_url: valUrl, usable: S(labeled, pool, 0, 0) };
+          if (!omitProject) { facts.project_name = id; }
+          return JOB('completed', 10, 10, {
+            checks: PROV, facts: facts, weights_on_disk: true,
+            result: { run_name: devRun, weights: weights, epochs_completed: 10, best_epoch: 9, best_val_accuracy: 71.8,
+                      checks: PROV, best_checkpoint_sha256: sha, device: 'cuda' }
+          });
+        };
+
+        function gateWith(info) {
+          el('tr-train-url').value = info.url;
+          el('tr-latest').checked = true;
+          trTableInfo = info;
+          trEvaluateGate();
+        }
+        function gateGreen() { gateWith(INFO()); }
+
+        function apply() {
+          kgImportState = { state: 'success', record: { val_locked: { url: valUrl }, tables: { train: { url: trainUrl, rows: trainRows }, val: { url: valUrl, rows: valRows } } } };
+          trApplyContract();
+          trShowForm(true);
+          el('tr-banner').innerHTML = '';
+          el('tr-progress').innerHTML = '';
+          el('tr-checks').innerHTML = '';
+          el('tr-result').innerHTML = '';
+          el('tr-state').textContent = '';
+          el('tr-spinner').style.display = 'none';
+          el('tr-cancel-btn').disabled = true;
+          el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
+          trLogReset();
+          trRunning = false;
+          trHadChecks = true;   // forced states never cascade
+          kgTrainState = { state: 'empty', current: null, runs: [], device_class: 'cuda' };
+          trLoadDurationStats();
+
+          if (mode === 'train-state1') {
+            el('tr-train-url').value = '';
+            trGate = null; trTableInfo = null;
+            trRenderGate(null);
+            trCheckReady();
+          } else if (mode === 'train-state2') {
+            gateGreen();
+          } else if (mode === 'train-state2-missing') {
+            el('tr-train-url').value = trainUrl;
+            trGate = null; trTableInfo = null;
+            trRenderGate({ ok: false, headline: 'These tables aren’t on disk yet.',
+                           problems: ['train table not found on disk (<code title="' + esc(trainUrl) + '">' + esc(midTrunc(trainUrl, 64)) + '</code>).'] });
+            trCheckReady();
+          } else if (mode === 'train-state2-rows') {
+            // Over-size latest revision: drives the REAL verdict path (toggling Use latest clears it).
+            var big = { url: revUrl, rows: trainRows + 40, descends_from_seed: true, steps_from_seed: 1, summary: S(labeled + 40, pool, 0, 0) };
+            gateWith(INFO({ latest: big, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-invalid') {
+            gateGreen();
+            el('tr-epochs').value = '999';
+            trValidateField('tr-epochs');
+          } else if (mode === 'train-state2-undefined-weight') {
+            var uw = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 1, summary: S(labeled + 3, pool - 3, 0, 7) };
+            gateWith(INFO({ latest: uw, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-zero-rows') {
+            var zr = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 1, summary: S(0, pool, labeled, 0) };
+            gateWith(INFO({ latest: zr, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-class-empty') {
+            var ce = { url: revUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 1,
+                       summary: S(labeled - 2 * perClass, pool, 2 * perClass, 0, names.slice(2, 4)) };
+            gateWith(INFO({ latest: ce, latest_url: revUrl, has_revisions: true }));
+          } else if (mode === 'train-state2-lineage') {
+            var stranger = base + kgDatasetName('train') + '/tables/my-own-table';
+            var st = { url: stranger, rows: labeled, descends_from_seed: false, steps_from_seed: null, summary: S(labeled, 0, 0, 0) };
+            el('tr-latest').checked = false;
+            el('tr-train-url').value = stranger;
+            trTableInfo = INFO({ url: stranger, base: st, latest: st, latest_url: stranger });
+            trEvaluateGate();
+          } else if (mode === 'train-state3' || mode === 'train-state3-collecting' || mode === 'train-state3-cpu-retry') {
+            gateGreen();
+            trRunning = true;
+            trCheckReady();
+            el('tr-cancel-btn').disabled = false;
+            el('tr-spinner').style.display = 'inline-block';
+            el('tr-state').textContent = 'Training… (safe to navigate away)';
+            var job = JOB('running', mode === 'train-state3-collecting' ? 10 : 4, 10);
+            if (mode === 'train-state3-collecting') {
+              job.progress.batch_i = 0;
+              job.progress.stage = 'collect';
+              job.progress.stage_note = 'Collecting per-sample metrics and embeddings on ' + fmtCount(trainRows + valRows) + ' rows…';
+            }
+            if (mode === 'train-state3-cpu-retry') {
+              job.facts.device = 'cpu';
+              job.facts.device_fallback_reason = 'OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.';
+              job.progress.avg_epoch_s = 612.0;
+              job.log = LOG.slice(0, 5).concat(['Device: cuda (auto)', 'Accelerator failed (OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB.). Retrying on CPU from epoch 1.', 'Device: cpu']).concat(LOG.slice(6));
+            }
+            trRenderRunView(job);
+            el('tr-log').textContent = job.log.join('\n');
+            el('tr-log-details').style.display = 'block';
+          } else if (mode === 'train-state4' || mode === 'train-state4-noproject') {
+            gateGreen();
+            trRenderTerminal(doneJob(mode === 'train-state4-noproject'), false, false);
+            el('tr-log').textContent = LOG.concat(PROV.map(function (c) { return 'PASS ' + c.label + ' — ' + c.detail; }))
+              .concat(['best.pt: ' + weights + ' (exists: True)']).join('\n');
+            el('tr-log-details').style.display = 'block';
+          } else if (mode === 'train-state5' || mode === 'train-state5-stale') {
+            gateGreen();
+            var stale = mode === 'train-state5-stale';
+            trRenderTerminal(JOB(stale ? 'stale' : 'failed', 7, 10, {
+              error: stale ? 'Interrupted: the compute service restarted while this run was training.'
+                           : 'RuntimeError: CUDA error: device-side assert triggered'
+            }), false, false);
+            el('tr-log').textContent = LOG.concat([stale ? 'Marked stale on read: recorded owner pid 41288 is not the current worker (52104)' : 'FAILED: CUDA error: device-side assert triggered']).join('\n');
+            el('tr-log-details').style.display = 'block';
+          } else if (mode === 'train-state6') {
+            gateGreen();
+            trRenderTerminal(doneJob(), false, true);
+          } else if (mode === 'train-state6-cancelled') {
+            gateGreen();
+            trRenderTerminal(JOB('cancelled', 3, 10, {
+              checks: PROV, weights_on_disk: true,
+              facts: { run_name: devRun, run_url: runUrl, weights: weights, best_checkpoint_sha256: sha, device: 'cuda', device_requested: '', project_name: id,
+                       train_table_url: trainUrl, val_table_url: valUrl, usable: S(labeled, pool, 0, 0) },
+              result: { epochs_completed: 3, best_epoch: 3, weights: weights, checks: PROV }
+            }), false, true);
+          }
+        }
+        showTab('train');
+        apply();
+        configLoaded.then(function () { setTimeout(apply, 0); });
+      }
+
       // ── Dev affordance: ?kgdev=<state> renders each UI state from static fixtures for
       // screenshotting — no fetches, no job side effects (ExDark's kgDevForce, adapted to our
       // states). Fixture data derives from the SERVED manifest (class names, split sizes, shard
@@ -2042,7 +3730,7 @@
       // a note. The ready-recalc functions OR in kgDevMode so no later recalc can re-enable, and
       // the click handlers guard on it as the hard backstop.
       function kgDevDisableActions() {
-        ['kg-import-btn', 'kg-dl-btn'].forEach(function (id) {
+        ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn'].forEach(function (id) {
           var btn = el(id);
           btn.disabled = true;
           var note = document.createElement('span');
@@ -2054,6 +3742,7 @@
 
       function kgDevForce(mode) {
         kgDevDisableActions();
+        if (mode && mode.indexOf('train-') === 0) { trDevForce(mode); return; }
         var devDest = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\competition';
         var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
         var devDlKit = devDest + '\\v1\\starter_kit';
@@ -2289,6 +3978,7 @@
         configLoaded.then(function () {
           kgInitImportTab();
           kgRenderGates();
+          trInitTrainTab();
         });
       }
     })();

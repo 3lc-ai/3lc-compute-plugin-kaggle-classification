@@ -13,6 +13,11 @@
 * ``POST /config`` — merge per-tab snapshots; retired keys answer 400.
 * ``GET /import/preflight`` — the Import form's read-only gate (params, kit, collisions, the
   fresh name a re-import would use); ``GET /import/state`` — the revisit record, re-verified.
+* ``GET /train/preflight`` — the Train form's read-only gate (existence, split identity, seed
+  lineage, usable rows and class coverage for the base and latest revision);
+  ``GET /train/state`` — the durable train record (orphan-checked) and the run history;
+  ``GET /tables/list`` / ``GET /tables/defaults`` — the revision picker and the derived URLs
+  (ExDark's, ported). All torch-free: the device probe runs on a thread and is served cached.
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
@@ -46,7 +51,7 @@ def manifest_payload(*, kick_refresh: bool = True) -> dict[str, Any]:
 def config_payload() -> dict[str, Any]:
     """What ``GET /config`` returns. Pure function so tests call it without Litestar."""
     import kaggle_classification
-    from kaggle_classification import kit, manifest, session, storage
+    from kaggle_classification import kit, manifest, session, storage, trainer
 
     payload = manifest_payload()
     current = manifest.resolve(network=False).manifest
@@ -69,8 +74,21 @@ def config_payload() -> dict[str, Any]:
         # The Import tab's revisit view: the last successful import, re-verified against disk
         # (table existence decides, the record supplies the details).
         "import_state": _import_state_safe(),
+        # The Train tab's facts (defaults, effective bounds, the locked optimizer and schedule, the
+        # benchmark for the first-run ETA) and its revisit record. Torch-free on this path.
+        "training": trainer.training_facts(current),
+        "train_state": _train_state_safe(),
     }
     return out
+
+
+def _train_state_safe() -> dict[str, Any]:
+    from kaggle_classification import trainer
+
+    try:
+        return trainer.train_state()
+    except Exception as exc:
+        return {"state": "empty", "current": None, "runs": [], "note": str(exc)}
 
 
 def _import_state_safe() -> dict[str, Any]:
@@ -80,7 +98,7 @@ def _import_state_safe() -> dict[str, Any]:
 
     try:
         return importer.import_state()
-    except Exception as exc:  # noqa: BLE001 - never let the revisit check take /config down
+    except Exception as exc:
         record = importer.read_record()
         return {"state": "success" if record else "empty", "verified": None, "record": record, "note": str(exc)}
 
@@ -139,4 +157,53 @@ def get_route_handlers() -> list[Any]:
 
         return kit.verify_now(manifest.resolve(network=False).manifest)
 
-    return [get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify]
+    @get("/train/preflight", sync_to_thread=True)
+    def train_preflight(train_url: str = "") -> dict[str, Any]:
+        """Read-only gate for the Train form (docs/TRAIN_MIRROR.md #8–#10). Never writes; a table
+        that cannot be read answers ``{error}`` with HTTP 200 so the form renders it as a state."""
+        from kaggle_classification import manifest, trainer
+
+        try:
+            return trainer.preflight({"train_url": train_url}, manifest.resolve(network=False).manifest)
+        except Exception as exc:
+            return {"url": train_url, "exists": False, "error": f"{type(exc).__name__}: {exc}"}
+
+    @get("/train/state", sync_to_thread=True)
+    def train_state() -> dict[str, Any]:
+        """The durable train record (orphan-checked) plus the finished-run history. Kicks the
+        one-time device probe on a thread and serves whatever it has answered so far."""
+        from kaggle_classification import trainer
+
+        trainer.probe_device_async()
+        return _train_state_safe()
+
+    @get("/tables/list", sync_to_thread=True)
+    def tables_list(project: str = "") -> dict[str, Any]:
+        """Datasets -> ordered revision chains (the revision picker)."""
+        from kaggle_classification import importer, manifest, session
+
+        current = manifest.resolve(network=False).manifest
+        project = project.strip() or session.populated_session(current)["project_name"]
+        try:
+            return importer.list_project_tables(current, project)
+        except Exception as exc:
+            return {"project": project, "datasets": [], "error": f"{type(exc).__name__}: {exc}"}
+
+    @get("/tables/defaults", sync_to_thread=True)
+    def tables_defaults(project: str = "", table: str = "") -> dict[str, Any]:
+        """Canonical table URLs for the derived Train field, with exists flags."""
+        from kaggle_classification import importer, manifest, session
+
+        current = manifest.resolve(network=False).manifest
+        sess = session.populated_session(current)
+        project = project.strip() or sess["project_name"]
+        table = table.strip() or sess["table_name"]
+        try:
+            return importer.table_defaults(current, project, table)
+        except Exception as exc:
+            return {"project": project, "table": table, "error": f"{type(exc).__name__}: {exc}"}
+
+    return [
+        get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
+        train_preflight, train_state, tables_list, tables_defaults,
+    ]
