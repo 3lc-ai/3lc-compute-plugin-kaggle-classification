@@ -2,8 +2,11 @@
 
 One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
-## Resume point (2026-09-29, end of day)
+## Resume point (2026-09-30, end of day)
 
+- **Session 4 (Predict + Submit), Phase 0 DONE 2026-09-30:** `docs/PREDICT_MIRROR.md` — the 46-row mirror table, the checkpoint/provenance rule (three-way sha256 match + green provenance, stricter than ExDark, which never hashes trained weights), the submission format and the HackNova metric's rejections vs lenient cases, inference parity with `intel-kit/predict.py`, local scoring, the ledger entries session 5 will need, the Kaggle client (2.2.4) surface. Decisions D1–D12 taken by Rishikesh and recorded in §9 (host mode dropped; blocked on any failed provenance check; files.json test-inputs gate; no cancel; predicted-class distribution card with the 5 %/50 % warning; val accuracy on the locked val for everyone, checked against the recorded best; manifest `daily_limit` shown, Kaggle's refusal authoritative; slug locked from the manifest; six decimals; the two-class metric notebook is a sandbox check, not a plugin change; fail on an unreadable test image; one Kaggle status read-back after submit). No code yet.
+- **Tomorrow (2026-10-01): implement session 4** (Predict + Submit) per PREDICT_MIRROR §1/§8/§9, with the Kaggle sandbox slug from Rishikesh (`<sandbox-slug>` in the doc; the manifest's `competition.slug` is still the TBC placeholder). **Goal: a first complete demo-ready version — Import → Train → Predict + Submit end to end — for a meeting on 2026-10-02.** The Status tab stays gated (ExDark's gate card) for the demo unless time allows.
+- **Hosts at close 2026-09-30:** both services and all plugin workers stopped with the SETUP.md Stop block; ports 5015–5023 confirmed free.
 - **Session 2, Gate B/C PASSED on 2026-09-28** on the laptop through the catalog install path (`../3lc-hub-11/SETUP.md` § Gate B/C): importer + Import tab shipped (`79f553f`, `3fb8e33`, `28e0034`); Phase D (dev-bucket verification) awaits Rishikesh's go after the `cdn/` upload.
 - **Session 2, Gate A PASSED at `dcdf20b`** (`develop`, pushed): relative kit paths, tiered
   host allowlist, `tools/make_cdn_tree.py`, `tools/verify_cdn.py`, `docs/PROMOTION.md`,
@@ -22,8 +25,7 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
   unless it is listed); (2) if the import reveals ANY kit defect, stop and report before
   changing anything: a fix before staging is a v1 rebuild and needs Rishikesh's go.
 - **Open items:** relicensing sign-off for the modules in `docs/STUDY.md` G-5 pending from Paul / Gudbrand · Kaggle sandbox competition not yet created (slug and deadline in the bundled manifest are still TBC placeholders) · orphaned-worker investigation (a plugin worker outliving its host) for session 6 · the tlc indexer's transient "invalid JSON in object file … EOF" logged while a Run's `object.3lc.json` is being written (seen once during `recheck_gpu`'s checkpoint write; the run completed) — to watch, not ours to fix yet.
-- **Hosts:** nothing is running on `3lc-hub-11` (:5023) or any other Hub port at close;
-  start commands are in `../3lc-hub-11/SETUP.md`.
+- **Hosts:** start commands are in `../3lc-hub-11/SETUP.md`; the Stop block is in its § Real Hub check.
 
 ## Competition & contract
 
