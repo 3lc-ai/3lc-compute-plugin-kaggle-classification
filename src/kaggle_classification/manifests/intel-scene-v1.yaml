@@ -8,7 +8,7 @@ schema_version: 1
 
 competition:
   id: intel-scene                      # stable CDN id; never the Kaggle slug
-  slug: 3-lc-hack-nova-scene-classification-challenge   # TBC: Kaggle URL slug
+  slug: 3lc-scene-classification-challenge   # the Kaggle URL slug (locked, D8; the event competition)
   display_name: "3LC Scene Classification Challenge"
   deadline_utc: "2026-12-31T23:59:59Z"  # TBC
 
@@ -94,5 +94,5 @@ submission:
 ui:
   loop_banner_text: "Import the kit, train, inspect and label in the Dashboard, retrain on the latest revision, predict, submit."
   help_links:
-    - {label: "Competition page", url: "https://www.kaggle.com/competitions/3-lc-hack-nova-scene-classification-challenge"}
+    - {label: "Competition page", url: "https://www.kaggle.com/competitions/3lc-scene-classification-challenge"}
     - {label: "3LC documentation", url: "https://docs.3lc.ai"}

@@ -67,6 +67,7 @@ def test_route_handlers_build_when_litestar_is_present():
     assert paths == {
         "/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify",
         "/train/preflight", "/train/state", "/tables/list", "/tables/defaults",
+        "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/submissions/{job_id:str}/download",
     }
 
 
@@ -87,7 +88,8 @@ def test_route_handler_annotations_resolve_like_litestar_does():
 def test_plugin_compute_and_fragment():
     plugin = kaggle_classification.KaggleClassificationPlugin()
     info = plugin.compute({})
-    assert info["plugin"] == "kaggle-classification" and info["implemented"] == ["download_kit", "import", "train"]
+    assert info["plugin"] == "kaggle-classification"
+    assert info["implemented"] == ["download_kit", "import", "train", "predict", "kaggle_submit"]
     html = plugin.get_ui_fragment()
     assert 'class="kgc"' in html and "kaggle-classification" in html
     for needle in ("buildings", "resnet18", "6000", "1800", "HackNova"):
@@ -246,7 +248,8 @@ ESC = "function esc(s) {"
 # or text they escaped/formatted, our own accumulators and constants, and the numbers, enum values
 # and boolean flags the fragment itself computes (used in ternaries over literals).
 SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon(", "kgDiagBtn(", "kgClassTint(",
-              "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(")
+              "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(",
+              "psKaggleLine(")
 SAFE_IDENTS = {
     # markup accumulators / constants the fragment builds from literals and the calls above
     "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
@@ -277,6 +280,13 @@ SAFE_IDENTS = {
     "reason", "retryBtn",
     # the pinned-revision warning (item 4): built from esc / fmtCount above
     "data.pinned",
+    # the Predict + Submit tab (session 4): the button constants, pre-escaped text and flags its
+    # templates branch on (ExDark's names), the grouped-checks loop, the download button markup
+    "KG_BTN_PREDICT", "KG_BTN_PREDICT_RERUN", "KG_BTN_SUBMIT", "okText", "dirText", "budgetTxt", "exhausted", "isInfo",
+    "dl", "enter", "phase", "groups", "score", "score.value", "sub.ref", "ss.ref", "k.status", "psBasis.persisted",
+    "psBasis.when", "ps.finished_at", "ss.finished_at", "ss.status", "ss.reason", "s.username", "s.probe_error",
+    "sanity.warning", "names.length", "n", "pc", "b.left", "b.limit", "data.ok", "data.checking", "data.count",
+    "run", "run.usable",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

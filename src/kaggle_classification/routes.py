@@ -18,6 +18,11 @@
   ``GET /train/state`` — the durable train record (orphan-checked) and the run history;
   ``GET /tables/list`` / ``GET /tables/defaults`` — the revision picker and the derived URLs
   (ExDark's, ported). All torch-free: the device probe runs on a thread and is served cached.
+* ``GET /runs`` — the Predict run picker (the train records with ``usable`` + ``reason``);
+  ``GET /predict/preflight`` — the test-images gate (every file against the kit's files.json);
+  ``GET /submit/state`` — the durable predict + submit records, the CSV re-verified on disk;
+  ``GET /kaggle/connection`` — the connection card (credentials, joined, the daily limit);
+  ``GET /submissions/{job_id}/download`` — the CSV download fallback (docs/PREDICT_MIRROR.md §8).
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
@@ -36,6 +41,7 @@ from __future__ import annotations
 from typing import Any
 
 from litestar import Response, get, post
+from litestar.exceptions import NotFoundException
 from litestar.status_codes import HTTP_400_BAD_REQUEST
 
 
@@ -78,8 +84,19 @@ def config_payload() -> dict[str, Any]:
         # benchmark for the first-run ETA) and its revisit record. Torch-free on this path.
         "training": trainer.training_facts(current),
         "train_state": _train_state_safe(),
+        # The Predict + Submit tab's revisit record (the stepper's "submit done" reads it).
+        "predict_state": _predict_state_safe(),
     }
     return out
+
+
+def _predict_state_safe() -> dict[str, Any]:
+    from kaggle_classification import predictor
+
+    try:
+        return predictor.predict_submit_state()
+    except Exception as exc:
+        return {"state": "empty", "note": str(exc)}
 
 
 def _train_state_safe() -> dict[str, Any]:
@@ -211,7 +228,63 @@ def get_route_handlers() -> list[Any]:
         except Exception as exc:
             return {"project": project, "table": table, "error": f"{type(exc).__name__}: {exc}"}
 
+    @get("/runs", sync_to_thread=True)
+    def list_runs() -> list[dict[str, Any]]:
+        """The Run picker: plugin-trained runs newest first; unusable ones carry a participant-facing
+        reason (still training / failed / interrupted / no checkpoint / missing / provenance failed /
+        sha256 mismatch) and render disabled. The job repeats the hard checks (``resolve_checkpoint``)."""
+        from kaggle_classification import predictor
+
+        try:
+            return predictor.list_runs()
+        except Exception:
+            return []
+
+    @get("/predict/preflight", sync_to_thread=True)
+    def predict_preflight() -> dict[str, Any]:
+        """The test-images gate (D3): every sample_submission id's image present under the kit and
+        matching files.json by sha256. Read-only."""
+        from kaggle_classification import manifest, predictor
+
+        try:
+            return predictor.preflight(manifest.resolve(network=False).manifest)
+        except Exception as exc:
+            return {"state": "missing", "ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+    @get("/submit/state", sync_to_thread=True)
+    def submit_state() -> dict[str, Any]:
+        return _predict_state_safe()
+
+    @get("/kaggle/connection", sync_to_thread=True)
+    def kaggle_connection() -> dict[str, Any]:
+        """The connection card: no_credentials / not_joined / ready, the manifest's slug and limit."""
+        from kaggle_classification import manifest, predictor
+
+        try:
+            return predictor.kaggle_connection(manifest.resolve(network=False).manifest)
+        except Exception as exc:
+            return {"state": "error", "error": f"{type(exc).__name__}: {exc}"}
+
+    @get("/submissions/{job_id:str}/download", sync_to_thread=True)
+    def download_submission(job_id: str) -> Response[bytes]:
+        """Stream a prediction's validated CSV to the browser (the manual-upload fallback)."""
+        from pathlib import Path
+
+        from kaggle_classification import predictor
+
+        csv_path = predictor.csv_path_for(job_id)
+        if not csv_path:
+            raise NotFoundException(detail=f"No such job: {job_id}")
+        if not Path(csv_path).is_file():
+            raise NotFoundException(detail=f"Job {job_id} has no submission CSV on disk.")
+        return Response(
+            content=Path(csv_path).read_bytes(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{Path(csv_path).name}"', "Cache-Control": "no-store"},
+        )
+
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
         train_preflight, train_state, tables_list, tables_defaults,
+        list_runs, predict_preflight, submit_state, kaggle_connection, download_submission,
     ]

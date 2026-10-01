@@ -3,7 +3,27 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] — 0.1.0 (sessions 1 to 3)
+## [Unreleased] — 0.1.0 (sessions 1 to 4)
+
+### Added (session 4, the Predict + Submit tab — 2026-10-01)
+- The Predict + Submit tab, ExDark's control for control (`docs/PREDICT_MIRROR.md`, decisions D1–D12
+  of 2026-09-30): the run picker fed by the train records (`GET /runs`, unusable runs disabled with
+  the reason), the locked test-images row + gate verifying every test file against the kit's
+  `files.json` (`GET /predict/preflight`), inference from the run's best checkpoint only after the
+  three-way sha256 match (train record · Run · file on disk) and green provenance, the val check on
+  the locked val revision (the hero stat; must reproduce the run's recorded best val accuracy), the
+  CSV in `sample_submission.csv` order with six-decimal confidence, the seven format checks (the file
+  kept as `.INVALID.csv` on failure), the predicted-class distribution card (warns below 5 % / above
+  50 % per class), the Kaggle connection card (credentials detected on the compute host, never read;
+  the manifest's daily limit), the locked competition slug, Submit with one status read-back
+  (Kaggle's public score or error description on the banner), the soft outcomes (limit reached /
+  not joined / no credentials) and the CSV download fallback (`GET /submissions/{job}/download`).
+- Job kinds `predict` and `kaggle_submit`; durable `predict_state` / `submit_state` records with the
+  Train pid rule (`GET /submit/state`); the append-only ledger (`ledger.jsonl` under the plugin home)
+  with an entry per prediction and per submission (run URL, checkpoint hashes, manifest provenance,
+  CSV sha256, Kaggle ref and read-back status); `?kgdev=submit-…` fixtures for every Predict state.
+- The bundled manifest's `competition.slug` is `3lc-scene-classification-challenge` (the event
+  competition); `cdn/` regenerated.
 
 ### Fixed (session 3 re-check, 2026-09-29 evening)
 - Use these settings never copies a run's device; the in-run header and the log name why the run is

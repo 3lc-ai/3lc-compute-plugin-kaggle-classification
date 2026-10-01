@@ -110,7 +110,7 @@ class KaggleClassificationPlugin(ComputePlugin):
             "plugin": "kaggle-classification",
             "version": __version__,
             "tabs": list(TABS),
-            "implemented": ["download_kit", "import", "train"],
+            "implemented": ["download_kit", "import", "train", "predict", "kaggle_submit"],
         }
 
     def get_route_handlers(self) -> list[Any]:
@@ -122,8 +122,8 @@ class KaggleClassificationPlugin(ComputePlugin):
         """Host-dispatched job entry (``POST /api/plugins/kaggle-classification/run``).
 
         ``ctx.params`` carries ``{"kind": "download_kit" | "import" | "train" | "predict" |
-        "submit", ...job params}``. Session 1 implements ``download_kit``; the other kinds
-        fail cleanly through ``ctx.fail`` until their session lands.
+        "kaggle_submit", ...job params}``. Every kind's refusals go out verbatim through
+        ``ctx.fail``; an unknown kind fails the same way.
         """
         from kaggle_classification import kit, manifest, storage
 
@@ -182,6 +182,17 @@ class KaggleClassificationPlugin(ComputePlugin):
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
             return
-        if kind in ("predict", "submit"):
-            ctx.fail(f"The {kind} step is not implemented in this build ({__version__}).")
-        ctx.fail(f"Unknown job kind: {kind!r}. Expected one of download_kit, import, train, predict, submit.")
+        if kind in ("predict", "kaggle_submit"):
+            from kaggle_classification import predictor
+
+            runner = predictor.run_predict if kind == "predict" else predictor.run_kaggle_submit
+            try:
+                result = runner(params, adapter, current)
+            except predictor.PredictRefused as exc:
+                # A refusal (a run that fails the provenance gate, unverifiable test images, a format
+                # check, Kaggle's rejection) is the participant's message, verbatim.
+                ctx.fail(str(exc))
+            if not result.get("cancelled"):
+                ctx.progress(percent=100.0, label="Done")
+            return
+        ctx.fail(f"Unknown job kind: {kind!r}. Expected one of download_kit, import, train, predict, kaggle_submit.")

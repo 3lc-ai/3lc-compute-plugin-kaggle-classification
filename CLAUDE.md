@@ -101,4 +101,5 @@ and update them in the same commit series. Keep them terse.
 | RELEASING.md | Tag → catalog flow, the version census, kit staging rules |
 | CHANGELOG.md | What each version shipped |
 | docs/EXDARK_MIRROR.md | **The UI rule (2026-09-28): the plugin mirrors the ExDark plugin.** Every shell and Import element, marked verbatim / adapted (allowed difference) / needs decision; the four allowed differences; the safety tests that replaced the innerHTML ban |
+| docs/PREDICT_MIRROR.md | **Session 4:** the Predict + Submit tab mirrored control for control; the checkpoint gate (three-way sha256 + green provenance), the test-inputs gate, the val check, the submission format vs the metric, the ledger entries, the Kaggle client; decisions D1–D12; the gates |
 | ../3lc-compute-plugin-kaggle/docs/ui-notes.md | The UI playbook the tabs follow from session 2 (six-state machines, motion, icons, copy) |

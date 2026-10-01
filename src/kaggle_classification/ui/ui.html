@@ -178,6 +178,20 @@
 .kg-check-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; padding: 3px 0; }
 .kg-field-err { display: flex; gap: 6px; align-items: flex-start; margin-top: 4px; color: var(--danger, #ef4444); font-size: 11px; line-height: 1.4; }
 .kg-field-err .kgi { margin-top: 1px; }
+/* ── Predict + Submit tab (ExDark's two-step flow): step 2 muted until a validated prediction
+   exists (the controls also get the disabled attribute — the muting is visual, the gate is real);
+   the results row = the distribution card + the hero stat side by side, collapsing narrow ── */
+.kg-step-muted { opacity: .55; pointer-events: none; }
+.kg-results-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; margin-top: 12px; }
+.kg-sanity { flex: 1 1 320px; min-width: 0; border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: var(--radius-lg, 8px); padding: 10px 12px; }
+.kg-sanity .kg-tags { margin-top: 8px; }
+.kg-hero { flex: 0 0 auto; border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: var(--radius-lg, 8px); padding: 10px 16px; min-width: 150px; }
+.kg-hero .num { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.15; }
+.kg-hero .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-top: 2px; }
+.kg-hero .note { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; max-width: 160px; }
+.kg-csv-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; }
+.kg-csv-row .fname { font-weight: 600; color: var(--text); }
+.kg-csv-row .path { min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; color: var(--text-muted); }
 .kg-metric-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
 .kg-metric { border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 6px; padding: 6px 10px; min-width: 96px; }
 .kg-metric .lbl { font-size: 10.5px; color: var(--text-muted); }
@@ -635,15 +649,117 @@
   <div class="kg-footer" data-kg-footer></div>
   </div>
 
-  <!-- ── 3. Predict + Submit · 4. Status: ExDark's gate card until their sessions ── -->
+  <!-- ── 3. Predict + Submit (ExDark's tab, control for control: docs/PREDICT_MIRROR.md) ──────── -->
   <div class="kg-panel" id="kg-panel-submit">
   <div class="card" style="margin-bottom: 16px;">
-    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div>
-      <div class="card-subtitle">Run inference from a Run you trained here, write the submission CSV, submit to Kaggle.</div></div></div>
-    <div class="card-body"><div id="ps-conn-banner" role="status" aria-live="polite"></div><div id="ps-gate"></div></div>
+    <div class="card-header"><div>
+      <div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div>
+      <div class="card-subtitle">Inference on the kit's test images (<span class="kg-contract-imgsz"></span>px, locked) becomes a validated
+        <code>submission.csv</code>; submitting it to Kaggle spends one of your daily attempts.</div>
+    </div></div>
+    <div class="card-body">
+      <!-- Connection guard banner (network-level failures only) -->
+      <div id="ps-conn-banner" role="status" aria-live="polite"></div>
+      <!-- The import gate card (ExDark's Train gate): the tab needs the kit on disk -->
+      <div id="ps-gate"></div>
+      <div id="ps-body">
+
+      <!-- ── Step 1: Predict (free, repeatable) ─────────────────────── -->
+      <div id="ps-step1">
+        <div class="kg-sec-head">Step 1 · Predict</div>
+        <div id="ps1-banner"></div>
+        <form id="ps-form" onsubmit="return false;">
+          <div class="form-group">
+            <label class="form-label required" for="ps-run">Run</label>
+            <!-- Plugin runs only (D1: no Weights-file source, no host mode): participants and
+                 organizers run the same build, so every submission carries verified provenance. -->
+            <div class="form-help">Predictions come from runs trained in this plugin, so every
+              submission carries verified provenance.</div>
+            <div id="ps-src-run">
+              <div class="kg-url-row">
+                <div class="kg-select-wrap" style="flex: 1; min-width: 0;">
+                  <select id="ps-run" class="form-control"><option value="">Loading runs…</option></select>
+                  <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
+                </div>
+                <button type="button" id="ps-run-refresh" class="btn btn-ghost btn-sm kgi-btn"
+                        title="Refresh runs" aria-label="Refresh the runs list"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.97"/><path d="M13.5 2.5V6H10"/></svg></button>
+              </div>
+              <div id="ps-run-note"></div>
+            </div>
+          </div>
+          <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+            <div class="form-group">
+              <!-- D3: the test split is never a table — a locked row over the kit's test directory,
+                   and a gate that verifies every file against the kit's files.json. -->
+              <label class="form-label">Test images</label>
+              <div class="kg-locked-rows" style="margin: 0 0 4px;" id="ps-test-locked"></div>
+              <div id="ps-table-gate"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ps-device">Device</label>
+              <input id="ps-device" type="text" class="form-control" value="" placeholder="auto">
+              <div class="form-help">Blank = auto (CUDA &rarr; <code>mps</code> &rarr; CPU).</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" id="ps-predict-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Run inference</button>
+            <span class="spinner" id="ps-spinner" style="display: none;"></span>
+            <span id="ps-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
+          </div>
+        </form>
+        <div id="ps-progress" style="margin-top: 12px;"></div>
+        <div id="ps-results"></div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- ── Step 2: Submit to Kaggle (spends a daily attempt) ──────── -->
+      <div id="ps-step2">
+        <div class="kg-sec-head">Step 2 · Submit to Kaggle</div>
+        <div id="ps-basis"></div>
+        <div id="ps-step2-body" class="kg-step-muted">
+          <div id="ps-kconn" style="margin-bottom: 12px;"></div>
+          <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+            <div class="form-group">
+              <!-- D8: the slug is competition identity, locked from the manifest (no field, nothing posted). -->
+              <label class="form-label">Competition</label>
+              <div class="kg-locked-rows" style="margin: 0 0 4px;" id="ps-slug-locked"></div>
+              <div class="form-help">Locked to the competition the manifest names.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ps-message">Submission message</label>
+              <input id="ps-message" type="text" class="form-control" placeholder="<run_name> via 3LC plugin">
+              <div class="form-help">Shows in your Kaggle submission history. Blank uses
+                "&lt;run name&gt; via 3LC plugin".</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" id="ps-submit-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Submit to Kaggle</button>
+            <span class="spinner" id="ps-submit-spinner" style="display: none;"></span>
+            <span id="ps-submit-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
+          </div>
+        </div>
+        <div id="ps-banner" style="margin-top: 12px;"></div>
+      </div>
+
+      <div class="kg-log-details" id="ps-log-details" style="display: none;">
+        <button type="button" class="kgl-acc-summary" id="ps-log-toggle"
+                aria-expanded="false" aria-controls="ps-log-panel">
+          <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
+        </button>
+        <div class="kgl-acc" id="ps-log-panel" hidden>
+          <div class="kgl-acc-inner">
+            <pre id="ps-log"></pre>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
   </div>
   <div class="kg-footer" data-kg-footer></div>
   </div>
+
+  <!-- ── 4. Status: ExDark's gate card until its session ── -->
   <div class="kg-panel" id="kg-panel-status">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">4</span> Status</div>
@@ -679,7 +795,11 @@
       // train-state2-missing, train-state2-rows, train-state2-invalid, train-state2-undefined-weight,
       // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state3,
       // train-state3-collecting, train-state3-cpu-retry, train-state4, train-state4-noproject,
-      // train-state5, train-state5-stale, train-state6, train-state6-cancelled.
+      // train-state5, train-state5-stale, train-state6, train-state6-cancelled; Predict + Submit:
+      // submit-state1, submit-gated, submit-gate-missing, submit-provenance-blocked,
+      // submit-checkpoint-changed, submit-inference, submit-results, submit-results-val,
+      // submit-results-low, submit-checks-fail, submit-nokaggle, submit-notjoined, submit-limit,
+      // submit-success, submit-rejected, submit-fail, submit-kaggle-error, submit-revisit.
       var kgDevMode = new URLSearchParams(window.location.search).get('kgdev');
 
       // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
@@ -754,6 +874,11 @@
             .forEach(function (k) { if (k in p) { pr[k] = p[k]; } else if (k === 'stage' || k === 'stage_note') { delete pr[k]; } });
           return;
         }
+        if (job.kind === 'predict') {
+          // ExDark's predict progress shape: {images, total_images}, plus which pass (val / test).
+          ['images', 'total_images', 'phase'].forEach(function (k) { if (k in p) { pr[k] = p[k]; } });
+          return;
+        }
         if (job.kind !== 'import') { return; }
         pr.stages = KG_IMPORT_STAGES;
         var current = null;
@@ -786,6 +911,8 @@
         if (job.kind === 'download_kit') { dlOnRecord(job, terminal); }
         else if (job.kind === 'import') { kgOnImportRecord(job, terminal); }
         else if (job.kind === 'train') { trOnRecord(job, terminal); }
+        else if (job.kind === 'predict') { psOnPredictRecord(job, terminal); }
+        else if (job.kind === 'kaggle_submit') { psOnSubmitRecord(job, terminal); }
       }
       // Strip the host's appended worker traceback: the first line is the participant sentence.
       function kgErrorText(raw) {
@@ -827,6 +954,7 @@
         renderPipeline();
         if (name !== 'import' && kgConfigDone) { kgRenderGates(); }
         if (name === 'train' && kgConfigDone) { trOnTabEnter(); }
+        if (name === 'submit' && kgConfigDone) { psOnTabEnter(); }
       }
 
       Array.prototype.forEach.call(
@@ -1274,6 +1402,7 @@
             if (kgMeta) { kgMeta.manifest_refresh = p.refresh || kgMeta.manifest_refresh; kgMeta.manifest_provenance = p.provenance || kgMeta.manifest_provenance; }
             kgRenderContract(p.manifest || kgManifest);
             trApplyContract();
+            psApplyManifest();
           }).catch(function () { /* the first render stands */ });
         }, 1000);
       }
@@ -1342,7 +1471,9 @@
         kgRenderContract(kgMeta.manifest);
         kgTraining = kgMeta.training || kgTraining;
         kgTrainState = kgMeta.train_state || kgTrainState;
+        kgSubmitState = kgMeta.predict_state || kgSubmitState;
         trApplyContract();
+        psApplyManifest();
         trApplyFields(false);
         applyConfig(cfg);
         if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
@@ -1431,7 +1562,9 @@
       function renderPipeline() {
         var trainDone = !!((kgTrainState.current && kgTrainState.current.weights_on_disk) ||
                            (kgTrainState.runs || []).some(function (r) { return !!r.weights; }));
-        var p = { import: kgImportState.state === 'success', train: trainDone, submit: false };
+        // Submit is done when a submit record with status submitted exists (EXDARK #1: from the
+        // session store, re-verified by GET /submit/state).
+        var p = { import: kgImportState.state === 'success', train: trainDone, submit: kgSubmitState.state === 'submitted' };
         var steps = ['import', 'train', 'submit'];
         var currentSeen = false;
         steps.forEach(function (s) {
@@ -1451,14 +1584,19 @@
         });
       }
 
-      // Gate card on the tabs that need the imported tables (ExDark's Train gate).
+      // Gate card on the tabs that need the imported tables (ExDark's Train gate). The Predict
+      // tab's body renders behind it once an import record exists; Status stays gated (session 6).
       function kgRenderGates() {
         var imported = kgImportState.state === 'success';
         [['ps-gate', 'Predict + Submit'], ['st-gate', 'Status']].forEach(function (pair) {
           var box = el(pair[0]);
           if (!box) { return; }
+          if (pair[0] === 'ps-gate') { el('ps-body').hidden = !imported; }
           if (imported) {
-            box.innerHTML = '<div class="form-help">The ' + esc(pair[1]) + ' tab arrives in a later session.</div>';
+            box.innerHTML = '';
+            if (pair[0] !== 'ps-gate') {
+              box.innerHTML = '<div class="form-help">The ' + esc(pair[1]) + ' tab arrives in a later session.</div>';
+            }
             return;
           }
           box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
@@ -4224,6 +4362,1124 @@
         configLoaded.then(function () { setTimeout(apply, 0); });
       }
 
+      // ── Predict + Submit tab (ExDark's two-step flow, control for control: docs/PREDICT_MIRROR.md) ──
+      // Step 1 (inference) is free and repeatable; its results panel is the decision surface. Step 2
+      // (the Kaggle upload) stays muted until a validated prediction exists, and spends a daily
+      // attempt. Under the 2026-09-30 decisions: plugin runs only (D1), blocked on any failed
+      // provenance check (D2), the test-images gate over the kit's files.json (D3), no cancel (D4),
+      // the predicted-class distribution card (D5), val accuracy on the locked val for everyone (D6),
+      // the manifest's daily limit (D7) and slug (D8), one Kaggle status read-back after submit (D12).
+      var psPredictJobId = null, psSubmitJobId = null;
+      var psRuns = [];
+      var psGate = null;               // the test-images gate (green only)
+      var psGateKind = 'idle', psGateSeq = 0;
+      var psPredicting = false, psSubmitting = false;
+      var psStep2Enabled = false;
+      var psBasis = null;              // the prediction step 2 would submit
+      var psConnState = null;          // the last /kaggle/connection payload
+      var psLastChecks = null, psLastSanity = null, psLastSubmission = null;
+      var psResultsShown = false;
+      var kgSubmitState = { state: 'empty' };   // GET /submit/state: the durable predict + submit records
+
+      var KG_BTN_PREDICT = kgIcon('play', 'kgi-16') + '<span>Run inference</span>';
+      var KG_BTN_PREDICT_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run inference</span>';
+      var KG_BTN_SUBMIT = kgIcon('upload', 'kgi-16') + '<span>Submit to Kaggle</span>';
+      el('ps-predict-btn').innerHTML = KG_BTN_PREDICT;
+      el('ps-submit-btn').innerHTML = KG_BTN_SUBMIT;
+      kgBindAccordion('ps-log-toggle', 'ps-log-panel');
+
+      function psLogOpen() {
+        return el('ps-log-toggle').getAttribute('aria-expanded') === 'true';
+      }
+      function psLogReset() {
+        el('ps-log-details').style.display = 'none';
+        el('ps-log-toggle').setAttribute('aria-expanded', 'false');
+        var panel = el('ps-log-panel');
+        panel.classList.remove('open');
+        panel.hidden = true;
+        el('ps-log').textContent = '';
+      }
+      function psShowLog(lines) {
+        el('ps-log-details').style.display = 'block';
+        el('ps-log').textContent = (lines || []).join('\n');
+        if (psLogOpen()) { el('ps-log').scrollTop = el('ps-log').scrollHeight; }
+      }
+
+      // Every competition fact on this tab comes from the served manifest (allowed differences 1–3).
+      function psManifestFacts() {
+        var m = kgManifest || {};
+        var sub = m.submission || {}, test = (m.splits || {}).test || {}, comp = m.competition || {};
+        return {
+          slug: comp.slug || '', limit: sub.daily_limit || 0, metric: sub.metric || '',
+          idsFrom: test.ids_from || '', testCount: test.count || 0, imgsz: (m.model || {}).image_size || '',
+          competitionUrl: comp.slug ? 'https://www.kaggle.com/competitions/' + encodeURIComponent(comp.slug) : ''
+        };
+      }
+      function psApplyManifest() {
+        var f = psManifestFacts();
+        Array.prototype.forEach.call(ROOT_EL.querySelectorAll('.kg-contract-imgsz'), function (span) {
+          span.textContent = String(f.imgsz);
+        });
+        psRenderSlugLocked();
+        if (!psGate) { psRenderTestLocked(null); }
+      }
+
+      // Download a prediction's submission CSV through the authenticated API (a plain <a href>
+      // would miss the Authorization header).
+      function downloadCsv(jobId) {
+        API.authFetch(PLUGIN_ROOT + '/submissions/' + encodeURIComponent(jobId) + '/download')
+          .then(function (r) {
+            if (!r.ok) { throw new Error('HTTP ' + r.status); }
+            var name = 'submission.csv';
+            var cd = r.headers.get('Content-Disposition') || '';
+            var m = cd.match(/filename="([^"]+)"/);
+            if (m) { name = m[1]; }
+            return r.blob().then(function (blob) {
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url; a.download = name;
+              document.body.appendChild(a); a.click();
+              document.body.removeChild(a);
+              setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+            });
+          })
+          .catch(function (e) { alert('Download failed: ' + e.message); });
+      }
+
+      // Predict flavor of Copy diagnostics: the run, the checkpoint hashes, the contract, the
+      // device, the jobs, the checks, the distribution, the submission response, the log tail.
+      function psBuildDiagnostics() {
+        var head = [];
+        var run = psSelectedRun();
+        if (psBasis && psBasis.run_name) { head.push('run: ' + psBasis.run_name); }
+        else if (run) { head.push('run: ' + (run.run_folder || run.run_name || run.job_id)); }
+        if (run && run.run_url) { head.push('run URL: ' + run.run_url); }
+        if (run && run.weights) { head.push('checkpoint: ' + run.weights); }
+        if (run && run.best_checkpoint_sha256) { head.push('checkpoint sha256 (recorded): ' + run.best_checkpoint_sha256); }
+        if (run && run.contract) { head.push('contract: ' + JSON.stringify(run.contract)); }
+        head.push('device: ' + (el('ps-device').value.trim() || 'auto'));
+        if (psPredictJobId) { head.push('predict job: ' + psPredictJobId); }
+        if (psSubmitJobId) { head.push('submit job: ' + psSubmitJobId); }
+        return kgBuildDiagnosticsCore([
+          head,
+          kgChecksSection('checks', psLastChecks),
+          psLastSanity ? ['', '[distribution]', JSON.stringify(psLastSanity, null, 1)] : null,
+          psLastSubmission ? ['', '[submission]', JSON.stringify(psLastSubmission, null, 1)] : null,
+          kgLogTailSection(el('ps-log'))
+        ]);
+      }
+
+      // ── Run selector with provenance summaries ──────────────────────
+      function psFmtDate(ts) {
+        return ts ? new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      }
+      function psFmtPct(v) {
+        return (typeof v === 'number' && isFinite(v)) ? v.toFixed(2) + ' %' : '';
+      }
+      function psRunSummary(run) {
+        var bits = [];
+        if (run.epochs_completed) { bits.push(run.epochs_completed + ' epochs'); }
+        if (typeof run.best_val_accuracy === 'number') { bits.push('best val accuracy ' + psFmtPct(run.best_val_accuracy)); }
+        var d = psFmtDate(run.created_at);
+        if (d) { bits.push(d); }
+        return bits.join(' · ');
+      }
+      function psRunLabel(run) {
+        return (run.run_folder || run.run_name || run.job_id) + ' · ' + (run.usable ? psRunSummary(run) : run.reason);
+      }
+      function psSelectedRun() {
+        var id = el('ps-run').value;
+        return psRuns.filter(function (r) { return r.job_id === id; })[0] || null;
+      }
+      function psRenderRunNote() {
+        var run = psSelectedRun();
+        // The hash shown is the trained checkpoint's (D12 of TRAIN_MIRROR): the three-way match
+        // the job enforces is between this record, the Run and the file on disk.
+        var okText = (run && run.best_checkpoint_sha256)
+          ? 'Verified provenance on this run’s record · best checkpoint sha256 ' +
+            esc(String(run.best_checkpoint_sha256).slice(0, 12)) + '…'
+          : 'Verified provenance on this run’s record.';
+        el('ps-run-note').innerHTML = (run && run.usable)
+          ? '<div class="kg-preflight-ok">' + kgIcon('check') + '<span>' + okText + '</span></div>'
+          : (run ? '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+            '<span>' + esc(run.reason || 'This run cannot be used for a submission.') + '</span></div>' : '');
+      }
+      function psFillRuns(runs, kept) {
+        psRuns = runs || [];
+        var sel = el('ps-run');
+        sel.innerHTML = '';
+        var ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = psRuns.length ? 'Select a run…' : 'No plugin runs yet. Train first (tab 2).';
+        sel.appendChild(ph);
+        psRuns.forEach(function (run) {
+          var opt = document.createElement('option');
+          opt.value = run.job_id;
+          opt.textContent = psRunLabel(run);
+          if (!run.usable) { opt.disabled = true; }
+          sel.appendChild(opt);
+        });
+        var firstUsable = psRuns.filter(function (r) { return r.usable; })[0];
+        sel.value = kept && psRuns.some(function (r) { return r.job_id === kept && r.usable; })
+          ? kept : (firstUsable ? firstUsable.job_id : '');
+        psRenderRunNote();
+        psCheckPredictReady();
+      }
+      function psLoadRuns(manual) {
+        var btn = el('ps-run-refresh');
+        if (manual && btn) { btn.classList.add('kg-spin'); }
+        var settle = function () { if (btn) { btn.classList.remove('kg-spin'); } };
+        API.authFetch(PLUGIN_ROOT + '/runs')
+          .then(function (r) { return r.json(); })
+          .then(function (runs) {
+            psFillRuns(runs || [], el('ps-run').value);
+            // Loop banner "inspect" deep-links to the newest Run with a URL.
+            var withUrl = psRuns.filter(function (r) { return r.run_url; })[0];
+            if (withUrl && dashboardUrl) { el('kg-loop-inspect').href = dashRunLink(withUrl.run_url); }
+          })
+          .catch(function (e) {
+            kgConn.fail(e, psLoadRuns);
+            el('ps-run').options[0].textContent = 'Could not load runs. Retry.';
+          })
+          .then(settle, settle);
+      }
+      el('ps-run-refresh').addEventListener('click', function () { psLoadRuns(true); });
+      el('ps-run').addEventListener('change', function () {
+        psRenderRunNote();
+        psCheckPredictReady();
+      });
+
+      // Tab-activation refetch: the runs list, the connection card and the test-images gate are
+      // re-checked whenever the tab is shown, so a run that finished in the background is
+      // selectable without a reload (the no-more-F5 rule).
+      function psOnTabEnter() {
+        if (kgDevMode) { return; }   // forced states own this tab
+        configLoaded.then(function () {
+          el('ps-device').value = (kgSession && kgSession.device) || el('ps-device').value;
+          psLoadRuns();
+          renderConnection();
+          psVerifyTestInputs(true);
+        });
+      }
+
+      // ── Test-images gate (D3: the locked row over the kit's test directory + files.json) ──
+      function psRenderTestLocked(info) {
+        var f = psManifestFacts();
+        var dir = (info && info.test_dir) || '';
+        var n = (info && info.count) || f.testCount;
+        var dirText = dir ? esc(midTrunc(kgCleanPath(dir), 44)) : 'the kit’s test directory';
+        el('ps-test-locked').innerHTML = '<div class="kg-locked-row" title="' +
+          esc(dir ? dir : 'The kit’s test images, verified per file against files.json before inference.') +
+          '"><span class="lbl">Kit</span><span class="val">' + dirText +
+          (n ? ' · ' + fmtCount(n) + ' images' : '') + '</span>' + kgIcon('lock', 'kgi-12') + '</div>';
+      }
+      function psRenderGate(data) {
+        var box = el('ps-table-gate');
+        var kind = !data ? 'idle' : data.checking ? 'checking' : data.ok ? 'ok' : 'missing';
+        var entering = (kind !== psGateKind && (kind === 'ok' || kind === 'missing')) ? 'kgl-enter' : '';
+        psGateKind = kind;
+        if (!data) {
+          box.innerHTML = '<div class="form-help">Run Import (tab 1) to download the starter kit.</div>';
+          return;
+        }
+        if (data.checking) {
+          box.innerHTML = '<div class="form-help">Checking test images…</div>';
+          return;
+        }
+        if (data.ok) {
+          box.innerHTML = '<div class="' + entering + '"><div class="kg-preflight-ok">' + kgIcon('check') +
+            '<span>Test images verified: ' + fmtCount(data.count) + ' files match the kit’s files.json</span></div></div>';
+          return;
+        }
+        box.innerHTML = '<div class="' + entering + '"><div class="kg-callout warn">' +
+          kgIcon('alert-triangle') + '<span><strong>' + esc(data.headline || 'The kit’s test images aren’t on disk.') +
+          '</strong><br><span class="form-help">Looking under <code>' + esc(data.kit_dir || '') +
+          '</code>. If you moved or deleted the kit, Import (tab 1) restores it.</span>' +
+          '<div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm kgi-btn" ' +
+          'id="ps-goto-import"><span>Go to Import</span>' + kgIcon('arrow-right', 'kgi-12') +
+          '</button></div></span></div></div>';
+        var goToImport = el('ps-goto-import');
+        if (goToImport) { goToImport.addEventListener('click', function () { showTab('import'); }); }
+      }
+      function psVerifyTestInputs(force) {
+        if (!force && psGate && psGate.ok) { return; }
+        var seq = ++psGateSeq;
+        psGate = null;
+        psCheckPredictReady();
+        psRenderGate({ checking: true });
+        API.authFetch(PLUGIN_ROOT + '/predict/preflight')
+          .then(function (r) { return r.json(); })
+          .then(function (info) {
+            if (seq !== psGateSeq) { return; }
+            psRenderTestLocked(info);
+            if (info && info.state === 'idle') { psGate = null; psRenderGate(null); }
+            else if (info && info.ok) { psGate = { ok: true, info: info }; psRenderGate({ ok: true, count: info.count }); }
+            else {
+              psGate = null;
+              psRenderGate({ ok: false, kit_dir: (info || {}).kit_dir || kgCleanPath((kgSession || {}).kit_dir || ''),
+                             headline: (info || {}).error || '' });
+            }
+            psCheckPredictReady();
+          })
+          .catch(function (e) {
+            if (seq !== psGateSeq) { return; }
+            if (kgConn.fail(e, function () { psVerifyTestInputs(true); })) {
+              psRenderGate(null);
+              psCheckPredictReady();
+              return;
+            }
+            psGate = null;
+            psRenderGate({ ok: false, headline: 'Could not verify the test images: ' + e.message + '.',
+                           kit_dir: kgCleanPath((kgSession || {}).kit_dir || '') });
+            psCheckPredictReady();
+          });
+      }
+
+      function psCheckPredictReady() {
+        el('ps-predict-btn').disabled =
+          psPredicting || !(psGate && psGate.ok) || !el('ps-run').value || !!kgDevMode;
+      }
+
+      // ── Step 1 in-progress + results panel ──────────────────────────
+      function psRenderProgress(job) {
+        var p = job.progress || {};
+        var box = el('ps-progress');
+        if (!box.querySelector('.kg-run-head')) {
+          box.innerHTML =
+            '<div class="kg-run-head">' +
+            '<span class="name">Inference</span>' +
+            '<span class="badge badge-status-running">running</span>' +
+            '<span class="kg-run-meta"><span class="epoch" id="ps-prog-count"></span>' +
+            '<span id="ps-prog-elapsed"></span></span></div>' +
+            '<div class="plugin-progress-wrap"><div class="plugin-progress-bar" id="ps-prog-bar" style="width:0%"></div></div>' +
+            '<span class="kg-visually-hidden" id="ps-prog-announce" aria-live="polite"></span>';
+        }
+        var total = p.total_images || 0;
+        var phase = p.phase === 'val' ? 'Val check: ' : 'Inference: ';
+        kgSwapText(el('ps-prog-count'),
+          total ? phase + fmtCount(p.images || 0) + ' / ' + fmtCount(total) + ' images' : 'Starting…');
+        el('ps-prog-elapsed').textContent = job.created_at
+          ? 'elapsed ' + fmtDur(Date.now() / 1000 - job.created_at) : '';
+        var pct = (typeof p.percent === 'number') ? Math.max(0, Math.min(100, Math.round(p.percent)))
+          : (total ? Math.min(100, Math.round(100 * (p.images || 0) / total)) : 0);
+        el('ps-prog-bar').style.width = pct + '%';
+        // Screen-reader announcements throttle to quartiles, not poll ticks.
+        var quartile = Math.floor(pct / 25) * 25;
+        var ann = el('ps-prog-announce');
+        if (quartile > 0 && ann.textContent !== 'Inference ' + quartile + '% complete') {
+          ann.textContent = 'Inference ' + quartile + '% complete';
+        }
+      }
+
+      // The checks in the checks vocabulary, grouped: Checkpoint · Test inputs · Submission format.
+      function psRenderChecks(checks, animate) {
+        if (!checks || !checks.length) { return ''; }
+        var total = checks.length;
+        var passed = checks.filter(function (c) { return c.ok; }).length;
+        var allOk = passed === total;
+        var groups = [];
+        checks.forEach(function (c) {
+          var g = c.group || 'Submission format';
+          if (groups.indexOf(g) === -1) { groups.push(g); }
+        });
+        var html = '<div class="kg-verdict">' +
+          (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
+                 : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
+          '<span>' + passed + '/' + total + ' checks passed' +
+          (allOk ? '' : ' (' + (total - passed) + ' failed)') + '</span></div>' +
+          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
+        var i = 0;
+        groups.forEach(function (g) {
+          html += '<div><div class="kg-checks-head">' + esc(g) + '</div>';
+          checks.filter(function (c) { return (c.group || 'Submission format') === g; }).forEach(function (c) {
+            html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+                    (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
+                          : '<span class="bad">' + kgIcon('x') + '</span>') +
+                    '<span class="kg-check-body">' + esc(c.label) +
+                    (c.detail ? ' <span class="detail">(' + esc(c.detail) + ')</span>' : '') +
+                    '</span></div>';
+            i += 1;
+          });
+          html += '</div>';
+        });
+        return html + '</div>';
+      }
+
+      // D5: the predicted-class distribution card (ExDark's Prediction sanity card, task-inherent
+      // stats): images · mean confidence · low-confidence count, a tag per class with its count, a
+      // warning when a class takes < 5 % or > 50 % of the predictions.
+      function psSanityHtml(sanity) {
+        if (!sanity) { return ''; }
+        var html = '<div class="kg-sanity">' +
+          '<div class="kg-micro-label">Predicted-class distribution</div>' +
+          '<div class="kg-glance-stats">' +
+          '<span class="kg-stat"><span class="lbl">images</span><span class="val">' +
+            fmtCount(sanity.images) + '</span></span>' +
+          '<span class="kg-stat"><span class="lbl">mean confidence</span><span class="val">' +
+            esc(String(sanity.mean_confidence)) + '</span></span>' +
+          '<span class="kg-stat"><span class="lbl">low confidence (&lt; ' + esc(String(sanity.low_confidence_threshold)) +
+            ')</span><span class="val">' + fmtCount(sanity.low_confidence) + '</span></span></div>';
+        var pc = sanity.per_class || {};
+        var names = Object.keys(pc);
+        if (names.length) {
+          html += '<div class="kg-tags">' + names.map(function (n, i) {
+            return '<span class="kg-tag" style="' + kgClassTint(i) + '">' + esc(n) + ' · ' +
+                   fmtCount(pc[n]) + '</span>';
+          }).join('') + '</div>';
+        }
+        if (sanity.warning) {
+          html += '<div class="kg-callout warn" style="margin-top:8px">' + kgIcon('alert-triangle') +
+                  '<span>' + esc(sanity.warning) + '</span></div>';
+        }
+        return html + '</div>';
+      }
+
+      // D6: the hero stat is the checkpoint's accuracy on the locked val split, for everyone.
+      function psHeroHtml(score) {
+        if (!score || typeof score.value !== 'number') { return ''; }
+        return '<div class="kg-hero"><div class="num" id="ps-hero-num">' + esc(psFmtPct(score.value)) + '</div>' +
+               '<div class="lbl">Val accuracy</div>' +
+               '<div class="note">Your locked validation split, not the leaderboard.</div></div>';
+      }
+
+      function psCsvRowHtml(jobId, csvPath) {
+        if (!csvPath) { return ''; }
+        var fname = csvPath.replace(/^.*[\\\/]/, '');
+        return '<div class="kg-csv-row">' +
+          '<span class="fname">' + esc(fname) + '</span>' +
+          '<span class="path" title="' + esc(csvPath) + '">' + esc(midTrunc(csvPath, 56)) + '</span>' +
+          '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(csvPath) +
+          '" title="Copy CSV path (a path on the compute service\'s machine — Download CSV works from anywhere)" aria-label="Copy CSV path">' + kgIcon('copy') + '</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm kgi-btn" data-download="' + esc(jobId) +
+          '">' + kgIcon('download') + '<span>Download CSV</span></button></div>';
+      }
+
+      // Results panel = step 1's decision surface. First live completion enters with the checks
+      // cascade; a re-run replaces content in place (same-type re-render: no replay).
+      function psRenderResults(job, animate) {
+        var facts = job.facts || {};
+        var checks = job.checks || [];
+        psLastChecks = checks;
+        psLastSanity = facts.sanity || null;
+        var enter = animate && !psResultsShown;
+        psResultsShown = true;
+        var html = psRenderChecks(checks, enter);
+        var row = psSanityHtml(facts.sanity) + psHeroHtml(facts.local_score);
+        if (row) { html += '<div class="kg-results-row' + (enter ? ' kgl-enter' : '') + '">' + row + '</div>'; }
+        html += psCsvRowHtml(job.id, facts.csv_path || '');
+        el('ps-results').innerHTML = html;
+        kgBindCopy(el('ps-results'));
+        el('ps-results').querySelectorAll('[data-download]').forEach(function (b) {
+          b.addEventListener('click', function () { downloadCsv(b.getAttribute('data-download')); });
+        });
+      }
+
+      function psRenderPredictFail(message, animate) {
+        el('ps1-banner').innerHTML =
+          '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
+          '<div style="flex:1;min-width:0"><strong>Inference failed</strong>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
+        kgBindDiag(el('ps1-banner'), psBuildDiagnostics);
+      }
+
+      // The job channel's view of a predict job (ExDark's psPollPredict over the job record):
+      // running → progress; terminal → the durable record is the truth (checks, facts, the log).
+      function psOnPredictRecord(job, terminal) {
+        psShowLog(job.log);
+        if (!terminal) {
+          if (job.status !== 'running' && job.status !== 'queued') { return; }
+          psRenderProgress(job);
+          var pp = job.progress || {};
+          if (typeof pp.percent === 'number') { kgSetTitleProgress(pp.percent); }
+          el('ps-state').textContent = 'Predicting… (safe to navigate away)';
+          return;
+        }
+        kgClearTitleProgress();
+        psPredicting = false;
+        el('ps-spinner').style.display = 'none';
+        el('ps-progress').innerHTML = '';
+        el('ps-state').textContent = '';
+        psCheckPredictReady();
+        API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); })
+          .catch(function () { return { state: 'empty' }; })
+          .then(function (state) {
+            kgSubmitState = state || kgSubmitState;
+            var ps = state.predict || {};
+            var mine = ps.job_id === job.id;
+            if (mine && ps.log && ps.log.length) { psShowLog(ps.log); }
+            var rec = mine ? {
+              id: ps.job_id, status: ps.status, checks: ps.checks || job.checks,
+              facts: { csv_path: ps.csv_path, sanity: ps.sanity, local_score: ps.local_score, run_name: ps.run_name },
+              error: ps.error, finished_at: ps.finished_at
+            } : job;
+            if (job.status === 'completed' && (!mine || ps.status === 'completed')) {
+              psRenderResults(rec, true);
+              el('ps-predict-btn').innerHTML = KG_BTN_PREDICT_RERUN;
+              psSetBasis({
+                job_id: job.id,
+                run_name: (rec.facts || {}).run_name || '',
+                local_score: (rec.facts || {}).local_score,
+                when: rec.finished_at || Date.now() / 1000,
+                persisted: false
+              });
+              kgScrollTo(el('ps-results'));
+            } else {
+              psRenderResults(rec, false);   // whatever checks got recorded
+              psRenderPredictFail(kgErrorText(rec.error || job.error) || 'Inference failed. See the log below.', true);
+              el('ps-predict-btn').innerHTML = KG_BTN_PREDICT_RERUN;
+              kgScrollTo(el('ps1-banner'));
+              var alertEl = el('ps1-banner').firstChild;
+              if (alertEl && alertEl.setAttribute) {
+                alertEl.setAttribute('tabindex', '-1');
+                alertEl.focus({ preventScroll: true });
+              }
+            }
+            renderPipeline();
+          });
+      }
+
+      el('ps-predict-btn').addEventListener('click', function () {
+        if (kgDevMode) { return; }
+        var run = psSelectedRun();
+        if (!run) { return; }
+        // The device is a session fact shared with Train's field (ExDark mirrors them on blur).
+        if (kgSession) { kgSession.device = el('ps-device').value.trim(); el('tr-device').value = kgSession.device; kgSessionSave(); }
+        // Body: the run id and the device only — the checkpoint path is never posted (§2), the test
+        // directory comes from the import record server-side.
+        var body = { train_job_id: run.job_id, device: el('ps-device').value.trim() };
+        psPredicting = true;
+        psCheckPredictReady();
+        el('ps-predict-btn').innerHTML = KG_BTN_PREDICT;
+        el('ps-spinner').style.display = 'inline-block';
+        el('ps-state').textContent = 'Starting…';
+        el('ps1-banner').innerHTML = '';
+        el('ps-banner').innerHTML = '';
+        el('ps-results').innerHTML = '';
+        psResultsShown = false;
+        psLogReset();
+        kgStartJob('predict', body)
+          .then(function (res) {
+            if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
+            psPredictJobId = res.body.job_id;
+            var job = kgJobRecord(psPredictJobId, 'predict');
+            el('ps-progress').innerHTML = '';
+            psRenderProgress(job);
+            kgScrollTo(el('ps-progress'));
+            kgTrack(job);
+          })
+          .catch(function (e) {
+            psPredicting = false;
+            psCheckPredictReady();
+            el('ps-spinner').style.display = 'none';
+            el('ps-state').textContent = kgConn.fail(e)
+              ? 'Inference didn’t start (service unreachable). Start again once reconnected.'
+              : e.message;
+          });
+      });
+
+      // ── Step 2: basis, connection, budget, submit ───────────────────
+      function psSetBasis(basis) {
+        psBasis = basis;
+        psStep2Enabled = !!basis;
+        el('ps-step2-body').classList.toggle('kg-step-muted', !psStep2Enabled);
+        el('ps-message').disabled = !psStep2Enabled;
+        psRenderBasis();
+        psCheckSubmitReady();
+      }
+
+      function psRenderBasis() {
+        var box = el('ps-basis');
+        if (!psBasis) {
+          box.innerHTML = '<div class="form-help" style="margin-bottom: 10px;">Run inference first. ' +
+                          'A validated CSV unlocks this step.</div>';
+          return;
+        }
+        var score = psBasis.local_score;
+        box.innerHTML = '<div class="kg-preflight-ok" style="margin-bottom: 10px;">' + kgIcon('check') +
+          '<span>Submitting: <strong>' + esc(psBasis.run_name || 'latest prediction') + '</strong>' +
+          (psBasis.when ? ' · predicted ' + esc(kgFmtAgo(psBasis.when)) : '') +
+          (score && typeof score.value === 'number' ? ' · val accuracy ' + esc(psFmtPct(score.value)) : '') +
+          (psBasis.persisted ? ' (from a previous session)' : '') + '</span></div>';
+      }
+
+      // D7: the manifest's daily limit is the number shown; Kaggle's used-today count, when the
+      // list call answers, makes it "N of M left today"; Kaggle's refusal stays authoritative.
+      function psBudget() {
+        var s = psConnState || {};
+        var limit = s.daily_limit || psManifestFacts().limit;
+        if (!limit) { return null; }
+        if (typeof s.submissions_used_today !== 'number') { return { limit: limit, left: null }; }
+        return { limit: limit, left: Math.max(0, limit - s.submissions_used_today) };
+      }
+      function psConnBlocked() {
+        return !!(psConnState &&
+                  (psConnState.state === 'no_credentials' || psConnState.state === 'not_joined'));
+      }
+      function psBudgetExhausted() {
+        var b = psBudget();
+        return !!(b && b.left === 0);
+      }
+      function psCheckSubmitReady() {
+        el('ps-submit-btn').disabled =
+          psSubmitting || !psStep2Enabled || !psBasis || psConnBlocked() ||
+          psBudgetExhausted() || !!kgDevMode;
+      }
+
+      // D8: the competition slug, locked from the manifest.
+      function psRenderSlugLocked() {
+        var f = psManifestFacts();
+        el('ps-slug-locked').innerHTML = '<div class="kg-locked-row" title="' +
+          esc(f.competitionUrl || 'The Kaggle competition the manifest names.') +
+          '"><span class="lbl">Kaggle</span><span class="val">' + esc(f.slug || 'loading…') + '</span>' +
+          kgIcon('lock', 'kgi-12') + '</div>';
+      }
+
+      // Kaggle connection card in the banner vocabulary; budget included. Split fetch/render so
+      // ?kgdev fixtures can drive the render directly.
+      function renderConnection() {
+        API.authFetch(PLUGIN_ROOT + '/kaggle/connection')
+          .then(function (r) { return r.json(); })
+          .then(psRenderConnState)
+          .catch(function (e) {
+            if (kgConn.fail(e, renderConnection)) { return; }
+            psConnState = null;
+            el('ps-kconn').innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+              '<span>Could not check the Kaggle connection: ' + esc(e.message) + '</span></div>';
+            psCheckSubmitReady();
+          });
+      }
+
+      function psRenderConnState(s) {
+        psConnState = s;
+        var box = el('ps-kconn');
+        if (s.state === 'no_credentials') {
+          box.innerHTML = '<div class="kg-callout err">' + kgIcon('x-circle') +
+            '<span><strong>Kaggle account not connected.</strong><br>' +
+            '<span style="opacity:.85">' + esc(s.help || '') + '</span></span></div>';
+        } else if (s.state === 'not_joined') {
+          box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+            '<span><strong>Join the competition on Kaggle first.</strong> Your account (<strong>' +
+            esc(s.username || '?') + '</strong>) has not accepted the competition rules yet; ' +
+            'submissions would be rejected.' +
+            '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" href="' +
+            esc(s.competition_url || psManifestFacts().competitionUrl || '#') + '" target="_blank"><span>Open competition page</span>' +
+            kgIcon('external-link', 'kgi-12') + '</a></div></span></div>';
+        } else if (s.state === 'ready') {
+          var b = psBudget();
+          var budgetTxt = '';
+          if (b) {
+            // The used-today count renders only when the submissions list is permitted.
+            budgetTxt = b.left === null
+              ? ' · ' + fmtCount(b.limit) + ' submissions/day'
+              : ' · ' + fmtCount(b.left) + ' of ' + fmtCount(b.limit) + ' submissions left today';
+          }
+          var exhausted = psBudgetExhausted();
+          box.innerHTML = '<div class="kg-callout ok">' + kgIcon('check-circle') +
+            '<span><strong>Connected to Kaggle</strong>' +
+            (s.username ? ' as <strong>' + esc(s.username) + '</strong>' : '') + budgetTxt +
+            (s.probe_error ? '<br><span style="opacity:.75">Competition probe failed: ' +
+              esc(s.probe_error) + '</span>' : '') + '</span></div>' +
+            (exhausted
+              ? '<div class="kg-callout info" style="margin-top:6px">' + kgIcon('info') +
+                '<span>Daily limit reached, resets 00:00 UTC. Your CSV is saved and ready.</span></div>'
+              : '');
+        } else {
+          box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+            '<span>' + esc(s.error ? 'Could not check the Kaggle connection: ' + s.error : 'Connection state unknown.') + '</span></div>';
+        }
+        psCheckSubmitReady();
+      }
+
+      // D12: Kaggle's own verdict after the one read-back — the public score, or the error
+      // description the metric produced (a format problem the preflight did not foresee).
+      function psKaggleLine(sub) {
+        var k = (sub || {}).kaggle || null;
+        if (!k) { return ''; }
+        if (k.status === 'COMPLETE') {
+          return '<div style="margin-top:4px;font-size:12.5px">Kaggle scored it: public score <strong>' +
+                 esc(typeof k.public_score === 'number' ? String(k.public_score) : '—') + '</strong></div>';
+        }
+        if (k.status === 'ERROR') {
+          return '<div class="kg-callout err" style="margin-top:8px">' + kgIcon('x-circle') +
+                 '<span><strong>Kaggle rejected it.</strong> ' + esc(k.error_description || 'No description.') + '</span></div>';
+        }
+        return '<div style="margin-top:4px;font-size:12.5px;opacity:.8">Kaggle is still scoring it' +
+               (k.status && k.status !== 'unknown' ? ' (status ' + esc(k.status) + ')' : '') + '. The Status tab shows the result.</div>';
+      }
+
+      function psRenderSubmitSuccess(sub, animate) {
+        var viewUrl = ((psConnState || {}).competition_url || psManifestFacts().competitionUrl) + '/submissions';
+        el('ps-banner').innerHTML =
+          '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
+          '<div style="flex:1;min-width:0">' +
+          '<strong>Submitted to Kaggle</strong>' +
+          (sub.ref ? '<div style="margin-top:4px;font-size:12.5px">Submission ' + esc(sub.ref) + '</div>' : '') +
+          psKaggleLine(sub) +
+          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="ps-continue-status">' +
+          '<span>Continue to Status</span>' + kgIcon('arrow-right') + '</button>' +
+          '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(viewUrl) +
+          '"><span>View on Kaggle</span>' + kgIcon('external-link', 'kgi-12') + '</a>' +
+          '</div></div></div>';
+        el('ps-continue-status').addEventListener('click', function () { showTab('status'); });
+      }
+
+      function psRenderSubmitFail(message, animate) {
+        el('ps-banner').innerHTML =
+          '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
+          '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
+          '<div style="flex:1;min-width:0"><strong>Submission failed</strong>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
+        kgBindDiag(el('ps-banner'), psBuildDiagnostics);
+      }
+
+      // The friendly non-failures: limit reached / not joined / skipped.
+      function psRenderSubmitSoft(sub, animate) {
+        var isInfo = sub.status === 'limit_reached';
+        var dl = (psBasis && psBasis.job_id)
+          ? '<div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm kgi-btn" ' +
+            'id="ps-soft-dl">' + kgIcon('download') + '<span>Download CSV</span></button></div>'
+          : '';
+        el('ps-banner').innerHTML = '<div class="' + (animate ? 'kgl-enter' : '') + '">' +
+          '<div class="kg-callout ' + (isInfo ? 'info' : 'warn') + '">' +
+          kgIcon(isInfo ? 'info' : 'alert-triangle') +
+          '<span>' + esc(sub.reason || sub.status) + dl + '</span></div></div>';
+        var b = el('ps-soft-dl');
+        if (b) { b.addEventListener('click', function () { downloadCsv(psBasis.job_id); }); }
+      }
+
+      function psOnSubmitRecord(job, terminal) {
+        psShowLog(job.log);
+        if (!terminal) {
+          if (job.status === 'running' || job.status === 'queued') { el('ps-submit-state').textContent = 'Submitting…'; }
+          return;
+        }
+        psSubmitting = false;
+        el('ps-submit-spinner').style.display = 'none';
+        el('ps-submit-state').textContent = '';
+        API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); })
+          .catch(function () { return { state: 'empty' }; })
+          .then(function (state) {
+            kgSubmitState = state || kgSubmitState;
+            var ss = (state.submission && state.submission.job_id === job.id) ? state.submission : null;
+            var sub = ss || (job.facts || {}).submission || {};
+            if (ss && ss.log && ss.log.length) { psShowLog(ss.log); }
+            psLastSubmission = sub;
+            if (job.status === 'completed' && sub.status === 'submitted') {
+              psRenderSubmitSuccess(sub, true);
+            } else if (job.status === 'completed' && sub.status) {
+              psRenderSubmitSoft(sub, true);
+            } else {
+              psRenderSubmitFail(kgErrorText(sub.reason || job.error) || 'Kaggle rejected the submission.', true);
+            }
+            psCheckSubmitReady();
+            kgScrollTo(el('ps-banner'));
+            var alertEl = el('ps-banner').firstChild;
+            if (alertEl && alertEl.setAttribute) {
+              alertEl.setAttribute('tabindex', '-1');
+              alertEl.focus({ preventScroll: true });
+            }
+            renderPipeline();
+            renderConnection();   // budget just changed
+          });
+      }
+
+      el('ps-submit-btn').addEventListener('click', function () {
+        if (kgDevMode || !psBasis) { return; }
+        var b = psBudget();
+        var n = b ? b.limit : psManifestFacts().limit;
+        if (!window.confirm('This spends 1 of your ' + n + ' daily submissions. Submit "' +
+                            (psBasis.run_name || 'latest prediction') + '" now?')) { return; }
+        psSubmitting = true;
+        psCheckSubmitReady();
+        el('ps-submit-spinner').style.display = 'inline-block';
+        el('ps-submit-state').textContent = 'Starting…';
+        el('ps-banner').innerHTML = '';
+        // The slug is never posted (D8): the job reads it from the manifest.
+        kgStartJob('kaggle_submit', { predict_job_id: psBasis.job_id, message: el('ps-message').value.trim() })
+          .then(function (res) {
+            if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
+            psSubmitJobId = res.body.job_id;
+            var job = kgJobRecord(psSubmitJobId, 'kaggle_submit');
+            el('ps-submit-state').textContent = 'Submitting…';
+            kgTrack(job);
+          })
+          .catch(function (e) {
+            psSubmitting = false;
+            psCheckSubmitReady();
+            el('ps-submit-spinner').style.display = 'none';
+            el('ps-submit-state').textContent = kgConn.fail(e)
+              ? 'Submission didn’t start (service unreachable). Try again once reconnected.'
+              : e.message;
+          });
+      });
+
+      psSetBasis(null);   // step 2 starts muted until a prediction lands
+      psRenderGate(null);
+      psRenderTestLocked(null);
+      psRenderSlugLocked();
+
+      // ── Revisit + tab-open resolution (Predict + Submit) ────────────
+      function psEnterFormState(animate) {
+        el('ps-form').style.display = '';
+        el('ps1-banner').innerHTML = '';
+        el('ps-banner').innerHTML = '';
+        el('ps-progress').innerHTML = '';
+        el('ps-results').innerHTML = '';
+        el('ps-state').textContent = '';
+        psResultsShown = false;
+        el('ps-predict-btn').innerHTML = KG_BTN_PREDICT;
+        if (animate) { kglEnter(el('ps-form')); }
+        psSetBasis(null);
+        psCheckPredictReady();
+      }
+
+      // Revisit-first: the durable record renders the last prediction as a static results panel
+      // (checks, distribution, hero, CSV row) with the last submission's outcome, and "New
+      // prediction" restores the form. The record is server-side re-verified (CSV on disk and
+      // unchanged) before this renders; step 2 unlocks against the persisted CSV.
+      function psRenderRevisit(state) {
+        var ps = state.predict || {};
+        el('ps-form').style.display = 'none';
+        psResultsShown = true;   // later re-runs replace without replay
+        psRenderResults({
+          id: ps.job_id || '',
+          status: 'completed',
+          checks: ps.checks || [],
+          facts: { csv_path: ps.csv_path, sanity: ps.sanity, local_score: ps.local_score, run_name: ps.run_name }
+        }, false);
+        var head = '<div class="kg-preflight-ok" style="margin-bottom: 6px;">' + kgIcon('check') +
+          '<span>Last prediction: <strong>' + esc(ps.run_name || 'run') + '</strong>' +
+          (ps.finished_at ? ' · predicted ' + esc(kgFmtAgo(ps.finished_at)) : '') +
+          '</span></div>' +
+          '<div style="margin: 0 0 10px;"><button type="button" class="btn btn-ghost btn-sm" ' +
+          'id="ps-new-prediction">New prediction</button></div>';
+        el('ps-results').innerHTML = head + el('ps-results').innerHTML;
+        kgBindCopy(el('ps-results'));
+        el('ps-results').querySelectorAll('[data-download]').forEach(function (b) {
+          b.addEventListener('click', function () { downloadCsv(b.getAttribute('data-download')); });
+        });
+        el('ps-new-prediction').addEventListener('click', function () { psEnterFormState(true); });
+        if (ps.log && ps.log.length) { psShowLog(ps.log); }
+
+        if (state.submission) {
+          var ss = state.submission;
+          psLastSubmission = ss;
+          el('ps-banner').innerHTML = ss.status === 'submitted'
+            ? '<div class="kg-callout ok">' + kgIcon('check-circle') +
+              '<span>Submitted to Kaggle' + (ss.ref ? ' · submission ' + esc(ss.ref) : '') +
+              (ss.finished_at ? ' · ' + esc(kgFmtAgo(ss.finished_at)) : '') + '</span>' + psKaggleLine(ss) + '</div>'
+            : '<div class="kg-callout info">' + kgIcon('info') +
+              '<span>Last submit attempt: ' + esc(ss.status || 'unknown') +
+              (ss.reason ? '. ' + esc(ss.reason) : '') + '</span></div>';
+        }
+        psPredictJobId = ps.job_id || psPredictJobId;
+        psSetBasis({
+          job_id: ps.job_id, run_name: ps.run_name, local_score: ps.local_score,
+          when: ps.finished_at, persisted: true
+        });
+      }
+
+      // Order: a still-running job wins (reconnect), then the verified record (revisit-first),
+      // then the form. The host lists the jobs; the plugin keeps the durable records.
+      function psInitSubmitTab() {
+        if (kgDevMode) { return; }
+        kgListen();
+        window.PluginJobs.list(PLUGIN_ID)
+          .catch(function (e) { kgConn.fail(e); return []; })
+          .then(function (list) {
+            var running = (list || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
+            var runningPredict = running.filter(function (j) {
+              return /inference|val check/i.test(((j.progress || {}).label || '') + (j.subtitle || ''));
+            })[0];
+            var runningSubmit = running.filter(function (j) {
+              return /submitting/i.test(((j.progress || {}).label || '') + (j.subtitle || ''));
+            })[0];
+            return API.authFetch(PLUGIN_ROOT + '/submit/state')
+              .then(function (r) { return r.json(); })
+              .catch(function (e) { kgConn.fail(e); return { state: 'empty' }; })
+              .then(function (state) {
+                kgSubmitState = state || kgSubmitState;
+                var ps = state.predict || {};
+                if (runningPredict && !psPredicting) {
+                  psPredictJobId = runningPredict.id;
+                  psPredicting = true;
+                  psCheckPredictReady();
+                  el('ps-spinner').style.display = 'inline-block';
+                  el('ps-state').textContent = 'Predicting… (safe to navigate away)';
+                  var job = kgJobRecord(runningPredict.id, 'predict');
+                  if (ps.job_id === runningPredict.id) {
+                    job.created_at = ps.created_at || job.created_at;
+                    if (ps.log && ps.log.length && !job.log.length) { job.log = ps.log.slice(); }
+                  }
+                  psRenderProgress(job);
+                  psShowLog(job.log);
+                  kgTrack(job);
+                  renderPipeline();
+                  return;
+                }
+                if (runningSubmit && !psSubmitting) {
+                  psSubmitJobId = runningSubmit.id;
+                  psSubmitting = true;
+                  el('ps-submit-spinner').style.display = 'inline-block';
+                  el('ps-submit-state').textContent = 'Submitting…';
+                  kgTrack(kgJobRecord(runningSubmit.id, 'kaggle_submit'));
+                  // fall through: the record still supplies step 1
+                }
+                if (state.state === 'predicted' || state.state === 'submitted') {
+                  psRenderRevisit(state);
+                } else if (state.state === 'stale' || state.state === 'failed') {
+                  // An interrupted or failed last prediction: the form, with the reason above it.
+                  if (ps.error) { psRenderPredictFail(kgErrorText(ps.error), false); }
+                  if (ps.log && ps.log.length) { psShowLog(ps.log); }
+                }
+                renderPipeline();
+              });
+          });
+      }
+
+      // Predict + Submit forced states (?kgdev=submit-…): static fixtures, no fetches, no job side
+      // effects. Numbers derive from the served manifest (the literal census stays clean).
+      function psDevForce(mode) {
+        var m, names, nC, testCount, id, base, kitDir, testDir, devRun, runUrl, weights, sha, csvPath, slug, limit, valAcc;
+        function derive() {
+          m = kgManifest || {};
+          names = (m.classes || []).map(function (c) { return c.name; });
+          nC = names.length || 1;
+          testCount = ((m.splits || {}).test || {}).count || 0;
+          id = (m.competition || {}).id || 'competition';
+          slug = (m.competition || {}).slug || 'competition';
+          limit = (m.submission || {}).daily_limit || 0;
+          base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/';
+          kitDir = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\' + id + '\\v1\\starter_kit';
+          testDir = kitDir + '\\data\\test';
+          devRun = id + '_run_20260929_090000';
+          runUrl = base + 'runs/' + devRun;
+          weights = runUrl + '/model/best.pt';
+          sha = '5f8a1c0e7b3d92a46e1f0c3b8d7a5e2f91c4b6d8e0a2f4c6b8d0e2a4c6e8f0a1';
+          csvPath = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\predictions\\' +
+                    devRun + '\\submission_20260930_141530.csv';
+          valAcc = 57.58;
+        }
+        derive();
+        var now = Date.now() / 1000;
+
+        function RUNS() {
+          return [
+            { job_id: 'devtrain1', run_name: devRun, run_folder: devRun, run_url: runUrl, status: 'completed', usable: true,
+              provenance_ok: true, best_checkpoint_sha256: sha, epochs_completed: 10, best_epoch: 9, best_val_accuracy: valAcc,
+              created_at: now - 86400, weights: weights, contract: { backbone: (m.model || {}).backbone, seed: 42 } },
+            { job_id: 'devtrain0', run_name: id + '_run_20260928_183000', run_folder: id + '_run_20260928_183000', status: 'failed',
+              usable: false, provenance_ok: false, created_at: now - 172800, reason: 'failed: CUDA out of memory' }
+          ];
+        }
+        function CHECKS(opts) {
+          var o = opts || {};
+          var list = [
+            { label: 'best checkpoint sha256 matches the train record and the Run', ok: true, group: 'Checkpoint', detail: sha.slice(0, 12) + '… recorded · on disk · on the Run' },
+            { label: fmtCount(testCount) + ' test images match the kit’s files.json', ok: true, group: 'Test inputs', detail: fmtCount(testCount) + ' verified by sha256' },
+            { label: 'checkpoint reproduces the recorded val accuracy', ok: true, group: 'Checkpoint', detail: valAcc.toFixed(2) + ' % recorded · ' + valAcc.toFixed(2) + ' % now' },
+            { label: 'columns are image_id, prediction, confidence', ok: true, detail: "got ['image_id', 'prediction', 'confidence']" },
+            { label: 'exactly ' + fmtCount(testCount) + ' rows (one per test image)', ok: !o.rowsFail, detail: 'got ' + fmtCount(o.rowsFail ? testCount - 2 : testCount) }
+          ];
+          if (o.rowsFail) { return list; }
+          return list.concat([
+            { label: 'no duplicated image_id rows', ok: true, detail: '0 duplicates' },
+            { label: 'image_id set and order equal to sample_submission.csv', ok: true, detail: 'aligned' },
+            { label: 'prediction is an integer class id 0–' + (nC - 1), ok: true, detail: 'all valid' },
+            { label: 'confidence is finite and in [0, 1]', ok: true, detail: 'all valid' },
+            { label: 'no missing values', ok: true, detail: 'none' }
+          ]);
+        }
+        function SANITY(healthy) {
+          var per = {}, skewed = [];
+          names.forEach(function (n, i) {
+            per[n] = healthy ? Math.round(testCount / nC) + ((i * 7) % 11) - 5 : (i === 0 ? Math.round(testCount * 0.62) : Math.round(testCount * 0.38 / Math.max(nC - 1, 1)));
+          });
+          if (!healthy && names.length) { skewed = [names[0] + ' 62 %']; }
+          var out = { images: testCount, mean_confidence: healthy ? 0.83 : 0.41, low_confidence: healthy ? Math.round(testCount * 0.12) : Math.round(testCount * 0.61),
+                      low_confidence_threshold: 0.5, per_class: per, skew_low_pct: 5, skew_high_pct: 50 };
+          if (!healthy) {
+            out.skewed = skewed;
+            out.warning = 'The predicted-class distribution is skewed (' + skewed.join(' · ') + ' of ' + fmtCount(testCount) +
+              ' predictions; expected between 5 % and 50 % per class). Are these fully-trained weights? (Submitting is still fine.)';
+          }
+          return out;
+        }
+        function SCORE(v) { return { kind: 'val', value: v, recorded: valAcc, delta: +Math.abs(v - valAcc).toFixed(2), ok: true }; }
+        function predictJob(opts) {
+          return {
+            id: 'devpredict1', status: 'completed', created_at: now - 400, finished_at: now - 160,
+            checks: opts.checks,
+            facts: { csv_path: csvPath, sanity: opts.sanity, run_name: devRun, local_score: opts.score }
+          };
+        }
+        function CONN(state, used) {
+          var c = { state: state, username: 'participant', daily_limit: limit, slug: slug,
+                    competition_url: 'https://www.kaggle.com/competitions/' + slug };
+          if (typeof used === 'number') { c.submissions_used_today = used; }
+          return c;
+        }
+
+        function gateGreen() {
+          psRenderTestLocked({ test_dir: testDir, count: testCount });
+          psGate = { ok: true, info: { count: testCount } };
+          psRenderGate({ ok: true, count: testCount });
+        }
+        function loadDevRuns(selectFirst, runs) {
+          psFillRuns(runs || RUNS(), '');
+          if (selectFirst) {
+            var first = psRuns.filter(function (r) { return r.usable; })[0];
+            el('ps-run').value = first ? first.job_id : '';
+            psRenderRunNote();
+          }
+        }
+        function results(opts) {
+          psResultsShown = false;
+          psRenderResults(predictJob(opts), false);
+          el('ps-predict-btn').innerHTML = KG_BTN_PREDICT_RERUN;
+          psSetBasis({ job_id: 'devpredict1', run_name: devRun, local_score: opts.score, when: now - 160, persisted: false });
+        }
+
+        function apply() {
+          derive();
+          kgImportState = { state: 'success', record: { kit_dir: kitDir } };
+          kgRenderGates();
+          el('ps-form').style.display = '';
+          el('ps1-banner').innerHTML = '';
+          el('ps-banner').innerHTML = '';
+          el('ps-progress').innerHTML = '';
+          el('ps-results').innerHTML = '';
+          el('ps-state').textContent = '';
+          el('ps-submit-state').textContent = '';
+          el('ps-spinner').style.display = 'none';
+          el('ps-submit-spinner').style.display = 'none';
+          el('ps-predict-btn').innerHTML = KG_BTN_PREDICT;
+          psResultsShown = false;
+          psPredicting = false;
+          psSubmitting = false;
+          psLogReset();
+          psApplyManifest();
+          psSetBasis(null);
+          psRenderConnState(CONN('ready', 2));
+
+          if (mode === 'submit-state1') {
+            psFillRuns([], '');
+            psGate = null;
+            psRenderTestLocked(null);
+            psRenderGate(null);
+          } else if (mode === 'submit-gated') {
+            loadDevRuns(true);
+            gateGreen();
+          } else if (mode === 'submit-gate-missing') {
+            loadDevRuns(true);
+            psRenderTestLocked({ test_dir: testDir, count: 0 });
+            psGate = null;
+            psRenderGate({ ok: false, kit_dir: kitDir, headline: '' });
+          } else if (mode === 'submit-provenance-blocked') {
+            // D2: a run whose provenance check failed at training time is listed, disabled.
+            var blocked = RUNS();
+            blocked.splice(1, 0, { job_id: 'devtrainp', run_name: id + '_run_20260929_120000', run_folder: id + '_run_20260929_120000',
+              status: 'completed', usable: false, provenance_ok: false, created_at: now - 100000, reason: 'provenance check failed' });
+            loadDevRuns(true, blocked);
+            el('ps-run').value = 'devtrainp';
+            el('ps-run').options[2].disabled = false;   // the fixture shows the note; the job would refuse it
+            psRenderRunNote();
+            gateGreen();
+          } else if (mode === 'submit-checkpoint-changed') {
+            var changed = RUNS();
+            changed.splice(1, 0, { job_id: 'devtrainc', run_name: id + '_run_20260929_100000', run_folder: id + '_run_20260929_100000',
+              status: 'completed', usable: false, provenance_ok: true, created_at: now - 120000,
+              reason: 'best checkpoint changed on disk (sha256 mismatch)' });
+            loadDevRuns(true, changed);
+            el('ps-run').value = 'devtrainc';
+            el('ps-run').options[2].disabled = false;
+            psRenderRunNote();
+            gateGreen();
+          } else if (mode === 'submit-inference') {
+            loadDevRuns(true);
+            gateGreen();
+            psPredicting = true;
+            el('ps-spinner').style.display = 'inline-block';
+            el('ps-state').textContent = 'Predicting… (safe to navigate away)';
+            psRenderProgress({ status: 'running', created_at: now - 41,
+                               progress: { phase: 'test', images: Math.round(testCount * 0.44), total_images: testCount, percent: 62 } });
+            psShowLog(['Run: ' + devRun + ' (' + runUrl + ')', 'Checkpoint: ' + weights + ' — sha256 ' + sha.slice(0, 12) + '… matches the train record and the Run',
+                       'Test images: ' + fmtCount(testCount) + ' verified against files.json under ' + testDir, 'Device: cuda (auto)',
+                       'PASS checkpoint reproduces the recorded val accuracy — ' + valAcc.toFixed(2) + ' % recorded · ' + valAcc.toFixed(2) + ' % now']);
+          } else if (mode === 'submit-results' || mode === 'submit-results-val') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+          } else if (mode === 'submit-results-low') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(false), score: SCORE(valAcc) });
+          } else if (mode === 'submit-checks-fail') {
+            loadDevRuns(true);
+            gateGreen();
+            psRenderResults({ id: 'devpredict1', status: 'failed', checks: CHECKS({ rowsFail: true }), facts: {} }, false);
+            psRenderPredictFail('Submission must contain exactly ' + fmtCount(testCount) + ' rows; got ' + fmtCount(testCount - 2) +
+                                '. Re-run Import (tab 1) to rebuild the test images, then predict again.', false);
+            el('ps-predict-btn').innerHTML = KG_BTN_PREDICT_RERUN;
+          } else if (mode === 'submit-nokaggle') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psRenderConnState({ state: 'no_credentials', help: 'Kaggle credentials not found. Create an API token on kaggle.com (Settings -> API -> Create New Token) and save it to ~/.kaggle/access_token on the machine running the compute service. The generated submission.csv is saved locally, so you can always upload it manually on the competition\'s Submit page.' });
+          } else if (mode === 'submit-notjoined') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psRenderConnState(CONN('not_joined'));
+          } else if (mode === 'submit-limit') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psRenderConnState(CONN('ready', limit));
+          } else if (mode === 'submit-success') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psLastSubmission = { status: 'submitted', ref: '54861736', kaggle: { status: 'COMPLETE', public_score: 0.5733 } };
+            psRenderSubmitSuccess(psLastSubmission, false);
+          } else if (mode === 'submit-rejected') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psLastSubmission = { status: 'submitted', ref: '54861737', kaggle: { status: 'ERROR', error_description: 'Predictions must be 0 or 1. Found invalid: [2, 3, 4, 5]' } };
+            psRenderSubmitSuccess(psLastSubmission, false);
+          } else if (mode === 'submit-fail') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psRenderSubmitFail('Kaggle rejected the submission: 400 Bad Request (submission file exceeds the allowed size).', false);
+          } else if (mode === 'submit-kaggle-error') {
+            loadDevRuns(true);
+            gateGreen();
+            results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
+            psRenderSubmitSoft({ status: 'limit_reached', reason: 'Daily submission limit reached (' + limit + '/day), resets midnight UTC. Your CSV is saved and validated. Submit it tomorrow from here, or upload it manually on the competition\'s Submit page.' }, false);
+          } else if (mode === 'submit-revisit') {
+            loadDevRuns(true);
+            gateGreen();
+            psRenderRevisit({
+              state: 'submitted',
+              predict: { job_id: 'devpredict1', run_name: devRun, csv_path: csvPath, local_score: SCORE(valAcc),
+                         sanity: SANITY(true), checks: CHECKS(), finished_at: now - 7200 },
+              submission: { predict_job_id: 'devpredict1', status: 'submitted', ref: '54861736', finished_at: now - 7000,
+                            kaggle: { status: 'COMPLETE', public_score: 0.5733 } }
+            });
+          }
+        }
+        showTab('submit');
+        apply();
+        configLoaded.then(function () { setTimeout(apply, 0); });
+      }
+
       // ── Dev affordance: ?kgdev=<state> renders each UI state from static fixtures for
       // screenshotting — no fetches, no job side effects (ExDark's kgDevForce, adapted to our
       // states). Fixture data derives from the SERVED manifest (class names, split sizes, shard
@@ -4234,7 +5490,7 @@
       // a note. The ready-recalc functions OR in kgDevMode so no later recalc can re-enable, and
       // the click handlers guard on it as the hard backstop.
       function kgDevDisableActions() {
-        ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn'].forEach(function (id) {
+        ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn', 'ps-predict-btn', 'ps-submit-btn'].forEach(function (id) {
           var btn = el(id);
           btn.disabled = true;
           var note = document.createElement('span');
@@ -4247,6 +5503,7 @@
       function kgDevForce(mode) {
         kgDevDisableActions();
         if (mode && mode.indexOf('train-') === 0) { trDevForce(mode); return; }
+        if (mode && mode.indexOf('submit-') === 0) { psDevForce(mode); return; }
         var devDest = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\competition';
         var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
         var devDlKit = devDest + '\\v1\\starter_kit';
@@ -4483,6 +5740,7 @@
           kgInitImportTab();
           kgRenderGates();
           trInitTrainTab();
+          psInitSubmitTab();
         });
       }
     })();
