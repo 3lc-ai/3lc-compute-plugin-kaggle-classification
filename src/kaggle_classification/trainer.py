@@ -816,9 +816,37 @@ def _backfill_run(r: dict[str, Any]) -> bool:
     return True
 
 
+def current_project() -> str:
+    """The project the run lists are scoped to: the import record's (the project the participant
+    last imported into, e.g. after Start over). Empty without an import record = no filter."""
+    return str((importer.read_record() or {}).get("project_name") or "")
+
+
+def run_project(r: dict[str, Any]) -> str:
+    """A run's project: the recorded ``project_name``, else the segment before ``runs`` in its URL
+    (``<root>/<project>/runs/<name>``)."""
+    name = str(r.get("project_name") or "")
+    if name:
+        return name
+    parts = [p for p in str(r.get("run_url") or "").replace("\\", "/").split("/") if p]
+    for i in range(len(parts) - 1, 0, -1):
+        if parts[i] == "runs":
+            return parts[i - 1]
+    return ""
+
+
+def runs_in_project(runs: list[dict[str, Any]], project: str | None = None) -> list[dict[str, Any]]:
+    """The runs of ``project`` (default: ``current_project()``); no import record means no filter."""
+    project = current_project() if project is None else project
+    if not project:
+        return list(runs)
+    return [r for r in runs if run_project(r) == project]
+
+
 def train_state() -> dict[str, Any]:
     """``GET /train/state``: the current record (orphan-checked), the finished-run history for the
-    ETA and the run list, the best checkpoint re-verified on disk. Torch-free."""
+    ETA (all projects: a device fact) and ``project_runs`` (the session project's runs: the Previous
+    runs list), the best checkpoint re-verified on disk. Torch-free."""
     state = read_state()
     current = state.get("current") if isinstance(state.get("current"), dict) else None
     if current and current.get("id"):
@@ -833,6 +861,8 @@ def train_state() -> dict[str, Any]:
         "state": (current or {}).get("status") or "empty",
         "current": current,
         "runs": runs,
+        "project": current_project(),
+        "project_runs": runs_in_project(runs),
         "device_class": _device_probe.get("device_class"),
         "device_probe": _device_probe.get("state", "idle"),
         "umap_prewarm": prewarm_status(),

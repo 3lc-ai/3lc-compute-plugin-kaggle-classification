@@ -93,6 +93,28 @@ def test_list_runs_includes_the_running_current_record(store, tmp_path, run_para
     assert rows[1]["usable"] is True and rows[1]["run_folder"] == "r1" and rows[1]["best_val_accuracy"] == 57.58
 
 
+def test_run_lists_are_scoped_to_the_import_records_project(store, tmp_path, run_params_match):
+    """After Start over into a new project, Train's Previous runs and Predict's picker list only that
+    project's runs; the ETA history stays global; the gate still resolves any plugin run by id."""
+    old = _entry(tmp_path, id="o1", run_name="old", project_name="intel-scene")
+    new = _entry(tmp_path, id="n1", run_name="new", project_name="intel-scene-demo")
+    # A summary without project_name: the project comes from the run URL (<root>/<project>/runs/<name>).
+    legacy = _entry(tmp_path, id="l1", run_name="legacy")
+    legacy["run_url"] = "C:/Users/p/AppData/Local/3LC/3LC/projects/intel-scene/runs/legacy"
+    _store_runs(store, [new, old, legacy])
+    assert trainer.run_project(legacy) == "intel-scene" and trainer.run_project(new) == "intel-scene-demo"
+    # No import record: no filter.
+    assert [r["job_id"] for r in predictor.list_runs()] == ["n1", "o1", "l1"]
+    store.save({"import_state": {"project_name": "intel-scene-demo", "tables": {"train": {"url": "x"}}}})
+    assert [r["job_id"] for r in predictor.list_runs()] == ["n1"]
+    st = trainer.train_state()
+    assert st["project"] == "intel-scene-demo" and [r["id"] for r in st["project_runs"]] == ["n1"]
+    assert [r["id"] for r in st["runs"]] == ["n1", "o1", "l1"]
+    store.save({"import_state": {"project_name": "intel-scene", "tables": {"train": {"url": "x"}}}})
+    assert [r["job_id"] for r in predictor.list_runs()] == ["o1", "l1"]
+    assert predictor.resolve_checkpoint({"train_job_id": "n1"})["run_name"] == "new"
+
+
 def test_train_job_id_wins_and_a_supplied_path_is_ignored(store, tmp_path, run_params_match):
     """THE bypass case (ExDark's test_host_weights_gate): a real id plus an arbitrary path must load
     the record's checkpoint, never the path."""

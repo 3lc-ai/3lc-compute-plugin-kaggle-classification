@@ -23,6 +23,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   Train pid rule (`GET /submit/state`); the append-only ledger (`ledger.jsonl` under the plugin home)
   with an entry per prediction and per submission (run URL, checkpoint hashes, manifest provenance,
   CSV sha256, Kaggle ref and read-back status); `?kgdev=submit-…` fixtures for every Predict state.
+- Train's Previous runs and Predict's run picker list only the runs of the import record's project
+  (`GET /train/state` serves `project_runs`; the duration estimate keeps every run).
 - The bundled manifest's `competition.slug` is `3lc-scene-classification-challenge` (the event
   competition); `cdn/` regenerated.
 

@@ -3929,7 +3929,9 @@
       function trRenderRunsPanel() {
         var box = el('tr-runs');
         if (!box) { return; }
-        var runs = (kgTrainState.runs || []).filter(function (r) { return r && r.id; });
+        // The session project's runs only (project_runs, served by GET /train/state); the ETA history
+        // keeps reading every run (a device fact).
+        var runs = (kgTrainState.project_runs || kgTrainState.runs || []).filter(function (r) { return r && r.id; });
         box.hidden = !runs.length;
         if (!runs.length) { el('tr-run-card').innerHTML = ''; return; }
         var sel = el('tr-runs-select');
@@ -4027,7 +4029,7 @@
       }
       el('tr-runs-select').addEventListener('change', function () {
         trRunsSelected = el('tr-runs-select').value;
-        trRenderRunCard((kgTrainState.runs || []).filter(function (r) { return r.id === trRunsSelected; })[0]);
+        trRenderRunCard((kgTrainState.project_runs || kgTrainState.runs || []).filter(function (r) { return r.id === trRunsSelected; })[0]);
       });
 
       // ── Tab-open resolution (Train) ──────────────────────────────────

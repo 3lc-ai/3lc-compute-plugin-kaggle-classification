@@ -161,9 +161,11 @@ def assess_run(r: dict[str, Any], *, check_run: bool = True) -> tuple[bool, str]
 
 
 def list_runs() -> list[dict[str, Any]]:
-    """``GET /runs``: the Run picker's rows, newest first, with ``usable`` + ``reason``."""
+    """``GET /runs``: the Run picker's rows, newest first, with ``usable`` + ``reason`` — only the runs
+    of the import record's project (``trainer.runs_in_project``). The gate (``resolve_checkpoint``)
+    still resolves any plugin run by id; the filter is what the picker offers."""
     out = []
-    for r in run_entries():
+    for r in trainer.runs_in_project(run_entries()):
         usable, reason = assess_run(r)
         out.append({
             "job_id": r.get("id"),

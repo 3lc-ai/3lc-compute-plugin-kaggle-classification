@@ -191,7 +191,9 @@ def test_fragment_is_the_exdark_train_tab():
         "if (facts.device_label) { return '· ' + facts.device_label; }", "(forced in Advanced)",
         "The device is never copied",
         # Item 2: the estimate's inputs are keyed by the resolved device class; the in-run terms follow the run's.
-        "function trStatsFor", "r.device_class === cls;", "function trAwaitDeviceProbe", "function trRunEtaTerms",
+        "function trStatsFor", "r.device_class === cls;",
+        # Session 4 closeout: Previous runs lists the session project's runs only (project_runs).
+        "var runs = (kgTrainState.project_runs || kgTrainState.runs || []).filter(", "function trAwaitDeviceProbe", "function trRunEtaTerms",
         "Recent ' + clsText + ' runs averaged",
         # Item 3: the config load retries while the worker starts and never renders an empty form.
         "function kgStartupError", "name === 'AbortError'", "function kgCacheConfig", "function kgCachedConfig",
