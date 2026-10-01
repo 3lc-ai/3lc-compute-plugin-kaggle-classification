@@ -383,3 +383,93 @@ call (`competition_submissions` once, a few seconds after `competition_submit`);
 
 Everything else in §1 is verbatim or falls under an allowed difference. The kit-side checkpoint defect
 (§4, last row) is a note for the kit's owner, not a plugin decision.
+
+## 10. Implementation (2026-10-01, `7c3904b` + `71568a4`)
+
+What shipped, module by module, against §1/§8/§9:
+
+- **`predictor.py`** — `list_runs` / `assess_run` (the picker's `usable` + `reason`: still training ·
+  failed · interrupted · no best checkpoint saved · best checkpoint missing on disk · provenance check
+  failed · best checkpoint changed on disk (sha256 mismatch) · the Run's record disagrees with the train
+  record); `resolve_checkpoint` (THE gate: `train_job_id` wins, a path in the body is ignored, a bare
+  path is refused, the file must exist, recorded = on disk = on the Run, `provenance_ok` must be true;
+  cancelled-with-best allowed); `test_inputs` (every `sample_submission.csv` id's image under
+  `<kit_dir>/data/test` matched to `files.json` by size + sha256, ≈ 4 s for 1,800 files, cached per
+  path/size/mtime); the val check over the LOCKED val revision (`VAL_TOLERANCE_PP = 0.25`; a miss fails
+  the job); the test pass (val transform, `build_model`, `weights_only` strict, eval, batch 32, workers
+  `default_workers()`); the CSV under `plugin_home()/predictions/<Run folder>/submission_<stamp>.csv`
+  (LF, UTF-8, no BOM, six decimals, the written file is what is checked and hashed; `.INVALID.csv` on a
+  failed check); the seven format checks (§3) plus three more rows the panel shows under Checkpoint /
+  Test inputs; the distribution card (D5); the durable `predict_state` / `submit_state` records with the
+  Train pid rule; `predict_submit_state` (`empty / running / predicted / submitted / stale / failed`,
+  the CSV re-verified by sha256); `csv_path_for` (record, then the ledger); `run_kaggle_submit`.
+- **`kaggle_client.py`** — presence check (`KAGGLE_API_TOKEN`, `~/.kaggle/access_token[.txt]`,
+  `<KAGGLE_CONFIG_DIR|~/.kaggle>/kaggle.json`, `KAGGLE_USERNAME`+`KEY`), `authenticated_api` (catches
+  `SystemExit`), `connection`, `submit`, `classify_error`, `read_back`. **Found at G3:** on the
+  unlaunched event competition `ListSubmissions` answers **403** (ExDark's LAUNCH-VERIFY note, confirmed),
+  while `GetSubmission(ref)` and `GetSubmissionLimits` both answer — so the D12 read-back goes by ref and
+  the used-today counter comes from the limits call (`num_today`, `num_allowed_now`); the list is the
+  fallback for both (`71568a4`).
+- **`ledger.py`** — `append` / `read` / `find` over `ledger.jsonl` (append-only; per-entry `ts`).
+- **Routes** `GET /runs`, `GET /predict/preflight`, `GET /submit/state`, `GET /kaggle/connection`,
+  `GET /submissions/{job_id}/download`; `_meta.predict_state` on `/config` (the stepper's "submit
+  done"). Job kinds `predict`, `kaggle_submit` in `run_job`.
+- **The fragment** — the §1 table as written under D1–D12: the Run picker (`run_folder · N epochs · best
+  val accuracy 57.58 % · Sep 30`, unusable rows disabled with the reason, the note with the trained
+  checkpoint's sha), the locked **Test images** row + gate (idle / checking / verified / missing with
+  Go to Import), Device (mirrors the session device with Train's field), the progress block
+  ("Val check: n / 1,200 images" then "Inference: n / 1,800 images", one bar), the grouped checks
+  (Checkpoint · Test inputs · Submission format), the **Predicted-class distribution** card, the hero
+  ("66.67 % · Val accuracy · Your locked validation split, not the leaderboard."), the CSV row, the
+  basis line, the connection card (manifest limit; "N of 100 submissions left today" when the limits
+  call answers), the locked **Competition** row, the message field, the confirm ("1 of your 100 daily
+  submissions"), the success banner + the D12 line ("Kaggle scored it: public score 0.65666" /
+  "Kaggle rejected it. <error_description>" / "Kaggle's verdict could not be read back"), the soft
+  callouts, the failure banners with Copy diagnostics, revisit + "New prediction", tab-open
+  resolution through `PluginJobs.list` + `/submit/state`. Fixtures: `submit-state1`, `submit-gated`,
+  `submit-gate-missing`, `submit-provenance-blocked`, `submit-checkpoint-changed`, `submit-inference`,
+  `submit-results` (= `submit-results-val`), `submit-results-low`, `submit-checks-fail`,
+  `submit-nokaggle`, `submit-notjoined`, `submit-limit`, `submit-success`, `submit-rejected`,
+  `submit-fail`, `submit-kaggle-error`, `submit-revisit` — all 17 rendered in the harness without a
+  console error (2026-10-01).
+- **Tests** — `tests/test_predictor.py` (46): the gate (id wins / bare path / tampered / Run disagrees /
+  provenance blocked / cancelled allowed), the seven checks on synthetic rows, the CSV bytes, the
+  distribution card, the test-images gate on a synthetic kit (ok / tampered / missing / idle), the
+  revisit resolution, the ledger, the client (credentials absent never raise `SystemExit`, the sources,
+  `classify_error`, the read-back by ref and by list, the submit outcomes, the connection states), the
+  submit job's records + ledger + write-back, and the heavy end-to-end predict on the synthetic kit
+  after a real one-epoch run (10/10 checks, the val check reproduces the recorded accuracy exactly on
+  CPU, a tampered `best.pt` and a flipped `provenance_ok` are refused, an unreadable image fails D11).
+
+Deviations from the mirror table, all small: the CSV directory is the **Run folder's** name (unique on
+disk; equals the run name unless tlc suffixed it); the checks panel carries **ten** rows (the three-way
+sha, the test inputs, the val check + the seven format checks) and says "checks passed", not "format
+checks"; Kaggle's `private_score` is kept in the **ledger** only (it is what the API returned to the
+host account) and never rendered.
+
+## 11. Gates (2026-10-01, laptop, `3lc-hub-11`, catalog install pinned to `7c3904b` then `71568a4`)
+
+Driven by `../3lc-hub-11/gates_session4.py` through the in-process host (the service stopped, the
+redirected home, the regenerated `cdn/` served locally on :8765 as the manifest remote so the new slug
+is the one in force — the dev bucket still carried the TBC slug). The run used: `recheck_gpu`
+(`8c77fefd`, cuda, recorded best val accuracy 66.67 %, sha `b0d7efc6e7ab…`). RTX 3070 Ti Laptop GPU.
+
+| Gate | Result |
+|---|---|
+| G0 | manifest `3lc-scene-classification-challenge`, `daily_limit` 100; 15 runs listed, 13 usable, `g5c_restart` disabled "interrupted"; connection card **ready as `rishikeshjadhav3lc`** (Kaggle's limit 100 = the manifest's), the test-images gate 1,800 / 1,800 verified |
+| G1 | **PASS** — 38 s end to end on cuda (auto): val check 1,200 images, **66.67 % recorded · 66.67 % now** (delta 0.00), test pass 1,800 images; 10/10 checks; CSV 1,800 rows in `sample_submission.csv` order, header exact, six decimals, LF, no BOM, sha256 on disk = the record's; distribution buildings 257 · forest 310 · glacier 354 · mountain 420 · sea 141 · street 318, mean confidence 0.613, 642 below 0.5, no skew warning (every class within 5–50 %) |
+| G2 | **PASS** — a tampered `best.pt` (one byte appended): the picker says "best checkpoint changed on disk (sha256 mismatch)", the job fails with the SHA_MISMATCH sentence; a foreign file of the same size at the checkpoint path: the same refusal; `provenance_ok` flipped to false on the record: "provenance check failed" / "failed a provenance check at training time…"; a bare `weights_path`: "Direct weights files are not accepted…"; one test image corrupted (same size): the gate reports 1 mismatch and the job refuses "could not be verified … Re-run Import"; the G1 record stayed the revisit basis through all five refusals; no ledger entry for any refused job |
+| G3 | **PASS** — submission **56756858** accepted ("Successfully submitted to 3LC Scene Classification Challenge"), read back by ref 10 s later: **COMPLETE, public score 0.65666** (private 0.62666 in the ledger), `error_description` empty — so **D10 is settled**: the real metric accepts classes 0–5. Local val accuracy 66.67 % vs public 65.67 %. The first run's submission **56756714** scored the same (read back out of band after the 403 finding). Used today after G3: 2 of 100 (`GetSubmissionLimits`) |
+| G4 | **PASS** — `GET /submissions/<job>/download` 200 `text/csv`, `Content-Disposition: attachment; filename="submission_….csv"`, 50,431 bytes, sha256 = the record's; an unknown job 404. The daily-limit and API-error paths are the mocked cases in `tests/test_predictor.py` (limit_reached with "(100/day)", not_joined from the pre-probe without spending an attempt, a 500 → failed job, no credentials → skipped) |
+| G5 | **PASS** — `ledger.jsonl` under the plugin home: one `predict` entry (run URL, checkpoint path + the three equal sha256s, the contract from the Run, `test_inputs {count 1800, files_json_sha256, sample_submission_sha256}`, device, `csv {path, sha256, rows}`, the ten checks, the distribution, the val score, the manifest provenance `remote ec0c60cf45f0…`) and one `submit` entry per submission (`csv_sha256`, slug, message, `kaggle {status submitted, ref, response, submitted_at, read_back_* (COMPLETE, 0.65666, …)}`) |
+
+Not reproducible live, covered by the unit test instead: D11 proper (an image that passes the sha gate
+but fails to decode) — the gate catches any byte change first, so only a decoder fault reaches the
+loader; `test_an_unreadable_test_image_fails_the_job_after_the_gate` pins the loud failure.
+
+**For the demo (2026-10-02):** the compute service resolves the manifest remote → cache → bundled, so
+`kaggle/intel-scene/manifest.json` (2,967 B, `ec0c60cf…bdfcb`) must be uploaded to the dev bucket
+before the Hub is opened against `https://competitions.dev.3lc.ai`, or the bucket's old document (the
+TBC slug) wins over the bundled one. The credentials the worker reads are the compute host's:
+`3lc-hub-11/home/.kaggle/access_token` on this laptop (`USERPROFILE` is redirected; the plugin only
+checks the file exists).

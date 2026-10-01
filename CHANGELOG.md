@@ -15,8 +15,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   CSV in `sample_submission.csv` order with six-decimal confidence, the seven format checks (the file
   kept as `.INVALID.csv` on failure), the predicted-class distribution card (warns below 5 % / above
   50 % per class), the Kaggle connection card (credentials detected on the compute host, never read;
-  the manifest's daily limit), the locked competition slug, Submit with one status read-back
-  (Kaggle's public score or error description on the banner), the soft outcomes (limit reached /
+  the manifest's daily limit, "N of 100 left today" from GetSubmissionLimits), the locked competition
+  slug, Submit with one status read-back by ref (Kaggle's public score or error description on the
+  banner; ListSubmissions 403s on the unlaunched competition, so it is the fallback only), the soft outcomes (limit reached /
   not joined / no credentials) and the CSV download fallback (`GET /submissions/{job}/download`).
 - Job kinds `predict` and `kaggle_submit`; durable `predict_state` / `submit_state` records with the
   Train pid rule (`GET /submit/state`); the append-only ledger (`ledger.jsonl` under the plugin home)
