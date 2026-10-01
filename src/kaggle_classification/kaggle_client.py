@@ -14,10 +14,12 @@ kaggle 2.x authenticates inside ``authenticate()`` and, when nothing is found, p
 calls ``exit(1)`` — a ``SystemExit`` inside the plugin worker. ``credentials_present`` runs first and
 ``authenticated_api`` also catches ``SystemExit``, so the worker never dies on a missing token.
 
-Calls: ``get_competition`` (entered flag, Kaggle's daily limit, title), ``competition_submissions``
-(the used-today counter and the D12 read-back), ``competition_submit``. The slug always comes from
-the manifest (D8); the daily limit the UI shows is the manifest's (D7), Kaggle's refusal is
-authoritative. Import-light: the client is imported inside functions.
+Calls: ``get_competition`` (entered flag, Kaggle's daily limit, title), ``get_submission_limits``
+(the used-today counter; ``competition_submissions`` is the fallback — the list call answers 403 on
+an unlaunched competition, verified 2026-10-01), ``competition_submit``, ``get_submission`` (the D12
+read-back by ref; the list is its fallback). The slug always comes from the manifest (D8); the daily
+limit the UI shows is the manifest's (D7), Kaggle's refusal is authoritative. Import-light: the
+client is imported inside functions.
 """
 
 from __future__ import annotations
@@ -169,9 +171,40 @@ def list_submissions(api: Any, slug: str, page_size: int = 20) -> list[dict[str,
     return [_submission_dict(s) for s in subs if s is not None]
 
 
+def submission_limits(api: Any, slug: str) -> dict[str, Any]:
+    """GetSubmissionLimits: ``num_today`` / ``num_allowed_now`` / ``num_total`` — answers on an
+    unlaunched competition where ListSubmissions does not (verified 2026-10-01)."""
+    from kagglesdk.competitions.types.competition_api_service import ApiGetSubmissionLimitsRequest
+
+    with api.build_kaggle_client() as client:
+        req = ApiGetSubmissionLimitsRequest()
+        req.competition_name = str(slug).strip()
+        lim = client.competitions.competition_api_client.get_submission_limits(req)
+    return {
+        "num_today": int(getattr(lim, "num_today", 0) or 0),
+        "num_allowed_now": int(getattr(lim, "num_allowed_now", 0) or 0),
+        "num_total": int(getattr(lim, "num_total", 0) or 0),
+        "limited_by_total": bool(getattr(lim, "limited_by_total", False)),
+    }
+
+
+def get_submission(api: Any, ref: str) -> dict[str, Any]:
+    """GetSubmission by ref: the status, scores and error description of ONE submission."""
+    from kagglesdk.competitions.types.competition_api_service import ApiGetSubmissionRequest
+
+    with api.build_kaggle_client() as client:
+        req = ApiGetSubmissionRequest()
+        req.ref = int(ref)
+        return _submission_dict(client.competitions.competition_api_client.get_submission(req))
+
+
 def submissions_used_today(api: Any, slug: str) -> int | None:
-    """The proactive counter. Returns None on any error (the list call is known to 403 on some
-    private competitions); the card then shows "N submissions/day"."""
+    """The proactive counter: the limits call first, the list (UTC-dated) as the fallback. Returns
+    None when neither answers; the card then shows "N submissions/day"."""
+    try:
+        return submission_limits(api, slug)["num_today"]
+    except Exception:
+        pass
     try:
         from datetime import datetime
 
@@ -225,16 +258,21 @@ def classify_error(exc: BaseException) -> str:
 def read_back(api: Any, slug: str, ref: str, *, schedule: tuple[float, ...] = READ_BACK_SCHEDULE_S,
               sleep: Any = time.sleep) -> dict[str, Any]:
     """D12: Kaggle's own verdict on the submission — ``status`` (PENDING / COMPLETE / ERROR), the
-    public score and the error description — read from the submissions list, waiting a bounded time
-    for the scoring to finish. Never raises: an unreachable list answers ``{status: "unknown"}``."""
+    public score and the error description — read by ref (``get_submission``; the submissions list is
+    the fallback), waiting a bounded time for the scoring to finish. Never raises: when neither call
+    answers the result is ``{status: "unknown"}``."""
     last: dict[str, Any] = {"status": "unknown", "ref": str(ref)}
     for wait in schedule:
         sleep(wait)
         try:
-            match = next((s for s in list_submissions(api, slug) if s["ref"] == str(ref)), None)
+            match: dict[str, Any] | None = get_submission(api, ref)
         except Exception as exc:
-            last = {"status": "unknown", "ref": str(ref), "error": f"{type(exc).__name__}: {exc}"}
-            continue
+            try:
+                match = next((s for s in list_submissions(api, slug) if s["ref"] == str(ref)), None)
+            except Exception as exc2:
+                last = {"status": "unknown", "ref": str(ref),
+                        "error": f"{type(exc).__name__}: {exc}; list: {type(exc2).__name__}: {exc2}"}
+                continue
         if match is None:
             last = {"status": "unknown", "ref": str(ref), "error": "not listed yet"}
             continue

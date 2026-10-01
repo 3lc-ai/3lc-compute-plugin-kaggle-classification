@@ -5005,8 +5005,12 @@
           return '<div class="kg-callout err" style="margin-top:8px">' + kgIcon('x-circle') +
                  '<span><strong>Kaggle rejected it.</strong> ' + esc(k.error_description || 'No description.') + '</span></div>';
         }
+        if (k.status === 'unknown') {
+          return '<div style="margin-top:4px;font-size:12.5px;opacity:.8">Kaggle’s verdict could not be read back' +
+                 (k.error ? ' (' + esc(k.error) + ')' : '') + '. Check the competition’s Submissions page.</div>';
+        }
         return '<div style="margin-top:4px;font-size:12.5px;opacity:.8">Kaggle is still scoring it' +
-               (k.status && k.status !== 'unknown' ? ' (status ' + esc(k.status) + ')' : '') + '. The Status tab shows the result.</div>';
+               (k.status ? ' (status ' + esc(k.status) + ')' : '') + '. The Status tab shows the result.</div>';
       }
 
       function psRenderSubmitSuccess(sub, animate) {

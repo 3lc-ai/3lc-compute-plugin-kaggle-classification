@@ -366,8 +366,12 @@ class _Sub:
 
 
 class _Api:
-    def __init__(self, answers=None, raise_on_submit=None, submit_ref="777"):
+    """A fake client: ``answers`` are the successive submissions-list replies; ``by_ref`` the
+    per-ref replies of ``get_submission`` (absent = the call fails, like a 403)."""
+
+    def __init__(self, answers=None, raise_on_submit=None, submit_ref="777", by_ref=None):
         self.answers = list(answers or [])
+        self.by_ref = list(by_ref or [])
         self.raise_on_submit = raise_on_submit
         self.submit_ref = submit_ref
         self.submitted = []
@@ -375,6 +379,12 @@ class _Api:
 
     def competition_submissions(self, slug, page_size=20):
         return self.answers.pop(0) if self.answers else []
+
+    def get_submission(self, ref):
+        if not self.by_ref:
+            msg = "403 Forbidden"
+            raise RuntimeError(msg)
+        return kaggle_client._submission_dict(self.by_ref.pop(0))
 
     def competition_submit(self, file_name, message, competition):
         if self.raise_on_submit:
@@ -386,6 +396,25 @@ class _Api:
             message = "Submission accepted"
 
         return R()
+
+
+def _limits_403(api, slug):
+    msg = "403 Forbidden"
+    raise RuntimeError(msg)
+
+
+@pytest.fixture(autouse=True)
+def _fake_client_calls(monkeypatch):
+    """The two per-call SDK wrappers go through the fake's methods (no kagglesdk requests in tests)."""
+    monkeypatch.setattr(kaggle_client, "get_submission", lambda api, ref: api.get_submission(ref))
+    monkeypatch.setattr(kaggle_client, "submission_limits", _limits_403)
+
+
+def test_read_back_prefers_get_submission_by_ref(monkeypatch):
+    api = _Api(by_ref=[_Sub("777", "PENDING"), _Sub("777", "COMPLETE", "0.65666")])
+    naps = []
+    out = kaggle_client.read_back(api, "slug", "777", schedule=(1, 1, 1), sleep=naps.append)
+    assert out["status"] == "COMPLETE" and out["public_score"] == 0.65666 and naps == [1, 1]
 
 
 def test_read_back_waits_for_a_non_pending_status(monkeypatch):
@@ -433,11 +462,13 @@ def test_connection_card_states(monkeypatch):
     api = _Api(answers=[[_Sub("1", "COMPLETE", "0.1")]])
     monkeypatch.setattr(kaggle_client, "authenticated_api", lambda: (api, ""))
     monkeypatch.setattr(kaggle_client, "competition_info", lambda a, s: {"user_has_entered": True, "max_daily_submissions": 5, "title": "T"})
-    monkeypatch.setattr(kaggle_client, "submissions_used_today", lambda a, s: 2)
+    monkeypatch.setattr(kaggle_client, "submission_limits",
+                        lambda a, s: {"num_today": 2, "num_allowed_now": 98, "num_total": 2, "limited_by_total": False})
     logs = []
     out = kaggle_client.connection("slug", 100, logs.append)
     assert out["state"] == "ready" and out["username"] == "participant" and out["daily_limit"] == 100
     assert out["kaggle_daily_limit"] == 5 and out["submissions_used_today"] == 2 and logs
+    assert kaggle_client.submissions_used_today(api, "slug") == 2
     monkeypatch.setattr(kaggle_client, "competition_info", lambda a, s: {"user_has_entered": False, "max_daily_submissions": 0, "title": ""})
     assert kaggle_client.connection("slug", 100)["state"] == "not_joined"
 
