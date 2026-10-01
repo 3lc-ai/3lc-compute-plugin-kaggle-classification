@@ -1560,8 +1560,10 @@
       // check-circle done, filled dot on the FIRST not-done step, outline circle upcoming. Done
       // comes from the import record (Train/Submit stay not-done until their sessions).
       function renderPipeline() {
-        var trainDone = !!((kgTrainState.current && kgTrainState.current.weights_on_disk) ||
-                           (kgTrainState.runs || []).some(function (r) { return !!r.weights; }));
+        // The current project only: its runs (project_runs) and the current record when it is one of them.
+        var curRec = kgTrainState.current_in_project === false ? null : kgTrainState.current;
+        var trainDone = !!((curRec && curRec.weights_on_disk) ||
+                           (kgTrainState.project_runs || kgTrainState.runs || []).some(function (r) { return !!r.weights; }));
         // Submit is done when a submit record with status submitted exists (EXDARK #1: from the
         // session store, re-verified by GET /submit/state).
         var p = { import: kgImportState.state === 'success', train: trainDone, submit: kgSubmitState.state === 'submitted' };
@@ -2077,6 +2079,7 @@
             renderResult(result, true);
             if (snap.checks && snap.checks.length) { renderChecks(snap.checks, false); }
             renderPipeline();
+            kgRefreshProjectScope();   // a new project's Train / Predict start from their forms
             kgRenderLoopLinks();
             kgScrollTo(el('kg-import-banner'));
           }).catch(function () { renderResult({ tables: { train: { url: job.facts.train_table_url || '' }, val: { url: job.facts.val_table_url || '' } } }, true); });
@@ -3739,9 +3742,37 @@
           trRenderValLocked();
           kgApplyDerivedUrls(['tr-train-url'])
             .then(function () { trVerifyTables(true); });
-          API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); })
-            .then(function (st) { kgTrainState = st || kgTrainState; trLoadDurationStats(); trRenderRunsPanel(); renderPipeline(); })
-            .catch(function () { /* hint is optional */ });
+          kgRefreshProjectScope();
+        });
+      }
+
+      // The project scope (session 4 closeout): after an import into another project, or on entering
+      // Train / Predict, re-read both records; a Train banner or a Predict revisit that belongs to
+      // another project drops back to its form, and the stepper re-renders for the current project.
+      function kgRefreshProjectScope() {
+        if (kgDevMode) { return Promise.resolve(); }
+        return Promise.all([
+          API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); }).catch(function () { return null; }),
+          API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); }).catch(function () { return null; })
+        ]).then(function (both) {
+          if (both[0]) {
+            kgTrainState = both[0];
+            if (kgTrainState.current_in_project === false && !trRunning && el('tr-banner').innerHTML) {
+              trainJobId = null;
+              trEnterFormState(false);
+            }
+            trLoadDurationStats();
+            trRenderRunsPanel();
+          }
+          if (both[1]) {
+            kgSubmitState = both[1];
+            var shown = kgSubmitState.state === 'predicted' || kgSubmitState.state === 'submitted';
+            if (!shown && psBasis && psBasis.persisted && !psPredicting && !psSubmitting) {
+              psEnterFormState(false);
+              psLogReset();
+            }
+          }
+          renderPipeline();
         });
       }
 
@@ -4056,7 +4087,8 @@
                 trLoadDurationStats();
                 trAwaitDeviceProbe(10);
                 trRenderRunsPanel();
-                var cur = kgTrainState.current;
+                // A record from another project (after Start over into a new one) opens on the form.
+                var cur = kgTrainState.current_in_project === false ? null : kgTrainState.current;
                 if (running && !trRunning) {
                   trainJobId = running.id;
                   trHadChecks = false;
@@ -4558,6 +4590,7 @@
         if (kgDevMode) { return; }   // forced states own this tab
         configLoaded.then(function () {
           el('ps-device').value = (kgSession && kgSession.device) || el('ps-device').value;
+          kgRefreshProjectScope();
           psLoadRuns();
           renderConnection();
           psVerifyTestInputs(true);

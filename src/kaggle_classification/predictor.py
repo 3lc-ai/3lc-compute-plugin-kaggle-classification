@@ -568,6 +568,9 @@ def predict_submit_state() -> dict[str, Any]:
     status = str(ps.get("status") or "")
     if status == "running":
         return {"state": "running", "predict": view}
+    # The revisit (and the stepper's "submitted") belong to the import record's project only.
+    if not trainer.runs_in_project([{"project_name": facts.get("project_name"), "run_url": facts.get("run_url")}]):
+        return {"state": "empty", "note": "The last prediction belongs to another project."}
     if status != "completed":
         return {"state": status or "failed", "predict": view}
     if not on_disk:
@@ -715,6 +718,7 @@ def run_predict(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[st
     sample_ids: list[str] = list(inputs["ids"])
     rec.record["facts"].update({
         "run_name": ck["run_name"], "run_folder": ck["run_folder"], "run_url": ck["run_url"],
+        "project_name": ck["project_name"],
         "train_job_id": ck["train_job_id"], "weights": ck["weights"], "checkpoint_sha256": ck["sha256_recorded"],
         "checkpoint_sha256_on_disk": ck["sha256_on_disk"], "checkpoint_sha256_on_run": ck["sha256_on_run"],
         "best_val_accuracy": ck["best_val_accuracy"], "contract": ck["contract"],

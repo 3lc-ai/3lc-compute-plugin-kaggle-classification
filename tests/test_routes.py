@@ -193,7 +193,10 @@ def test_fragment_is_the_exdark_train_tab():
         # Item 2: the estimate's inputs are keyed by the resolved device class; the in-run terms follow the run's.
         "function trStatsFor", "r.device_class === cls;",
         # Session 4 closeout: Previous runs lists the session project's runs only (project_runs).
-        "var runs = (kgTrainState.project_runs || kgTrainState.runs || []).filter(", "function trAwaitDeviceProbe", "function trRunEtaTerms",
+        "var runs = (kgTrainState.project_runs || kgTrainState.runs || []).filter(",
+        # ... and the Train banner, the Predict revisit and the stepper follow the same project.
+        "function kgRefreshProjectScope", "kgTrainState.current_in_project === false ? null : kgTrainState.current",
+        "kgRefreshProjectScope();   // a new project's Train / Predict start from their forms", "function trAwaitDeviceProbe", "function trRunEtaTerms",
         "Recent ' + clsText + ' runs averaged",
         # Item 3: the config load retries while the worker starts and never renders an empty form.
         "function kgStartupError", "name === 'AbortError'", "function kgCacheConfig", "function kgCachedConfig",

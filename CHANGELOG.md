@@ -25,6 +25,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   CSV sha256, Kaggle ref and read-back status); `?kgdev=submit-…` fixtures for every Predict state.
 - Train's Previous runs and Predict's run picker list only the runs of the import record's project
   (`GET /train/state` serves `project_runs`; the duration estimate keeps every run).
+- The Train tab's opening banner, the Predict revisit and the tab bar's done marks follow the same
+  project: a record from another project opens its tab on the form (re-checked after an import and on
+  tab enter).
 - The bundled manifest's `competition.slug` is `3lc-scene-classification-challenge` (the event
   competition); `cdn/` regenerated.
 

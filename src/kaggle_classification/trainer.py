@@ -863,6 +863,12 @@ def train_state() -> dict[str, Any]:
         "runs": runs,
         "project": current_project(),
         "project_runs": runs_in_project(runs),
+        # The Train tab's opening banner and the stepper show the current record only when it is a run
+        # of the import record's project (the full record is kept for the latest run only).
+        "current_in_project": bool(current) and bool(runs_in_project([{
+            "project_name": (current.get("facts") or {}).get("project_name"),
+            "run_url": (current.get("facts") or {}).get("run_url"),
+        }])),
         "device_class": _device_probe.get("device_class"),
         "device_probe": _device_probe.get("state", "idle"),
         "umap_prewarm": prewarm_status(),

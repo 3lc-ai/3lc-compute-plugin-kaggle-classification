@@ -314,6 +314,38 @@ def test_submitted_pairing_resolves_and_a_foreign_submission_does_not(store, tmp
     assert out["state"] == "predicted" and "submission" not in out
 
 
+def test_the_train_banner_and_the_predict_revisit_follow_the_import_records_project(store, tmp_path):
+    """After Start over into a new project: the Train record and the last prediction belong to the old
+    project, so the Train tab and the Predict tab open on their forms and the stepper is not done."""
+    _predict_record(tmp_path)
+    rec = predictor.read_predict_record()
+    rec["facts"]["project_name"] = "intel-scene"
+    store.save({"predict_state": rec})
+    cur = {"id": "t1", "kind": "train", "status": "completed", "pid": os.getpid(), "created_at": time.time(),
+           "finished_at": time.time(), "heartbeat": time.time(), "params": {}, "progress": {}, "checks": [], "log": [],
+           "facts": {"project_name": "intel-scene", "run_url": "C:/x/projects/intel-scene/runs/r1", "weights": ""}}
+    store.save({"train_state": {"current": cur, "runs": []}})
+    # No import record: no scope (everything shows, as before).
+    assert trainer.train_state()["current_in_project"] is True
+    assert predictor.predict_submit_state()["state"] == "predicted"
+    store.save({"import_state": {"project_name": "intel-scene-demo", "tables": {"train": {"url": "x"}}}})
+    assert trainer.train_state()["current_in_project"] is False
+    out = predictor.predict_submit_state()
+    assert out["state"] == "empty" and "another project" in out["note"]
+    # Back in the project the records belong to: the banner and the revisit return.
+    store.save({"import_state": {"project_name": "intel-scene", "tables": {"train": {"url": "x"}}}})
+    assert trainer.train_state()["current_in_project"] is True
+    assert predictor.predict_submit_state()["state"] == "predicted"
+    # A record without project_name is placed by its run URL.
+    rec["facts"].pop("project_name")
+    rec["facts"]["run_url"] = "C:/x/projects/intel-scene-demo/runs/r2"
+    store.save({"predict_state": rec})
+    assert predictor.predict_submit_state()["state"] == "empty"
+    # No current record at all: not in the project (the stepper reads False as "not done").
+    store.save({"train_state": {"current": None, "runs": []}})
+    assert trainer.train_state()["current_in_project"] is False
+
+
 def test_ledger_is_append_only_and_findable(home):
     assert ledger.read() == []
     ledger.append({"kind": "predict", "job_id": "a", "csv": {"path": "/tmp/a.csv"}})
