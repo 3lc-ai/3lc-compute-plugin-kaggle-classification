@@ -121,7 +121,9 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc2**.
+   **1.0.0rc2**. On the very first start the compute service first installs its eight stock plugins
+   (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
+   so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin's own Python environment (torch is the
    big download, 2–15 minutes depending on your connection; a fresh machine downloads about 2.5 GB).
    The card shows the progress; the service window / log shows `uv` at work.
@@ -148,7 +150,7 @@ Click **Download starter kit**.
 - You should see: progress rows (Manifest → Disk space → Download → Verify → Extract), a progress
   line with the shard and bytes ("Downloading shard 2/5 · 74 of 113 MB"), then a green line "Starter
   kit downloaded and verified. 9,601 files match the published manifest. The starter kit folder below
-  is filled in and ready to import." About one to two minutes on a normal connection.
+  is filled in and ready to import." About 70 s on a fast connection, a few minutes on a slow one.
 - If not: Copy diagnostics (the failure banner has the button), a screenshot.
 
 ### 7.2 Import
@@ -203,7 +205,8 @@ Click **Continue to Submit** (or open **3 Predict + Submit**).
   and the green line "Test images verified: 1,800 files match the kit's files.json". Click **Run
   inference**: a progress block "Val check: n / 1,200 images" then "Inference: n / 1,800 images",
   then **10/10 checks passed**, the **Predicted-class distribution** card (six class tags with
-  counts), the hero stat "NN.NN % · Val accuracy · Your locked validation split, not the
+  counts; after only two epochs an amber "The predicted-class distribution is skewed …" note under
+  the tags is normal), the hero stat "NN.NN % · Val accuracy · Your locked validation split, not the
   leaderboard.", and a CSV row `submission_<timestamp>.csv` with **Copy CSV path** and **Download
   CSV**. Under **Step 2 · Submit to Kaggle** the connection card reads **Kaggle account not
   connected** (expected: the services have no Kaggle token) and the Submit button stays disabled.
@@ -232,8 +235,9 @@ Open **4 Status**.
   callout "Connect your Kaggle account…" (expected). "Updated just now" with a refresh button; click
   it and the line resets.
 - Expand **Doctor** at the bottom: one row per fact — Plugin (v1.0.0rc2 and a commit), Compute
-  service (v1.1.0), SDK · 3lc (0.3.3 · 3.3.x), torch · torchvision (**2.14.0** · **0.29.0**, with
-  `+cu126` on Windows / Linux), CUDA in the worker, Manifest (remote · a sha256 · intel-scene kit v1),
+  service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
+  `+cu126` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
+  kit v1 — "cache" means the last fetched copy, the same document),
   Kit (v1 · 9,601 files verified at download), Kaggle (not connected), Plugin home, Free disk space,
   Python, Records (1 run · 1 prediction · 0 submissions). Click **Copy diagnostics** and paste the
   block into your feedback: it is the single most useful thing you can send.
