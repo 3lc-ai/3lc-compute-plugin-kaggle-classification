@@ -394,6 +394,35 @@ def lineage_steps(table: Any, seed_url: str) -> int | None:
     return None
 
 
+def _norm_dir(path: str) -> str:
+    return str(path).replace("\\", "/").rstrip("/").lower() + "/"
+
+
+def foreign_rows(table: Any, kit_dir: str, *, sample: int = 3) -> dict[str, Any]:
+    """Rows whose image is NOT under ``<kit_dir>/data/train/`` (session 5, part B3). A Hub table
+    operation (merge, concatenate) can build a table that descends from the seed by lineage while
+    carrying val or test rows; the lineage walk cannot see that, the image paths can. Each value
+    is resolved against the table URL (tlc aliases, relative URLs) before the prefix check."""
+    import tlc
+
+    root = _norm_dir(str(Path(kit_dir) / "data" / "train"))
+    count = 0
+    examples: list[str] = []
+    for row in table.table_rows:
+        raw = row.get("image") if hasattr(row, "get") else None
+        if raw is None:
+            continue
+        try:
+            resolved = tlc.Url(str(raw)).to_absolute(table.url).to_str()
+        except Exception:
+            resolved = str(raw)
+        if not str(resolved).replace("\\", "/").lower().startswith(root):
+            count += 1
+            if len(examples) < sample:
+                examples.append(str(resolved))
+    return {"count": count, "examples": examples, "train_dir": str(Path(kit_dir) / "data" / "train")}
+
+
 def scan_rows(table: Any, manifest: Manifest) -> tuple[list[int], list[float]]:
     """``(labels, weights)`` read once from ``table.table_rows`` — the row view, no image decoding."""
     labels: list[int] = []
@@ -440,11 +469,12 @@ def _table_label_names(table: Any) -> list[str]:
     ]
 
 
-def _revision_info(url: str, manifest: Manifest, seed_url: str) -> dict[str, Any]:
+def _revision_info(url: str, manifest: Manifest, seed_url: str, kit_dir: str = "") -> dict[str, Any]:
     import tlc
 
     table = tlc.Table.from_url(tlc.Url(url))
     labels, weights = scan_rows(table, manifest)
+    foreign = foreign_rows(table, kit_dir) if kit_dir else {"count": 0, "examples": [], "train_dir": ""}
     return {
         "url": str(table.url),
         "rows": len(labels),
@@ -452,6 +482,9 @@ def _revision_info(url: str, manifest: Manifest, seed_url: str) -> dict[str, Any
         "steps_from_seed": lineage_steps(table, seed_url) if seed_url else None,
         "summary": summarize_rows(labels, weights, manifest),
         "label_names": _table_label_names(table),
+        "foreign_rows": foreign["count"],
+        "foreign_examples": foreign["examples"],
+        "kit_train_dir": foreign["train_dir"],
     }
 
 
@@ -463,6 +496,7 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     url = str(data.get("train_url") or "").strip().strip('"')
     record = importer.read_record() or {}
     seed_url = str(((record.get("lineage_root") or {}).get("train_url")) or "")
+    kit_dir = str(record.get("kit_dir") or "")
     out: dict[str, Any] = {
         "url": url,
         "import_state": "success" if record else "empty",
@@ -486,7 +520,7 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
         return out
     out["exists"] = True
     try:
-        base = _revision_info(url, manifest, seed_url)
+        base = _revision_info(url, manifest, seed_url, kit_dir)
     except Exception as exc:
         out.update({"error": f"Could not read the table: {type(exc).__name__}: {exc}"})
         return out
@@ -498,7 +532,7 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
         out["latest"] = base
     else:
         try:
-            out["latest"] = _revision_info(latest_url, manifest, seed_url)
+            out["latest"] = _revision_info(latest_url, manifest, seed_url, kit_dir)
         except Exception as exc:
             out["latest"] = {"url": latest_url, "error": f"{type(exc).__name__}: {exc}"}
     out["latest_row_count"] = (out["latest"] or {}).get("rows")
@@ -1344,6 +1378,18 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
     if expected_names and names != expected_names:
         msg = f"The train table's label map ({', '.join(names)}) is not the imported one ({', '.join(expected_names)})."
         raise TrainRefused(msg)
+    # Part B3: a table operation can pull val or test rows into a revision that still descends from the
+    # seed by lineage; every row's image must live under the kit's train folder.
+    kit_dir = str(record_imp.get("kit_dir") or "")
+    foreign = foreign_rows(train_table, kit_dir) if kit_dir else {"count": 0, "examples": [], "train_dir": ""}
+    if foreign["count"]:
+        shown = "; ".join(foreign["examples"])
+        msg = (
+            f"The train table revision {resolved_url} contains {foreign['count']:,} row(s) whose images are not in "
+            f"the kit's train folder ({foreign['train_dir']}), e.g. {shown}. Table operations that pull in val or "
+            "test rows (merge, concatenate) are not allowed. Pick a revision of the imported train table."
+        )
+        raise TrainRefused(msg)
     val_table = tlc.Table.from_url(tlc.Url(val_url))
     log(f"train: {resolved_url} ({train_table.row_count} rows)")
     log(f"val (locked): {val_url} ({val_table.row_count} rows)")
@@ -1843,8 +1889,27 @@ def state_for_json(obj: Any) -> Any:
 
 
 __all__ = [
-    "INFERENCE", "OPTIMIZERS", "SCHEDULES", "TrainRefused", "build_train_kwargs", "check_provenance",
-    "default_workers", "descends_from_seed", "effective_bounds", "effective_weights", "preflight",
-    "probe_device_async", "read_record", "resolve_device", "run_summary", "run_training", "scan_rows", "device_label",
-    "summarize_rows", "train_state", "training_facts", "validate_train_url",
+    "INFERENCE",
+    "OPTIMIZERS",
+    "SCHEDULES",
+    "TrainRefused",
+    "build_train_kwargs",
+    "check_provenance",
+    "default_workers",
+    "descends_from_seed",
+    "device_label",
+    "effective_bounds",
+    "effective_weights",
+    "foreign_rows",
+    "preflight",
+    "probe_device_async",
+    "read_record",
+    "resolve_device",
+    "run_summary",
+    "run_training",
+    "scan_rows",
+    "summarize_rows",
+    "train_state",
+    "training_facts",
+    "validate_train_url",
 ]

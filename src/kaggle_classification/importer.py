@@ -637,7 +637,16 @@ def import_state() -> dict[str, Any]:
     # ``latest``: the newest revision descending from each seed table (tlc's own ``latest()``),
     # so the Loop's Dashboard step opens what the participant is actually labeling. Equal to the
     # seed URL until a revision exists.
-    return {"state": state, "verified": verified, "latest": latest, "record": record}
+    # ``val_edited`` (session 5, part B2): the val dataset has a revision newer than the LOCKED one.
+    # Every run is scored on the locked revision (PLAN §A), so Train and Predict warn that edits to
+    # val in the Dashboard are ignored.
+    val_locked = str(((record.get("val_locked") or {}).get("url")) or "")
+    val_latest = str(latest.get("val") or "")
+    return {
+        "state": state, "verified": verified, "latest": latest, "record": record,
+        "val_edited": bool(val_locked and val_latest and _norm(val_latest) != _norm(val_locked)),
+        "val_latest_url": val_latest,
+    }
 
 
 def _latest_url(url: str) -> str:

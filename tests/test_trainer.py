@@ -625,3 +625,58 @@ def test_numba_cache_lives_under_the_plugin_home_and_the_prewarm_is_idempotent(h
     status = trainer.prewarm_status()
     assert status["state"] == "done", status
     assert trainer.train_state()["umap_prewarm"]["state"] == "done"
+
+
+# ── Session 5, part B3: Hub table operations cannot smuggle val or test rows into a train revision ──
+
+
+def _join(manifest, urls: list[str], name: str, *, with_lineage: bool) -> str:
+    """What a Hub Table Op (merge / concatenate) produces: a JoinedTable over several inputs, with or
+    without the lineage pointer that makes it descend from the seed."""
+    tables = [tlc.Table.from_url(tlc.Url(u)) for u in urls]
+    joined = tlc.Table.join_tables(
+        tables,
+        table_url=tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("train"), name)),
+        input_tables=[urls[0]] if with_lineage else None,
+    )
+    return str(joined.url)
+
+
+def test_a_merged_train_and_val_table_passes_the_lineage_walk_and_is_refused_by_the_row_gate(imported):
+    manifest, train_url, val_url = imported
+    rev = _edit(train_url, "weight", {0: 1.0}, "initial_b3")
+    merged = _join(manifest, [rev, val_url], "merged-with-val", with_lineage=True)
+    pf = trainer.preflight({"train_url": merged}, manifest)
+    # The lineage walk alone would let this through (the merge records the train revision as its input)...
+    assert pf["base"]["descends_from_seed"] is True
+    # ...but every val row's image lives outside <kit>/data/train, so the gate reports and refuses it.
+    val_rows = manifest.splits.val.per_class * manifest.num_classes
+    assert pf["base"]["foreign_rows"] == val_rows and pf["base"]["rows"] == 15 + val_rows
+    assert pf["base"]["foreign_examples"] and "/data/val/" in pf["base"]["foreign_examples"][0].replace("\\", "/")
+    assert pf["base"]["kit_train_dir"].replace("\\", "/").endswith("/data/train")
+    params = {"train_table_url": merged, "use_latest": False, "device": "cpu"}
+    with pytest.raises(trainer.TrainRefused, match="not in the kit's train folder"):
+        trainer.run_training(params, FakeCtx(), manifest)
+    # A merge WITHOUT the lineage pointer fails the lineage walk first, and still counts the foreign rows.
+    orphan = _join(manifest, [rev, val_url], "merged-no-lineage", with_lineage=False)
+    pf2 = trainer.preflight({"train_url": orphan}, manifest)
+    assert pf2["base"]["descends_from_seed"] is False and pf2["base"]["foreign_rows"] == val_rows
+    with pytest.raises(trainer.TrainRefused, match="does not descend from the imported seed"):
+        trainer.run_training({"train_table_url": orphan, "use_latest": False, "device": "cpu"}, FakeCtx(), manifest)
+    # The honest revisions still read as clean.
+    assert trainer.preflight({"train_url": rev}, manifest)["base"]["foreign_rows"] == 0
+
+
+# ── Session 5, part B2: val edits newer than the locked revision are reported ──
+
+
+def test_import_state_flags_val_revisions_newer_than_the_locked_one(imported):
+    manifest, _train_url, val_url = imported
+    state = importer.import_state()
+    assert state["state"] == "success" and state["val_edited"] is False
+    assert importer._norm(state["val_latest_url"]) == importer._norm(val_url)
+    rev = _edit(val_url, "weight", {0: 0.0}, "initial_edited")
+    state = importer.import_state()
+    assert state["val_edited"] is True and importer._norm(state["val_latest_url"]) == importer._norm(rev)
+    # The locked URL is untouched: the record still names the seed revision.
+    assert importer._norm(state["record"]["val_locked"]["url"]) == importer._norm(val_url)

@@ -473,3 +473,14 @@ before the Hub is opened against `https://competitions.dev.3lc.ai`, or the bucke
 TBC slug) wins over the bundled one. The credentials the worker reads are the compute host's:
 `3lc-hub-11/home/.kaggle/access_token` on this laptop (`USERPROFILE` is redirected; the plugin only
 checks the file exists).
+
+## 12. Decided in session 5 (review later) — 2026-10-05
+
+- **The val-edit warning on Predict** (brief B2): the same amber callout Train shows under its locked
+  Val row renders under Predict's locked **Test images** row whenever `import_state.val_edited` is
+  true ("Your edits to val in the Dashboard are ignored; every run is scored on `<dataset>/<locked
+  revision>`."). The val check (D6) keeps scoring the LOCKED revision; nothing else changes.
+  Decision record: `docs/TRAIN_MIRROR.md` §14 S5-B2.
+- **Continue to Status** now lands on the ungated Status tab (`docs/STATUS_MIRROR.md`); the pending
+  line "The Status tab shows the result." on the submit banner is therefore true.
+

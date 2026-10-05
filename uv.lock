@@ -101,10 +101,10 @@ requires-dist = [
     { name = "kaggle", marker = "extra == 'kaggle-classification'", specifier = ">=2.2.3,<3" },
     { name = "pyyaml", marker = "extra == 'kaggle-classification'", specifier = ">=6" },
     { name = "scikit-learn", marker = "extra == 'kaggle-classification'" },
-    { name = "torch", marker = "(sys_platform == 'linux' and extra == 'kaggle-classification') or (sys_platform == 'win32' and extra == 'kaggle-classification')", index = "https://download.pytorch.org/whl/cu126" },
-    { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'" },
-    { name = "torchvision", marker = "(sys_platform == 'linux' and extra == 'kaggle-classification') or (sys_platform == 'win32' and extra == 'kaggle-classification')", index = "https://download.pytorch.org/whl/cu126" },
-    { name = "torchvision", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'" },
+    { name = "torch", marker = "(sys_platform == 'linux' and extra == 'kaggle-classification') or (sys_platform == 'win32' and extra == 'kaggle-classification')", specifier = "==2.14.0", index = "https://download.pytorch.org/whl/cu126" },
+    { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'", specifier = "==2.14.0" },
+    { name = "torchvision", marker = "(sys_platform == 'linux' and extra == 'kaggle-classification') or (sys_platform == 'win32' and extra == 'kaggle-classification')", specifier = "==0.29.0", index = "https://download.pytorch.org/whl/cu126" },
+    { name = "torchvision", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'", specifier = "==0.29.0" },
     { name = "umap-learn", marker = "extra == 'kaggle-classification'" },
 ]
 provides-extras = ["kaggle-classification"]

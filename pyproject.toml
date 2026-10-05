@@ -40,9 +40,12 @@ kaggle-classification = [
     "3lc>=3.3,<4.0",
     # The model is torchvision's resnet18 with the Intel kit's MLP head (docs/PLAN.md §A, part A of
     # the 2026-09-29 review); timm is no longer a runtime dependency. The versions are recorded on
-    # every Run and read back by the provenance checks.
-    "torch",
-    "torchvision",
+    # every Run and read back by the provenance checks. Pinned EXACTLY to the parity-gate build
+    # (docs/TRAIN_MIRROR.md §11, 2026-09-29) on every platform: the catalog install path
+    # (`uv pip install --torch-backend auto`) otherwise takes the newest wheel, and the 2026-10-02 demo
+    # worker drifted to 2.14.1 / 0.29.1 while the lock said 2.14.0 / 0.29.0 (session 5, part B1).
+    "torch==2.14.0",
+    "torchvision==0.29.0",
     # Embedding reduction: UMAP fit on train, transformed onto val; PCA is the fallback.
     "umap-learn",
     "scikit-learn",
