@@ -165,3 +165,28 @@ def test_a_garbage_collected_old_kit_tree_is_recreated_from_the_shared_copy(monk
     marker = json.loads((home / storage.MIGRATION_MARKER).read_text(encoding="utf-8"))
     assert marker["restored"][0]["dirs"] == [str(old / "data")]
     storage._reset_for_tests()
+
+
+def test_a_marker_written_before_rc5_still_recreates_the_old_kit_tree(monkeypatch, tmp_path):
+    """rc6: the rc3 / rc4 carry-forward markers have no legacy_data_dirs; the source state dir's data
+    tree is derived from the marker's source (the tester's rc5 upgrade proof hit this)."""
+    import json
+    import shutil
+
+    monkeypatch.delenv(storage.HOME_ENV, raising=False)
+    storage._reset_for_tests()
+    compute_home = tmp_path / "home" / ".3lc-compute"
+    managed = compute_home / storage.MANAGED_DIR_NAME / storage.PLUGIN_ID
+    old = _old_state(managed / "1.0.0rc2")
+    (managed / "1.0.0rc5").mkdir(parents=True)
+    monkeypatch.chdir(managed / "1.0.0rc5")
+    home, _ = storage.resolve()
+    marker_path = home / storage.MIGRATION_MARKER
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    del marker["legacy_data_dirs"]   # what an rc3 / rc4 marker looks like
+    marker_path.write_text(json.dumps(marker), encoding="utf-8")
+    shutil.rmtree(managed / "1.0.0rc2")
+    storage._reset_for_tests()
+    assert storage.resolve() == (home, "compute-home")
+    assert (old / "data" / "comp" / "v1" / "starter_kit" / "data" / "train" / "a" / "x.jpg").is_file()
+    storage._reset_for_tests()

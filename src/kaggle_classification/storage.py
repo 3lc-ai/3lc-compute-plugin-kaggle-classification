@@ -181,7 +181,12 @@ def ensure_legacy_data_dirs(shared: Path) -> list[str]:
         return []
     restored: list[str] = []
     source = shared / DATA_DIR_NAME
-    for raw in marker.get("legacy_data_dirs") or []:
+    legacy_dirs = marker.get("legacy_data_dirs")
+    if not legacy_dirs and marker.get("source"):
+        # A marker written before rc5 (rc3 / rc4 carry-forwards) names the source state dir only: its
+        # ``data`` tree is where those installs' tables point.
+        legacy_dirs = [str(Path(str(marker["source"])) / DATA_DIR_NAME)]
+    for raw in legacy_dirs or []:
         legacy = Path(str(raw))
         if legacy.exists() or not source.is_dir():
             continue

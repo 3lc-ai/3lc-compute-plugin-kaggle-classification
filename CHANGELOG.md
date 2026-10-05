@@ -3,6 +3,14 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc6] — 2026-10-05 (session 5: the rc5 fix also covers the rc3 / rc4 carry-forward markers)
+
+### Fixed
+- A carry-forward marker written by rc3 or rc4 has no `legacy_data_dirs`, so rc5 re-created nothing
+  when the host removed the version dir those installs' tables point into (the tester's rc4 → rc5
+  upgrade proof: the rc5 install garbage-collected `1.0.0rc2`, training failed on a missing image).
+  The legacy kit tree is now derived from the marker's `source` when the field is absent.
+
 ## [1.0.0rc5] — 2026-10-05 (session 5: the old kit tree survives the host's garbage collection)
 
 ### Fixed
