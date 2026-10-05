@@ -3,6 +3,15 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc4] — 2026-10-05 (session 5: the upgrade proof's fix)
+
+### Fixed
+- Training after a plugin update refused every row ("6,600 rows whose images are not in the kit's
+  train folder"): the carry-forward rewrites the import record's kit path to the new home while the
+  existing tables' image paths stay in the previous version's kit tree. The foreign-rows gate now
+  accepts a train image by the kit LAYOUT too (any `<kit>/data/train/` path); val and test rows and
+  images from outside a kit stay foreign. Found by the rc2 → rc3 upgrade proof (`TESTING_PROOF.md`).
+
 ## [1.0.0rc3] — 2026-10-05 (session 5: the hand test's four findings)
 
 ### Fixed

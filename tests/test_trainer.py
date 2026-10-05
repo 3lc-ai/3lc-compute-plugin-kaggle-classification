@@ -680,3 +680,20 @@ def test_import_state_flags_val_revisions_newer_than_the_locked_one(imported):
     assert state["val_edited"] is True and importer._norm(state["val_latest_url"]) == importer._norm(rev)
     # The locked URL is untouched: the record still names the seed revision.
     assert importer._norm(state["record"]["val_locked"]["url"]) == importer._norm(val_url)
+
+
+def test_a_relocated_kit_root_is_not_foreign_but_val_rows_still_are(imported, tmp_path):
+    """rc4: after a plugin update carried the state forward, the import record's kit_dir points at the new
+    home while the tables' images stay in the old kit tree — those rows are train rows by LAYOUT
+    (<kit>/data/train/...). Val rows (data/val) remain foreign."""
+    manifest, train_url, val_url = imported
+    record = importer.read_record()
+    moved = tmp_path / "elsewhere" / "starter_kit"
+    moved.mkdir(parents=True)
+    record["kit_dir"] = str(moved)
+    importer.write_record(record)
+    pf = trainer.preflight({"train_url": train_url}, manifest)
+    assert pf["base"]["foreign_rows"] == 0
+    merged = _join(manifest, [train_url, val_url], "merged-after-move", with_lineage=True)
+    pf2 = trainer.preflight({"train_url": merged}, manifest)
+    assert pf2["base"]["foreign_rows"] == manifest.splits.val.per_class * manifest.num_classes

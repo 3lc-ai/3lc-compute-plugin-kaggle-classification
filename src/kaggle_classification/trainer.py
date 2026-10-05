@@ -405,7 +405,14 @@ def foreign_rows(table: Any, kit_dir: str, *, sample: int = 3) -> dict[str, Any]
     is resolved against the table URL (tlc aliases, relative URLs) before the prefix check."""
     import tlc
 
-    root = _norm_dir(str(Path(kit_dir) / "data" / "train"))
+    from kaggle_classification.kit import DATA_DIR_NAME, KIT_DIR_NAME
+
+    root = _norm_dir(str(Path(kit_dir) / DATA_DIR_NAME / "train"))
+    # A relocated kit (the plugin's state carried forward on an update, rc3; a hand-moved kit) leaves the
+    # tables' image paths in the OLD kit tree, so the kit LAYOUT is the second accepted shape: any image
+    # under a ``<kit>/data/train/`` folder is a train image; val / test rows (``data/val``, ``data/test``)
+    # and images from outside a kit stay foreign.
+    layout = f"/{KIT_DIR_NAME.lower()}/{DATA_DIR_NAME.lower()}/train/"
     count = 0
     examples: list[str] = []
     for row in table.table_rows:
@@ -416,7 +423,8 @@ def foreign_rows(table: Any, kit_dir: str, *, sample: int = 3) -> dict[str, Any]
             resolved = tlc.Url(str(raw)).to_absolute(table.url).to_str()
         except Exception:
             resolved = str(raw)
-        if not str(resolved).replace("\\", "/").lower().startswith(root):
+        norm = str(resolved).replace("\\", "/").lower()
+        if not (norm.startswith(root) or layout in norm):
             count += 1
             if len(examples) < sample:
                 examples.append(str(resolved))
