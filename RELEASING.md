@@ -13,8 +13,9 @@ uv run python scripts/release_version.py
 The suite must be green in the **heavy** venv (`uv sync --extra kaggle-classification --group dev`);
 `test_kit_model.py` skips in a light venv and a skip is not a pass. The version
 script checks that `pyproject.toml` and `src/kaggle_classification/plugin.toml`
-agree; `--stamp X.Y.Z` moves both together. Update `CHANGELOG.md`, run `uv lock`,
-commit.
+agree; `--stamp X.Y.Z` moves both together (a PEP 440 pre-release such as
+`1.0.0rc1` is accepted; the catalog orders entries by PEP 440). Update
+`CHANGELOG.md`, run `uv lock`, commit.
 
 ## 1. Push the tag
 
@@ -53,6 +54,24 @@ https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classificatio
 `HEAD` follows the default branch. On a 1.x host the default
 `plugin_install_policy = "catalog-only"` refuses a catalog added through the API,
 so the URL must be in `TLC_COMPUTE_PLUGIN_CATALOG_URLS` on the service command.
+
+## A hosted test catalog for testers (release candidates)
+
+Testers install from a catalog that lists ONLY the candidate, pinned to its tag,
+beside the default catalog. It is `catalog-test.json` committed on the release
+branch `release/<version>` (one commit on top of the tag), served raw:
+
+```
+https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc1/catalog-test.json
+```
+
+compute 1.1.0 accepts `https://` catalogs (and `file://` / local paths; plain
+`http://` only on loopback), so the raw URL works on every tester host.
+`tester/start_tester.ps1` / `.sh` put it in `TLC_COMPUTE_PLUGIN_CATALOG_URLS`
+next to the default catalog (the variable REPLACES the default unless it is
+listed). The kit for testers is `TESTING.md`; its proof on a fresh environment
+is `TESTING_PROOF.md`. A new candidate = a new tag, a new release branch, a new
+URL in `TESTING.md`.
 
 ## Kit data releases (separate from code releases)
 

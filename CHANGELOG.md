@@ -3,7 +3,46 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] — 0.1.0 (sessions 1 to 4)
+## [1.0.0rc1] — 2026-10-05 (session 5: the release candidate)
+
+The first tagged version. Everything listed under "Carried from 0.1.0" below shipped on `develop`
+untagged between sessions 1 and 4 and is part of this release.
+
+### Added (session 5, the Status tab — `docs/STATUS_MIRROR.md`)
+- The Status tab, ExDark's control for control under decisions D1–D10: the hero strip (best public
+  score, latest activity, Kaggle budget, live now), **Runs** (the current project's runs with the
+  revision trained on, labeled rows, best val accuracy and epoch, device, elapsed, status incl.
+  cancelled / interrupted, Dashboard and Projects links), **History** (every prediction with its
+  submission, Kaggle's public score read back by ref — `GetSubmission`, since `ListSubmissions` 403s
+  while the competition is unlaunched — and the score change vs the previous scored submission,
+  ExDark's outcome vocabulary, Copy CSV path / Download CSV), **Kaggle live** (leaderboard top 5 and
+  rank once the API answers; "available after the competition launches" while it does not), the
+  15 s auto-refresh while visible, "Continue to Status" lands on it, `?kgdev=status-…` fixtures.
+- **Verification**: Export verification bundle (`GET /status/bundle`), a zip of the import record,
+  the train revision chain with lineage, every run's provenance record and checkpoint sha256, the
+  ledger, the manifest provenance and the plugin version — never images, table data, tokens or
+  answer keys; a secret-pattern scan refuses the whole export on a match.
+- **Doctor** (collapsed): plugin version and commit, compute service version (from `/health`),
+  SDK / 3lc / torch / torchvision versions, CUDA availability in the worker, device class, manifest
+  source and sha256, kit version and verification state, Kaggle connection, plugin home and how it
+  was resolved, free disk space, Python; Copy diagnostics with a `[doctor]` section.
+- Routes `GET /status/history`, `GET /status/kaggle`, `GET /status/doctor`, `GET /status/bundle`;
+  `status.py`; `tests/test_status.py`.
+
+### Changed (session 5, post-demo fixes)
+- `torch==2.14.0` and `torchvision==0.29.0` pinned exactly on every platform (the parity-gate build;
+  the 2026-10-02 demo worker had drifted to 2.14.1 / 0.29.1 through the catalog install path).
+- Train and Predict warn when the val table has revisions newer than the locked one: "Your edits to
+  val in the Dashboard are ignored; every run is scored on <locked revision>." (`import_state.val_edited`).
+- The Train gate refuses a revision containing rows whose images are outside the kit's train folder
+  (a Hub merge / concatenate that pulls in val or test rows can descend from the seed by lineage;
+  `trainer.foreign_rows`, `GET /train/preflight` serves the count, Start disabled, the job refuses).
+- Versions may be PEP 440 pre-releases (`scripts/release_version.py --stamp 1.0.0rc1`); the catalog
+  orders entries by PEP 440. The catalog's never-tagged `0.1.0` entry is replaced by this one.
+- Tester kit: `TESTING.md`, `tester/start_tester.ps1`, `tester/start_tester.sh`, `catalog-test.json`
+  on the release branch; the proof of the kit on a fresh environment in `TESTING_PROOF.md`.
+
+### Carried from 0.1.0 (sessions 1 to 4, never tagged)
 
 ### Added (session 4, the Predict + Submit tab — 2026-10-01)
 - The Predict + Submit tab, ExDark's control for control (`docs/PREDICT_MIRROR.md`, decisions D1–D12

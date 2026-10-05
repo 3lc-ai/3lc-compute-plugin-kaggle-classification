@@ -12,10 +12,11 @@ detection). This one is **Apache-2.0** and links no Ultralytics code.
 
 ## Status
 
-Session 1 of six: scaffold, competition manifest (schema v1), session store, kit download
-and verification stage, and the dev-only kit builder. The Import, Train, Predict + Submit
-and Status tabs are stubs. See `docs/PLAN.md` for the locked decisions and the session map,
-`CLAUDE.md` for the operating protocol, `CONTEXT.md` for vocabulary.
+Release candidate **1.0.0rc1** (2026-10-05): all four tabs — Import, Train, Predict + Submit,
+Status — mirror the ExDark plugin control for control (`docs/EXDARK_MIRROR.md`,
+`docs/TRAIN_MIRROR.md`, `docs/PREDICT_MIRROR.md`, `docs/STATUS_MIRROR.md`). Testers start
+with `TESTING.md`. See `docs/PLAN.md` for the locked decisions, `CLAUDE.md` for the
+operating protocol, `CONTEXT.md` for vocabulary, `CHANGELOG.md` for what shipped.
 
 ## Run it locally
 

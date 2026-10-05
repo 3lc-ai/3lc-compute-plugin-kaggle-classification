@@ -123,10 +123,12 @@ def test_catalog_ids_and_entry_point_match_the_plugin_id():
 
 
 def test_catalog_versions_are_unique_and_newest_first():
+    from packaging.version import Version
+
     versions = [e["version"] for e in _catalog()["plugins"][0]["versions"]]
     assert len(versions) == len(set(versions))
-    key = lambda v: tuple(int(p) for p in v.split("."))  # noqa: E731
-    assert versions == sorted(versions, key=key, reverse=True)
+    # PEP 440 order: a release candidate sorts below its final version and above the previous one.
+    assert versions == sorted(versions, key=Version, reverse=True)
 
 
 def test_min_service_version_is_the_1_1_floor():
