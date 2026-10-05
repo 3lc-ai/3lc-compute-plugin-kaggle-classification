@@ -1,4 +1,4 @@
-# CLAUDE.md — kaggle-classification plugin (build phase: session 1 of 6)
+# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc2 tagged in session 5)
 
 Vocabulary lives in [CONTEXT.md](CONTEXT.md). This file is the operating
 protocol; depth lives in the docs linked in §E — link, don't duplicate. The
@@ -55,6 +55,11 @@ environments, credential locations); it points here at the repo boundary.
   **reload** (code/fragment edits on a folder source), venv **re-provision**
   (dependency changes), or **fresh install from a new tag** (catalog installs
   never see working-copy changes).
+- **Release candidates** are tagged `vX.Y.ZrcN` (PEP 440; `scripts/release_version.py --stamp`
+  accepts them) and testers install from `catalog-test.json` on the branch `release/<version>`,
+  served raw (RELEASING.md). The plugin's state is version-scoped on the host
+  (`managed-plugins/<id>/<version>/.plugin-state`): a new version starts without the kit, the
+  records and the ledger of the previous one (session 5 finding; open item).
 - **Tests.** `uv run pytest` before any push. The suite is a divergence guard
   first: version strings, description parity, SDK-window overlap with the
   latest 3lc-compute, wheel contents, import weight, licence headers, the
@@ -102,4 +107,6 @@ and update them in the same commit series. Keep them terse.
 | CHANGELOG.md | What each version shipped |
 | docs/EXDARK_MIRROR.md | **The UI rule (2026-09-28): the plugin mirrors the ExDark plugin.** Every shell and Import element, marked verbatim / adapted (allowed difference) / needs decision; the four allowed differences; the safety tests that replaced the innerHTML ban |
 | docs/PREDICT_MIRROR.md | **Session 4:** the Predict + Submit tab mirrored control for control; the checkpoint gate (three-way sha256 + green provenance), the test-inputs gate, the val check, the submission format vs the metric, the ledger entries, the Kaggle client; decisions D1–D12; the gates |
+| docs/STATUS_MIRROR.md | **Session 5:** the Status tab mirrored control for control (hero, Runs, History with Kaggle's score by ref, Kaggle live, Verification bundle, Doctor); decisions D1–D10 "Decided in session 5 (review later)" |
+| TESTING.md · TESTING_PROOF.md | The tester kit for people who never saw the project (prerequisites, install, `tester/start_tester.ps1` / `.sh`, the Hub connection, the numbered checklist, the feedback template) and its proof on a fresh environment |
 | ../3lc-compute-plugin-kaggle/docs/ui-notes.md | The UI playbook the tabs follow from session 2 (six-state machines, motion, icons, copy) |

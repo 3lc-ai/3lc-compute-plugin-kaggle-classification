@@ -177,8 +177,13 @@ giving it a real class, and it enters the next revision's training set.
 - **Predictor + Submit (sessions 4, 5)** — plugin-run-only weights; `submission.csv` with
   `manifest.submission.columns` in `ids_from` order; Kaggle API against `competition.slug`;
   budget `daily_limit`.
-- **Ledger (session 5)** — JSON-lines under the plugin home; verification bundle per run.
-- **Status (session 6)** — history, budget, best score; friendly Kaggle-failure degradation.
+- **Ledger (sessions 4–5, shipped)** — JSON-lines under the plugin home (`ledger.py`); the verification
+  bundle (`status.verification_bundle`, `GET /status/bundle`): the import record, the train revision
+  chain, every run's provenance + checkpoint sha256, the ledger, the manifest provenance, the plugin
+  version — never data, tokens or answer keys (a secret-pattern scan refuses the export).
+- **Status (session 5, shipped)** — `docs/STATUS_MIRROR.md`: the hero strip, Runs, History (Kaggle's
+  public score read back by ref, the delta vs the previous scored submission), Kaggle live with the
+  after-launch degradation, the Doctor; routes `GET /status/{history,kaggle,doctor,bundle}`.
 
 ## D. Session map
 
@@ -188,8 +193,8 @@ giving it a real class, and it enters the next revision's training set.
 | 2 | Import tab: kit download UI, table registration, revisit view, pickers | the published kit prefix (Phase 3 output staged) |
 | 3 | Train tab: trainer per §B, bounds, device-aware workers, the ETA benchmark (shipped 2026-09-29) | a GPU box to record the reference trajectory (the laptop's RTX 3070 Ti, gate G1) |
 | 4 | Predict tab: plugin-run-only inference, submission.csv | test-set answer key on the organizer machine (local scoring, optional) |
-| 5 | Submit + ledger + verification bundle | Kaggle credentials on a test account; the competition in draft |
-| 6 | Status tab, release audit run, catalog tag | catalog URL policy on the participants' hosts |
+| 5 | Submit (shipped in 4) · the Status tab · the verification bundle · post-demo fixes (torch pinned, val-edit warning, the foreign-rows gate) · release candidates **1.0.0rc1** and **1.0.0rc2** (the proof's fix) tagged · the tester kit proven (`TESTING.md`, `TESTING_PROOF.md`) — 2026-10-05 | the hosted test catalog URL for testers (RELEASING.md) |
+| 6 | tester feedback → 1.0.0; the open items (version-scoped plugin state across updates, the orphaned-worker investigation, the cdn manifest re-upload) | the launch date; Gudbrand's promotion of the manifest to prod |
 
 ## E. Open items (TBC, placeholders in the bundled manifest)
 

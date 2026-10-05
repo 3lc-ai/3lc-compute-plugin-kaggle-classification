@@ -176,6 +176,15 @@ def _live_verdict(ref: str, api_holder: dict[str, Any], budget: dict[str, int]) 
     return verdict
 
 
+def _check_ok(c: Any) -> bool:
+    """A check as the ledger writes it (``[label, ok]`` pairs, PREDICT §6) or as the records keep it (dicts)."""
+    if isinstance(c, dict):
+        return bool(c.get("ok"))
+    if isinstance(c, (list, tuple)) and len(c) >= 2:
+        return bool(c[1])
+    return False
+
+
 def _final(verdict: dict[str, Any] | None) -> bool:
     return bool(verdict) and str(verdict.get("status") or "").upper() in ("COMPLETE", "ERROR")
 
@@ -215,7 +224,7 @@ def prediction_history(manifest: Manifest, *, live: bool = False) -> list[dict[s
             "rows": csv.get("rows"),
             "val_accuracy": score.get("value") if isinstance(score, dict) else None,
             "val_recorded": score.get("recorded") if isinstance(score, dict) else None,
-            "checks_ok": bool(checks) and all(c.get("ok") for c in checks),
+            "checks_ok": bool(checks) and all(_check_ok(c) for c in checks),
             "checkpoint_sha256": (e.get("checkpoint") or {}).get("sha256_recorded") or "",
             "submission": None,
             "public_score": None,

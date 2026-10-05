@@ -67,7 +67,9 @@ def _predict_entry(job_id: str, train_id: str, name: str, project: str = PROJECT
                        "sha256_on_run": "ff" * 32},
         "contract": {"seed": 42}, "test_inputs": {"count": 4}, "device": "cuda",
         "csv": {"path": f"C:/home/predictions/{name}/submission_x.csv", "sha256": "aa" * 32, "rows": 4},
-        "checks": [{"label": "c", "ok": True}], "sanity": {},
+        # The ledger stores a prediction's checks as [label, ok] pairs (predictor.py), not dicts — the
+        # shape the tester proof on 1.0.0rc1 caught (an empty History after a real prediction).
+        "checks": [["columns are image_id, prediction, confidence", True], ["no missing values", True]], "sanity": {},
         "local_score": {"kind": "val", "value": 51.5, "recorded": 51.5},
     }
 

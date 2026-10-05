@@ -3,6 +3,13 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc2] — 2026-10-05 (session 5: the tester proof's fix)
+
+### Fixed
+- The Status tab's History listed no prediction: the ledger stores a prediction's checks as
+  `[label, ok]` pairs and `status.prediction_history` read them as dicts. Found by the tester proof on
+  1.0.0rc1 (`TESTING_PROOF.md`); the unit fixture now uses the ledger's real shape.
+
 ## [1.0.0rc1] — 2026-10-05 (session 5: the release candidate)
 
 The first tagged version. Everything listed under "Carried from 0.1.0" below shipped on `develop`
