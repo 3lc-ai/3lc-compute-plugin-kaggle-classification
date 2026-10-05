@@ -136,3 +136,32 @@ def test_fresh_install_and_folder_source_use_the_compute_home_without_a_carry_fo
     monkeypatch.chdir(tmp_path)
     assert storage.resolve()[1] == "home"
     storage._reset_for_tests()
+
+
+def test_a_garbage_collected_old_kit_tree_is_recreated_from_the_shared_copy(monkeypatch, tmp_path):
+    """rc5: the host keeps three version dirs; tables imported before rc3 point into an older one's kit.
+    The marker remembers that data dir and the plugin re-creates it from its own copy when it is gone."""
+    import json
+    import shutil
+
+    monkeypatch.delenv(storage.HOME_ENV, raising=False)
+    storage._reset_for_tests()
+    compute_home = tmp_path / "home" / ".3lc-compute"
+    managed = compute_home / storage.MANAGED_DIR_NAME / storage.PLUGIN_ID
+    old = _old_state(managed / "1.0.0rc2")
+    new_version = managed / "1.0.0rc3"
+    new_version.mkdir(parents=True)
+    monkeypatch.chdir(new_version)
+    home, _ = storage.resolve()
+    marker = json.loads((home / storage.MIGRATION_MARKER).read_text(encoding="utf-8"))
+    assert marker["legacy_data_dirs"] == [str(old / "data")]
+    # The host removes the old version dir (gc_old_versions); the next process start brings the kit back.
+    shutil.rmtree(managed / "1.0.0rc2")
+    assert not (old / "data").exists()
+    storage._reset_for_tests()
+    assert storage.resolve() == (home, "compute-home")
+    assert (old / "data" / "comp" / "v1" / "starter_kit" / "data" / "train" / "a" / "x.jpg").is_file()
+    assert not (old / "ui_config.json").exists()   # only the data tree, nothing else
+    marker = json.loads((home / storage.MIGRATION_MARKER).read_text(encoding="utf-8"))
+    assert marker["restored"][0]["dirs"] == [str(old / "data")]
+    storage._reset_for_tests()

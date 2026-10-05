@@ -50,6 +50,7 @@ _PATH_BEARING = ("ui_config.json", "ledger.jsonl")
 _PATH_BEARING_DIRS = ("kit",)
 # Caches, never carried: rebuilt on demand.
 _SKIP_ON_COPY = ("numba-cache",)
+DATA_DIR_NAME = "data"                    # the kit data under the plugin home (kit.default_dest)
 
 _state_root: Path | None = None
 _shared_lock = threading.Lock()
@@ -154,11 +155,46 @@ def carry_forward(shared: Path, managed_dir: Path) -> dict | None:
     marker = {
         "source": str(src), "destination": str(shared), "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "rewritten": rewritten, "skipped": list(_SKIP_ON_COPY),
+        # Tables imported before the move keep their image paths into the source's kit tree; the host
+        # garbage-collects old version dirs (three are kept), so the plugin re-creates that tree from its
+        # own copy whenever it is missing (``ensure_legacy_data_dirs``, rc5).
+        "legacy_data_dirs": [str(src / DATA_DIR_NAME)] if (src / DATA_DIR_NAME).is_dir() else [],
         "note": "The plugin's state moved out of the version dir (1.0.0rc3). The source copy was left in place; "
-                "tables imported before this move keep their image paths into the source's kit dir.",
+                "tables imported before this move keep their image paths into the source's kit dir, which the "
+                "plugin re-creates from its own copy if the host removes the old version dir.",
     }
     (shared / MIGRATION_MARKER).write_text(json.dumps(marker, indent=1), encoding="utf-8")
     return marker
+
+
+def ensure_legacy_data_dirs(shared: Path) -> list[str]:
+    """Re-create every ``legacy_data_dirs`` entry of the carry-forward marker that is missing on disk from
+    the shared home's own ``data`` tree (byte-identical: the kit is sha256-verified per file). The host's
+    ``gc_old_versions`` keeps three version dirs; the tables imported before rc3 point into an older one.
+    Returns the dirs re-created."""
+    marker_path = shared / MIGRATION_MARKER
+    if not marker_path.is_file():
+        return []
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    restored: list[str] = []
+    source = shared / DATA_DIR_NAME
+    for raw in marker.get("legacy_data_dirs") or []:
+        legacy = Path(str(raw))
+        if legacy.exists() or not source.is_dir():
+            continue
+        try:
+            shutil.copytree(source, legacy)
+            restored.append(str(legacy))
+        except OSError:
+            continue
+    if restored:
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        marker.setdefault("restored", []).append({"at": stamp, "dirs": restored})
+        marker_path.write_text(json.dumps(marker, indent=1), encoding="utf-8")
+    return restored
 
 
 def _shared_home(cwd: Path) -> Path | None:
@@ -172,6 +208,7 @@ def _shared_home(cwd: Path) -> Path | None:
             if key not in _shared_ready:
                 try:
                     carry_forward(shared, managed_dir)
+                    ensure_legacy_data_dirs(shared)
                 finally:
                     _shared_ready.add(key)
     return shared

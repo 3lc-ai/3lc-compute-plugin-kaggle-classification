@@ -51,6 +51,30 @@ Not reproduced live: the training set's tlc indexer logged its known transient w
 `object.3lc.json` was being written ("invalid content in object file … EOF", then "indexer skipping
 URL"); the run completed with 9/9 provenance checks, as on 2026-09-29 (CONTEXT.md open item).
 
+## Runs 3–5 — the upgrade path (TESTING.md §8b): rc2 state present, a newer candidate installed
+
+Same environment, the rc2 proof's state left in place (`…\managed-plugins\kaggle-classification\1.0.0rc2\.plugin-state\…`:
+the kit, the import record, one run, one prediction, the ledger), the new candidate installed from its hosted
+catalog, then `proof_tester.py --upgrade`: it asserts that the plugin home moved to
+`C:\Users\rishi\Desktop\3LC Hackathons\3lc-hub-tester\home\.3lc-compute\plugin-state\kaggle-classification`
+(`resolved_by: compute-home`, `migrated_from` = the rc2 state, `ui_config.json` / `ledger.jsonl` / `kit/intel-scene.json`
+rewritten), the kit still `success` (download skipped), the import record `success`, the previous run and prediction
+listed, the previous prediction's CSV still downloadable (HTTP 200), the rc2 version dir kept — and then runs the
+checklist again on the carried-forward tables (the import REUSES them; a new labeled revision `labels-batch-N`).
+
+| Run | Candidate | Result |
+|---|---|---|
+| 3 (13:15–13:17) | rc2 → **rc3** | state carried forward (all assertions above PASS), kit download skipped, import REUSED 18/18, revision `labels-batch-2` seen — **FAIL at Train**: "The train table revision … contains 6,600 row(s) whose images are not in the kit's train folder": the carry-forward rewrote the record's `kit_dir` to the new home while the tables' image paths stay in rc2's kit tree, and the rc2 foreign-rows gate compared against the new path only. Fixed in rc4 (the gate also accepts a train image by the kit layout `<kit>/data/train/`) |
+| 4 (13:22:44 → 13:25:46) | rc2 → **rc4** (the shared home removed first, so the carry-forward ran afresh from the rc2 state) | **PASS** — carried forward (`rewritten: ui_config.json, ledger.jsonl, kit/intel-scene.json`; 1 run and 1 prediction before; old CSV HTTP 200; version dirs rc2 · rc3 · rc4); kit skipped; import REUSED 18/18 in 4 s; `labels-batch-3`; train 2 epochs **38.1 s** on the carried tables, 41.67 % at epoch 2, 9/9; predict 6 s, 10/10; CSV 1,800 rows; Status: **2 runs, 2 predictions**; bundle 10 members |
+| 5 | rc4 → **rc5** | RUN5_PLACEHOLDER |
+
+What run 4 also showed, on the development Hub rather than the tester: installing a fourth version let the
+host's `gc_old_versions` (keeps three) remove the `0.1.0` dir — the one hub-11's hand-copied records and its
+existing projects' tables point into for their images. The kit tree was restored from the shared home's
+sha256-verified copy, and rc5 makes the plugin do that by itself (`legacy_data_dirs` in the carry-forward
+marker, re-created on every process start when missing). The tester environment never had that problem: its
+records were rewritten to the shared home, and its tables' kit dir (rc2's) is still kept.
+
 ## Run 1 — 1.0.0rc1, fresh home — PASS on every step, one defect found (12:14:31 → 12:18:13)
 
 Same environment, same steps, same numbers within seconds (install 30 s with the cache already warm,

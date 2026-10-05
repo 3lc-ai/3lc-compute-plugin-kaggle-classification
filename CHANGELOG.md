@@ -3,6 +3,16 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc5] — 2026-10-05 (session 5: the old kit tree survives the host's garbage collection)
+
+### Fixed
+- Tables imported before 1.0.0rc3 keep their image paths into the previous version's kit tree, and the
+  host removes old version dirs after three updates (`gc_old_versions`) — on the development Hub the
+  rc4 install removed exactly the dir the existing projects' images live in. The carry-forward marker
+  now records that data tree (`legacy_data_dirs`) and the plugin re-creates it from its own
+  sha256-verified copy whenever it is missing (`storage.ensure_legacy_data_dirs`, on every process
+  start). Nothing is deleted; tables imported since rc3 live in the shared home and need no copy.
+
 ## [1.0.0rc4] — 2026-10-05 (session 5: the upgrade proof's fix)
 
 ### Fixed
