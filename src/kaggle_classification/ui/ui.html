@@ -154,6 +154,24 @@
 .kg-footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); margin: -6px 2px 16px; }
 .kg-footer a { color: inherit; text-decoration: none; }
 .kg-footer a:hover { color: var(--text-secondary); }
+/* ── Status tab (ExDark's, verbatim): hero strip + history table. Three questions at a glance: how good is
+   my best, what happened last, what can I do now. Paths never render in the table (actions carry them);
+   relative times carry absolute titles. ── */
+.kg-hero-strip { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.kg-hero-strip .kg-hero { flex: 1 1 150px; }
+.kg-hero .val { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.35; margin-top: 1px; }
+.kg-updated-row { display: flex; align-items: center; gap: 2px; justify-content: flex-end; margin: 0 0 10px; font-size: 11px; color: var(--text-muted); }
+.kg-st-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.kg-st-table th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-muted); padding: 4px 10px 4px 0; border-bottom: 1px solid var(--border); }
+.kg-st-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); vertical-align: middle; }
+.kg-st-table .when { color: var(--text-secondary); white-space: nowrap; }
+.kg-st-table .score { font-weight: 600; white-space: nowrap; }
+.kg-st-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.kg-delta-up { color: var(--success); white-space: nowrap; }
+.kg-delta-down { color: var(--danger, #ef4444); white-space: nowrap; }
+.kg-delta-flat { color: var(--text-muted); white-space: nowrap; }
+.kg-outcome-bad { color: var(--danger, #ef4444); }
+.kg-st-wrap { overflow-x: auto; }
 .kg-preflight-ok { display: flex; gap: 7px; align-items: flex-start; color: var(--success); font-size: 12px; margin-top: 6px; line-height: 1.5; }
 .kg-preflight-ok .kgi { margin-top: 2px; }
 .kg-callout { display: flex; gap: 8px; align-items: flex-start; padding: 9px 12px; border-radius: var(--radius-lg, 8px); margin-top: 6px; font-size: 12px; line-height: 1.55; }
@@ -759,12 +777,48 @@
   <div class="kg-footer" data-kg-footer></div>
   </div>
 
-  <!-- ── 4. Status: ExDark's gate card until its session ── -->
+  <!-- ── 4. Status (ExDark's tab, docs/STATUS_MIRROR.md): hero strip, Runs (+brief), History, Kaggle live,
+       Verification (+brief), Doctor (+brief). Gated behind the import record like Train and Predict. ── -->
   <div class="kg-panel" id="kg-panel-status">
   <div class="card" style="margin-bottom: 16px;">
-    <div class="card-header"><div><div class="card-title"><span class="plugin-section-number">4</span> Status</div>
-      <div class="card-subtitle">Your runs, submissions and leaderboard standing.</div></div></div>
-    <div class="card-body"><div id="st-conn-banner" role="status" aria-live="polite"></div><div id="st-gate"></div></div>
+    <div class="card-header"><div>
+      <div class="card-title"><span class="plugin-section-number">4</span> Status</div>
+      <div class="card-subtitle">Your best score, latest activity, and submission history.</div>
+    </div></div>
+    <div class="card-body">
+      <!-- Connection guard banner (network-level failures only) -->
+      <div id="st-conn-banner" role="status" aria-live="polite"></div>
+      <div id="st-gate"></div>
+      <div id="st-body" hidden>
+        <div class="kg-hero-strip" id="st-hero"></div>
+        <div class="kg-updated-row">
+          <span id="st-updated" aria-live="off"></span>
+          <button type="button" id="st-refresh-btn" class="btn btn-ghost btn-sm kgi-btn"
+                  title="Refresh" aria-label="Refresh status"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.97"/><path d="M13.5 2.5V6H10"/></svg></button>
+        </div>
+        <div class="kg-sec-head">Runs</div>
+        <div id="st-runs" class="kg-st-wrap"><div class="form-help">Loading…</div></div>
+        <hr class="divider">
+        <div class="kg-sec-head">History</div>
+        <div id="st-history" class="kg-st-wrap"><div class="form-help">Loading…</div></div>
+        <hr class="divider">
+        <div class="kg-sec-head">Kaggle live</div>
+        <div id="st-kaggle"><div class="form-help">Checking Kaggle…</div></div>
+        <hr class="divider">
+        <div class="kg-sec-head">Verification</div>
+        <div id="st-verify">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button type="button" id="st-export-btn" class="btn btn-secondary btn-sm kgi-btn"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8"/><path d="M4.75 7.25L8 10.5l3.25-3.25"/><path d="M3 13.25h10"/></svg><span>Export verification bundle</span></button>
+            <span id="st-export-note" class="form-help" style="margin:0"></span>
+          </div>
+          <div class="form-help">A zip of the records an organizer verifies a leaderboard entry against: the import record, the train revision chain, every run’s provenance and checkpoint sha256, the ledger, the manifest provenance and the plugin version. Never images, table data, tokens or answer keys.</div>
+        </div>
+        <div class="kg-log-details" id="st-doctor-details" style="display:block">
+          <button type="button" class="kgl-acc-summary" id="st-doctor-toggle" aria-expanded="false" aria-controls="st-doctor-panel"><span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Doctor</button>
+          <div class="kgl-acc" id="st-doctor-panel" hidden><div class="kgl-acc-inner"><div id="st-doctor"><div class="form-help">Loading…</div></div></div></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="kg-footer" data-kg-footer></div>
   </div>
@@ -793,13 +847,15 @@
       // state3, state4, state5, state6, state6-superseded, dl-empty, dl-running, dl-verify,
       // dl-success, dl-fail, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
       // train-state2-missing, train-state2-rows, train-state2-invalid, train-state2-undefined-weight,
-      // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state3,
+      // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state2-foreign,
+      // train-state2-val-edited, train-state3,
       // train-state3-collecting, train-state3-cpu-retry, train-state4, train-state4-noproject,
       // train-state5, train-state5-stale, train-state6, train-state6-cancelled; Predict + Submit:
       // submit-state1, submit-gated, submit-gate-missing, submit-provenance-blocked,
       // submit-checkpoint-changed, submit-inference, submit-results, submit-results-val,
       // submit-results-low, submit-checks-fail, submit-nokaggle, submit-notjoined, submit-limit,
-      // submit-success, submit-rejected, submit-fail, submit-kaggle-error, submit-revisit.
+      // submit-success, submit-rejected, submit-fail, submit-kaggle-error, submit-revisit; Status: status-empty,
+      // status-history, status-live-running, status-kaggle-live, status-kaggle-403.
       var kgDevMode = new URLSearchParams(window.location.search).get('kgdev');
 
       // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
@@ -955,6 +1011,7 @@
         if (name !== 'import' && kgConfigDone) { kgRenderGates(); }
         if (name === 'train' && kgConfigDone) { trOnTabEnter(); }
         if (name === 'submit' && kgConfigDone) { psOnTabEnter(); }
+        if (name === 'status') { stOnTabEnter(); } else { stStopAuto(); }
       }
 
       Array.prototype.forEach.call(
@@ -1586,19 +1643,16 @@
         });
       }
 
-      // Gate card on the tabs that need the imported tables (ExDark's Train gate). The Predict
-      // tab's body renders behind it once an import record exists; Status stays gated (session 6).
+      // Gate card on the tabs that need the imported tables (ExDark's Train gate). The Predict and
+      // Status bodies render behind it once an import record exists (session 5 ungated Status).
       function kgRenderGates() {
         var imported = kgImportState.state === 'success';
-        [['ps-gate', 'Predict + Submit'], ['st-gate', 'Status']].forEach(function (pair) {
+        [['ps-gate', 'Predict + Submit', 'ps-body'], ['st-gate', 'Status', 'st-body']].forEach(function (pair) {
           var box = el(pair[0]);
           if (!box) { return; }
-          if (pair[0] === 'ps-gate') { el('ps-body').hidden = !imported; }
+          el(pair[2]).hidden = !imported;
           if (imported) {
             box.innerHTML = '';
-            if (pair[0] !== 'ps-gate') {
-              box.innerHTML = '<div class="form-help">The ' + esc(pair[1]) + ' tab arrives in a later session.</div>';
-            }
             return;
           }
           box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
@@ -2989,6 +3043,18 @@
         }
       });
 
+      // Part B2 (session 5): the val dataset has revisions newer than the LOCKED one. Every run is
+      // scored on the locked revision (PLAN §A), so edits to val in the Dashboard change nothing.
+      function kgValEditedWarning() {
+        var st = kgImportState || {};
+        if (!st.val_edited) { return ''; }
+        var rec = st.record || {};
+        var locked = ((rec.val_locked || {}).url) || (((rec.tables || {}).val || {}).url) || '';
+        return '<div class="kg-callout warn kg-val-edited">' + kgIcon('alert-triangle') +
+               '<span>Your edits to val in the Dashboard are ignored; every run is scored on ' +
+               esc(kgTableRef(locked) || 'the locked val revision') + '.</span></div>';
+      }
+
       function trRenderValLocked() {
         var box = el('tr-val-locked');
         if (!box) { return; }
@@ -3004,7 +3070,7 @@
           '<span class="val">' + esc(kgTableRef(url) || midTrunc(url, 40)) + (rows ? ' · ' + fmtCount(rows) + ' rows' : '') + '</span>' +
           '<span class="kg-lock-actions"><button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(url) +
           '" title="Copy val table path (a path on the compute service\'s machine)" aria-label="Copy val table path">' + kgIcon('copy', 'kgi-12') + '</button>' +
-          kgIcon('lock', 'kgi-12') + '</span></div>';
+          kgIcon('lock', 'kgi-12') + '</span></div>' + kgValEditedWarning();
         kgBindCopy(box);
       }
 
@@ -3413,6 +3479,15 @@
           problems.push('Only revisions of ' + esc(kgTableRef(info.seed_url) || 'the imported train table') +
                         ' can be trained on. Pick one in the field above.');
         }
+        if (rev.foreign_rows > 0) {
+          // Part B3: a merged / concatenated table can descend from the seed and still carry val or test rows.
+          headline = headline || 'This revision contains rows from outside the kit’s train folder.';
+          problems.push(fmtCount(rev.foreign_rows) + ' row' + (rev.foreign_rows === 1 ? '' : 's') +
+                        ' point at images outside the kit’s train folder' +
+                        (rev.kit_train_dir ? ' (' + esc(midTrunc(kgCleanPath(rev.kit_train_dir), 40)) + ')' : '') +
+                        ' — a merged val or test table? Table operations that pull in other splits are not allowed. ' +
+                        'Pick a revision of the imported train table.');
+        }
         if (info.label_map_ok === false) {
           headline = headline || 'This table\'s class map is not the imported one.';
           problems.push('Label edits must keep the competition classes. Pick a revision of the imported train table.');
@@ -3753,8 +3828,14 @@
         if (kgDevMode) { return Promise.resolve(); }
         return Promise.all([
           API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); }).catch(function () { return null; }),
-          API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); }).catch(function () { return null; })
+          API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); }).catch(function () { return null; }),
+          API.authFetch(PLUGIN_ROOT + '/import/state').then(function (r) { return r.json(); }).catch(function () { return null; })
         ]).then(function (both) {
+          if (both[2] && both[2].state) {
+            // Part B2: the val-edited flag (and the latest revisions) follow the Dashboard.
+            kgImportState = both[2];
+            trRenderValLocked();
+          }
           if (both[0]) {
             kgTrainState = both[0];
             if (kgTrainState.current_in_project === false && !trRunning && el('tr-banner').innerHTML) {
@@ -4141,6 +4222,7 @@
         // not captured once (the "No usable rows" fixture bug of the 2026-09-29 closeout).
         var m, names, nC, perClass, pool, valRows, labeled, trainRows, arch, px, id, base, trainUrl, revUrl, rev2Url,
             valUrl, devRun, runUrl, weights, sha, mf, tvV;
+        var devDlKitTrain = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc1\\.plugin-state\\kaggle-classification\\data\\competition\\v1\\starter_kit\\data\\train';
         function derive() {
           m = kgManifest || {};
           names = (m.classes || []).map(function (c) { return c.name; });
@@ -4188,7 +4270,8 @@
                    undefined_with_weight: undefW, per_class: per, classes_without_rows: empty || [] };
         }
         function INFO(over) {
-          var rev = { url: trainUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 0, summary: S(labeled, pool, 0, 0) };
+          var rev = { url: trainUrl, rows: trainRows, descends_from_seed: true, steps_from_seed: 0, summary: S(labeled, pool, 0, 0),
+                      foreign_rows: 0, foreign_examples: [], kit_train_dir: devDlKitTrain };
           var info = { url: trainUrl, exists: true, split_ok: true, import_state: 'success', seed_url: trainUrl, val_locked_url: valUrl,
                        max_rows: trainRows, base: rev, latest: rev, latest_url: trainUrl, has_revisions: false, label_map_ok: true };
           Object.keys(over || {}).forEach(function (k) { info[k] = over[k]; });
@@ -4340,6 +4423,19 @@
             el('tr-train-url').value = stranger;
             trTableInfo = INFO({ url: stranger, base: st, latest: st, latest_url: stranger });
             trEvaluateGate();
+          } else if (mode === 'train-state2-foreign') {
+            var merged = base + kgDatasetName('train') + '/tables/merged-with-val';
+            var mt = { url: merged, rows: trainRows + valRows, descends_from_seed: true, steps_from_seed: 1, summary: S(labeled + valRows, pool, 0, 0),
+                       foreign_rows: valRows, foreign_examples: [], kit_train_dir: devDlKitTrain };
+            el('tr-latest').checked = false;
+            el('tr-train-url').value = merged;
+            trTableInfo = INFO({ url: merged, base: mt, latest: mt, latest_url: merged });
+            trEvaluateGate();
+          } else if (mode === 'train-state2-val-edited') {
+            kgImportState = { state: 'success', val_edited: true, val_latest_url: valUrl + '-edited',
+                              record: { project_name: id, val_locked: { url: valUrl }, tables: { val: { url: valUrl, rows: valRows } } } };
+            trRenderValLocked();
+            gateGreen();
           } else if (mode === 'train-state3' || mode === 'train-state3-collecting' || mode === 'train-state3-cpu-retry') {
             gateGreen();
             trRunning = true;
@@ -4606,7 +4702,7 @@
         el('ps-test-locked').innerHTML = '<div class="kg-locked-row" title="' +
           esc(dir ? dir : 'The kit’s test images, verified per file against files.json before inference.') +
           '"><span class="lbl">Kit</span><span class="val">' + dirText +
-          (n ? ' · ' + fmtCount(n) + ' images' : '') + '</span>' + kgIcon('lock', 'kgi-12') + '</div>';
+          (n ? ' · ' + fmtCount(n) + ' images' : '') + '</span>' + kgIcon('lock', 'kgi-12') + '</div>' + kgValEditedWarning();
       }
       function psRenderGate(data) {
         var box = el('ps-table-gate');
@@ -5519,6 +5615,675 @@
         configLoaded.then(function () { setTimeout(apply, 0); });
       }
 
+      // ── Status tab: from dump to answer (ExDark's, docs/STATUS_MIRROR.md) ──────────────
+      // Three questions at a glance: how good is my best (hero), what happened last (history,
+      // outcome vocabulary), what can I do now (budget, live jobs, actions). Renderers take data
+      // so ?kgdev fixtures can drive them without fetches. Ours adds the Runs table, the Doctor
+      // and the verification bundle (+brief; decisions D1–D10 in STATUS_MIRROR §3).
+      var stLastUpdated = null;
+      var stBusy = false;
+      var stHistory = { runs: [], predictions: [], best_public_score: null };
+      var stDoctor = null;
+      var stHealth = null;
+      var stDoctorLoaded = false;
+
+      function kgWhenSpan(ts, cls) {
+        if (!ts) { return ''; }
+        var abs = new Date(ts * 1000).toLocaleString();
+        return '<span' + (cls ? ' class="' + esc(cls) + '"' : '') + ' title="' + esc(abs) + '">' +
+               esc(kgFmtAgo(ts)) + '</span>';
+      }
+
+      function stHeroBlock(lbl, mainHtml, noteHtml, big) {
+        return '<div class="kg-hero"><div class="lbl">' + esc(lbl) + '</div>' +
+               '<div class="' + (big ? 'num' : 'val') + '">' + mainHtml + '</div>' +
+               (noteHtml ? '<div class="note">' + noteHtml + '</div>' : '') + '</div>';
+      }
+
+      function stRunName(row) {
+        return (row && (row.run_folder || row.run_name)) || 'run';
+      }
+
+      function stBindGoto(container) {
+        container.querySelectorAll('.st-goto-train').forEach(function (b) {
+          b.addEventListener('click', function () { showTab('train'); });
+        });
+        container.querySelectorAll('a[data-goto]').forEach(function (a) {
+          a.addEventListener('click', function () { showTab(a.getAttribute('data-goto')); });
+          a.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTab(a.getAttribute('data-goto')); }
+          });
+        });
+      }
+
+      // Outcome vocabulary: participant language, never job-state jargon (ExDark's, plus Kaggle's
+      // verdict from the read-back — PREDICT D12).
+      function stOutcome(row) {
+        var sub = row.submission || null;
+        var k = (sub && sub.kaggle) || {};
+        if (row.status === 'failed') {
+          var msg = String(row.error || '');
+          var validation = /submission|rows|columns|image_id|prediction|confidence/i.test(msg);
+          return { html: '<span class="kg-outcome-bad">' + (validation ? 'Validation failed' : 'Failed') + '</span>',
+                   title: msg, short: validation ? 'validation failed' : 'failed' };
+        }
+        if (row.status === 'stale') { return { html: 'Interrupted', title: row.error || '', short: 'interrupted' }; }
+        if (row.status === 'running') { return { html: 'Running…', title: '', short: 'running' }; }
+        if (sub && sub.status === 'submitted') {
+          var refHtml = sub.ref ? ' · <code style="font-size:11px">#' + esc(sub.ref) + '</code>' : '';
+          if (k.status === 'ERROR') {
+            return { html: 'Submitted' + refHtml + ' · <span class="kg-outcome-bad">rejected by Kaggle</span>',
+                     title: k.error_description || '', short: 'rejected by Kaggle' + (sub.ref ? ' #' + sub.ref : '') };
+          }
+          if (k.status === 'COMPLETE') {
+            return { html: 'Submitted' + refHtml, title: '', short: 'submitted' + (sub.ref ? ' #' + sub.ref : '') };
+          }
+          return { html: 'Submitted' + refHtml + ' · scoring…', title: k.error || '',
+                   short: 'submitted' + (sub.ref ? ' #' + sub.ref : '') + ' · scoring' };
+        }
+        if (sub && sub.status === 'limit_reached') {
+          return { html: 'CSV generated (daily limit reached)', title: sub.reason || '', short: 'CSV generated' };
+        }
+        if (sub && sub.status === 'not_joined') {
+          return { html: 'CSV generated (not joined on Kaggle)', title: sub.reason || '', short: 'CSV generated' };
+        }
+        if (sub && sub.status === 'failed') {
+          return { html: '<span class="kg-outcome-bad">Submission rejected</span>', title: sub.reason || '', short: 'submission rejected' };
+        }
+        return { html: 'CSV generated (not submitted)', title: '', short: 'CSV generated' };
+      }
+
+      // What the host's job list says is running now, in the Loop's words (the first running job).
+      function stLiveKind(lj) {
+        var label = ((lj.progress || {}).label || '') + (lj.subtitle || '');
+        if (/inference|val check/i.test(label)) { return { title: 'Predicting', detail: label, tab: 'submit' }; }
+        if (/submitting/i.test(label)) { return { title: 'Submitting', detail: 'Submitting to Kaggle', tab: 'submit' }; }
+        if (/epoch|training|collecting|per-sample/i.test(label)) {
+          var cur = kgTrainState.current || {};
+          var p = (cur.status === 'running' && cur.progress) || {};
+          var detail = p.total_epochs ? 'Epoch ' + fmtCount(p.epoch || 0) + '/' + fmtCount(p.total_epochs) : (label || 'Training');
+          return { title: 'Training', detail: detail, tab: 'train' };
+        }
+        if (/shard|download/i.test(label)) { return { title: 'Downloading', detail: label, tab: 'import' }; }
+        return { title: 'Importing', detail: label || 'Import running', tab: 'import' };
+      }
+
+      // Hero strip. `live` is omitted entirely when nothing is running — no empty placeholder blocks.
+      function stRenderHero(records, best, liveJobs) {
+        var html = stHeroBlock('Best public score',
+          best ? esc(best.score.toFixed(5)) : '<span style="color:var(--text-muted)">no scores yet</span>',
+          best ? esc(best.run_name || '') + (best.ref ? ' · submission ' + esc(best.ref) : '')
+               : 'Kaggle’s score of your best submission lands here.', !!best);
+        var latest = records[0];
+        if (latest) {
+          var o = stOutcome(latest);
+          var badgeCls = TR_BADGE_CLASS[latest.status] || 'queued';
+          html += stHeroBlock('Latest activity',
+            kgWhenSpan(latest.ts) + ' <span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(latest.status)) + '</span>',
+            esc(stRunName(latest)) + ' · ' + esc(o.short), false);
+        } else {
+          html += stHeroBlock('Latest activity',
+            '<span style="color:var(--text-muted)">no activity yet</span>', 'Predictions and submissions land here.', false);
+        }
+        var b = psBudget();
+        if (psConnState && psConnState.state === 'ready' && b) {
+          // The used-today counter needs GetSubmissionLimits; without it the block degrades to the plain limit.
+          html += stHeroBlock('Kaggle budget',
+            b.left === null ? fmtCount(b.limit) + '/day limit' : fmtCount(b.limit - b.left) + ' of ' + fmtCount(b.limit) + ' today',
+            b.left === null ? 'Per-day counter unavailable on this competition.' : 'Resets 00:00 UTC.', false);
+        }
+        (liveJobs || []).slice(0, 1).forEach(function (lj) {
+          var what = stLiveKind(lj);
+          html += stHeroBlock('Live now', esc(what.title),
+            esc(what.detail) + ' · <a data-goto="' + esc(what.tab) + '" tabindex="0" role="button" style="cursor:pointer">Open tab</a>', false);
+        });
+        el('st-hero').innerHTML = html;
+        stBindGoto(el('st-hero'));
+      }
+
+      // The Runs table (+brief, D2): the current project's runs, newest first.
+      function stRenderRuns(runs) {
+        var box = el('st-runs');
+        if (!runs.length) {
+          box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+            '<span>No runs yet. Train the baseline on your imported tables to see them here.' +
+            '<div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm kgi-btn st-goto-train">' +
+            '<span>Go to Train</span>' + kgIcon('arrow-right', 'kgi-12') + '</button></div></span></div>';
+          stBindGoto(box);
+          return;
+        }
+        var html = '<table class="kg-st-table"><thead><tr><th>Run</th><th>Trained on</th><th>Labeled rows</th>' +
+          '<th>Best val accuracy</th><th>Device</th><th>Elapsed</th><th>Status</th>' +
+          '<th style="text-align:right">Actions</th></tr></thead><tbody>';
+        runs.forEach(function (r) {
+          var link = r.run_url ? dashRunLink(r.run_url) : '';
+          var projectsHref = kgHubProjectsHref(r.project_name || kgCurrentProject());
+          var badge = '<span class="badge badge-status-' + esc(TR_BADGE_CLASS[r.status] || 'queued') + '">' +
+                      esc(trStatusLabel(r.status)) + '</span>';
+          var best = (typeof r.best_val_accuracy === 'number')
+            ? r.best_val_accuracy.toFixed(1) + '% at epoch ' + fmtCount(r.best_epoch)
+            : (r.status === 'running' ? 'training…' : 'no checkpoint');
+          var runCell = link
+            ? '<a href="' + esc(link) + '" target="_blank" title="Open the Run in the Dashboard"><strong>' + esc(stRunName(r)) + '</strong></a>'
+            : '<strong>' + esc(stRunName(r)) + '</strong>';
+          var actions =
+            (link ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+                    '" title="Open Run in Dashboard" aria-label="Open Run in Dashboard">' + kgIcon('external-link') + '</a>' : '') +
+            (projectsHref ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+                    '" title="Open Run in Projects" aria-label="Open Run in Projects">' + kgIcon('git-branch') + '</a>' : '');
+          html += '<tr><td>' + runCell + '</td>' +
+                  '<td>' + esc(r.train_table_url ? kgTableRef(r.train_table_url) : '—') + '</td>' +
+                  '<td>' + (typeof r.usable_rows === 'number' ? fmtCount(r.usable_rows) : '—') + '</td>' +
+                  '<td>' + esc(best) + '</td>' +
+                  '<td>' + esc(r.device_label || r.device || r.device_class || '—') + '</td>' +
+                  '<td>' + (r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '—') + '</td>' +
+                  '<td' + (r.error ? ' title="' + esc(r.error) + '"' : '') + '>' + badge + '</td>' +
+                  '<td><span class="kg-st-actions">' + actions + '</span></td></tr>';
+        });
+        box.innerHTML = html + '</tbody></table>';
+      }
+
+      // History: the predictions, newest first, each with its submission and Kaggle's verdict (D3).
+      function renderHistoryFrom(records) {
+        var box = el('st-history');
+        if (!records.length) {
+          box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+            '<span>No predictions yet. Train a model and predict on the test set to see ' +
+            'history here.<div style="margin-top:8px"><button type="button" ' +
+            'class="btn btn-secondary btn-sm kgi-btn st-goto-train"><span>Go to Train</span>' +
+            kgIcon('arrow-right', 'kgi-12') + '</button></div></span></div>';
+          stBindGoto(box);
+          return;
+        }
+        var html = '<table class="kg-st-table"><thead><tr>' +
+          '<th>Run</th><th>When</th><th>Val accuracy</th><th>Public score</th><th>Δ</th><th>Outcome</th>' +
+          '<th style="text-align:right">Actions</th></tr></thead><tbody>';
+        records.forEach(function (row) {
+          var link = row.run_url ? dashRunLink(row.run_url) : '';
+          var runCell = link
+            ? '<a href="' + esc(link) + '" target="_blank" title="Open the originating Run in the Dashboard"><strong>' + esc(stRunName(row)) + '</strong></a>'
+            : '<strong>' + esc(stRunName(row)) + '</strong>';
+          var score = (typeof row.val_accuracy === 'number')
+            ? '<span class="score">' + esc(psFmtPct(row.val_accuracy)) + '</span>' : '<span class="kg-delta-flat">–</span>';
+          var pub = (typeof row.public_score === 'number')
+            ? '<span class="score">' + esc(row.public_score.toFixed(5)) + '</span>' : '<span class="kg-delta-flat">–</span>';
+          var d = row.delta;
+          var deltaCell;
+          if (typeof row.public_score !== 'number') {
+            deltaCell = '<span class="kg-delta-flat"></span>';
+          } else if (d === null || d === undefined) {
+            deltaCell = '<span class="kg-delta-flat" title="First scored submission">–</span>';
+          } else if (d > 0.000005) {
+            deltaCell = '<span class="kg-delta-up">▲ +' + esc(d.toFixed(5)) + '</span>';
+          } else if (d < -0.000005) {
+            deltaCell = '<span class="kg-delta-down">▼ ' + esc(d.toFixed(5)) + '</span>';
+          } else {
+            deltaCell = '<span class="kg-delta-flat">– 0.00000</span>';
+          }
+          var o = stOutcome(row);
+          var actions = row.csv_path
+            ? '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(row.csv_path) +
+              '" title="Copy CSV path" aria-label="Copy CSV path">' + kgIcon('copy') + '</button>' +
+              '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-download="' + esc(row.job_id) +
+              '" title="Download CSV" aria-label="Download CSV">' + kgIcon('download') + '</button>'
+            : '';
+          html += '<tr><td>' + runCell + '</td>' +
+                  '<td>' + kgWhenSpan(row.ts, 'when') + '</td>' +
+                  '<td>' + score + '</td>' +
+                  '<td>' + pub + '</td>' +
+                  '<td>' + deltaCell + '</td>' +
+                  '<td' + (o.title ? ' title="' + esc(o.title) + '"' : '') + '>' + o.html + '</td>' +
+                  '<td><span class="kg-st-actions">' + actions + '</span></td></tr>';
+        });
+        box.innerHTML = html + '</tbody></table>';
+        kgBindCopy(box);
+        box.querySelectorAll('[data-download]').forEach(function (b) {
+          b.addEventListener('click', function () { downloadCsv(b.getAttribute('data-download')); });
+        });
+      }
+
+      // ── Kaggle live: friendly degradation for third-party API limits (D4) ───────────
+      function renderKaggleFrom(s) {
+        var box = el('st-kaggle');
+        if (!s || !s.connected || s.configured === false) {
+          box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+            '<span>' + esc((s && s.reason) || 'Kaggle is not connected yet.') + '</span></div>';
+          return;
+        }
+        var html = '';
+        if (typeof s.best_public_score === 'number') {
+          html += '<div style="font-size:12.5px;margin-bottom:4px">Best public score so far: ' +
+                  '<strong>' + esc(s.best_public_score.toFixed(5)) + '</strong></div>';
+        }
+        if (s.my_rank) {
+          html += '<div style="font-size:12.5px;margin-bottom:4px">Leaderboard: rank <strong>' +
+                  esc(String(s.my_rank.rank)) + '</strong> (' + esc(String(s.my_rank.score)) + ')</div>';
+        }
+        if (s.leaderboard_top && s.leaderboard_top.length) {
+          html += '<table class="kg-st-table" style="margin-top:4px"><thead><tr><th>Rank</th><th>Team</th><th>Score</th></tr></thead><tbody>';
+          s.leaderboard_top.forEach(function (x) {
+            html += '<tr><td>' + esc(String(x.rank)) + '</td><td>' + esc(x.team || '') + '</td>' +
+                    '<td><span class="score">' + esc(String(x.score || '')) + '</span></td></tr>';
+          });
+          html += '</tbody></table>';
+        }
+        if (s.submissions && s.submissions.length) {
+          html += '<table class="kg-st-table" style="margin-top:8px"><thead><tr>' +
+                  '<th>When</th><th>Status</th><th>Public score</th><th>Message</th></tr></thead><tbody>';
+          s.submissions.forEach(function (x) {
+            html += '<tr><td class="when">' + esc(x.date || '') + '</td>' +
+                    '<td>' + esc(x.status || '') + '</td>' +
+                    '<td>' + (typeof x.public_score === 'number' ? '<span class="score">' + esc(String(x.public_score)) + '</span>'
+                                                               : '<span class="kg-delta-flat">–</span>') + '</td>' +
+                    '<td>' + esc(x.message || '') + '</td></tr>';
+          });
+          html += '</tbody></table>';
+        } else if (!s.submissions_error && s.launched !== false) {
+          html += '<div class="form-help">No Kaggle submissions yet.</div>';
+        }
+        var rawErrors = [];
+        if (s.submissions_error) { rawErrors.push('[submissions]\n' + s.submissions_error); }
+        if (s.leaderboard_error) { rawErrors.push('[leaderboard]\n' + s.leaderboard_error); }
+        var lbUrl = (s.competition_url || psManifestFacts().competitionUrl || '') + '/leaderboard';
+        if (s.launched === false || rawErrors.length) {
+          // The unlaunched event competition refuses the submissions list and answers an empty board
+          // (self-heals when the API answers at launch — the success path above renders instead).
+          html += '<div class="kg-callout info" style="margin-top:8px">' + kgIcon('info') + '<span>' +
+            (s.launched === false
+              ? 'The leaderboard and Kaggle’s submission list become available after the competition launches. ' +
+                'Your submissions still score normally, and the History above keeps every submission with the score Kaggle returned.'
+              : 'Kaggle’s submission list isn’t available for this competition right now (a known Kaggle API limitation). ' +
+                'Your submissions still score normally on the web leaderboard.') +
+            '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
+            esc(lbUrl) + '"><span>View leaderboard on Kaggle</span>' + kgIcon('external-link', 'kgi-12') +
+            '</a></div></span></div>';
+          if (rawErrors.length) {
+            html += '<div class="kg-log-details" style="display:block">' +
+              '<button type="button" class="kgl-acc-summary" id="st-kerr-toggle" aria-expanded="false" ' +
+              'aria-controls="st-kerr-panel"><span class="kgl-acc-caret" aria-hidden="true">' +
+              kgIcon('chevron-right', 'kgi-12') + '</span> Show details</button>' +
+              '<div class="kgl-acc" id="st-kerr-panel" hidden><div class="kgl-acc-inner">' +
+              '<pre>' + esc(rawErrors.join('\n\n')) + '</pre></div></div></div>';
+          }
+        }
+        box.innerHTML = html || '<div class="form-help">Nothing to show yet.</div>';
+        if (rawErrors.length) { kgBindAccordion('st-kerr-toggle', 'st-kerr-panel'); }
+      }
+
+      function renderKaggleLive() {
+        API.authFetch(PLUGIN_ROOT + '/status/kaggle')
+          .then(function (r) { return r.json(); })
+          .then(renderKaggleFrom)
+          .catch(function (e) {
+            if (kgConn.fail(e)) { return; }
+            el('st-kaggle').innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
+              '<span>Could not reach the service: ' + esc(e.message || String(e)) + '</span></div>';
+          });
+      }
+
+      // ── Doctor (D6): one locked row per fact, Copy diagnostics ────────────────────────
+      function stDoctorRows(doc, health) {
+        var v = doc.versions || {}, d = doc.device || {}, m = doc.manifest || {}, k = doc.kit || {};
+        var kg = doc.kaggle || {}, h = doc.plugin_home || {}, p = doc.plugin || {}, rec = doc.records || {};
+        var cuda = d.cuda_available === true ? 'available' : d.cuda_available === false ? 'not available' : 'probing…';
+        var free = (h.disk && typeof h.disk.free_bytes === 'number') ? (h.disk.free_bytes / 1073741824).toFixed(1) + ' GB free' : 'unknown';
+        var kagText = kg.state === 'ready'
+          ? 'connected' + (kg.username ? ' as ' + kg.username : '') +
+            (typeof kg.submissions_used_today === 'number' && kg.daily_limit
+              ? ' · ' + fmtCount(kg.daily_limit - kg.submissions_used_today) + ' of ' + fmtCount(kg.daily_limit) + ' submissions left today' : '')
+          : kg.state === 'no_credentials' ? 'not connected (no credentials on the compute host)'
+          : kg.state === 'not_joined' ? 'connected' + (kg.username ? ' as ' + kg.username : '') + ' · competition not joined'
+          : kg.state ? 'could not check: ' + (kg.error || kg.state) : 'not checked';
+        var kitText = k.state === 'success' ? k.kit_version + ' · ' + fmtCount(k.file_count) + ' files verified at download'
+          : k.state === 'superseded' ? k.kit_version + ' on disk, the manifest ships ' + k.current_version
+          : k.state === 'stale' ? 'missing on disk' : k.state === 'empty' ? 'not downloaded' : (k.error || k.state || 'unknown');
+        return [
+          ['Plugin', 'v' + (p.version || '?') + (p.commit ? ' · ' + String(p.commit).slice(0, 12) : ''), p.commit || ''],
+          ['Compute service', health && health.version ? 'v' + health.version : 'unknown (health not readable)', ''],
+          ['SDK · 3lc', (v.sdk || '?') + ' · ' + (v.tlc || '?'), ''],
+          ['torch · torchvision', (v.torch || 'not installed') + ' · ' + (v.torchvision || 'not installed'), ''],
+          ['CUDA in the worker', cuda + (d.device_class ? ' · device class ' + d.device_class : ''), ''],
+          ['Manifest', (m.manifest_source || '?') + ' · ' + String(m.manifest_sha256 || '').slice(0, 12) +
+                       (m.competition_id ? ' · ' + m.competition_id + ' kit ' + (m.kit_version || '?') : ''), m.manifest_document_url || ''],
+          ['Kit', kitText, k.kit_dir || ''],
+          ['Kaggle', kagText, ''],
+          ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : ''), h.path || ''],
+          ['Free disk space', free, (h.disk && h.disk.measured_at) || ''],
+          ['Python', (v.python || '?') + ' · ' + (v.platform || ''), ''],
+          ['Records', fmtCount(rec.project_runs) + ' runs in this project · ' + fmtCount(rec.ledger_predict) +
+                      ' predictions · ' + fmtCount(rec.ledger_submit) + ' submissions', rec.ledger_path || '']
+        ];
+      }
+
+      function renderDoctorFrom(doc, health) {
+        var box = el('st-doctor');
+        if (!doc || doc.error) {
+          box.innerHTML = '<div class="kg-callout err">' + kgIcon('x-circle') +
+            '<span>' + esc((doc && doc.error) || 'The Doctor could not be read.') + '</span></div>';
+          return;
+        }
+        var rows = stDoctorRows(doc, health);
+        var html = '<div class="kg-locked-rows" style="margin-top:6px">' + rows.map(function (row) {
+          return '<div class="kg-locked-row" title="' + esc(row[2] || row[1]) + '"><span class="lbl">' + esc(row[0]) +
+            '</span><span class="val">' + esc(row[1]) + '</span>' +
+            (row[2] ? '<span class="kg-lock-actions"><button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' +
+              esc(row[2]) + '" title="Copy" aria-label="Copy">' + kgIcon('copy', 'kgi-12') + '</button></span>' : '') + '</div>';
+        }).join('') + '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' + kgDiagBtn() + '</div>';
+        box.innerHTML = html;
+        kgBindCopy(box);
+        kgBindDiag(box, stBuildDiagnostics);
+        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error);
+        if (red) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
+      }
+
+      // Status flavour of Copy diagnostics: the Doctor rows, the recent runs and predictions, the raw Doctor.
+      function stBuildDiagnostics() {
+        var rows = [];
+        if (stDoctor && !stDoctor.error) {
+          stDoctorRows(stDoctor, stHealth).forEach(function (row) {
+            rows.push(row[0] + ': ' + row[1] + (row[2] && row[2] !== row[1] ? ' (' + row[2] + ')' : ''));
+          });
+        }
+        var hist = [];
+        (stHistory.runs || []).slice(0, 10).forEach(function (r) {
+          hist.push('run ' + stRunName(r) + ' · ' + trStatusLabel(r.status) +
+            (typeof r.best_val_accuracy === 'number' ? ' · best ' + psFmtPct(r.best_val_accuracy) + ' at epoch ' + fmtCount(r.best_epoch) : '') +
+            (r.device_label ? ' · ' + r.device_label : ''));
+        });
+        (stHistory.predictions || []).slice(0, 10).forEach(function (p) {
+          var o = stOutcome(p);
+          hist.push('prediction ' + stRunName(p) + ' · ' + o.short +
+            (typeof p.public_score === 'number' ? ' · public ' + p.public_score.toFixed(5) : ''));
+        });
+        return kgBuildDiagnosticsCore([
+          stDoctor ? ['', '[doctor]'].concat(rows) : null,
+          hist.length ? ['', '[status]'].concat(hist) : null,
+          stDoctor ? ['', '[doctor json]', JSON.stringify(stDoctor, null, 1)] : null
+        ]);
+      }
+
+      function stLoadDoctor() {
+        var get = function (path, fallback) {
+          return API.authFetch(path).then(function (r) { return r.json(); }).catch(function () { return fallback; });
+        };
+        return Promise.all([
+          get(PLUGIN_ROOT + '/status/doctor', { error: 'The Doctor could not be read.' }),
+          get(computeUrl + '/health', null)
+        ]).then(function (res) {
+          stDoctor = res[0]; stHealth = res[1]; stDoctorLoaded = true;
+          renderDoctorFrom(stDoctor, stHealth);
+        });
+      }
+
+      // ── Export verification bundle (D5): the zip streams like Download CSV ────────────
+      function stExportBundle() {
+        var btn = el('st-export-btn');
+        var note = el('st-export-note');
+        btn.disabled = true;
+        note.innerHTML = '<span class="spinner" aria-hidden="true"></span> Building the bundle…';
+        API.authFetch(PLUGIN_ROOT + '/status/bundle')
+          .then(function (r) {
+            if (!r.ok) {
+              return r.json().catch(function () { return {}; }).then(function (body) {
+                throw new Error(body.error || ('HTTP ' + r.status));
+              });
+            }
+            var name = 'verification-bundle.zip';
+            var m = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/);
+            if (m) { name = m[1]; }
+            return r.blob().then(function (blob) {
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url; a.download = name;
+              document.body.appendChild(a); a.click();
+              document.body.removeChild(a);
+              setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+              note.innerHTML = '<span class="kg-preflight-ok" style="margin:0">' + kgIcon('check') +
+                '<span>Exported ' + esc(name) + '</span></span>';
+            });
+          })
+          .catch(function (e) {
+            if (kgConn.fail(e)) { note.textContent = ''; return; }
+            note.innerHTML = '<div class="kg-callout err" style="margin-top:6px">' + kgIcon('x-circle') +
+              '<span>' + esc(e.message || String(e)) + '</span></div>';
+          })
+          .then(function () { btn.disabled = !!kgDevMode; });
+      }
+      el('st-export-btn').addEventListener('click', function () { if (!kgDevMode) { stExportBundle(); } });
+      kgBindAccordion('st-doctor-toggle', 'st-doctor-panel');
+
+      function stRenderUpdated() {
+        el('st-updated').textContent = stLastUpdated ? 'Updated ' + kgFmtAgo(stLastUpdated / 1000) : '';
+      }
+
+      // One fetch pass for hero + runs + history (Kaggle live and the Doctor fetch separately — their
+      // API round-trips are slow and must not hold the local data back). `live` asks Kaggle for the
+      // verdicts it had not given at submit time (manual Refresh and tab enter only, D10).
+      function stFetchAll(manual, live) {
+        if (stBusy) { return; }
+        stBusy = true;
+        if (manual) { el('st-refresh-btn').classList.add('kg-spin'); }
+        var get = function (path, fallback) {
+          return API.authFetch(PLUGIN_ROOT + path).then(function (r) { return r.json(); })
+            .catch(function (e) { kgConn.fail(e); return fallback; });
+        };
+        Promise.all([
+          get('/train/state', null),
+          get('/status/history?live=' + (live ? '1' : '0'), null),
+          window.PluginJobs.list(PLUGIN_ID).catch(function () { return []; })
+        ]).then(function (res) {
+          if (res[0]) { kgTrainState = res[0]; }
+          if (res[1]) { stHistory = res[1]; }
+          var liveJobs = (res[2] || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
+          stRenderHero(stHistory.predictions || [], stHistory.best_public_score || null, liveJobs);
+          stRenderRuns(stHistory.runs || []);
+          renderHistoryFrom(stHistory.predictions || []);
+          stLastUpdated = Date.now();
+          stRenderUpdated();
+        }).then(done, done);
+        function done() {
+          stBusy = false;
+          el('st-refresh-btn').classList.remove('kg-spin');
+        }
+        renderKaggleLive();
+        if (manual || !stDoctorLoaded) { stLoadDoctor(); }
+      }
+
+      function refreshStatus() {
+        renderPipeline();
+        stFetchAll(true, true);
+      }
+      el('st-refresh-btn').addEventListener('click', refreshStatus);
+
+      // Auto-refresh while the Status tab is visible: a 15s poll (ticks skip while the document is
+      // hidden) plus a 5s ticker for the "Updated Ns ago" line. Stopped whenever another tab is shown.
+      var stAutoTimer = null;
+      var stAgoTimer = null;
+
+      function stStartAuto() {
+        if (!stAutoTimer) {
+          stAutoTimer = setInterval(function () {
+            if (document.hidden || kgDevMode) { return; }
+            stFetchAll(false, false);
+          }, 15000);
+        }
+        if (!stAgoTimer) { stAgoTimer = setInterval(stRenderUpdated, 5000); }
+      }
+
+      function stStopAuto() {
+        clearInterval(stAutoTimer); stAutoTimer = null;
+        clearInterval(stAgoTimer); stAgoTimer = null;
+      }
+
+      function stOnTabEnter() {
+        if (kgDevMode) { return; }   // forced states own this tab
+        // Gated on configLoaded (the import record decides whether the body renders at all).
+        configLoaded.then(function () {
+          kgRenderGates();
+          if (kgImportState.state !== 'success') { return; }
+          stFetchAll(false, true);
+          stStartAuto();
+        });
+      }
+
+      document.addEventListener('visibilitychange', function () {
+        // Ticks skip while hidden; returning to a visible Status tab refreshes immediately.
+        if (!document.hidden && !kgDevMode && el('kg-panel-status').classList.contains('active') &&
+            kgImportState.state === 'success') {
+          configLoaded.then(function () { stFetchAll(false, false); });
+        }
+      });
+
+      // Status forced states (?kgdev=status-…): static fixtures, no fetches, no job side effects.
+      // Numbers derive from the served manifest (the literal census stays clean).
+      function stDevForce(mode) {
+        var m, id, slug, limit, base, runUrl, csvBase, home;
+        function derive() {
+          m = kgManifest || {};
+          id = (m.competition || {}).id || 'competition';
+          slug = (m.competition || {}).slug || 'competition';
+          limit = (m.submission || {}).daily_limit || 0;
+          base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/';
+          runUrl = function (name) { return base + 'runs/' + name; };
+          home = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc1\\.plugin-state\\kaggle-classification';
+          csvBase = home + '\\predictions\\';
+        }
+        derive();
+        var now = Date.now() / 1000;
+
+        function RUN(i, name, opts) {
+          return { job_id: 'devtrain' + i, run_name: name, run_folder: name, run_url: runUrl(name), project_name: id,
+                   status: opts.status || 'completed', error: opts.error || '', created_at: opts.at, finished_at: opts.at + (opts.elapsed || 120),
+                   elapsed_s: opts.elapsed || 120, train_table_url: base + 'datasets/' + kgDatasetName('train') + '/tables/' + (opts.rev || 'initial'),
+                   usable_rows: opts.rows || 600, best_val_accuracy: opts.best, best_epoch: opts.bestEpoch || 8, epochs_completed: opts.epochs || 10,
+                   epochs_requested: 10, device: 'cuda', device_class: 'cuda', device_label: opts.device || 'cuda (auto)',
+                   provenance_ok: true, weights_on_disk: opts.status !== 'failed' };
+        }
+        function REC(i, opts) {
+          return {
+            job_id: 'devp' + i, ts: opts.at, run_name: opts.run, run_folder: opts.run, run_url: runUrl(opts.run),
+            train_job_id: opts.train || '', status: opts.status || 'completed', error: opts.error || '',
+            csv_path: opts.nocsv ? '' : csvBase + opts.run + '\\submission_20261005_101500.csv', csv_sha256: 'a1b2', rows: 0,
+            val_accuracy: opts.val, val_recorded: opts.val, checks_ok: !opts.error, checkpoint_sha256: '5f8a',
+            submission: opts.sub || null, public_score: opts.score, delta: opts.delta
+          };
+        }
+        function SUB(ref, status, opts) {
+          var o = opts || {};
+          return { job_id: 'devs' + ref, ref: ref, status: status, reason: o.reason || '', message: o.message || '', ts: now,
+                   kaggle: o.kaggle || null };
+        }
+        // Built on every apply(): the first pass runs before the config lands, the second after it
+        // (the fixture names and numbers derive from the served manifest — ExDark's closure rule).
+        function FIX() {
+        var RUNS = [
+          RUN(3, id + '_run_20261005_1500', { at: now - 7200, best: 70.33, bestEpoch: 9, rev: 'labels-round-2', rows: 650 }),
+          RUN(2, id + '_run_20261004_0900', { at: now - 86400, best: 66.67, bestEpoch: 7, rows: 609, status: 'cancelled', epochs: 7, elapsed: 80 }),
+          RUN(1, id + '_run_20261003_1830', { at: now - 172800, best: 69.5, elapsed: 148 }),
+          RUN(0, id + '_run_20261002_1200', { at: now - 259000, status: 'stale', error: 'Interrupted: the compute service restarted while this run was training.', epochs: 3 })
+        ];
+        var RECORDS = [
+          REC(6, { run: id + '_run_20261005_1500', at: now - 7200, val: 70.33, score: 0.68222, delta: 0.02556, train: 'devtrain3',
+                   sub: SUB('56790001', 'submitted', { message: id + '_run_20261005_1500 via 3LC plugin', kaggle: { status: 'COMPLETE', public_score: 0.68222, source: 'ledger' } }) }),
+          REC(5, { run: id + '_run_20261005_1500', at: now - 10800, val: 70.33, train: 'devtrain3',
+                   sub: SUB('', 'limit_reached', { reason: 'Daily submission limit reached (' + limit + '/day), resets midnight UTC.' }) }),
+          REC(4, { run: id + '_run_20261004_0900', at: now - 86400, val: 66.67, score: 0.65666, delta: 0.15444, train: 'devtrain2',
+                   sub: SUB('56756858', 'submitted', { message: id + '_run_20261004_0900 via 3LC plugin', kaggle: { status: 'COMPLETE', public_score: 0.65666, source: 'live' } }) }),
+          REC(3, { run: id + '_run_20261003_1830', at: now - 172800, status: 'failed', nocsv: true,
+                   error: 'Submission must contain exactly ' + fmtCount(((m.splits || {}).test || {}).count || 0) + ' rows; got 1,798.' }),
+          REC(2, { run: id + '_run_20261003_1830', at: now - 176400, val: 69.5, score: 0.50222, delta: null, train: 'devtrain1',
+                   sub: SUB('56764937', 'submitted', { message: 'hello world', kaggle: { status: 'COMPLETE', public_score: 0.50222, source: 'ledger' } }) }),
+          REC(1, { run: id + '_run_20261003_1830', at: now - 340000, val: 69.5, train: 'devtrain1',
+                   sub: SUB('56764900', 'submitted', { kaggle: { status: 'ERROR', error_description: 'Predictions must be 0 or 1. Found invalid: [2, 3, 4, 5]', source: 'ledger' } }) })
+        ];
+        var LIVE_TRAIN = { id: 'devlive', status: 'running', created_at: now - 2400, progress: { label: 'Epoch 4/10' } };
+        var KAGGLE_LIVE = {
+          connected: true, configured: true, launched: true, slug: slug, competition_url: 'https://www.kaggle.com/competitions/' + slug,
+          best_public_score: 0.68222, my_rank: { rank: 4, team: 'participant', score: '0.68222' },
+          leaderboard_top: [{ rank: 1, team: 'scene-wizards', score: '0.74111' }, { rank: 2, team: 'labelers', score: '0.71000' },
+                            { rank: 3, team: 'mountain-view', score: '0.69555' }, { rank: 4, team: 'participant', score: '0.68222' },
+                            { rank: 5, team: 'baseline-only', score: '0.65666' }],
+          submissions: [
+            { date: '2026-10-05 15:04', status: 'COMPLETE', public_score: 0.68222, message: id + '_run_20261005_1500 via 3LC plugin' },
+            { date: '2026-10-04 09:52', status: 'COMPLETE', public_score: 0.65666, message: id + '_run_20261004_0900 via 3LC plugin' }
+          ]
+        };
+        var KAGGLE_403 = {
+          connected: true, configured: true, launched: false, slug: slug, competition_url: 'https://www.kaggle.com/competitions/' + slug,
+          best_public_score: 0.68222, leaderboard_top: [], my_rank: null,
+          submissions_error: 'HTTPError: 403 Client Error: Forbidden for url: https://api.kaggle.com/v1/competitions.CompetitionApiService/ListSubmissions'
+        };
+        var DOCTOR = {
+          plugin: { version: kgPluginVersion || '1.0.0rc1', commit: '0123456789abcdef0123456789abcdef01234567' },
+          versions: { sdk: '0.3.3', tlc: '3.3.2', torch: '2.14.0+cu126', torchvision: '0.29.0+cu126', kaggle: '2.2.4', python: '3.12.13', platform: 'win32 · Windows-11' },
+          device: { probe: 'done', device_class: 'cuda', cuda_available: true, workers_default: 0 },
+          manifest: { manifest_source: 'remote', manifest_sha256: 'ec0c60cf45f03f8c67437f576daa4ddc', competition_id: id, kit_version: (m.kit || {}).version || 'v1',
+                      manifest_document_url: 'https://competitions.dev.3lc.ai/kaggle/' + id + '/manifest.json' },
+          kit: { state: 'success', kit_version: (m.kit || {}).version || 'v1', file_count: 9601, kit_dir: home + '\\data\\' + id + '\\v1\\starter_kit' },
+          kaggle: { state: mode === 'status-empty' ? 'no_credentials' : 'ready', username: 'participant', daily_limit: limit, submissions_used_today: 2 },
+          plugin_home: { path: home, resolved_by: 'cwd', disk: { free_bytes: 184 * 1073741824, measured_at: 'C:\\' } },
+          records: { runs: RUNS.length, project_runs: RUNS.length, ledger_predict: 5, ledger_submit: 4, ledger_path: home + '\\ledger.jsonl' }
+        };
+          return { RUNS: RUNS, RECORDS: RECORDS, LIVE_TRAIN: LIVE_TRAIN, KAGGLE_LIVE: KAGGLE_LIVE, KAGGLE_403: KAGGLE_403, DOCTOR: DOCTOR };
+        }
+
+        function apply() {
+          derive();
+          var F = FIX();
+          var RUNS = F.RUNS, RECORDS = F.RECORDS, LIVE_TRAIN = F.LIVE_TRAIN, KAGGLE_LIVE = F.KAGGLE_LIVE, KAGGLE_403 = F.KAGGLE_403, DOCTOR = F.DOCTOR;
+          stStopAuto();   // fixtures own the tab; no background refresh
+          kgImportState = { state: 'success', record: { project_name: id } };
+          kgRenderGates();
+          stLastUpdated = Date.now();
+          stRenderUpdated();
+          // Budget hero block reads the connection state: counted on the simulated-success fixture,
+          // plain-limit degrade elsewhere.
+          psConnState = mode === 'status-empty' ? null
+            : mode === 'status-kaggle-live'
+              ? { state: 'ready', daily_limit: limit, submissions_used_today: 2, competition_url: 'https://www.kaggle.com/competitions/' + slug }
+              : { state: 'ready', daily_limit: limit, competition_url: 'https://www.kaggle.com/competitions/' + slug };
+          stDoctor = DOCTOR; stHealth = { status: 'ok', service: '3lc-compute', version: '1.1.0' }; stDoctorLoaded = true;
+          renderDoctorFrom(DOCTOR, stHealth);
+          if (mode === 'status-empty') {
+            stHistory = { runs: [], predictions: [], best_public_score: null };
+            stRenderHero([], null, []);
+            stRenderRuns([]);
+            renderHistoryFrom([]);
+            renderKaggleFrom({ connected: false, reason: 'Connect your Kaggle account. Create an API token on kaggle.com and save it to ~/.kaggle/access_token on the machine running the compute service.' });
+          } else if (mode === 'status-history') {
+            stHistory = { runs: RUNS, predictions: RECORDS, best_public_score: { score: 0.68222, run_name: RECORDS[0].run_name, ref: '56790001' } };
+            stRenderHero(RECORDS, stHistory.best_public_score, []);
+            stRenderRuns(RUNS);
+            renderHistoryFrom(RECORDS);
+            renderKaggleFrom(KAGGLE_403);
+          } else if (mode === 'status-live-running') {
+            var running = RUN(9, id + '_run_20261005_1610', { at: now - 2400, status: 'running', epochs: 4 });
+            stHistory = { runs: [running].concat(RUNS), predictions: RECORDS.slice(2), best_public_score: { score: 0.65666, run_name: RECORDS[2].run_name, ref: '56756858' } };
+            kgTrainState = { current: { status: 'running', progress: { epoch: 4, total_epochs: 10 } }, runs: [], project_runs: [] };
+            stRenderHero(RECORDS.slice(2), stHistory.best_public_score, [LIVE_TRAIN]);
+            stRenderRuns(stHistory.runs);
+            renderHistoryFrom(RECORDS.slice(2));
+            renderKaggleFrom(KAGGLE_403);
+          } else if (mode === 'status-kaggle-live') {
+            stHistory = { runs: RUNS, predictions: RECORDS, best_public_score: { score: 0.68222, run_name: RECORDS[0].run_name, ref: '56790001' } };
+            stRenderHero(RECORDS, stHistory.best_public_score, []);
+            stRenderRuns(RUNS);
+            renderHistoryFrom(RECORDS);
+            renderKaggleFrom(KAGGLE_LIVE);
+          } else if (mode === 'status-kaggle-403') {
+            stHistory = { runs: RUNS.slice(0, 2), predictions: RECORDS.slice(0, 2), best_public_score: { score: 0.68222, run_name: RECORDS[0].run_name, ref: '56790001' } };
+            stRenderHero(RECORDS.slice(0, 2), stHistory.best_public_score, []);
+            stRenderRuns(RUNS.slice(0, 2));
+            renderHistoryFrom(RECORDS.slice(0, 2));
+            renderKaggleFrom(KAGGLE_403);
+          }
+        }
+        showTab('status');
+        apply();
+        configLoaded.then(function () { setTimeout(apply, 0); });
+      }
+
       // ── Dev affordance: ?kgdev=<state> renders each UI state from static fixtures for
       // screenshotting — no fetches, no job side effects (ExDark's kgDevForce, adapted to our
       // states). Fixture data derives from the SERVED manifest (class names, split sizes, shard
@@ -5529,7 +6294,7 @@
       // a note. The ready-recalc functions OR in kgDevMode so no later recalc can re-enable, and
       // the click handlers guard on it as the hard backstop.
       function kgDevDisableActions() {
-        ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn', 'ps-predict-btn', 'ps-submit-btn'].forEach(function (id) {
+        ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn', 'ps-predict-btn', 'ps-submit-btn', 'st-export-btn'].forEach(function (id) {
           var btn = el(id);
           btn.disabled = true;
           var note = document.createElement('span');
@@ -5543,6 +6308,7 @@
         kgDevDisableActions();
         if (mode && mode.indexOf('train-') === 0) { trDevForce(mode); return; }
         if (mode && mode.indexOf('submit-') === 0) { psDevForce(mode); return; }
+        if (mode && mode.indexOf('status-') === 0) { stDevForce(mode); return; }
         var devDest = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\competition';
         var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
         var devDlKit = devDest + '\\v1\\starter_kit';

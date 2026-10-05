@@ -23,6 +23,11 @@
   ``GET /submit/state`` — the durable predict + submit records, the CSV re-verified on disk;
   ``GET /kaggle/connection`` — the connection card (credentials, joined, the daily limit);
   ``GET /submissions/{job_id}/download`` — the CSV download fallback (docs/PREDICT_MIRROR.md §8).
+* ``GET /status/history`` — the Status tab's run history and the prediction / submission history
+  joined from the ledger (``?live=1`` reads Kaggle's verdict by ref for refs still unresolved);
+  ``GET /status/kaggle`` — the live Kaggle section (submissions list, leaderboard, rank; fenced);
+  ``GET /status/doctor`` — the Doctor panel; ``GET /status/bundle`` — the verification bundle as a
+  zip download (docs/STATUS_MIRROR.md §2).
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
@@ -280,11 +285,71 @@ def get_route_handlers() -> list[Any]:
         return Response(
             content=Path(csv_path).read_bytes(),
             media_type="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="{Path(csv_path).name}"', "Cache-Control": "no-store"},
+            headers={"Content-Disposition": f'attachment; filename="{Path(csv_path).name}"',
+                     "Cache-Control": "no-store"},
+        )
+
+    @get("/status/history", sync_to_thread=True)
+    def status_history(live: str = "0") -> dict[str, Any]:
+        """The Runs table and the History table (docs/STATUS_MIRROR.md #7–#8). ``live=1`` asks Kaggle
+        (GetSubmission by ref) for the verdict of submissions it had not scored at submit time."""
+        from kaggle_classification import manifest, status
+
+        current = manifest.resolve(network=False).manifest
+        want_live = str(live).strip().lower() in ("1", "true", "yes")
+        out: dict[str, Any] = {"live": want_live}
+        try:
+            out["runs"] = status.run_history()
+        except Exception as exc:
+            out["runs"] = []
+            out["runs_error"] = f"{type(exc).__name__}: {exc}"
+        try:
+            out["predictions"] = status.prediction_history(current, live=want_live)
+            out["best_public_score"] = status.best_public_score(out["predictions"])
+        except Exception as exc:
+            out["predictions"] = []
+            out["best_public_score"] = None
+            out["predictions_error"] = f"{type(exc).__name__}: {exc}"
+        return out
+
+    @get("/status/kaggle", sync_to_thread=True)
+    def status_kaggle() -> dict[str, Any]:
+        """The live Kaggle section (#9): fenced per call, friendly while unlaunched."""
+        from kaggle_classification import manifest, status
+
+        try:
+            return status.kaggle_live(manifest.resolve(network=False).manifest)
+        except Exception as exc:
+            return {"connected": False, "reason": f"Could not check Kaggle: {type(exc).__name__}: {exc}"}
+
+    @get("/status/doctor", sync_to_thread=True)
+    def status_doctor() -> dict[str, Any]:
+        """The Doctor panel (#11): versions, device, manifest, kit, records, Kaggle state, disk."""
+        from kaggle_classification import manifest, status
+
+        try:
+            return status.doctor(manifest.resolve(network=False).manifest)
+        except Exception as exc:
+            return {"error": f"{type(exc).__name__}: {exc}"}
+
+    @get("/status/bundle", sync_to_thread=True)
+    def status_bundle() -> Response[bytes]:
+        """The verification bundle (#10): a zip of the records, never data or secrets."""
+        from kaggle_classification import manifest, status
+
+        try:
+            data, name = status.verification_bundle(manifest.resolve(network=False).manifest)
+        except status.BundleRefused as exc:
+            return Response({"error": str(exc)}, status_code=HTTP_400_BAD_REQUEST)
+        return Response(
+            content=data,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"},
         )
 
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
         train_preflight, train_state, tables_list, tables_defaults,
         list_runs, predict_preflight, submit_state, kaggle_connection, download_submission,
+        status_history, status_kaggle, status_doctor, status_bundle,
     ]

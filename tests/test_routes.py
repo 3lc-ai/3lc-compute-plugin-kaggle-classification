@@ -68,6 +68,7 @@ def test_route_handlers_build_when_litestar_is_present():
         "/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify",
         "/train/preflight", "/train/state", "/tables/list", "/tables/defaults",
         "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/submissions/{job_id:str}/download",
+        "/status/history", "/status/kaggle", "/status/doctor", "/status/bundle",
     }
 
 
@@ -254,7 +255,7 @@ ESC = "function esc(s) {"
 # and boolean flags the fragment itself computes (used in ternaries over literals).
 SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon(", "kgDiagBtn(", "kgClassTint(",
               "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(",
-              "psKaggleLine(")
+              "psKaggleLine(", "kgWhenSpan(", "stHeroBlock(", "kgValEditedWarning(")
 SAFE_IDENTS = {
     # markup accumulators / constants the fragment builds from literals and the calls above
     "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
@@ -292,6 +293,10 @@ SAFE_IDENTS = {
     "psBasis.when", "ps.finished_at", "ss.finished_at", "ss.status", "ss.reason", "s.username", "s.probe_error",
     "sanity.warning", "names.length", "n", "pc", "b.left", "b.limit", "data.ok", "data.checking", "data.count",
     "run", "run.usable",
+    # the Status tab (session 5): ExDark's hero-block arguments (pre-escaped markup and the big/val flag),
+    # the pre-built table cells (runCell, actions, pub, deltaCell, o.html — all from esc / kgIcon above)
+    # and the launched flag the Kaggle callout branches on
+    "big", "mainHtml", "noteHtml", "runCell", "actions", "pub", "deltaCell", "o.html", "s.launched",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"
@@ -367,6 +372,54 @@ def _operands(stmt: str):
             continue  # a string literal
         out.append(o)
     return out
+
+
+def test_fragment_is_the_exdark_status_tab():
+    """The Status tab elements ExDark renders, in ExDark's ids and copy, under the session-5 decisions
+    (docs/STATUS_MIRROR.md §1, D1–D10), plus the +brief sections (Runs, Verification, Doctor)."""
+    html = FRAGMENT.read_text(encoding="utf-8")
+    status_panel = html[html.index('id="kg-panel-status"') : html.index("<script>")]
+    for needle in (
+        "Your best score, latest activity, and submission history.", 'id="st-conn-banner"', 'id="st-gate"', 'id="st-body"',
+        'id="st-hero"', 'id="st-updated"', 'id="st-refresh-btn"', 'id="st-runs"', 'id="st-history"', 'id="st-kaggle"',
+        'id="st-verify"', 'id="st-export-btn"', 'id="st-export-note"', "Export verification bundle",
+        'id="st-doctor-toggle"', 'id="st-doctor-panel"', 'id="st-doctor"', "Never images, table data, tokens or answer keys.",
+        "History", "Kaggle live", "Verification", "Doctor",
+    ):
+        assert needle in status_panel, needle
+    assert "arrives in a later session" not in html
+    for needle in (
+        "function stHeroBlock", "function stOutcome", "function stRenderHero", "function stRenderRuns", "function renderHistoryFrom",
+        "function renderKaggleFrom", "function renderKaggleLive", "function stDoctorRows", "function renderDoctorFrom",
+        "function stBuildDiagnostics", "function stLoadDoctor", "function stExportBundle", "function stFetchAll",
+        "function refreshStatus", "function stStartAuto", "function stStopAuto", "function stOnTabEnter", "function stDevForce",
+        "function kgWhenSpan", "function stLiveKind",
+        # ExDark's outcome vocabulary and copy
+        "Validation failed", "Interrupted", "Running…", "CSV generated (daily limit reached)", "CSV generated (not joined on Kaggle)",
+        "Submission rejected", "CSV generated (not submitted)", "rejected by Kaggle",
+        "No predictions yet. Train a model and predict on the test set to see", "Go to Train",
+        "Best public score so far: ", "Leaderboard: rank ", "No Kaggle submissions yet.", "View leaderboard on Kaggle", "Show details",
+        "become available after the competition launches", "a known Kaggle API limitation",
+        "Per-day counter unavailable on this competition.", "Resets 00:00 UTC.", "'Live now'", "Open tab", "'Latest activity'",
+        "'Best public score'", "no scores yet", "no activity yet",
+        # the routes and the refresh loop
+        "/status/history?live=", "/status/kaggle", "/status/doctor", "/status/bundle", "computeUrl + '/health'",
+        "}, 15000);", "setInterval(stRenderUpdated, 5000)", "document.addEventListener('visibilitychange'",
+        "if (name === 'status') { stOnTabEnter(); } else { stStopAuto(); }",
+        # the gate: Status ungated behind the import record, its body hidden otherwise
+        "['st-gate', 'Status', 'st-body']", "el(pair[2]).hidden = !imported;",
+        # Continue to Status lands on it
+        "id=\"ps-continue-status\"", "el('ps-continue-status').addEventListener('click', function () { showTab('status'); });",
+        # the Doctor rows (D6) and Copy diagnostics
+        "'Compute service'", "'CUDA in the worker'", "'Free disk space'", "'Plugin home'", "kgBindDiag(box, stBuildDiagnostics)",
+        "'[doctor]'",
+    ):
+        assert needle in html, needle
+    # The fixtures (D7): ExDark's five names; fixture pages disable the export button too.
+    for state in ("status-empty", "status-history", "status-live-running", "status-kaggle-live", "status-kaggle-403"):
+        assert f"mode === '{state}'" in html, state
+    assert "if (mode && mode.indexOf('status-') === 0) { stDevForce(mode); return; }" in html
+    assert "'st-export-btn'].forEach" in html
 
 
 def test_every_interpolated_value_in_an_innerhtml_template_is_escaped():
