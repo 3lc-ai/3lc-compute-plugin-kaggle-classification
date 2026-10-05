@@ -62,7 +62,7 @@ beside the default catalog. It is `catalog-test.json` committed on the release
 branch `release/<version>` (one commit on top of the tag), served raw:
 
 ```
-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc2/catalog-test.json
+https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc3/catalog-test.json
 ```
 
 compute 1.1.0 accepts `https://` catalogs (and `file://` / local paths; plain

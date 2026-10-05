@@ -311,3 +311,27 @@ def test_the_session_store_never_holds_a_secret_pattern(seeded):
     text = json.dumps(session.load())
     for label, pattern in status.SECRET_PATTERNS:
         assert not pattern.search(text), label
+
+
+def test_doctor_reports_the_refresh_result_not_the_local_label(seeded, manifest, monkeypatch):
+    """A fresh start resolves cache / bundled without the network; the Doctor's manifest row says what the
+    background refresh found (rc3, item 3), kicks it, and names a failed fetch."""
+    from kaggle_classification import manifest as manifest_mod
+
+    calls = []
+
+    def done(**kw):
+        calls.append(1)
+        return {"state": "done", "source": "remote", "error": None, "started_at": 1, "finished_at": 2}
+
+    monkeypatch.setattr(manifest_mod, "refresh_in_background", done)
+    doc = status.doctor(manifest, kaggle=False)
+    assert calls == [1]
+    assert doc["manifest"]["manifest_source"] == "remote"
+    assert doc["manifest"]["manifest_source_local"] in ("bundled", "cache")
+    assert doc["manifest"]["refresh_state"] == "done" and doc["manifest"]["refresh_error"] is None
+    monkeypatch.setattr(manifest_mod, "refresh_in_background",
+                        lambda **kw: {"state": "failed", "source": None, "error": "index unreachable: HTTP 403"})
+    doc = status.doctor(manifest, kaggle=False)
+    assert doc["manifest"]["manifest_source"] in ("bundled", "cache") and "403" in doc["manifest"]["refresh_error"]
+    assert doc["plugin_home"]["migrated_from"] is None

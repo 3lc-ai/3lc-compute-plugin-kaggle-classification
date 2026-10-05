@@ -23,7 +23,7 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **the index** — `<base>/kaggle/classification-index.json` listing competitions with an `active` flag; one active → used, several → picker, none → bundled + warning.
 - **resolution** — remote (reachable and valid) → cache (last valid remote) → bundled; no version ordering; `resolve(network=False)` is what the page renders first, the background refresh brings the remote result.
 - **provenance** — `{manifest_sha256, manifest_source, …, competition_id, kit_version}` every job records at start (`resolve_manifest_for_job`); the ledger's input.
-- **the plugin home** — resolved by `storage.py` (env → SDK helper → worker state root → `<cwd>/.plugin-state/<id>` → `~`), reported in `_meta.plugin_home`; holds `ui_config.json`, `kit/<id>.json`, `data/<id>/<kit version>/`, `manifest-cache/`.
+- **the plugin home** — resolved by `storage.py` (env → SDK helper → **compute-home** `<compute home>/plugin-state/<id>` inside the host's managed layout (rc3; carried forward from the newest previous version's `.plugin-state` on the first resolution, old copy kept, `migrated_from.json`) → worker state root → `<cwd>/.plugin-state/<id>` → `~`), reported in `_meta.plugin_home`; holds `ui_config.json`, `kit/<id>.json`, `data/<id>/<kit version>/`, `manifest-cache/`, `ledger.jsonl`, `predictions/`.
 - **competition id** — the stable CDN id (`intel-scene`), never the Kaggle slug; names the manifest path, the default project, the dataset prefix and the kit directory.
 - **the slug** — the Kaggle URL slug (`competition.slug`); used only by Submit/Status.
 - **the contract (locked)** — `arch` from the manifest (`resnet18`), `pretrained=false`, `image_size` from the manifest, `timm==1.0.29`; identical init for every participant; `pretrained: true` is rejected at manifest load.
@@ -48,7 +48,7 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 - **the ledger / verification bundle** — `ledger.jsonl` under the plugin home (`ledger.append / read / find`), one entry per prediction (run URL, the three checkpoint hashes, the contract, the test-inputs hashes, the CSV sha256, the checks, the val score, the manifest provenance) and per submission (CSV sha256, slug, message, Kaggle ref + read-back) since session 4; the per-run bundle is session 5.
 - **the Status tab (session 5)** — `docs/STATUS_MIRROR.md`; `GET /status/history` (Runs + History from the train records and the ledger, Kaggle's verdict by ref with `?live=1`), `GET /status/kaggle` (`launched: false` while ListSubmissions 403s and the board is empty), `GET /status/doctor`, `GET /status/bundle` (the zip; `status.SECRET_PATTERNS` refuse a member).
 - **the tester kit** — `TESTING.md` + `tester/start_tester.ps1` / `.sh` + the hosted `catalog-test.json` on `release/<version>`; `../3lc-hub-tester/` is the proof environment (`TESTING_PROOF.md`).
-- **version-scoped plugin state** — the host keeps `managed-plugins/<id>/<version>/.plugin-state`; a new plugin version starts empty (hub-11's 0.1.0 state was copied into 1.0.0rc2 by hand in session 5).
+- **version-scoped plugin state** — the host keeps `managed-plugins/<id>/<version>/.plugin-state`, so before rc3 a new plugin version started empty (hub-11's 0.1.0 state was copied into 1.0.0rc2 by hand). Since rc3 the plugin keeps its state in `<compute home>/plugin-state/<id>` and carries the previous version's forward itself.
 
 ## Machines
 

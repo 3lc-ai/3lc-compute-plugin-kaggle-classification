@@ -3,6 +3,26 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc3] — 2026-10-05 (session 5: the hand test's four findings)
+
+### Fixed
+- **A plugin update no longer loses the kit, the import record, the train / predict records or the
+  ledger** (the tester blocker): the plugin's state now lives in `<compute home>/plugin-state/<id>`,
+  outside the host's version dir (`storage.py` rule "compute-home"); the first resolution after an
+  update carries the newest previous version's `.plugin-state` forward — a copy with the stored
+  paths rewritten, the old copy kept, `migrated_from.json` written — and the Doctor's plugin-home
+  row says so. Tested with an rc2 → rc3 upgrade with state present (`tests/test_storage.py`,
+  `TESTING_PROOF.md` run 3).
+- The Doctor reloads on tab enter, on Refresh, after every job completion and on the 15 s poll (the
+  poll without the Kaggle calls, `GET /status/doctor?kaggle=0`); the hero's budget block falls back
+  to the Doctor's Kaggle state; one wording everywhere: "N of M left today".
+- The Doctor's manifest row reports the background refresh's result (`remote` when the fetch
+  succeeded, "remote fetch failed: …" when not, the fetched-at stamp) instead of the no-network
+  label "cache"; the route kicks the refresh like `GET /config` does.
+- The Loop's inspect link opens the current project's latest Run (re-targeted after an import, a run
+  and Predict's run list); with no run it is disabled with a tooltip instead of opening the
+  Dashboard root.
+
 ## [1.0.0rc2] — 2026-10-05 (session 5: the tester proof's fix)
 
 ### Fixed

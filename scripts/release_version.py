@@ -56,7 +56,7 @@ def stamp(root: Path, version: str) -> None:
             raise ValueError(msg)
         replacements.append((path, updated))
     for path, updated in replacements:
-        path.write_text(updated, encoding="utf-8")
+        path.write_text(updated, encoding="utf-8", newline="\n")  # LF on every platform (the repo's rule)
     check_sources(root)
 
 

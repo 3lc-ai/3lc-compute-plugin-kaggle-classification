@@ -1,4 +1,4 @@
-# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc2 tagged in session 5)
+# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc3 tagged in session 5)
 
 Vocabulary lives in [CONTEXT.md](CONTEXT.md). This file is the operating
 protocol; depth lives in the docs linked in §E — link, don't duplicate. The
@@ -57,9 +57,9 @@ environments, credential locations); it points here at the repo boundary.
   never see working-copy changes).
 - **Release candidates** are tagged `vX.Y.ZrcN` (PEP 440; `scripts/release_version.py --stamp`
   accepts them) and testers install from `catalog-test.json` on the branch `release/<version>`,
-  served raw (RELEASING.md). The plugin's state is version-scoped on the host
-  (`managed-plugins/<id>/<version>/.plugin-state`): a new version starts without the kit, the
-  records and the ledger of the previous one (session 5 finding; open item).
+  served raw (RELEASING.md). The plugin's state lives in `<compute home>/plugin-state/<id>`
+  (`storage.py` rule 3, rc3) and survives a plugin update; the first resolution after an update
+  carries the previous version's `.plugin-state` forward (never deleting it).
 - **Tests.** `uv run pytest` before any push. The suite is a divergence guard
   first: version strings, description parity, SDK-window overlap with the
   latest 3lc-compute, wheel contents, import weight, licence headers, the

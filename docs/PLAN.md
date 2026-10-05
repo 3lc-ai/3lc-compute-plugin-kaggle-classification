@@ -48,10 +48,12 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
   budget 5 s total with one retry inside it (`FETCH_BUDGET_S`). `GET /config` resolves
   without the network (cache → bundled) and kicks a background refresh; the fragment
   polls `GET /manifest` until it settles and re-renders.
-- **Cache.** Under the plugin home resolved by `storage.py` (env override → SDK helper →
-  the worker's state root → `<cwd>/.plugin-state/<id>` → `~`), never from HOME first. On
-  compute 1.1.0 the host passes no `--state-root`, so the fourth rule fires and the home is
-  `<home>/.3lc-compute/managed-plugins/<id>/.plugin-state/<id>` (verified live 2026-09-22).
+- **Cache.** Under the plugin home resolved by `storage.py` (env override → SDK helper → the
+  compute home `<home>/.3lc-compute/plugin-state/<id>` when the worker runs from the host's managed
+  layout (1.0.0rc3: version-independent, carried forward from the previous version's state on the
+  first resolution) → the worker's state root → `<cwd>/.plugin-state/<id>` → `~`), never from HOME
+  first. Before rc3 the home was `<home>/.3lc-compute/managed-plugins/<id>/<version>/.plugin-state/<id>`
+  and a plugin update started empty (the session-5 tester blocker).
   `manifest-cache/<id>.manifest.json` holds the validated document,
   `<id>.meta.json` the sidecar `{fetched_at, source_url, sha256}`.
 - **Provenance.** Every job re-resolves at start (`resolve_manifest_for_job()`) and records

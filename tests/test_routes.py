@@ -413,8 +413,15 @@ def test_fragment_is_the_exdark_status_tab():
         # the Doctor rows (D6) and Copy diagnostics
         "'Compute service'", "'CUDA in the worker'", "'Free disk space'", "'Plugin home'", "kgBindDiag(box, stBuildDiagnostics)",
         "'[doctor]'",
+        # rc3: the Doctor reloads on every job completion and on the poll (without Kaggle), one budget wording,
+        # the manifest row's refresh state, the Loop's inspect link bound to the latest run or disabled.
+        "function stOnJobDone", "if (terminal) { stOnJobDone(); }", "'/status/doctor?kaggle='",
+        "stLoadDoctor(!!manual || !!live || !stDoctorLoaded);", "' left today'", "m.refresh_state === 'failed'",
+        "carried forward from the previous version", "function kgSetLoopInspect", "kg-loop-off",
+        "No run in this project yet. Train first;",
     ):
         assert needle in html, needle
+    assert "submissions left today" not in html and "' today'" not in html
     # The fixtures (D7): ExDark's five names; fixture pages disable the export button too.
     for state in ("status-empty", "status-history", "status-live-running", "status-kaggle-live", "status-kaggle-403"):
         assert f"mode === '{state}'" in html, state

@@ -405,11 +405,22 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
     probe = dict(trainer._device_probe)
     home = storage.describe()
     record = importer.read_record() or {}
+    # The no-network resolution is cache / bundled by design; the background refresh (kicked here, as
+    # GET /config kicks it) says whether the remote document was fetched. The row reports the effective
+    # source, the fetched-at stamp and a failed fetch's error — not the stale local label (session 5 §3).
+    refresh = manifest_mod.refresh_in_background()
     try:
         resolution = manifest_mod.resolve(network=False)
         prov = dict(resolution.manifest.provenance)
     except Exception as exc:
         prov = {"error": f"{type(exc).__name__}: {exc}"}
+    cache_info = manifest_mod.cache_meta(manifest.competition.id) or {}
+    prov["manifest_source_local"] = prov.get("manifest_source")
+    if refresh.get("state") == "done" and refresh.get("source"):
+        prov["manifest_source"] = refresh["source"]
+    prov["manifest_fetched_at"] = prov.get("manifest_fetched_at") or cache_info.get("fetched_at")
+    prov["refresh_state"] = refresh.get("state")
+    prov["refresh_error"] = refresh.get("error")
     try:
         kit_state = kit.download_state(manifest)
     except Exception as exc:
@@ -431,8 +442,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "cuda_available": (probe.get("device_class") == "cuda") if probe.get("state") == "done" else None,
             "workers_default": trainer.default_workers(),
         },
-        "manifest": {**prov, "refresh": manifest_mod.refresh_status(),
-                     "cache": manifest_mod.cache_meta(manifest.competition.id)},
+        "manifest": {**prov, "refresh": manifest_mod.refresh_status(), "cache": cache_info or None},
         "kit": kit_state,
         "import": {
             "project_name": record.get("project_name"), "table_name": record.get("table_name"),
@@ -444,7 +454,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "ledger_predict": len(ledger.read("predict")), "ledger_submit": len(ledger.read("submit")),
             "ledger_path": str(ledger.ledger_path()),
         },
-        "plugin_home": {**home, "disk": _free_space(Path(home["path"]))},
+        "plugin_home": {**home, "disk": _free_space(Path(home["path"])), "migrated_from": storage.migration_record()},
         "time": time.time(),
     }
     if kaggle:

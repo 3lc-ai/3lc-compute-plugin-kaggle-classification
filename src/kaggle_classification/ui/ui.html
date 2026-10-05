@@ -64,6 +64,7 @@
 .kg-loop a { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); font-weight: 500; text-decoration: none; cursor: pointer; }
 .kg-loop a:hover { color: var(--accent); }
 .kg-loop a.kg-loop-active { color: var(--text); font-weight: 600; }
+.kg-loop a.kg-loop-off { opacity: .45; cursor: not-allowed; pointer-events: none; }
 .kg-loop-sep { display: flex; color: var(--text-muted); opacity: .6; }
 .form-control.guide-next { border-color: var(--warning, #d97706); }
 .kg-panel .card { min-width: 0; }
@@ -969,6 +970,7 @@
         else if (job.kind === 'train') { trOnRecord(job, terminal); }
         else if (job.kind === 'predict') { psOnPredictRecord(job, terminal); }
         else if (job.kind === 'kaggle_submit') { psOnSubmitRecord(job, terminal); }
+        if (terminal) { stOnJobDone(); }
       }
       // Strip the host's appended worker traceback: the first line is the participant sentence.
       function kgErrorText(raw) {
@@ -1045,7 +1047,7 @@
         }
       );
       if (dashboardUrl) {
-        el('kg-loop-inspect').href = kgWithObjectService(dashboardUrl);
+        kgSetLoopInspect('');   // until the train state says which run is the latest
         el('kg-loop-fixlabels').href = kgWithObjectService(dashboardUrl);
       }
 
@@ -1611,6 +1613,30 @@
         var latest = ((kgImportState || {}).latest || {}).train ||
                      ((((kgImportState || {}).record || {}).tables || {}).train || {}).url || '';
         el('kg-loop-fixlabels').href = latest ? dashTableLink(latest) : kgWithObjectService(dashboardUrl);
+        // inspect opens the current project's latest Run (session 5 rc3); without a run it is disabled
+        // rather than pointing at the Dashboard root (ExDark's psLoadRuns re-targets it the same way).
+        var runs = (kgTrainState.project_runs || []).filter(function (r) { return r && r.run_url; });
+        var cur = kgTrainState.current_in_project === false ? null : kgTrainState.current;
+        var curUrl = cur && cur.facts && cur.facts.run_url;
+        var target = curUrl || (runs[0] && runs[0].run_url) || '';
+        kgSetLoopInspect(target ? dashRunLink(target) : '');
+      }
+      function kgSetLoopInspect(href) {
+        var a = el('kg-loop-inspect');
+        if (!a) { return; }
+        if (href) {
+          a.href = href;
+          a.classList.remove('kg-loop-off');
+          a.removeAttribute('aria-disabled');
+          a.removeAttribute('title');
+          a.setAttribute('tabindex', '0');
+        } else {
+          a.removeAttribute('href');
+          a.classList.add('kg-loop-off');
+          a.setAttribute('aria-disabled', 'true');
+          a.setAttribute('title', 'No run in this project yet. Train first; inspect then opens the latest run in the Dashboard.');
+          a.setAttribute('tabindex', '-1');
+        }
       }
 
       // Stepper states, in icon-set glyphs (ExDark's exact behaviour, decision 2026-09-28):
@@ -3844,6 +3870,7 @@
             }
             trLoadDurationStats();
             trRenderRunsPanel();
+            kgRenderLoopLinks();
           }
           if (both[1]) {
             kgSubmitState = both[1];
@@ -4665,7 +4692,7 @@
             psFillRuns(runs || [], el('ps-run').value);
             // Loop banner "inspect" deep-links to the newest Run with a URL.
             var withUrl = psRuns.filter(function (r) { return r.run_url; })[0];
-            if (withUrl && dashboardUrl) { el('kg-loop-inspect').href = dashRunLink(withUrl.run_url); }
+            if (withUrl && dashboardUrl) { kgSetLoopInspect(dashRunLink(withUrl.run_url)); }
           })
           .catch(function (e) {
             kgConn.fail(e, psLoadRuns);
@@ -5104,7 +5131,7 @@
             // The used-today count renders only when the submissions list is permitted.
             budgetTxt = b.left === null
               ? ' · ' + fmtCount(b.limit) + ' submissions/day'
-              : ' · ' + fmtCount(b.left) + ' of ' + fmtCount(b.limit) + ' submissions left today';
+              : ' · ' + fmtCount(b.left) + ' of ' + fmtCount(b.limit) + ' left today';
           }
           var exhausted = psBudgetExhausted();
           box.innerHTML = '<div class="kg-callout ok">' + kgIcon('check-circle') +
@@ -5726,10 +5753,15 @@
             '<span style="color:var(--text-muted)">no activity yet</span>', 'Predictions and submissions land here.', false);
         }
         var b = psBudget();
-        if (psConnState && psConnState.state === 'ready' && b) {
+        var kgd = (stDoctor && stDoctor.kaggle) || null;
+        if (!(psConnState && psConnState.state === 'ready') && kgd && kgd.state === 'ready' && kgd.daily_limit) {
+          b = { limit: kgd.daily_limit, left: typeof kgd.submissions_used_today === 'number'
+                ? Math.max(0, kgd.daily_limit - kgd.submissions_used_today) : null };
+        }
+        if (((psConnState && psConnState.state === 'ready') || (kgd && kgd.state === 'ready')) && b) {
           // The used-today counter needs GetSubmissionLimits; without it the block degrades to the plain limit.
           html += stHeroBlock('Kaggle budget',
-            b.left === null ? fmtCount(b.limit) + '/day limit' : fmtCount(b.limit - b.left) + ' of ' + fmtCount(b.limit) + ' today',
+            b.left === null ? fmtCount(b.limit) + '/day limit' : fmtCount(b.left) + ' of ' + fmtCount(b.limit) + ' left today',
             b.left === null ? 'Per-day counter unavailable on this competition.' : 'Resets 00:00 UTC.', false);
         }
         (liveJobs || []).slice(0, 1).forEach(function (lj) {
@@ -5922,6 +5954,10 @@
       }
 
       // ── Doctor (D6): one locked row per fact, Copy diagnostics ────────────────────────
+      function stAgoIso(iso) {
+        var ms = Date.parse(iso);
+        return isNaN(ms) ? String(iso) : kgFmtAgo(ms / 1000);
+      }
       function stDoctorRows(doc, health) {
         var v = doc.versions || {}, d = doc.device || {}, m = doc.manifest || {}, k = doc.kit || {};
         var kg = doc.kaggle || {}, h = doc.plugin_home || {}, p = doc.plugin || {}, rec = doc.records || {};
@@ -5930,7 +5966,7 @@
         var kagText = kg.state === 'ready'
           ? 'connected' + (kg.username ? ' as ' + kg.username : '') +
             (typeof kg.submissions_used_today === 'number' && kg.daily_limit
-              ? ' · ' + fmtCount(kg.daily_limit - kg.submissions_used_today) + ' of ' + fmtCount(kg.daily_limit) + ' submissions left today' : '')
+              ? ' · ' + fmtCount(kg.daily_limit - kg.submissions_used_today) + ' of ' + fmtCount(kg.daily_limit) + ' left today' : '')
           : kg.state === 'no_credentials' ? 'not connected (no credentials on the compute host)'
           : kg.state === 'not_joined' ? 'connected' + (kg.username ? ' as ' + kg.username : '') + ' · competition not joined'
           : kg.state ? 'could not check: ' + (kg.error || kg.state) : 'not checked';
@@ -5943,11 +5979,17 @@
           ['SDK · 3lc', (v.sdk || '?') + ' · ' + (v.tlc || '?'), ''],
           ['torch · torchvision', (v.torch || 'not installed') + ' · ' + (v.torchvision || 'not installed'), ''],
           ['CUDA in the worker', cuda + (d.device_class ? ' · device class ' + d.device_class : ''), ''],
-          ['Manifest', (m.manifest_source || '?') + ' · ' + String(m.manifest_sha256 || '').slice(0, 12) +
-                       (m.competition_id ? ' · ' + m.competition_id + ' kit ' + (m.kit_version || '?') : ''), m.manifest_document_url || ''],
+          ['Manifest', (m.manifest_source || '?') +
+                       (m.refresh_state === 'running' ? ' (checking the remote…)' : '') +
+                       (m.refresh_state === 'failed' ? ' (remote fetch failed: ' + (m.refresh_error || 'unknown error') + ')' : '') +
+                       ' · ' + String(m.manifest_sha256 || '').slice(0, 12) +
+                       (m.competition_id ? ' · ' + m.competition_id + ' kit ' + (m.kit_version || '?') : '') +
+                       (m.manifest_fetched_at ? ' · fetched ' + stAgoIso(m.manifest_fetched_at) : ''), m.manifest_document_url || ''],
           ['Kit', kitText, k.kit_dir || ''],
           ['Kaggle', kagText, ''],
-          ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : ''), h.path || ''],
+          ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : '') +
+                          (h.migrated_from && h.migrated_from.source ? ' · carried forward from the previous version' : ''),
+           (h.migrated_from && h.migrated_from.source) ? h.path + ' (carried forward from ' + h.migrated_from.source + ' at ' + h.migrated_from.at + ')' : (h.path || '')],
           ['Free disk space', free, (h.disk && h.disk.measured_at) || ''],
           ['Python', (v.python || '?') + ' · ' + (v.platform || ''), ''],
           ['Records', fmtCount(rec.project_runs) + ' runs in this project · ' + fmtCount(rec.ledger_predict) +
@@ -6003,17 +6045,30 @@
         ]);
       }
 
-      function stLoadDoctor() {
+      function stLoadDoctor(withKaggle) {
         var get = function (path, fallback) {
           return API.authFetch(path).then(function (r) { return r.json(); }).catch(function () { return fallback; });
         };
         return Promise.all([
-          get(PLUGIN_ROOT + '/status/doctor', { error: 'The Doctor could not be read.' }),
+          get(PLUGIN_ROOT + '/status/doctor?kaggle=' + (withKaggle ? '1' : '0'), { error: 'The Doctor could not be read.' }),
           get(computeUrl + '/health', null)
         ]).then(function (res) {
-          stDoctor = res[0]; stHealth = res[1]; stDoctorLoaded = true;
+          var doc = res[0] || {};
+          if (!withKaggle && !doc.error && !doc.kaggle && stDoctor && stDoctor.kaggle) { doc.kaggle = stDoctor.kaggle; }
+          stDoctor = doc; stHealth = res[1]; stDoctorLoaded = true;
           renderDoctorFrom(stDoctor, stHealth);
+          if (el('kg-panel-status').classList.contains('active')) {
+            stRenderHero(stHistory.predictions || [], stHistory.best_public_score || null, stLiveJobs);
+          }
         });
+      }
+      var stLiveJobs = [];
+      // Any job that finishes changes the counts the Doctor and the hero show (session 5 rc3).
+      function stOnJobDone() {
+        stDoctorLoaded = false;
+        if (!kgDevMode && el('kg-panel-status').classList.contains('active') && kgImportState.state === 'success') {
+          stFetchAll(false, true);
+        }
       }
 
       // ── Export verification bundle (D5): the zip streams like Download CSV ────────────
@@ -6076,6 +6131,7 @@
           if (res[0]) { kgTrainState = res[0]; }
           if (res[1]) { stHistory = res[1]; }
           var liveJobs = (res[2] || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
+          stLiveJobs = liveJobs;
           stRenderHero(stHistory.predictions || [], stHistory.best_public_score || null, liveJobs);
           stRenderRuns(stHistory.runs || []);
           renderHistoryFrom(stHistory.predictions || []);
@@ -6087,7 +6143,7 @@
           el('st-refresh-btn').classList.remove('kg-spin');
         }
         renderKaggleLive();
-        if (manual || !stDoctorLoaded) { stLoadDoctor(); }
+        stLoadDoctor(!!manual || !!live || !stDoctorLoaded);   // the poll re-reads the counts without Kaggle
       }
 
       function refreshStatus() {
@@ -6218,7 +6274,8 @@
           plugin: { version: kgPluginVersion || '1.0.0rc2', commit: '0123456789abcdef0123456789abcdef01234567' },
           versions: { sdk: '0.3.3', tlc: '3.3.2', torch: '2.14.0+cu126', torchvision: '0.29.0+cu126', kaggle: '2.2.4', python: '3.12.13', platform: 'win32 · Windows-11' },
           device: { probe: 'done', device_class: 'cuda', cuda_available: true, workers_default: 0 },
-          manifest: { manifest_source: 'remote', manifest_sha256: 'ec0c60cf45f03f8c67437f576daa4ddc', competition_id: id, kit_version: (m.kit || {}).version || 'v1',
+          manifest: { manifest_source: 'remote', manifest_source_local: 'cache', refresh_state: 'done', manifest_fetched_at: new Date(Date.now() - 300000).toISOString(),
+                      manifest_sha256: 'ec0c60cf45f03f8c67437f576daa4ddc', competition_id: id, kit_version: (m.kit || {}).version || 'v1',
                       manifest_document_url: 'https://competitions.dev.3lc.ai/kaggle/' + id + '/manifest.json' },
           kit: { state: 'success', kit_version: (m.kit || {}).version || 'v1', file_count: 9601, kit_dir: home + '\\data\\' + id + '\\v1\\starter_kit' },
           kaggle: { state: mode === 'status-empty' ? 'no_credentials' : 'ready', username: 'participant', daily_limit: limit, submissions_used_today: 2 },

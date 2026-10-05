@@ -323,12 +323,14 @@ def get_route_handlers() -> list[Any]:
             return {"connected": False, "reason": f"Could not check Kaggle: {type(exc).__name__}: {exc}"}
 
     @get("/status/doctor", sync_to_thread=True)
-    def status_doctor() -> dict[str, Any]:
-        """The Doctor panel (#11): versions, device, manifest, kit, records, Kaggle state, disk."""
+    def status_doctor(kaggle: str = "1") -> dict[str, Any]:
+        """The Doctor panel (#11): versions, device, manifest, kit, records, Kaggle state, disk.
+        ``kaggle=0`` skips the Kaggle calls (the 15 s poll); the fragment keeps the last Kaggle block."""
         from kaggle_classification import manifest, status
 
         try:
-            return status.doctor(manifest.resolve(network=False).manifest)
+            want = str(kaggle).strip().lower() not in ("0", "false", "no")
+            return status.doctor(manifest.resolve(network=False).manifest, kaggle=want)
         except Exception as exc:
             return {"error": f"{type(exc).__name__}: {exc}"}
 
