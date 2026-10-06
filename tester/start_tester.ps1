@@ -16,7 +16,7 @@
 #   -ProjectRoot <dir>    keep the plugin's tables and runs in their own 3LC project root (TLC_PROJECT_ROOT_URL
 #                         for both services) instead of your default one
 #   -ManifestBase <url>   the competition manifest tier; default https://competitions.dev.3lc.ai (the test tier)
-#   -TestCatalog <url>    the plugin catalog listing the release candidate (default: the 1.0.0rc6 test catalog)
+#   -TestCatalog <url>    the plugin catalog listing the release candidate (default: the 1.0.0rc7 test catalog)
 #   -Stop                 stop the services, their windows and this folder's plugin workers, then exit
 #
 # ASCII only (Windows PowerShell 5.1 reads BOM-less files as ANSI).
@@ -26,7 +26,7 @@ param(
     [int]$ComputePort = 5020,
     [string]$ProjectRoot = "",
     [string]$ManifestBase = "https://competitions.dev.3lc.ai",
-    [string]$TestCatalog = "https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc6/catalog-test.json",
+    [string]$TestCatalog = "https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc7/catalog-test.json",
     [switch]$Stop
 )
 

@@ -5,7 +5,7 @@
 id = "kaggle-classification"
 name = "Kaggle Classification"
 description = "Run a 3LC image-classification hackathon end to end: import the starter kit, train the fixed baseline, predict and submit."
-version = "1.0.0rc6"
+version = "1.0.0rc7"
 # 1.1.0, not 1.0.x: the 1.1.0 torch-backend fix is required for a clean Windows install (Gate 0).
 min_service_version = "1.1.0"
 icon = "▦"

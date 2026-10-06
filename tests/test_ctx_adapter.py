@@ -25,6 +25,7 @@ class _Sdk03Ctx:
 
     def progress(self, *, percent: float, label: str = "", timing: dict | None = None) -> None:
         self.received.append(("progress", percent, label))
+        self.received.append(("timing", timing))
 
     def metric(self, label: str, value) -> None:
         self.received.append(("metric", label, value))
@@ -62,6 +63,24 @@ def test_percent_progress_reaches_the_generic_panel():
     ctx.set_progress({"percent": 42.5, "label": "Downloading shard 5/10", "phase": "download"})
     assert ("progress", 42.5, "Downloading shard 5/10") in sdk.received
     assert any(e[0] == "emit" and e[1] == "stage_progress" and e[2]["phase"] == "download" for e in sdk.received)
+
+
+def test_train_progress_carries_the_generic_timing_line_like_timm():
+    """Session 6: the Hub's Queue & Progress card renders Elapsed | ETA | Per epoch from
+    ``progress.timing`` in the SDK's generic shape; the trainer's payload names the fields ExDark's way."""
+    ctx, sdk = _pair()
+    ctx.set_progress({"percent": 33.3, "label": "Epoch 2/3", "phase": "train", "epoch": 1, "total_epochs": 3,
+                      "elapsed_s": 25.04, "avg_epoch_s": 9.2, "eta_s": 18.4})
+    assert ("timing", {"elapsed_s": 25.0, "eta_s": 18.4, "avg_step_s": 9.2, "step_label": "epoch"}) in sdk.received
+
+
+def test_progress_without_timing_sends_none_so_the_card_shows_the_bar_alone():
+    ctx, sdk = _pair()
+    ctx.set_progress({"percent": 10.0, "label": "Downloading shard 1/10", "phase": "download"})
+    assert ("timing", None) in sdk.received
+    # A payload with only the elapsed time (the first flush before epoch 1) still carries the step label.
+    ctx.set_progress({"percent": 0.0, "label": "Training: starting", "phase": "train", "elapsed_s": 13.2})
+    assert ("timing", {"elapsed_s": 13.2, "step_label": "epoch"}) in sdk.received
 
 
 def test_checks_go_out_as_a_plugin_event_and_never_as_job_update():

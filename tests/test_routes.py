@@ -68,7 +68,7 @@ def test_route_handlers_build_when_litestar_is_present():
         "/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify",
         "/train/preflight", "/train/state", "/tables/list", "/tables/defaults",
         "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/submissions/{job_id:str}/download",
-        "/status/history", "/status/kaggle", "/status/doctor", "/status/bundle",
+        "/status/history", "/status/kaggle", "/status/doctor", "/status/bundle", "/status/bundle/preview",
     }
 
 
@@ -180,6 +180,7 @@ def test_fragment_is_the_exdark_train_tab():
         "function trApplyContract", "function trApplyFields", "function trUsableLine", "var CFG_FIELDS", "var TR_BOUNDS",
         "Verified provenance recorded", "Training complete", "the checkpoint Predict uses", "Continue to Submit",
         "Open Run in Dashboard", "Open Run in Projects", "Start new run", "Training was interrupted",
+        "Watch run in Projects", 'id="tr-run-watch"',
         "Training cancelled after", "Stop this training run?", "Training… (safe to navigate away)",
         "Cancelling… (stops at the next checkpoint)", "Fix the highlighted fields first.", "Tables verified: ",
         "excluded as undefined", "will be skipped until you label", "cannot be learned in this run",
@@ -284,6 +285,9 @@ SAFE_IDENTS = {
     "clsText",
     # the config-load banners (item 3): the pre-escaped reason and the Retry button markup built above
     "reason", "retryBtn",
+    # the bundle's checkpoint checklist (session 6, STATUS_MIRROR D16): the checkbox attribute flags and
+    # the pre-escaped text / helper-built markup pieces assembled above the template
+    "attrs", "metaText", "ruleTag", "note",
     # the pinned-revision warning (item 4): built from esc / fmtCount above
     "data.pinned",
     # the Predict + Submit tab (session 4): the button constants, pre-escaped text and flags its
@@ -383,7 +387,8 @@ def test_fragment_is_the_exdark_status_tab():
         "Your best score, latest activity, and submission history.", 'id="st-conn-banner"', 'id="st-gate"', 'id="st-body"',
         'id="st-hero"', 'id="st-updated"', 'id="st-refresh-btn"', 'id="st-runs"', 'id="st-history"', 'id="st-kaggle"',
         'id="st-verify"', 'id="st-export-btn"', 'id="st-export-note"', "Export verification bundle",
-        'id="st-doctor-toggle"', 'id="st-doctor-panel"', 'id="st-doctor"', "Never images, table data, tokens or answer keys.",
+        'id="st-doctor-toggle"', 'id="st-doctor-panel"', 'id="st-doctor"', "Never images, prediction CSVs, tokens or answer keys.",
+        'id="st-bundle-runs"', "the best checkpoint of up to two submitted runs",
         "History", "Kaggle live", "Verification", "Doctor",
     ):
         assert needle in status_panel, needle
@@ -392,6 +397,8 @@ def test_fragment_is_the_exdark_status_tab():
         "function stHeroBlock", "function stOutcome", "function stRenderHero", "function stRenderRuns", "function renderHistoryFrom",
         "function renderKaggleFrom", "function renderKaggleLive", "function stDoctorRows", "function renderDoctorFrom",
         "function stBuildDiagnostics", "function stLoadDoctor", "function stExportBundle", "function stFetchAll",
+        "function stLoadBundlePreview", "function stRenderBundlePreview", "function stBundleQuery",
+        "Checkpoints to include", "checkpoints=selected&runs=", "/status/bundle/preview?",
         "function refreshStatus", "function stStartAuto", "function stStopAuto", "function stOnTabEnter", "function stDevForce",
         "function kgWhenSpan", "function stLiveKind",
         # ExDark's outcome vocabulary and copy

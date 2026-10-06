@@ -1,4 +1,4 @@
-# TESTING.md — try the Kaggle Classification plugin (release candidate 1.0.0rc6)
+# TESTING.md — try the Kaggle Classification plugin (release candidate 1.0.0rc7)
 
 You are testing a 3LC Hub plugin that runs an image-classification Kaggle hackathon end to end:
 download a starter kit, import it as 3LC tables, label a few images in the Dashboard, train the
@@ -60,8 +60,8 @@ folder, because it redirects `HOME` there.)
 
 Download the one for your OS into the tester folder (next to `.venv`):
 
-- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc6/tester/start_tester.ps1
-- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc6/tester/start_tester.sh
+- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc7/tester/start_tester.ps1
+- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc7/tester/start_tester.sh
 
 What the script does: it starts the 3LC object service and the 3LC compute service with their home
 folder redirected to `.\home` under the tester folder, points the compute service at the test tier of
@@ -121,7 +121,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc6**. On the very first start the compute service first installs its eight stock plugins
+   **1.0.0rc7**. On the very first start the compute service first installs its eight stock plugins
    (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
    so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin's own Python environment (torch is the
@@ -133,7 +133,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 chips (resnet18 · from scratch · 150px / 6 classes · 6,000 unlabeled / Scored by accuracy), "The
 Loop" row, four tabs — **1 Import · 2 Train · 3 Predict + Submit · 4 Status** — and the Import tab
 open with a **Download starter kit** button. The footer reads `3LC Kaggle Classification plugin
-v1.0.0rc6`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
+v1.0.0rc7`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
 "Setting up the plugin environment. The first run takes a few minutes." just wait: that is the
 first-use provisioning, it continues by itself.
 
@@ -187,11 +187,15 @@ In the Loop row click **fix labels** (it opens the 3LC Dashboard on the train ta
 On the Train tab set **Epochs** to **2** (leave everything else), then click **Start Training**.
 
 - You should see: the in-run header "<run name> · running · Epoch 1/2 · cuda (auto)" (or "cpu
-  (auto)" without a GPU), a progress bar filling per batch, three chips (Train loss · Val loss · Val
-  accuracy) with sparklines, "Show log" filling live; after epoch 2 the note "Collecting per-sample
+  (auto)" without a GPU) with a **Watch run in Projects** button at its right edge a few seconds after
+  Start (it opens the Hub's project page in a new tab: the run's card in **Queue & Progress** with the
+  bar, "Epoch k/N" and "Elapsed | ETA | Per epoch", and the run itself in the run list and the chart,
+  updating per epoch beside your previous runs), a progress bar filling per batch, three chips (Train
+  loss · Val loss · Val accuracy) with sparklines, "Show log" filling live; after epoch 2 the note "Collecting per-sample
   metrics and embeddings on 7,800 rows…"; then the green banner "**Training complete: NN.N% val
   accuracy at epoch N** (the checkpoint Predict uses)", a **Verified provenance recorded** panel with
-  9 checks, buttons **Continue to Submit**, **Open Run in Dashboard**, **Open Run in Projects**. On a
+  9 checks, buttons **Continue to Submit**, **Open Run in Dashboard**, **Open Run in Projects** (the
+  Watch button is gone: the run is no longer live). On a
   GPU about 1–2 minutes end to end; on a CPU about 5–8 minutes. Val accuracy after 2 epochs is low
   (30–55 %), that is expected.
 - If not: Copy diagnostics (on the failure banner), the Show log text, a screenshot.
@@ -234,7 +238,7 @@ Open **4 Status**.
   "CSV generated (not submitted)", Copy CSV path and Download CSV icons — and **Kaggle live** with the
   callout "Connect your Kaggle account…" (expected). "Updated just now" with a refresh button; click
   it and the line resets.
-- Expand **Doctor** at the bottom: one row per fact — Plugin (v1.0.0rc6 and a commit), Compute
+- Expand **Doctor** at the bottom: one row per fact — Plugin (v1.0.0rc7 and a commit), Compute
   service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
   `+cu126` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
   kit v1 — "cache" means the last fetched copy, the same document),
@@ -245,12 +249,18 @@ Open **4 Status**.
 
 ### 7.8 Export verification bundle
 
-In the **Verification** section click **Export verification bundle**.
+In the **Verification** section read the line under the button first: "Bundle: N members · about
+X MB (3 tables, N runs, 0 checkpoints)" and, when you have submitted runs, the checklist "Checkpoints
+to include" with the rule's picks already checked (at most two). Then click **Export verification
+bundle**.
 
 - You should see: the browser saves `verification-bundle_intel-scene_<timestamp>.zip`; the note
-  beside the button reads "Exported …". Open the zip: `README.txt`, `plugin.json`,
+  beside the button reads "Exported … (X MB)". Open the zip: `README.txt`, `plugin.json`,
   `manifest_provenance.json`, `import_record.json`, `train_revisions.json`, `runs/<id>.json`,
-  `predictions/<id>.json`, `ledger.jsonl` — and nothing else (no images, no CSV, no checkpoint).
+  `predictions/<id>.json`, `ledger.jsonl`, and a `project/intel-scene/` folder with
+  `datasets/…/tables/<revision>/object.3lc.json` (+ `row_cache.parquet` for the two seed tables),
+  `runs/<run>/object.3lc.json` + `metrics_*/…`, `files.json`, and `runs/<run>/model/best.pt` only for
+  the checked runs — never an image, a CSV or `last.pt`. The README explains the machine-specific paths.
 - If not: the error shown beside the button, Copy diagnostics.
 
 ### 7.9 Stop
@@ -264,7 +274,7 @@ you are done; your 3LC login (Windows) is the only thing outside it.
 Paste this into your message, filled in (one per problem is better than one for everything):
 
 ```
-Plugin test — 1.0.0rc6
+Plugin test — 1.0.0rc7
 OS / GPU:            (e.g. Windows 11, RTX 3060 · macOS 15, M2 · Ubuntu 24.04, no GPU)
 Step that differed:  (7.1 … 7.9, or "install" / "connect")
 What I expected:     (from the "You should see" line)

@@ -597,3 +597,56 @@ closest to ExDark, recorded here).
 | S5-B3 | **Table Ops and the lineage gate.** A Hub merge (`tlc.Table.join_tables`, the merger plugin) produces a `JoinedTable` whose lineage is `input_table_urls`; our walk reads `input_table_url` then `input_tables`. Without a lineage pointer the walk ends → refused ("does not descend"). WITH `input_tables=[<train revision>]` (what a lineage-aware op records) the walk reaches the seed and the merged train + val table **passes the lineage gate** — verified in `tests/test_trainer.py::test_a_merged_train_and_val_table_passes_the_lineage_walk_and_is_refused_by_the_row_gate`. | The gate is extended as the brief asks: `trainer.foreign_rows(table, kit_dir)` counts rows whose image (resolved against the table URL) is not under `<kit_dir>/data/train/`; `GET /train/preflight` serves `foreign_rows`, `foreign_examples`, `kit_train_dir` per revision; the Train gate shows an amber problem row ("N rows point at images outside the kit's train folder … Table operations that pull in other splits are not allowed.", Start disabled); `run_training` refuses with the same message naming the first examples. Honest revisions (EditedTable, subsets) report 0. Fixture `train-state2-foreign`. **rc4:** a train image is also accepted by the kit layout (`…/starter_kit/data/train/…`), because a plugin update carries the state forward and rewrites the record's `kit_dir` while the existing tables keep their paths into the previous version's kit tree (the rc3 upgrade proof refused all 6,600 rows); val / test rows and images outside a kit stay foreign. Note: ExDark's row budget (`max_rows`, the split's 6,600) already refuses a FULL train + val merge on this dataset; the row gate is what catches a merge of a subset, or a merge that replaces rows, and it names the cause instead of the count. The check is a plugin rule (the kit layout is a manifest fact, the folder names `data/train` are the kit's), not a competition constant. |
 | S5-B1 | **torch / torchvision pinned exactly** (`torch==2.14.0`, `torchvision==0.29.0`) on every platform; cu126 index on win32 / linux, PyPI on macOS, as before | The 2026-10-02 demo worker had drifted to 2.14.1 / 0.29.1 (the catalog path installs with `uv pip install --torch-backend auto` and took the newest wheels) while the parity gate (§11) and the lock said 2.14.0 / 0.29.0. The lock now carries `specifier = "==2.14.0"` / `"==0.29.0"`. The seed-42 re-run of the parity gate is recorded in §15 once the release-candidate worker exists. |
 
+
+## 15. Session 6 (2026-10-06): the Hub's Projects page while a run trains
+
+Paul's demo feedback, items 1 and 2: "Watch run in Projects" during training with a live progress bar on
+the Projects page the way other Hub plugins do it, and per-epoch metrics reaching the Run as each epoch
+finishes so the live run can be compared with previous runs. Phase 0 read the SDK (0.3.3 on the host,
+the 0.5 POC in `../reference/3lc-compute-plugin-sdk`), the timm plugin, ExDark and the Hub's own
+frontend (`hub.3lc.ai` 1.1.0.3, the project page's inline script and `/static/js/queue-panel.js`,
+read-only); the live check `../3lc-hub-11/live_check_s6.py` recorded what the Hub can see of our run.
+
+**The mechanism (what other plugins do).** Two channels, both already ours:
+
+- **The generic job channel.** `ctx.progress(percent, label, timing)`, `ctx.result(run_url)` and
+  `ctx.log` feed the host's in-memory job record (`tlc_compute/plugins/job_manager.py`: `status`,
+  `progress{percent,label,timing}`, `run_url`, `project_name`, `metrics[]`), rebroadcast as `job_update`
+  and listed at `GET /api/plugins/jobs?project=<name>`. The project page polls that list **every second**
+  and renders each job as a card in its **Queue & Progress** panel (`QueuePanel.renderJobs`): the plugin
+  name and the last label, a status badge, the bar from `percent` (`-1` = indeterminate), the timing line
+  "Elapsed | ETA | Per <step_label>" from `timing`, metric cards from `metrics[]`, Stop, and Open →
+  `/runs/<encodeURIComponent(run_url)>` once `run_url` is known (else `/projects/<project>`). The panel
+  shows only while the project has jobs; a completed card flashes 3 s and auto-hides. **That card is the
+  Hub's "live progress bar on the run"** — the run row itself carries a status badge, not a bar.
+  The timm plugin feeds it through `tlc_plugin_sdk.shared.generic_job.epoch_progress`: label
+  "Epoch k/N" for the epoch in progress, `timing = {elapsed_s, eta_s, avg_step_s, step_label: "epoch"}`;
+  it calls `ctx.result` only at the end. ExDark polls its own job store and never sent timing.
+- **The Run itself.** `tlc.log({...})` is `Run.add_output_value` → `update_attribute` →
+  `write_to_url()` on every call: each logged epoch rewrites `object.3lc.json` at once and notifies
+  discovery. The project page's **Run Insights** chart reads `constants.outputs` rows keyed by `epoch`
+  for every checked run and, while any run is `running / collecting / post_processing` or a job is
+  active, refetches the checked runs' objects on each 3 s poll and redraws. Run status codes: 3 running,
+  4 collecting, 1 completed, 7 cancelled; a run neither completed nor cancelled and untouched for 24 h
+  renders as "stale".
+
+**What ours did before this session (the live check, rc6, 3 epochs in `intel-scene-demo`, 86.5 s):**
+`run_url` on the job card 14 s after Start (right after `tlc.init` + `set_status_running`); percent and
+labels per flush; **no `timing`** (the adapter dropped it, so the card had no Elapsed / ETA line); the
+label trailed by one epoch ("Training: starting" through epoch 1, "Epoch 1/3" during epoch 2) because it
+named the completed count; every `ctx.log` line also landed on the card's subtitle (host behaviour: a
+`log` event sets the label). The Run's `constants.outputs` grew 0 → 1 → 2 → 3 at each epoch end with
+status 3 → 4 → 1: **item 2 already held** — per-epoch metrics reach the Run live.
+
+**Shipped (rc7):**
+
+| # | Change | Where |
+|---|---|---|
+| S6-1 | `set_progress` passes `timing = {elapsed_s, eta_s, avg_step_s: avg_epoch_s, step_label: "epoch"}` to `ctx.progress`, only the keys the payload carries (Import / Predict send none → the bar alone), exactly timm's shape | `__init__.py` `generic_timing`, `_JobCtxAdapter.set_progress`; `tests/test_ctx_adapter.py` |
+| S6-2 | The trainer's flush adds `elapsed_s` (since the job started) and names the epoch **in progress** in the generic label ("Epoch k/N", timm's convention); `epoch` in the payload stays the completed count the fragment reads | `trainer.py` `flush_progress` |
+| S6-3 | **Watch run in Projects** in the in-run head (`#tr-run-watch`, after the meta): renders while `status === 'running'` and `facts.run_url` has arrived, `/projects/<the run's recorded project>#runs` (the same destination as "Open Run in Projects", which takes over at the terminal state when `trRenderTerminal` re-renders the head with a non-running status), `target=_blank`, the hub-origin rule (`kgHubProjectsHref`: only on `hub.3lc.ai` / `hub-beta.3lc.ai`, so not on the dev harness). Fixture `train-state3` (and its two variants) carries `facts.run_url` | `ui.html` `trRenderRunView`, `.kg-run-watch:empty`; `test_routes.py` needles |
+| S6-4 | Nothing for item 2: `tlc.log` per epoch and `set_status_running` at start were already there; the Run Insights chart follows them | — |
+
+Why `/projects/<project>#runs` and not the Hub's run page: the brief says "compare the live run against
+previous runs", which is the project page's chart over the checked runs; `/runs/<url>` shows one run.
+The Queue card's own Open button already goes there.

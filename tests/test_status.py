@@ -16,6 +16,7 @@ import json
 import os
 import time
 import zipfile
+from pathlib import Path
 
 import pytest
 
@@ -265,18 +266,37 @@ EXPECTED_MEMBERS = {
     "runs/t1.json", "runs/t2.json", "runs/t3.json",
     "predictions/p1.json", "predictions/p2.json", "predictions/p3.json",
     "submissions/s1.json", "submissions/s2.json", "submissions/s3.json", "ledger.jsonl",
+    "project/intel-scene/files.json",
 }
 
 
+def _assert_data_rule(names):
+    """Session 6: tables and runs ride along (3LC records: object.3lc.json + parquet under project/), the
+    only checkpoint member is a run's best.pt; never an image, a CSV, last.pt or a file outside project/."""
+    for n in names:
+        low = n.lower()
+        assert not low.endswith((".jpg", ".jpeg", ".png", ".csv")), n
+        if low.endswith(".parquet"):
+            assert n.startswith("project/") and ("/tables/" in n or "/metrics_" in n), n
+        if low.endswith(".pt"):
+            assert n.startswith("project/") and n.endswith("/model/best.pt"), n
+
+
 def test_verification_bundle_carries_the_records_and_nothing_else(seeded, manifest):
+    """The records on a project whose folders are not on this disk: the member set is the session-5 one
+    plus the (empty) files index; no data member can exist."""
     data, name = status.verification_bundle(manifest)
     assert name.startswith("verification-bundle_intel-scene_") and name.endswith(".zip")
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
         names = set(zf.namelist())
         assert names == EXPECTED_MEMBERS
         texts = {n: zf.read(n).decode("utf-8") for n in names}
-    # No data: no image, checkpoint or CSV member; the other project's prediction is not there.
-    assert not any(n.lower().endswith((".jpg", ".jpeg", ".png", ".pt", ".csv", ".parquet")) for n in names)
+    _assert_data_rule(names)
+    index = json.loads(texts["project/intel-scene/files.json"])
+    assert index["files"] == [] and index["checkpoints"]["mode"] == "default"
+    # The rule on the seeded ledger: run_a (the only scored ref) + run_b (the most recent ref); neither best.pt is on disk.
+    assert index["checkpoints"]["default_runs"] == ["t1", "t2"]
+    assert [s["reason"] for s in index["checkpoints"]["skipped"]] == ["best.pt is not on disk"] * 2
     assert "run_x" not in texts["ledger.jsonl"].split("px")[0] or "predictions/px.json" not in names
     # No secret pattern anywhere (the same scan the export runs, plus the token-shaped needles).
     for n, text in texts.items():
@@ -304,6 +324,233 @@ def test_bundle_without_an_import_record_still_exports(store, manifest):
         assert {"README.txt", "plugin.json", "manifest_provenance.json", "import_record.json", "train_revisions.json",
                 "ledger.jsonl"} <= set(zf.namelist())
         assert "no import record" in zf.read("train_revisions.json").decode()
+
+
+# ── The bundle on a project that IS on disk (session 6): tables, runs, the checkpoint rule ────────
+
+import hashlib
+
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _fake_project(tmp_path, monkeypatch):
+    """A project folder in the 3LC layout under tmp_path: the seed train table (object + row cache), a
+    labeled revision (EditedTable pointing at ``../initial``), a stray root table outside the lineage, the
+    locked val table, and four runs with metrics tables, best.pt / last.pt and a stray image."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from kaggle_classification import importer
+
+    root = tmp_path / "3lc" / "projects"
+    proj = root / PROJECT
+    monkeypatch.setattr(importer, "project_root_url", lambda: root.as_posix())
+    monkeypatch.setattr(importer, "latest_url", lambda url, **kw: url)
+
+    def table(ds, name, parent=None, rows=3, secret=None):
+        d = proj / "datasets" / ds / "tables" / name
+        d.mkdir(parents=True)
+        obj = {"type": "EditedTable" if parent else "TableFromPydict", "row_count": rows, "created": "2026-10-06"}
+        if parent:
+            obj["input_table_url"] = f"../{parent}"
+        else:
+            obj["row_cache_url"] = "./row_cache.parquet"
+            paths = [f"C:/kit/starter_kit/data/train/a/{i}.jpg" for i in range(rows)]
+            if secret:
+                paths[0] = secret
+            pq.write_table(pa.table({"image": paths, "label": [0] * rows, "weight": [1.0] * rows}), d / "row_cache.parquet")
+        (d / "object.3lc.json").write_text(json.dumps(obj), encoding="utf-8")
+        return d.as_posix()
+
+    def run(name, best: bytes):
+        d = proj / "runs" / name
+        (d / "model").mkdir(parents=True)
+        (d / "object.3lc.json").write_text(json.dumps({
+            "type": "Run", "status": 1.0,
+            "constants": {"parameters": {"best_checkpoint_sha256": _sha(best), "best_checkpoint": "model/best.pt"},
+                          "outputs": [{"epoch": 1, "val_accuracy": 40.0}]},
+        }), encoding="utf-8")
+        (d / "model" / "best.pt").write_bytes(best)
+        (d / "model" / "last.pt").write_bytes(b"last-" + best)
+        m = d / "metrics_0000"
+        m.mkdir()
+        (m / "object.3lc.json").write_text(json.dumps({"type": "TableFromParquet", "input_url": "./metrics_0000.parquet"}), encoding="utf-8")
+        pq.write_table(pa.table({"predicted": [0, 1, 2], "loss": [0.1, 0.2, 0.3]}), m / "metrics_0000.parquet")
+        (d / "thumb.jpg").write_bytes(b"\xff\xd8\xff")
+        return d.as_posix(), (d / "model" / "best.pt").as_posix(), _sha(best)
+
+    seed = table("ds_train", "initial")
+    rev = table("ds_train", "labels-1", parent="initial")
+    stray = table("ds_train", "my-own-root", rows=2)
+    val = table("ds_val", "initial")
+    runs = {n: run(n, f"weights-of-{n}".encode()) for n in ("run_a", "run_b", "run_c", "run_d")}
+    return {"root": root, "proj": proj, "seed": seed, "rev": rev, "stray": stray, "val": val, "runs": runs}
+
+
+@pytest.fixture
+def on_disk(store, tmp_path, monkeypatch):
+    """The seeded records re-pointed at a project that exists on disk. Submissions: run_a (oldest, public
+    0.5), run_b (public 0.7 — the best), run_c (the most recent, unscored, its ledger sha256 differs from
+    the file); run_d trained but never submitted."""
+    fp = _fake_project(tmp_path, monkeypatch)
+    rec = _import_record()
+    rec["tables"]["train"]["url"] = fp["seed"]
+    rec["tables"]["val"]["url"] = fp["val"]
+    rec["lineage_root"] = {"train_url": fp["seed"], "val_url": fp["val"]}
+    rec["val_locked"] = {"url": fp["val"], "editable": True}
+    store.save({"import_state": rec})
+    runs = []
+    for job, name, train in (("t4", "run_d", fp["seed"]), ("t3", "run_c", fp["rev"]), ("t2", "run_b", fp["rev"]), ("t1", "run_a", fp["seed"])):
+        url, weights, sha = fp["runs"][name]
+        runs.append(_run(job, name, run_url=url, weights=weights, best_checkpoint_sha256=sha, train_table_url=train))
+    store.save({"train_state": {"current": None, "runs": runs}})
+    t0 = time.time() - 5000
+
+    def predict(job, train, name, ts, sha):
+        e = _predict_entry(job, train, name, ts=ts)
+        e["run_url"] = fp["runs"][name][0]
+        e["checkpoint"] = {"path": fp["runs"][name][1], "sha256_recorded": sha, "sha256_on_disk": sha, "sha256_on_run": sha}
+        return e
+
+    def submit(job, pid, name, ref, verdict, ts):
+        e = _submit_entry(job, pid, name, ref, verdict, ts=ts)
+        e["run_url"] = fp["runs"][name][0]
+        return e
+
+    ledger.append(predict("p1", "t1", "run_a", t0, fp["runs"]["run_a"][2]))
+    ledger.append(submit("s1", "p1", "run_a", "100", {"status": "COMPLETE", "public_score": 0.5, "error_description": ""}, t0 + 10))
+    ledger.append(predict("p2", "t2", "run_b", t0 + 100, fp["runs"]["run_b"][2]))
+    ledger.append(submit("s2", "p2", "run_b", "200", {"status": "COMPLETE", "public_score": 0.7, "error_description": ""}, t0 + 110))
+    ledger.append(predict("p3", "t3", "run_c", t0 + 300, "00" * 32))   # the ledger's sha256 does not match the file
+    ledger.append(submit("s3", "p3", "run_c", "300", None, t0 + 310))
+    ledger.append(predict("p4", "t4", "run_d", t0 + 400, fp["runs"]["run_d"][2]))   # predicted, never submitted
+    return fp
+
+
+def _members(data: bytes) -> tuple[set, dict]:
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        names = set(zf.namelist())
+        index = json.loads(zf.read(f"project/{PROJECT}/files.json").decode("utf-8"))
+        return names, index
+
+
+def test_bundle_copies_the_lineage_tables_the_runs_and_the_rule_s_checkpoints(on_disk, manifest):
+    data, _ = status.verification_bundle(manifest)
+    names, index = _members(data)
+    _assert_data_rule(names)
+    P = f"project/{PROJECT}/"
+    # The seed (object + row cache), the labeled revision (object only: an EditedTable has no cache), the
+    # locked val; the stray root table outside the lineage is NOT copied.
+    assert {P + "datasets/ds_train/tables/initial/object.3lc.json", P + "datasets/ds_train/tables/initial/row_cache.parquet",
+            P + "datasets/ds_train/tables/labels-1/object.3lc.json", P + "datasets/ds_val/tables/initial/object.3lc.json",
+            P + "datasets/ds_val/tables/initial/row_cache.parquet"} <= names
+    assert not any("my-own-root" in n for n in names)
+    # Every run: the object and its metrics table; never last.pt or the stray image.
+    for r in ("run_a", "run_b", "run_c", "run_d"):
+        assert {P + f"runs/{r}/object.3lc.json", P + f"runs/{r}/metrics_0000/object.3lc.json",
+                P + f"runs/{r}/metrics_0000/metrics_0000.parquet"} <= names
+        assert P + f"runs/{r}/model/last.pt" not in names and P + f"runs/{r}/thumb.jpg" not in names
+    # The rule: best public score (run_b) + most recent submission (run_c); run_c fails the ledger check.
+    assert index["checkpoints"]["mode"] == "default" and index["checkpoints"]["default_runs"] == ["t2", "t3"]
+    assert [i["train_job_id"] for i in index["checkpoints"]["included"]] == ["t2"]
+    assert P + "runs/run_b/model/best.pt" in names and P + "runs/run_c/model/best.pt" not in names
+    assert P + "runs/run_a/model/best.pt" not in names and P + "runs/run_d/model/best.pt" not in names
+    skipped = index["checkpoints"]["skipped"]
+    assert len(skipped) == 1 and skipped[0]["train_job_id"] == "t3" and "the ledger" in skipped[0]["reason"]
+    assert index["checkpoints"]["included"][0]["verified_against"] == ["the ledger", "the run record", "the Run"]
+    # files.json: every copied file with its real sha256 and size.
+    by_path = {f["path"]: f for f in index["files"]}
+    assert set(by_path) == {n for n in names if n.startswith(P) and not n.endswith("files.json")}
+    ckpt = by_path[P + "runs/run_b/model/best.pt"]
+    assert ckpt["sha256"] == on_disk["runs"]["run_b"][2] and ckpt["bytes"] == len(b"weights-of-run_b") and ckpt["kind"] == "checkpoint"
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        assert _sha(zf.read(P + "datasets/ds_train/tables/initial/row_cache.parquet")) == by_path[P + "datasets/ds_train/tables/initial/row_cache.parquet"]["sha256"]
+    assert index["project_dir"].replace("\\", "/").endswith(f"projects/{PROJECT}")
+    assert {t["role"] for t in index["tables"]} == {"seed", "train revision", "locked val"}
+
+
+def test_bundle_preview_is_the_plan_without_the_bytes(on_disk, manifest):
+    pv = status.bundle_preview(manifest)
+    assert pv["checkpoints"]["default_runs"] == ["t2", "t3"] and pv["counts"]["checkpoints"] == 1
+    runs = {e["train_job_id"]: e for e in pv["eligible_runs"]}
+    assert set(runs) == {"t1", "t2", "t3"}   # submitted runs only (run_d was never submitted)
+    assert runs["t2"]["public_score"] == 0.7 and runs["t2"]["default"] and runs["t2"]["selected"]
+    assert runs["t3"]["default"] and "the ledger" in runs["t3"]["skipped_reason"]
+    assert runs["t1"]["public_score"] == 0.5 and not runs["t1"]["default"] and not runs["t1"]["selected"]
+    assert runs["t1"]["available"] and runs["t1"]["checkpoint_bytes"] == len(b"weights-of-run_a")
+    assert pv["bytes"] > pv["bytes_checkpoints"] == len(b"weights-of-run_b")
+    assert pv["counts"] == {"members": len(pv["members"]), "tables": 3, "runs": 4, "metrics_tables": 4, "checkpoints": 1}
+    assert f"project/{PROJECT}/files.json" in pv["members"] and "README.txt" in pv["members"]
+    assert "text_members" not in pv and "files" not in pv
+
+
+def test_bundle_checkpoint_modes_selected_none_and_all(on_disk, manifest):
+    P = f"project/{PROJECT}/"
+    # selected: the participant's checklist, at most two submitted runs.
+    names, index = _members(status.verification_bundle(manifest, checkpoints="selected", runs="t1")[0])
+    assert {n for n in names if n.endswith(".pt")} == {P + "runs/run_a/model/best.pt"}
+    assert index["checkpoints"]["requested"] == ["t1"] and index["checkpoints"]["mode"] == "selected"
+    names, _ = _members(status.verification_bundle(manifest, checkpoints="selected", runs=["t1", "t2"])[0])
+    assert {n for n in names if n.endswith(".pt")} == {P + "runs/run_a/model/best.pt", P + "runs/run_b/model/best.pt"}
+    with pytest.raises(ValueError, match="At most 2"):
+        status.bundle_plan(manifest, checkpoints="selected", runs="t1,t2,t3")
+    with pytest.raises(ValueError, match="Not a submitted run"):
+        status.bundle_plan(manifest, checkpoints="selected", runs="t4")
+    with pytest.raises(ValueError, match="checkpoints must be one of"):
+        status.bundle_plan(manifest, checkpoints="some")
+    # none: the records, tables and runs without any checkpoint.
+    names, index = _members(status.verification_bundle(manifest, checkpoints="none")[0])
+    assert not any(n.endswith(".pt") for n in names) and index["checkpoints"]["included"] == []
+    # all (organizers): every run's best.pt that matches its record and its Run; run_c's ledger mismatch
+    # still excludes it because the ledger is checked whenever the run was submitted.
+    names, index = _members(status.verification_bundle(manifest, checkpoints="all")[0])
+    assert {n for n in names if n.endswith(".pt")} == {P + f"runs/{r}/model/best.pt" for r in ("run_a", "run_b", "run_d")}
+    assert [s["train_job_id"] for s in index["checkpoints"]["skipped"]] == ["t3"]
+
+
+def test_default_checkpoint_rule_picks_the_best_and_the_most_recent_once(on_disk, manifest):
+    eligible = status.eligible_checkpoint_runs(manifest)
+    assert [e["train_job_id"] for e in eligible] == ["t3", "t2", "t1"]   # newest submission first
+    assert status.default_checkpoint_runs(eligible) == ["t2", "t3"]
+    # One id when the best-scored run is also the most recently submitted one.
+    one = [e for e in eligible if e["train_job_id"] != "t3"]
+    assert status.default_checkpoint_runs(one) == ["t2"]
+    # No scored submission: the most recent one alone; nothing submitted: no checkpoint at all.
+    assert status.default_checkpoint_runs([{**e, "public_score": None} for e in eligible]) == ["t3"]
+    assert status.default_checkpoint_runs([]) == []
+
+
+def test_a_secret_inside_a_table_s_row_cache_refuses_the_export(store, tmp_path, monkeypatch, manifest):
+    """The parquet members are scanned through their string columns (session 6): a token-shaped value in
+    the seed's image column aborts the whole export, as a text member would."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    fp = _fake_project(tmp_path, monkeypatch)
+    cache = Path(fp["seed"]) / "row_cache.parquet"
+    pq.write_table(pa.table({"image": ["KGAT_abcdefghijklmnop0123", "C:/kit/b.jpg"], "label": [0, 1], "weight": [1.0, 1.0]}), cache)
+    rec = _import_record()
+    rec["lineage_root"] = {"train_url": fp["seed"], "val_url": fp["val"]}
+    rec["val_locked"] = {"url": fp["val"], "editable": True}
+    store.save({"import_state": rec})
+    assert "KGAT_" in status.parquet_text(cache)
+    with pytest.raises(status.BundleRefused, match="row_cache.parquet"):
+        status.verification_bundle(manifest)
+
+
+def test_bundle_file_lands_under_the_plugin_home_and_old_ones_are_pruned(on_disk, manifest, monkeypatch):
+    from kaggle_classification import storage
+
+    bundles = storage.plugin_home() / "bundles"
+    bundles.mkdir(parents=True, exist_ok=True)
+    stale = bundles / "verification-bundle_intel-scene_20200101_000000Z.zip"
+    stale.write_bytes(b"old")
+    os.utime(stale, (time.time() - 2 * status.BUNDLE_KEEP_S, time.time() - 2 * status.BUNDLE_KEEP_S))
+    path, name = status.verification_bundle_file(manifest, checkpoints="none")
+    assert path.parent == bundles and path.name == name and path.is_file()
+    assert not stale.exists()
 
 
 def test_the_session_store_never_holds_a_secret_pattern(seeded):

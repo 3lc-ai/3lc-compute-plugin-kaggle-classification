@@ -53,6 +53,25 @@ __version__ = _read_version()
 TABS = ("import", "train", "predict_submit", "status")
 
 
+def generic_timing(progress: dict[str, Any]) -> dict[str, Any] | None:
+    """The timing line of the Hub's Queue & Progress card, in the SDK's generic shape — what the timm
+    plugin sends through ``tlc_plugin_sdk.shared.generic_job.epoch_progress``: ``{elapsed_s, eta_s,
+    avg_step_s, step_label}`` (docs/TRAIN_MIRROR.md §15). Only the keys the payload carries are sent
+    (the card renders "Elapsed | ETA | Per epoch" from whatever is present); ``None`` when the payload
+    has no timing at all (Import, Predict, the download), so the card shows the bar alone."""
+    out: dict[str, Any] = {}
+    if progress.get("elapsed_s") is not None:
+        out["elapsed_s"] = round(float(progress["elapsed_s"]), 1)
+    if progress.get("eta_s") is not None:
+        out["eta_s"] = round(float(progress["eta_s"]), 1)
+    if progress.get("avg_epoch_s") is not None:
+        out["avg_step_s"] = round(float(progress["avg_epoch_s"]), 1)
+    if not out:
+        return None
+    out["step_label"] = "epoch"
+    return out
+
+
 class _JobCtxAdapter:
     """Duck-typed job context the stage modules program against, over the SDK ``JobContext``.
 
@@ -79,7 +98,10 @@ class _JobCtxAdapter:
 
     def set_progress(self, progress: dict[str, Any]) -> None:
         if progress.get("percent") is not None:
-            self._sdk.progress(percent=float(progress["percent"]), label=str(progress.get("label") or ""))
+            # percent + label + the timing line: the project page's Queue & Progress card (the Hub's
+            # "live progress bar on the run", docs/TRAIN_MIRROR.md §15), as the timm plugin feeds it.
+            self._sdk.progress(percent=float(progress["percent"]), label=str(progress.get("label") or ""),
+                               timing=generic_timing(progress))
         self._sdk.emit("stage_progress", {"job_id": self.job_id, **progress})
 
     def set_field(self, key: str, value: Any) -> None:

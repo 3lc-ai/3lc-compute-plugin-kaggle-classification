@@ -1520,10 +1520,15 @@ def _train_and_collect(
         st.last_flush = now
         within = (st.batch_i / st.batch_n) if st.batch_n else 0.0
         percent = 100.0 * min(1.0, (st.epoch + within) / max(st.total, 1))
+        # The generic label names the epoch IN PROGRESS (timm's "Epoch k/N"; the Hub's Queue & Progress
+        # card shows it beside the bar), while ``epoch`` stays the completed count the fragment reads.
+        in_progress = min(st.epoch + 1, st.total) if (st.epoch or st.batch_i) else 0
+        job_start = float(rec.record.get("job_started_at") or rec.record.get("created_at") or st.train_start or now)
         payload: dict[str, Any] = {
-            "percent": round(percent, 2), "label": f"Epoch {st.epoch}/{st.total}" if st.epoch else "Training: starting",
+            "percent": round(percent, 2),
+            "label": f"Epoch {in_progress}/{st.total}" if in_progress else "Training: starting",
             "phase": "train", "epoch": st.epoch, "total_epochs": st.total, "history": list(st.history),
-            "batch_i": st.batch_i, "batch_n": st.batch_n,
+            "batch_i": st.batch_i, "batch_n": st.batch_n, "elapsed_s": round(now - job_start, 1),
         }
         if st.epoch:
             avg = (now - st.train_start) / max(st.epoch, 1)

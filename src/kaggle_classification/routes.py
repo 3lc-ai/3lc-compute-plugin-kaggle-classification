@@ -27,7 +27,8 @@
   joined from the ledger (``?live=1`` reads Kaggle's verdict by ref for refs still unresolved);
   ``GET /status/kaggle`` — the live Kaggle section (submissions list, leaderboard, rank; fenced);
   ``GET /status/doctor`` — the Doctor panel; ``GET /status/bundle`` — the verification bundle as a
-  zip download (docs/STATUS_MIRROR.md §2).
+  zip download (``?checkpoints=`` + ``runs=``), ``GET /status/bundle/preview`` — its member list, size
+  and the checkpoint checklist before the export (docs/STATUS_MIRROR.md §2).
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
 because they touch the disk store. Built fresh per call, for per-app registration.
@@ -47,6 +48,7 @@ from typing import Any
 
 from litestar import Response, get, post
 from litestar.exceptions import NotFoundException
+from litestar.response import File
 from litestar.status_codes import HTTP_400_BAD_REQUEST
 
 
@@ -335,23 +337,42 @@ def get_route_handlers() -> list[Any]:
             return {"error": f"{type(exc).__name__}: {exc}"}
 
     @get("/status/bundle", sync_to_thread=True)
-    def status_bundle() -> Response[bytes]:
-        """The verification bundle (#10): a zip of the records, never data or secrets."""
+    def status_bundle(checkpoints: str = "default", runs: str = "") -> Response[bytes]:
+        """The verification bundle (#10, session 6): the records, the project's tables and runs (their 3LC
+        records and metrics, never images) and the checkpoints the rule selects — ``?checkpoints=default``
+        (the rule) or ``selected&runs=<train job ids>`` (the Status tab's checklist, at most two);
+        ``none`` / ``all`` are for organizers. Written under the plugin home, streamed as a file; never a
+        secret (a match refuses the whole export, HTTP 400)."""
         from kaggle_classification import manifest, status
 
         try:
-            data, name = status.verification_bundle(manifest.resolve(network=False).manifest)
-        except status.BundleRefused as exc:
+            path, name = status.verification_bundle_file(
+                manifest.resolve(network=False).manifest, checkpoints=checkpoints, runs=runs,
+            )
+        except (status.BundleRefused, ValueError) as exc:
             return Response({"error": str(exc)}, status_code=HTTP_400_BAD_REQUEST)
-        return Response(
-            content=data,
-            media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"},
+        return File(
+            path=path, filename=name, media_type="application/zip", content_disposition_type="attachment",
+            headers={"Cache-Control": "no-store"},
         )
+
+    @get("/status/bundle/preview", sync_to_thread=True)
+    def status_bundle_preview(checkpoints: str = "default", runs: str = "") -> dict[str, Any]:
+        """The export's plan before any byte is read: the member list and total size, the submitted runs
+        whose checkpoints may be included (the checklist) and the rule's default picks; ``{"error"}`` on a
+        bad selection (more than two runs, or a run that was not submitted)."""
+        from kaggle_classification import manifest, status
+
+        try:
+            return status.bundle_preview(manifest.resolve(network=False).manifest, checkpoints=checkpoints, runs=runs)
+        except ValueError as exc:
+            return {"error": str(exc)}
+        except Exception as exc:
+            return {"error": f"{type(exc).__name__}: {exc}"}
 
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
         train_preflight, train_state, tables_list, tables_defaults,
         list_runs, predict_preflight, submit_state, kaggle_connection, download_submission,
-        status_history, status_kaggle, status_doctor, status_bundle,
+        status_history, status_kaggle, status_doctor, status_bundle, status_bundle_preview,
     ]

@@ -196,7 +196,7 @@ giving it a real class, and it enters the next revision's training set.
 | 3 | Train tab: trainer per §B, bounds, device-aware workers, the ETA benchmark (shipped 2026-09-29) | a GPU box to record the reference trajectory (the laptop's RTX 3070 Ti, gate G1) |
 | 4 | Predict tab: plugin-run-only inference, submission.csv | test-set answer key on the organizer machine (local scoring, optional) |
 | 5 | Submit (shipped in 4) · the Status tab · the verification bundle · post-demo fixes (torch pinned, val-edit warning, the foreign-rows gate) · release candidates **1.0.0rc1** and **1.0.0rc2** (the proof's fix) tagged · the tester kit proven (`TESTING.md`, `TESTING_PROOF.md`) — 2026-10-05 | the hosted test catalog URL for testers (RELEASING.md) |
-| 6 | tester feedback → 1.0.0; the open items (version-scoped plugin state across updates, the orphaned-worker investigation, the cdn manifest re-upload) | the launch date; Gudbrand's promotion of the manifest to prod |
+| 6 | Paul's demo feedback (2026-10-06): the Queue & Progress timing line, **Watch run in Projects**, the bundle with the tables, runs and the two-checkpoint rule — **1.0.0rc7**; then tester feedback → 1.0.0; the open items (the orphaned-worker investigation, the cdn manifest re-upload) | the launch date; Gudbrand's promotion of the manifest to prod |
 
 ## E. Open items (TBC, placeholders in the bundled manifest)
 

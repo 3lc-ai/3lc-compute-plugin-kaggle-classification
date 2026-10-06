@@ -3,6 +3,27 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc7] — 2026-10-06 (session 6: Paul's demo feedback — the Projects page while training, the bundle with the data)
+
+### Added
+- **Watch run in Projects** in the Train tab's in-run header while a run is live (`/projects/<project>#runs`,
+  new tab, Hub origin only); "Open Run in Projects" takes over at the terminal state. Fixture `train-state3`.
+- The Hub's **Queue & Progress** card now shows the timing line (Elapsed | ETA | Per epoch): the job
+  context forwards `timing = {elapsed_s, eta_s, avg_step_s, step_label}` with every progress flush, the
+  shape the timm plugin sends; the card's label names the epoch in progress ("Epoch k/N").
+- **The verification bundle carries the project's tables and runs** (reversing "never table data"; still
+  never images, tokens or answer keys): `project/<project>/` with the seed-lineage train revisions and the
+  locked val table (`object.3lc.json` + `row_cache.parquet`), every run's `object.3lc.json` and per-sample
+  metrics tables, `files.json` (sha256, size and source path of every copied file) and `best.pt` by the
+  **checkpoint rule**: at most two runs, the one behind the best public score and the one behind the most
+  recent submission, each verified against the ledger's checkpoint sha256. The Export section shows the
+  submitted runs as a checklist (max 2, the rule's picks checked) and the bundle's size before the
+  export; `GET /status/bundle/preview` serves the plan; `?checkpoints=none|all` for organizers. The README
+  explains the machine-specific paths; parquet string columns are scanned for secrets like text members.
+
+### Changed
+- The bundle is written under `<plugin home>/bundles/` and streamed as a file (old zips pruned after an hour).
+
 ## [1.0.0rc6] — 2026-10-05 (session 5: the rc5 fix also covers the rc3 / rc4 carry-forward markers)
 
 ### Fixed

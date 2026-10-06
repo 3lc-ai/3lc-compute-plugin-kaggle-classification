@@ -151,6 +151,7 @@
 .kg-run-head .name { font-size: 13px; font-weight: 600; color: var(--text); }
 .kg-run-meta { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .kg-run-meta .epoch { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.kg-run-watch:empty { display: none; }
 .kg-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .kg-footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); margin: -6px 2px 16px; }
 .kg-footer a { color: inherit; text-decoration: none; }
@@ -168,6 +169,16 @@
 .kg-st-table .when { color: var(--text-secondary); white-space: nowrap; }
 .kg-st-table .score { font-weight: 600; white-space: nowrap; }
 .kg-st-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.kg-bundle-runs { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; font-size: 12.5px; }
+.kg-bundle-runs:empty { display: none; }
+.kg-bundle-head, .kg-bundle-size { font-size: 12px; color: var(--text-muted); }
+.kg-bundle-size { color: var(--text-secondary); margin-top: 2px; }
+.kg-bundle-run { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+.kg-bundle-run.off { color: var(--text-muted); cursor: default; }
+.kg-bundle-run .name { font-weight: 600; }
+.kg-bundle-run .meta { color: var(--text-muted); font-size: 12px; }
+.kg-bundle-default { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text-secondary); }
+.kg-bundle-skip { color: var(--danger, #ef4444); }
 .kg-delta-up { color: var(--success); white-space: nowrap; }
 .kg-delta-down { color: var(--danger, #ef4444); white-space: nowrap; }
 .kg-delta-flat { color: var(--text-muted); white-space: nowrap; }
@@ -812,7 +823,8 @@
             <button type="button" id="st-export-btn" class="btn btn-secondary btn-sm kgi-btn"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8"/><path d="M4.75 7.25L8 10.5l3.25-3.25"/><path d="M3 13.25h10"/></svg><span>Export verification bundle</span></button>
             <span id="st-export-note" class="form-help" style="margin:0"></span>
           </div>
-          <div class="form-help">A zip of the records an organizer verifies a leaderboard entry against: the import record, the train revision chain, every run’s provenance and checkpoint sha256, the ledger, the manifest provenance and the plugin version. Never images, table data, tokens or answer keys.</div>
+          <div id="st-bundle-runs" class="kg-bundle-runs"></div>
+          <div class="form-help">A zip of the records an organizer verifies a leaderboard entry against: the import record, the train revision chain, every run’s provenance and checkpoint sha256, the ledger, the manifest provenance and the plugin version — plus this project’s tables and runs (their 3LC records and per-sample metrics) and the best checkpoint of up to two submitted runs. Never images, prediction CSVs, tokens or answer keys.</div>
         </div>
         <div class="kg-log-details" id="st-doctor-details" style="display:block">
           <button type="button" class="kgl-acc-summary" id="st-doctor-toggle" aria-expanded="false" aria-controls="st-doctor-panel"><span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Doctor</button>
@@ -3185,13 +3197,27 @@
             '<span id="tr-run-badge"></span>' +
             '<span class="kg-run-meta"><span class="epoch" id="tr-run-epoch" aria-live="polite"></span>' +
             '<span id="tr-run-device"></span>' +
-            '<span id="tr-run-elapsed"></span><span id="tr-run-eta"></span></span></div>' +
+            '<span id="tr-run-elapsed"></span><span id="tr-run-eta"></span></span>' +
+            '<span id="tr-run-watch" class="kg-run-watch"></span></div>' +
             '<div class="plugin-progress-wrap" id="tr-run-track">' +
             '<div class="plugin-progress-bar" id="tr-run-bar" style="width:0%"></div></div>' +
             '<div class="kg-metric-strip" id="tr-metric-strip"></div>' +
             '<div id="tr-run-note"></div>';
         }
         el('tr-run-name').textContent = name;
+        // "Watch run in Projects" (session 6, TRAIN_MIRROR §15): while the run is live and the Run exists,
+        // the project page shows the job's progress card and the Run beside the previous runs. Same
+        // destination and hub-origin rule as the success banner's "Open Run in Projects", which takes
+        // over at the terminal state (trRenderTerminal re-renders this view with a non-running status).
+        var watchBox = el('tr-run-watch');
+        if (watchBox) {
+          var watchHref = (status === 'running' && facts.run_url)
+            ? kgHubProjectsHref(facts.project_name || (job.params || {}).project_name || '') : '';
+          var watchHtml = watchHref
+            ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(watchHref) +
+              '"><span>Watch run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '';
+          if (watchBox.innerHTML !== watchHtml) { watchBox.innerHTML = watchHtml; }
+        }
         var badgeCls = TR_BADGE_CLASS[status] || 'queued';
         var badgeHtml = '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(status)) + '</span>';
         if (el('tr-run-badge').innerHTML !== badgeHtml) { el('tr-run-badge').innerHTML = badgeHtml; }
@@ -4471,6 +4497,7 @@
             el('tr-spinner').style.display = 'inline-block';
             el('tr-state').textContent = 'Training… (safe to navigate away)';
             var job = JOB('running', mode === 'train-state3-collecting' ? 10 : 4, 10);
+            job.facts.run_url = runUrl;   // the Run exists: "Watch run in Projects" renders (on the Hub origin)
             if (mode === 'train-state3-collecting') {
               job.progress.batch_i = 0;
               job.progress.stage = 'collect';
@@ -6071,13 +6098,97 @@
         }
       }
 
+      // ── The bundle's checkpoint checklist and size line (session 6, STATUS_MIRROR D16) ───────
+      // GET /status/bundle/preview answers the plan for the current selection: the submitted runs whose
+      // best.pt may ride along (the rule's picks checked by default: the best public score and the most
+      // recent submission), and the resulting member count and size. null = the rule's default.
+      var stBundleSel = null;
+      var stBundleBusy = false;
+      function stBundleQuery() {
+        if (stBundleSel === null) { return 'checkpoints=default'; }
+        return stBundleSel.length
+          ? 'checkpoints=selected&runs=' + encodeURIComponent(stBundleSel.join(','))
+          : 'checkpoints=none';
+      }
+      function stFmtMB(bytes) {
+        var mb = (bytes || 0) / 1e6;
+        return (mb >= 100 ? String(Math.round(mb)) : mb >= 10 ? mb.toFixed(1) : mb.toFixed(2)) + ' MB';
+      }
+      function stLoadBundlePreview() {
+        if (kgDevMode || stBundleBusy) { return; }
+        stBundleBusy = true;
+        API.authFetch(PLUGIN_ROOT + '/status/bundle/preview?' + stBundleQuery())
+          .then(function (r) { return r.json(); })
+          .then(function (pv) { stRenderBundlePreview(pv); })
+          .catch(function (e) { kgConn.fail(e); })
+          .then(function () { stBundleBusy = false; });
+      }
+      function stRenderBundlePreview(pv) {
+        var box = el('st-bundle-runs');
+        if (!box) { return; }
+        if (!pv) { box.innerHTML = ''; return; }
+        if (pv.error) {
+          box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') + '<span>' + esc(pv.error) + '</span></div>';
+          return;
+        }
+        var runs = pv.eligible_runs || [];
+        var ids = runs.map(function (r) { return r.train_job_id; });
+        if (stBundleSel === null) {
+          stBundleSel = runs.filter(function (r) { return r.selected; }).map(function (r) { return r.train_job_id; });
+        } else {
+          stBundleSel = stBundleSel.filter(function (id) { return ids.indexOf(id) !== -1; });
+        }
+        var max = (pv.checkpoints || {}).max || 2;
+        var full = stBundleSel.length >= max;
+        var html = '';
+        if (runs.length) {
+          html += '<div class="kg-bundle-head">' + esc('Checkpoints to include (best.pt of at most ' + max +
+            ' submitted runs; the rule picks the best public score and the most recent submission):') + '</div>';
+          runs.forEach(function (r) {
+            var on = stBundleSel.indexOf(r.train_job_id) !== -1;
+            var dis = (!on && full) || !r.available;
+            // Every dynamic piece is built first: text escaped once, markup only from the helpers above.
+            var meta = [typeof r.public_score === 'number' ? 'public ' + r.public_score.toFixed(5) : 'not scored'];
+            if (r.ref) { meta.push('#' + r.ref); }
+            if (r.checkpoint_bytes) { meta.push(stFmtMB(r.checkpoint_bytes)); }
+            var metaText = esc(meta.join(' · '));
+            var when = r.submitted_at ? ' · submitted ' + kgWhenSpan(r.submitted_at) : '';
+            var ruleTag = r.default ? ' · <span class="kg-bundle-default">rule</span>' : '';
+            var note = !r.available ? esc(' · checkpoint missing')
+              : (on && r.skipped_reason ? ' · <span class="kg-bundle-skip">' + esc(r.skipped_reason) + '</span>' : '');
+            var cls = 'kg-bundle-run' + (dis ? ' off' : '');
+            var attrs = (on ? ' checked' : '') + (dis ? ' disabled' : '');
+            html += '<label class="' + esc(cls) + '"><input type="checkbox" data-run="' + esc(r.train_job_id) + '"' + attrs + '> ' +
+              '<span class="name">' + esc(r.run_name || r.run_folder) + '</span>' +
+              '<span class="meta">' + metaText + when + ruleTag + note + '</span></label>';
+          });
+        } else {
+          html += '<div class="kg-bundle-head">No submitted run yet: the bundle carries no checkpoint until a submission exists.</div>';
+        }
+        var c = pv.counts || {};
+        var sizeText = 'Bundle: ' + fmtCount(c.members || 0) + ' members · about ' + stFmtMB(pv.bytes) +
+          ' (' + fmtCount(c.tables || 0) + ' tables, ' + fmtCount(c.runs || 0) + ' runs, ' +
+          fmtCount(c.checkpoints || 0) + (c.checkpoints === 1 ? ' checkpoint' : ' checkpoints') +
+          (pv.bytes_checkpoints ? ', ' + stFmtMB(pv.bytes_checkpoints) : '') + ')';
+        html += '<div class="kg-bundle-size">' + esc(sizeText) + '</div>';
+        box.innerHTML = html;
+        Array.prototype.forEach.call(box.querySelectorAll('input[type=checkbox]'), function (cb) {
+          cb.addEventListener('change', function () {
+            var id = cb.getAttribute('data-run');
+            var i = stBundleSel.indexOf(id);
+            if (cb.checked && i === -1) { stBundleSel.push(id); } else if (!cb.checked && i !== -1) { stBundleSel.splice(i, 1); }
+            stLoadBundlePreview();
+          });
+        });
+      }
+
       // ── Export verification bundle (D5): the zip streams like Download CSV ────────────
       function stExportBundle() {
         var btn = el('st-export-btn');
         var note = el('st-export-note');
         btn.disabled = true;
         note.innerHTML = '<span class="spinner" aria-hidden="true"></span> Building the bundle…';
-        API.authFetch(PLUGIN_ROOT + '/status/bundle')
+        API.authFetch(PLUGIN_ROOT + '/status/bundle?' + stBundleQuery())
           .then(function (r) {
             if (!r.ok) {
               return r.json().catch(function () { return {}; }).then(function (body) {
@@ -6095,7 +6206,7 @@
               document.body.removeChild(a);
               setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
               note.innerHTML = '<span class="kg-preflight-ok" style="margin:0">' + kgIcon('check') +
-                '<span>Exported ' + esc(name) + '</span></span>';
+                '<span>Exported ' + esc(name) + ' (' + esc(stFmtMB(blob.size)) + ')</span></span>';
             });
           })
           .catch(function (e) {
@@ -6137,6 +6248,9 @@
           renderHistoryFrom(stHistory.predictions || []);
           stLastUpdated = Date.now();
           stRenderUpdated();
+          // The bundle's checklist and size follow the submissions: re-planned on tab enter and Refresh
+          // (the plan hashes the selected checkpoints), not on the 15 s poll.
+          if (manual || live) { stLoadBundlePreview(); }
         }).then(done, done);
         function done() {
           stBusy = false;
@@ -6302,6 +6416,19 @@
               : { state: 'ready', daily_limit: limit, competition_url: 'https://www.kaggle.com/competitions/' + slug };
           stDoctor = DOCTOR; stHealth = { status: 'ok', service: '3lc-compute', version: '1.1.0' }; stDoctorLoaded = true;
           renderDoctorFrom(DOCTOR, stHealth);
+          // The bundle's checklist (D16): the rule's picks on the fixture's submissions; sizes are fixture numbers.
+          stBundleSel = null;
+          var CKPT = function (i, rec, score, at, ref, isDefault) {
+            return { train_job_id: 'devtrain' + i, run_name: rec.run_name, run_folder: rec.run_folder, public_score: score,
+                     submitted_at: at, ref: ref, submissions: 1, checkpoint_bytes: 45442563, available: true,
+                     default: isDefault, selected: isDefault, skipped_reason: '' };
+          };
+          stRenderBundlePreview(mode === 'status-empty'
+            ? { eligible_runs: [], counts: { members: 7, tables: 0, runs: 0, checkpoints: 0 }, bytes: 8870, bytes_checkpoints: 0, checkpoints: { max: 2 } }
+            : { eligible_runs: [CKPT(3, RECORDS[0], 0.68222, now - 7200, '56790001', true), CKPT(2, RECORDS[2], 0.65666, now - 86400, '56756858', false),
+                                CKPT(1, RECORDS[4], 0.50222, now - 176400, '56764937', false)],
+                counts: { members: 38, tables: 3, runs: RUNS.length, checkpoints: 1 }, bytes: 46700000, bytes_checkpoints: 45442563,
+                checkpoints: { max: 2 } });
           if (mode === 'status-empty') {
             stHistory = { runs: [], predictions: [], best_public_score: null };
             stRenderHero([], null, []);
