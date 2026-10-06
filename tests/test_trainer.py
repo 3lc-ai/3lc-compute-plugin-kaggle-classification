@@ -438,6 +438,23 @@ def test_run_training_end_to_end_on_cpu(imported, project_root):
     epoch_payloads = [p for p in ctx.progress if p.get("epoch") == 2 and p.get("phase") == "train"]
     assert epoch_payloads and "avg_epoch_s" in epoch_payloads[-1] and epoch_payloads[-1]["total_epochs"] == 2
     assert any(p.get("stage") == "collect" for p in ctx.progress)
+    # rc8 (TRAIN_MIRROR §15 S6-5): the collection pass reports its own progress for the Hub's card — rows
+    # over the two splits with percent / elapsed (ETA once a batch is done), the pulsing-bar reducer phase,
+    # the table-write phase — while the fragment's stage note rides every payload.
+    collecting = [p for p in ctx.progress if str(p.get("label", "")).startswith("Collecting metrics ")]
+    assert collecting and collecting[0]["label"] == "Collecting metrics 0/21" and collecting[0]["percent"] == 0
+    assert collecting[-1]["label"] == "Collecting metrics 21/21" and collecting[-1]["percent"] == 100
+    assert all("elapsed_s" in p and p["stage_note"].startswith("Collecting per-sample") for p in collecting)
+    assert "eta_s" in collecting[-1] and "avg_epoch_s" not in collecting[-1]
+    labels = [p.get("label") for p in ctx.progress]
+    i_red = labels.index("Reducing embeddings (UMAP)…")
+    assert ctx.progress[i_red]["percent"] == -1 and labels[i_red - 1] == "Collecting metrics 21/21"
+    assert labels.index("Writing metrics tables…") == i_red + 1 and ctx.progress[i_red + 1]["percent"] == 100
+    assert labels[-1] == "Done"
+    # rc8 (S6-6): the end-of-job cards, as strings / counts; never a per-epoch training metric (S6-8).
+    assert ctx.metrics == [("rows collected", 21), ("metrics tables written", 2),
+                           ("best val accuracy", f"{result['best_val_accuracy']:.2f} % (epoch {result['best_epoch']})")]
+    assert not any(k in ("train loss", "val loss", "val accuracy") for k, _ in ctx.metrics)
     # Facts the fragment and session 4 read.
     assert ctx.facts["run_url"] == run_url and ctx.facts["weights"] == result["weights"]
     assert ctx.facts["device"] == "cpu"
@@ -476,6 +493,27 @@ def test_cancel_mid_run_keeps_the_best_checkpoint_and_marks_the_run_cancelled(im
     # Provenance still recorded (Predict may use a cancelled run's best checkpoint, D10).
     assert ctx.checks and all(c["ok"] for c in ctx.checks)
     assert not any(p.get("stage") == "collect" for p in ctx.progress)
+    assert ctx.metrics == []   # no end-of-job cards on a cancelled run
+
+
+def test_cancel_inside_the_collection_pass_keeps_the_checkpoint_and_writes_no_metrics_table(imported):
+    """rc8 (S6-7): a cancel request during the final pass stops it before any metrics table is written;
+    the run ends cancelled with its best checkpoint, the log names the row, no card is sent."""
+    manifest, _train_url, _ = imported
+    ctx = FakeCtx(cancel_after_label="Collecting metrics 0/")   # cancel once the pass has started
+    result = trainer.run_training(
+        {"epochs": "1", "batch_size": "8", "device": "cpu", "workers": "0", "run_name": "t_cancel_collect"}, ctx, manifest
+    )
+    assert result["cancelled"] is True and result["epochs_completed"] == 1 and result["collect_s"] is None
+    assert Path(result["weights"]).is_file() and result["best_checkpoint_sha256"]
+    run = tlc.Run.from_url(tlc.Url(result["run_url"]))
+    assert 'status="cancelled"' in repr(run), repr(run)
+    assert not list(run.metrics_tables) if hasattr(run, "metrics_tables") else True
+    assert any(m.startswith("Collection stopped by cancellation request at ") for m in ctx.logs)
+    assert any("no per-sample metrics were written" in m for m in ctx.logs)
+    assert ctx.metrics == [] and ctx.progress[-1].get("label") != "Done"
+    st = trainer.train_state()
+    assert st["state"] == "cancelled" and st["runs"][0]["status"] == "cancelled"
 
 
 # ── Part B: manifest-driven editability ────────────────────────────────────────

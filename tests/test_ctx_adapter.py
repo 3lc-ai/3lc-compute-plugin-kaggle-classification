@@ -83,6 +83,16 @@ def test_progress_without_timing_sends_none_so_the_card_shows_the_bar_alone():
     assert ("timing", {"elapsed_s": 13.2, "step_label": "epoch"}) in sdk.received
 
 
+def test_terminal_metric_cards_reach_the_generic_panel():
+    """Session 6 (rc8): the end-of-job counts ride ctx.metric like sam3's / image-metrics' cards; a string
+    value renders verbatim on the Hub (a number would be printed with four decimals)."""
+    ctx, sdk = _pair()
+    ctx.set_metric("rows collected", 7800)
+    ctx.set_metric("best val accuracy", "53.42 % (epoch 2)")
+    assert ("metric", "rows collected", 7800) in sdk.received
+    assert ("metric", "best val accuracy", "53.42 % (epoch 2)") in sdk.received
+
+
 def test_checks_go_out_as_a_plugin_event_and_never_as_job_update():
     ctx, sdk = _pair()
     ctx.set_checks([{"label": "x", "ok": True, "detail": ""}])

@@ -4502,6 +4502,9 @@
               job.progress.batch_i = 0;
               job.progress.stage = 'collect';
               job.progress.stage_note = 'Collecting per-sample metrics and embeddings on ' + fmtCount(trainRows + valRows) + ' rows…';
+              // What the Hub's Queue card shows at this moment (rc8): the pass's own percent and label.
+              job.progress.percent = 50;
+              job.progress.label = 'Collecting metrics ' + fmtCount(Math.round((trainRows + valRows) / 2)) + '/' + fmtCount(trainRows + valRows);
             }
             if (mode === 'train-state3-cpu-retry') {
               job.facts.device = 'cpu';

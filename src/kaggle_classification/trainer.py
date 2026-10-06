@@ -1336,6 +1336,7 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
     set_progress = getattr(ctx, "set_progress", lambda p: None)
     set_field = getattr(ctx, "set_field", lambda k, v: None)
     set_checks = getattr(ctx, "set_checks", lambda c: None)
+    set_metric = getattr(ctx, "set_metric", lambda k, v: None)
     is_cancelled = getattr(ctx, "is_cancelled", lambda: False)
     job_id = str(getattr(ctx, "job_id", "") or "") or f"local-{int(time.time())}"
     job_started_at = time.time()
@@ -1436,7 +1437,8 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
 
     try:
         result = _train_and_collect(kw, rec, rlog, set_progress, set_field, set_checks, is_cancelled,
-                                    manifest, train_table, val_table, resolved_url, val_url, eff, summary)
+                                    manifest, train_table, val_table, resolved_url, val_url, eff, summary,
+                                    set_metric=set_metric)
     except TrainRefused as exc:
         rec.finish("failed", error=str(exc))
         raise
@@ -1449,13 +1451,14 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
 def _train_and_collect(
     kw: dict[str, Any], rec: _Recorder, log: Any, set_progress: Any, set_field: Any, set_checks: Any,
     is_cancelled: Any, manifest: Manifest, train_table: Any, val_table: Any, resolved_url: str,
-    val_url: str, eff: list[float], summary: dict[str, Any],
+    val_url: str, eff: list[float], summary: dict[str, Any], set_metric: Any = None,
 ) -> dict[str, Any]:
     import tlc
     import torch
     from torch import nn
     from torch.utils.data import DataLoader
 
+    set_metric = set_metric or (lambda k, v: None)
     backbone, head, arch = kw["backbone"], kw["head"], kw["arch"]
     image_size, seed = kw["image_size"], int(kw["seed"])
     epochs, batch_size, workers = int(kw["epochs"]), int(kw["batch_size"]), int(kw["workers"])
@@ -1730,8 +1733,8 @@ def _train_and_collect(
             "reducer": reducer, "contract": contract, "checks": rec.record["checks"],
         }
 
-    if st.cancelled:
-        log(f"Training stopped by cancellation request after {st.epoch} epoch(s). The best checkpoint so far is kept.")
+    def finish_cancelled(message: str) -> dict[str, Any]:
+        log(message)
         run.set_status_cancelled()
         checks = check_provenance(run_url, manifest, expected) if st.best_sha else []
         rec.record["checks"] = checks
@@ -1743,6 +1746,11 @@ def _train_and_collect(
         _release(model, optimizer)
         return result
 
+    if st.cancelled:
+        return finish_cancelled(
+            f"Training stopped by cancellation request after {st.epoch} epoch(s). The best checkpoint so far is kept."
+        )
+
     # ── Final pass: per-sample metrics + embeddings on the best model (both splits) ───────
     if st.best_path:
         model.load_state_dict(torch.load(st.best_path, map_location=device, weights_only=True))
@@ -1752,10 +1760,46 @@ def _train_and_collect(
     collect_rows = int(train_table.row_count) + int(val_table.row_count)
     note = f"Collecting per-sample metrics and embeddings on {collect_rows:,} rows…"
     log(note)
-    flush_progress(force=True, stage="collect", stage_note=note)
     t_collect = time.time()
-    reducer_used = _collect(model, device, manifest, run, train_table, train_eval_view, val_table, val_view,
-                            resolved_url, val_url, batch_size, workers, st.best_epoch, log, heartbeat, is_cancelled)
+
+    # The pass's own progress on the Hub's Queue card (TRAIN_MIRROR §15 S6-5, the yolo-collect / sam3
+    # shape): percent over the rows collected, "Collecting metrics 3,900/7,800", elapsed since the job
+    # started and the pass's remaining time, at most once a second; the fragment keeps the stage note.
+    def collect_progress(done: int, total: int, *, force: bool = False) -> None:
+        now = time.time()
+        if not force and now - st.last_flush < BATCH_FLUSH_S:
+            return
+        st.last_flush = now
+        rate = done / max(now - t_collect, 1e-6)
+        payload: dict[str, Any] = {
+            "percent": round(100.0 * done / max(total, 1), 2), "label": f"Collecting metrics {done:,}/{total:,}",
+            "phase": "collect", "stage": "collect", "stage_note": note, "epoch": st.epoch, "total_epochs": st.total,
+            "history": list(st.history), "batch_i": 0, "batch_n": st.batch_n,
+            "elapsed_s": round(now - float(rec.record.get("job_started_at") or rec.record.get("created_at") or t_collect), 1),
+        }
+        if done and rate > 0:
+            payload["eta_s"] = round((total - done) / rate)
+        rec.record["progress"] = {k: v for k, v in payload.items() if k not in ("percent", "label", "phase")}
+        set_progress(payload)
+
+    def collect_phase(percent: float, label: str) -> None:
+        """A sub-phase without step granularity: ``-1`` = the Hub's indeterminate bar (the importer's
+        convention) for the reducer, ``100`` with sam3's label while the metrics tables are written."""
+        st.last_flush = time.time()
+        set_progress({"percent": percent, "label": label, "phase": "collect", "stage": "collect", "stage_note": note,
+                      "epoch": st.epoch, "total_epochs": st.total, "history": list(st.history), "batch_i": 0,
+                      "batch_n": st.batch_n})
+
+    collect_progress(0, collect_rows, force=True)
+    collected = _collect(model, device, manifest, run, train_table, train_eval_view, val_table, val_view,
+                         resolved_url, val_url, batch_size, workers, st.best_epoch, log, heartbeat, is_cancelled,
+                         progress=collect_progress, phase=collect_phase)
+    if collected is None:   # cancelled inside the pass: no metrics table was written
+        return finish_cancelled(
+            f"Collection stopped by cancellation request after {st.epoch} epoch(s). The best checkpoint is kept; "
+            "no per-sample metrics were written."
+        )
+    reducer_used, tables_written = collected
     collect_s = time.time() - t_collect
     run.set_parameters({"reducer": reducer_used, "collect_s": round(collect_s, 1), "collect_rows": collect_rows})
     log(f"Per-sample metrics written for train and val ({collect_rows:,} rows, {collect_s:.1f} s, {reducer_used}).")
@@ -1769,6 +1813,12 @@ def _train_and_collect(
     log(f"best.pt: {st.best_path} (exists: {Path(st.best_path).is_file() if st.best_path else False})")
     result = finish_result("completed", collect_s, collect_rows, reducer_used)
     rec.finish("completed", result=result)
+    # End-of-job cards on the Hub's Queue card (S6-6): counts and the one headline, as the sam3 /
+    # image-metrics / importer plugins do — never a per-epoch training metric (the SDK guide's rule).
+    set_metric("rows collected", collect_rows)
+    set_metric("metrics tables written", tables_written)
+    if st.best_epoch:
+        set_metric("best val accuracy", f"{st.best_val:.2f} % (epoch {st.best_epoch})")
     set_progress({"percent": 100.0, "label": "Done", "phase": "done", "epoch": st.epoch, "total_epochs": st.total,
                   "history": list(st.history), "batch_i": 0, "batch_n": st.batch_n})
     _release(model, optimizer)
@@ -1795,12 +1845,15 @@ def _release(model: Any, optimizer: Any) -> None:
 def _collect(
     model: Any, device: str, manifest: Manifest, run: Any, train_table: Any, train_view: Any, val_table: Any,
     val_view: Any, train_url: str, val_url: str, batch_size: int, workers: int, epoch: int, log: Any,
-    heartbeat: Any, is_cancelled: Any,
-) -> str:
+    heartbeat: Any, is_cancelled: Any, progress: Any = None, phase: Any = None,
+) -> tuple[str, int] | None:
     """PLAN §B: predicted, confidence, loss (NaN for undefined rows), 3-D embeddings — UMAP fit on
     train (labeled + undefined together), val transformed into the same space, PCA fallback. The
     columns are label, weight, predicted, confidence, loss and Embedding (3D): no ``prob_*`` (part C)
-    and no ``accuracy`` (item 8 of the re-check). Returns the reducer that produced the coordinates."""
+    and no ``accuracy`` (item 8 of the re-check). ``progress(done, total)`` is called after every batch
+    and ``phase(percent, label)`` at the reducer and the table writes (S6-5); a cancel request between
+    batches stops the pass before any table is written. Returns ``(reducer, tables written)``, or None
+    when cancelled."""
     import copy
 
     import numpy as np
@@ -1809,16 +1862,23 @@ def _collect(
     from torch import nn
     from torch.utils.data import DataLoader
 
+    progress = progress or (lambda done, total, **kw: None)
+    phase = phase or (lambda percent, label: None)
     n_classes = manifest.num_classes
     n_comp = int(manifest.training.embeddings.n_components)
     ce = nn.CrossEntropyLoss(reduction="none")
     splits: list[dict[str, Any]] = []
     targets = (("train", train_table, train_view, train_url), ("val", val_table, val_view, val_url))
+    total_rows = sum(int(t.row_count) for _, t, _, _ in targets)
+    done_rows = 0
     for split, table, view, url in targets:
         loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False)
         embs, preds, confs, losses = [], [], [], []
         with torch.no_grad():
             for images, labels_b in loader:
+                if is_cancelled():
+                    log(f"Collection stopped by cancellation request at {done_rows:,}/{total_rows:,} rows.")
+                    return None
                 images, labels_b = images.to(device), labels_b.to(device)
                 feats = model.features(images)   # the 512-d backbone output: the kit's embedding layer (fc = Identity)
                 emb = feats
@@ -1834,7 +1894,9 @@ def _collect(
                 preds.append(pred.cpu().numpy())
                 confs.append(conf.float().cpu().numpy())
                 losses.append(loss.cpu().numpy())
+                done_rows += int(labels_b.shape[0])
                 heartbeat()
+                progress(done_rows, total_rows)
         splits.append({
             "split": split, "url": url, "table": table,
             "emb": np.vstack(embs), "pred": np.concatenate(preds).astype(np.int64),
@@ -1843,11 +1905,22 @@ def _collect(
         })
         log(f"collected {split}: {len(splits[-1]['pred']):,} rows")
 
+    progress(done_rows, total_rows, force=True)
+    if is_cancelled():
+        log("Collection stopped by cancellation request before the embedding reducer.")
+        return None
+    method = str(manifest.training.embeddings.method or "")
+    phase(-1, f"Reducing embeddings ({method.upper() or 'reducer'})…")
     train_emb = splits[0]["emb"]
     reducer_used, fitted = _fit_reducer(train_emb, n_comp, manifest.training.embeddings.method,
                                         manifest.training.embeddings.fallback, log)
     for s in splits:
         s["reduced"] = _transform(fitted, s["emb"], n_comp)
+    heartbeat()
+    if is_cancelled():
+        log("Collection stopped by cancellation request before the metrics tables were written.")
+        return None
+    phase(100.0, "Writing metrics tables…")
 
     for s in splits:
         metrics: dict[str, Any] = {
@@ -1867,7 +1940,8 @@ def _collect(
             pass
         run.add_metrics(metrics, foreign_table_url=s["url"], schema=schema, constants={"epoch": int(epoch)})
         log(f"metrics table written for {s['split']} ({len(metrics)} columns)")
-    return reducer_used
+        heartbeat()
+    return reducer_used, len(splits)
 
 
 def _fit_reducer(train_emb: Any, n_comp: int, method: str, fallback: str, log: Any) -> tuple[str, Any]:

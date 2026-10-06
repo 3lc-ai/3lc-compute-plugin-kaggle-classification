@@ -109,6 +109,12 @@ class _JobCtxAdapter:
             self._sdk.result(str(value))
         self._sdk.emit("fact", {"job_id": self.job_id, "key": key, "value": value})
 
+    def set_metric(self, label: str, value: Any) -> None:
+        """A key/value card on the Hub's Queue & Progress card — end-of-job counts only, as the sam3,
+        image-metrics and importer plugins use it (session 6, TRAIN_MIRROR §15 S6-6): never a training
+        metric, which the SDK guide keeps off the generic panel."""
+        self._sdk.metric(str(label), value)
+
     def is_cancelled(self) -> bool:
         return bool(self._sdk.cancelled)
 

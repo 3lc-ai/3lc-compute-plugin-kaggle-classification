@@ -582,3 +582,33 @@ def test_doctor_reports_the_refresh_result_not_the_local_label(seeded, manifest,
     doc = status.doctor(manifest, kaggle=False)
     assert doc["manifest"]["manifest_source"] in ("bundled", "cache") and "403" in doc["manifest"]["refresh_error"]
     assert doc["plugin_home"]["migrated_from"] is None
+
+
+def test_both_rule_picks_verified_give_two_checkpoints_in_the_preview_and_the_export(on_disk, manifest):
+    """The rc7 hand test saw two rows tagged "rule" beside "1 checkpoint": that is the state when a rule
+    pick fails verification (run_c's ledger sha256 differs). Once the most recent submission's checkpoint
+    verifies, the default preview AND the export carry both; selecting the same two by hand is the same."""
+    P = f"project/{PROJECT}/"
+    t1 = time.time() - 100
+    e = _predict_entry("p5", "t3", "run_c", ts=t1)
+    e["run_url"] = on_disk["runs"]["run_c"][0]
+    sha = on_disk["runs"]["run_c"][2]
+    e["checkpoint"] = {"path": on_disk["runs"]["run_c"][1], "sha256_recorded": sha, "sha256_on_disk": sha, "sha256_on_run": sha}
+    ledger.append(e)
+    s = _submit_entry("s5", "p5", "run_c", "500", None, ts=t1 + 10)
+    s["run_url"] = on_disk["runs"]["run_c"][0]
+    ledger.append(s)
+    pv = status.bundle_preview(manifest)
+    assert pv["checkpoints"]["default_runs"] == ["t2", "t3"] and pv["checkpoints"]["skipped"] == []
+    assert pv["counts"]["checkpoints"] == 2 and pv["bytes_checkpoints"] == len(b"weights-of-run_b") + len(b"weights-of-run_c")
+    rows = {r["train_job_id"]: r for r in pv["eligible_runs"]}
+    assert rows["t2"]["default"] and rows["t2"]["selected"] and rows["t3"]["default"] and rows["t3"]["selected"]
+    assert not rows["t1"]["default"] and not rows["t1"]["selected"]
+    names, index = _members(status.verification_bundle(manifest)[0])
+    assert {n for n in names if n.endswith(".pt")} == {P + "runs/run_b/model/best.pt", P + "runs/run_c/model/best.pt"}
+    assert [i["train_job_id"] for i in index["checkpoints"]["included"]] == ["t2", "t3"]
+    # The checklist with both rule picks checked is the same request the fragment sends.
+    pv2 = status.bundle_preview(manifest, checkpoints="selected", runs="t2,t3")
+    assert pv2["counts"]["checkpoints"] == 2
+    names2, _ = _members(status.verification_bundle(manifest, checkpoints="selected", runs="t2,t3")[0])
+    assert {n for n in names2 if n.endswith(".pt")} == {n for n in names if n.endswith(".pt")}

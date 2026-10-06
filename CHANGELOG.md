@@ -3,6 +3,25 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc8] — 2026-10-06 (session 6: the Hub's job card during the collection pass)
+
+### Added
+- The Hub's Queue & Progress card moves during the final per-sample pass: "Collecting metrics
+  3,900/7,800" with the pass's percent, Elapsed and ETA after every batch (1 s throttle), a pulsing bar
+  "Reducing embeddings (UMAP)…" during the reducer, "Writing metrics tables…" during the table writes —
+  the shape the yolo (collect mode) and sam3 plugins send.
+- End-of-job cards on the Queue card, as the sam3 / image-metrics / importer plugins send them: rows
+  collected, metrics tables written, best val accuracy "NN.NN % (epoch N)". No per-epoch training metric
+  rides the generic card (the SDK guide's rule; TRAIN_MIRROR §15 S6-8).
+- A cancel request during the collection pass now stops the pass (checked before every batch, before the
+  reducer and before the table writes); the run ends cancelled with its best checkpoint and no metrics
+  table.
+
+### Fixed
+- Nothing in the Export checklist: a test now pins that two verified rule picks give two checkpoints in
+  both the preview and the export (the rc7 hand test's "two rule tags · 1 checkpoint" is the state when
+  one pick fails verification or was unchecked).
+
 ## [1.0.0rc7] — 2026-10-06 (session 6: Paul's demo feedback — the Projects page while training, the bundle with the data)
 
 ### Added

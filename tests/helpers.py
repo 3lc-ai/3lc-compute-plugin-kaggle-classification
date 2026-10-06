@@ -154,12 +154,19 @@ class FakeCDN:
 
 
 class FakeCtx:
-    def __init__(self, cancel_on_call: int | None = None):
+    """The stage-facing duck type (``_JobCtxAdapter``'s surface). ``cancel_on_call`` cancels from the
+    Nth ``is_cancelled()`` call; ``cancel_after_label`` cancels once a progress payload whose label
+    starts with that text has been seen (rc8: a cancel inside the collection pass)."""
+
+    def __init__(self, cancel_on_call: int | None = None, cancel_after_label: str | None = None):
         self.logs: list[str] = []
         self.checks: list[dict] = []
         self.progress: list[dict] = []
+        self.metrics: list[tuple] = []
         self.facts: dict = {}
         self._cancel_on = cancel_on_call
+        self._cancel_after_label = cancel_after_label
+        self._label_seen = False
         self._calls = 0
 
     def log(self, m):
@@ -170,12 +177,19 @@ class FakeCtx:
 
     def set_progress(self, p):
         self.progress.append(dict(p))
+        if self._cancel_after_label and str(p.get("label") or "").startswith(self._cancel_after_label):
+            self._label_seen = True
 
     def set_field(self, k, v):
         self.facts[k] = v
 
+    def set_metric(self, k, v):
+        self.metrics.append((k, v))
+
     def is_cancelled(self):
         self._calls += 1
+        if self._cancel_after_label is not None:
+            return self._label_seen
         return self._cancel_on is not None and self._calls >= self._cancel_on
 
 

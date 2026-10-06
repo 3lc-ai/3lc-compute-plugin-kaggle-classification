@@ -650,3 +650,36 @@ status 3 → 4 → 1: **item 2 already held** — per-epoch metrics reach the Ru
 Why `/projects/<project>#runs` and not the Hub's run page: the brief says "compare the live run against
 previous runs", which is the project page's chart over the checked runs; `/runs/<url>` shows one run.
 The Queue card's own Open button already goes there.
+
+### rc8 (2026-10-06): the card during the collection pass, and what stays off it
+
+The rc7 hand test: other plugins' cards move while they collect metrics, ours showed a full bar and a
+frozen label for the 20–45 s pass. Phase 0 read the yolo and sam3 plugins (cloned to
+`../reference/3lc-compute-plugin-yolo` `a063ce1`, `../reference/3lc-compute-plugin-sam3` `7795d69`), the
+stock Hub plugins installed on hub-11 (importer, exporter, merger, splitter, image-metrics 0.2.4) and the
+SDK guide, and recorded what each sends on the two generic channels:
+
+| Plugin | `ctx.metric` | Progress in collection / long phases |
+|---|---|---|
+| timm | never ("Generic surface stays percent + label only") | `ctx.progress(100, "Collecting metrics")` once; nothing per batch |
+| yolo | never ("the per-epoch metrics ride the plugin-specific epoch_progress event, never ctx.metric") | collect mode: per batch `ctx.progress(batch/total×100, "Collecting batch n/N", timing)`, then "Transforming embeddings c/T" |
+| sam3 | end-of-job counts only: `images`, `table` | per image `ctx.progress(pct, "Image i/N", {elapsed_s, eta_s, avg_step_s, step_label: "image"})`, then `100` "Reducing embeddings...", "Writing metrics..." |
+| image-metrics | end-of-job: `rows`, `metric values` | per row `ctx.progress(pct, "Row n/N")` |
+| importer / exporter | end-of-job: `rows`, `project`, `dataset` | `ctx.progress(percent=-1, label, timing={"step_label": "import"})` for a blocking call: the pulsing bar |
+| merger / splitter | end-of-job: `inputs`; one card per split with its rows | 10 % → 100 % |
+
+The SDK guide (`../reference/3lc-compute-plugin-sdk/docs/plugin-guide.md`, "Don't leak plugin internals
+into the generic surface"): *"Training fields (`epoch`, `loss`, `model_name`, `mode`, …) belong in a
+`ctx.emit` payload for your own UI — never in `ctx.progress`/`ctx.metric`, which feed the
+plugin-agnostic frontend panel."* The Hub renders a `ctx.metric` value as a card that updates in place
+and never disappears during the job; a number is printed with four decimals, a string verbatim.
+
+**Decided by Rishikesh (2026-10-06):** collection progress and end-of-job cards yes; per-epoch training
+metrics on the card **no** — the guide's rule and all three trainers.
+
+| # | Change | Where |
+|---|---|---|
+| S6-5 | **Collection progress** on the Queue card (the yolo-collect / sam3 shape): after every batch of the two inference passes `set_progress({percent: rows done / 7,800 × 100, label: "Collecting metrics 3,900/7,800", elapsed_s, eta_s})`, throttled to the 1 s flush (no `avg_step_s`: a batch takes ~0.03 s and the card would print "Per batch: 0s"); then `percent = -1`, "Reducing embeddings (UMAP)…" during the reducer fit + transform (the importer's indeterminate convention: no step count, 5–50 s cold); then `100`, "Writing metrics tables…" (sam3's label) during `add_metrics`. The fragment's stage note is unchanged (the same payload carries it); the Train tab's bar still follows epochs | `trainer.py` `collect_progress` / `collect_phase`, `_collect(progress=, phase=)` |
+| S6-6 | **End-of-job cards** once, after the Run completes: `rows collected` (7,800), `metrics tables written` (2), `best val accuracy` as the string "53.42 % (epoch 2)" (a number would render as "53.4200") | `trainer.py` after `rec.finish("completed")`; `__init__.py` `_JobCtxAdapter.set_metric` → `ctx.metric` |
+| S6-7 | **Cancel inside the collection pass** (yolo raises per validator batch; ours only checked between epochs): checked before every collection batch, before the reducer and before the table writes; a cancel there ends the job `cancelled` with the best checkpoint kept and **no** metrics table written (the Run has none to half-write), the log says at which row | `trainer.py` `_collect` returns None, `finish_cancelled` |
+| S6-8 | Not done, by decision: per-epoch `ctx.metric("train loss" / "val loss" / "val accuracy")`. The numbers stay on the Train tab's chips (our `stage_progress` event) and on the Run (`tlc.log`), where the project page's Run Insights chart shows them | — |
