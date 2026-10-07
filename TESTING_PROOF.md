@@ -2,8 +2,8 @@
 
 The tester kit was proven the way the brief asked: a fresh environment, nothing copied from the
 development Hub, every step of `TESTING.md` that does not need a browser driven through the plugin's
-routes exactly as the Hub calls them, and the document corrected wherever reality differed. Two runs
-are recorded: the first against 1.0.0rc1 found a defect, the second against 1.0.0rc2 (the fix) passed
+routes exactly as the Hub calls them, and the document corrected wherever reality differed. Runs 1–9
+are recorded (run 9 is the rc9 install-path proof on a second fresh environment); the first two: the first against 1.0.0rc1 found a defect, the second against 1.0.0rc2 (the fix) passed
 clean. Full paths throughout.
 
 ## The environment
@@ -88,6 +88,33 @@ read a prediction's checks as dicts, while the ledger stores them as `[label, ok
 released as **1.0.0rc2** (tag `v1.0.0rc2`, branch `release/1.0.0rc2`), and run 2 above shows the
 History row. A first attempt before run 1 stopped at the catalog card because the proof driver read
 the admin catalog's `sources` list instead of its `plugins` list (a driver bug, no plugin change).
+
+## Run 9 — 1.0.0rc9 on a brand-new environment, the install path only — PASS (2026-10-07, 15:16:25 → 15:17:23)
+
+The tester release (rc8's code, version stamped, documentation) proven the way a participant installs:
+a fresh folder `C:\Users\rishi\Desktop\3LC Hackathons\3lc-hub-rc9-clean` (nothing copied from the
+development Hub or the tester environment), `uv venv --python 3.12` + `uv pip install --index-url
+https://pypi.org/simple "3lc-compute==1.1.0" "3lc==3.3.0"` (CPython 3.12.13, SDK 0.3.3), home redirected
+to `...\3lc-hub-rc9-clean\home`, project root `...\home\projects`, ports 5015 / 5020 (the defaults —
+TESTING.md §3 now insists on them, see CHANGELOG 1.0.0rc9), manifest tier dev, catalogs = the default
+catalog + `https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc9/catalog-test.json`.
+Driver `proof_clean_rc9.py` (the in-process host, TESTING.md §6 and the Doctor only; no kit, no
+import, no Kaggle), record `proof_clean_rc9.json`:
+
+| Step | Result |
+|---|---|
+| §6.1 Plugins → Available | the card lists `1.0.0rc9` (`latest_version` 1.0.0rc9, compatible), install source pinned to `@v1.0.0rc9` |
+| §6.2 Install | `POST /api/admin/plugins/install` 202 → `succeeded` in 45.0 s (the machine's uv cache held torch); first-use provisioning ready 1.7 s later |
+| §6.3 The page | `GET /config` `_meta.version` **1.0.0rc9**, plugin home `...\home\.3lc-compute\plugin-state\kaggle-classification` (`compute-home`), kit state `empty`, manifest `remote` from the dev tier (refresh `done`) |
+| §7.7 Doctor | plugin 1.0.0rc9 at commit `bb3f33c` (the tag), SDK 0.3.3, torch 2.14.0+cu126, torchvision 0.29.0+cu126, kaggle 2.2.4, Python 3.12.13; kit empty; records 0 / 0 / 0 / 0; Kaggle `no_credentials` (expected: the redirected home has none); the device probe was still `running` 2 s after provisioning (asynchronous by design) |
+| persisted | `settings.json` `installed_plugins` carries `kaggle-classification 1.0.0rc9` |
+
+The services were then started with the participant's own script (`start_tester.ps1 -ProjectRoot
+...\home\projects`, a copy of `tester/start_tester.ps1`) on 5015 / 5020 for the hand test in the Hub.
+One observation, not a failure: the plugin venv resolved **3lc 3.4.0** (PyPI's latest since 2026-10-01;
+the extra says `3lc>=3.3,<4.0` and the catalog install path is `uv pip install`, not the lock) while the
+host and the object service run 3.3.0. Every catalog install since rc7 (hub-11's rc7 and rc8 venvs, the
+tester environment's rc8 venv) resolved the same way, and the rc7 / rc8 hand tests ran on it.
 
 ## What run 7 adds (session 6)
 
