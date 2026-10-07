@@ -26,7 +26,7 @@ every mutable update is followed by an invalidation.
 From the plugin repo, with the kit already built (`tools/build_kit.py`):
 
 ```powershell
-uv run python tools/make_cdn_tree.py --shards-dir "C:\Users\Owner\Desktop\3LC competitions\3LC Kaggle Competitions\datasets\intel-scene-kit-v1\shards" --out cdn --force
+uv run python tools/make_cdn_tree.py --shards-dir "C:\Users\rishi\Desktop\3LC Hackathons\datasets\intel-scene-kit-v1\shards" --out cdn --force
 ```
 
 `cdn/` mirrors the bucket and `cdn/upload-plan.json` lists every key with its mutability,
