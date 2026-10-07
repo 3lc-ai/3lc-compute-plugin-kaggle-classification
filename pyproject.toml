@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "3lc-compute-plugin-kaggle-classification"
-version = "1.0.0rc8"
+version = "1.0.0rc9"
 description = "Image-classification Kaggle hackathon workflow for the 3LC Hub: import the kit, train the fixed baseline, predict, submit."
 readme = "README.md"
 # >=3.11, NOT the timm plugin's >=3.10: the `kaggle` client (>=2.2.3) and scikit-learn (1.9.x)

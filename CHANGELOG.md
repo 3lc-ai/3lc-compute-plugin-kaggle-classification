@@ -3,6 +3,20 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc9] — 2026-10-07 (session 7: the tester release — rc8 plus documentation, no code change)
+
+### Changed
+- `TESTING.md` tells testers to run the services on the Hub's default ports (object 5015, compute
+  5020) and why: on non-default ports the Hub's project page does not show its Queue & Progress card
+  while a job runs (a Hub frontend bug — the card polls the compute service on the default port and
+  ignores the URL saved on Getting Started; the global Queue page and every plugin tab still work).
+  Diagnosed live on 2026-10-07 by polling the host's job list during a run and comparing the record
+  with a stock plugin's: identical shape, the right `project_name`, listed under `?project=` on every
+  poll; the card appeared as soon as the same services ran on 5015 / 5020.
+- `tester/start_tester.ps1` / `.sh` default to the 1.0.0rc9 test catalog.
+
+No change under `src/`: the plugin is rc8's code with its version stamped.
+
 ## [1.0.0rc8] — 2026-10-06 (session 6: the Hub's job card during the collection pass)
 
 ### Added
