@@ -116,6 +116,34 @@ the extra says `3lc>=3.3,<4.0` and the catalog install path is `uv pip install`,
 host and the object service run 3.3.0. Every catalog install since rc7 (hub-11's rc7 and rc8 venvs, the
 tester environment's rc8 venv) resolved the same way, and the rc7 / rc8 hand tests ran on it.
 
+## Run 10 — 1.0.0rc9 → 1.0.0rc10 on the clean environment, plus the connect flow without a Kaggle account — PASS (2026-10-08, 18:31:14 → 18:33:21)
+
+The rc10 candidate (the guided Kaggle connect flow, CHANGELOG 1.0.0rc10) proven as TESTING.md §8b on
+`C:\Users\rishi\Desktop\3LC Hackathons\3lc-hub-rc9-clean` — the run-9 environment after Rishikesh's rc9
+hand test (one imported kit, one prediction, one ledger line) — with the services stopped, through the
+in-process host and the same environment `start_tester.ps1` gives it (home redirected to `…\home`,
+project root `…\home\projects`, dev manifest tier, catalogs = the default catalog + the rc10 test
+catalog). Driver `proof_clean_rc10.py` (+ `run_proof_rc10.ps1`), record `proof_clean_rc10.json`:
+
+| Step | Result |
+|---|---|
+| §8b Plugins → Available | the card reads `latest_version` **1.0.0rc10**, compatible, source pinned to `@v1.0.0rc10` |
+| §8b Update | `POST /api/admin/plugins/install` 202 → `succeeded` in **105.1 s** (the rc10 venv built beside rc9's; version dirs after: `1.0.0rc10`, `1.0.0rc9`); first-use provisioning ready 11.8 s later |
+| §8b carried forward | `_meta.version` 1.0.0rc10, plugin home unchanged (`…\home\.3lc-compute\plugin-state\kaggle-classification`, `compute-home`); the state snapshot identical before and after (`ui_config.json` 31,677 B, 1 ledger line, 1 prediction, the kit record, 9,602 kit files) |
+| §7.5 connection card | `GET /kaggle/connection` → `no_credentials`, `token_path` = `…\3lc-hub-rc9-clean\home\.kaggle\access_token` (the redirected home, not the real profile), the "Other ways" block for PowerShell with that path filled in, one line each |
+| §7.5b a wrong paste | `POST /kaggle/connect` with `""` → "Paste the token first."; with `abc` → "That doesn't look like a Kaggle access token: it should start with KGAT_ (…)"; no file written |
+| §7.5b a well-formed fake token | `KGAT_proofclean…` (pasted with spaces and a newline) → the service wrote the file, Kaggle's introspect rejected it in 2.9 s → "Kaggle rejected the token (revoked, expired or mistyped); create a new one and try again.", **the file removed again** |
+| §7.7 Doctor | plugin 1.0.0rc10 at commit `8dfd06f` (the tag), SDK 0.3.3, 3lc 3.4.0 (the known open item), torch 2.14.0+cu126, torchvision 0.29.0+cu126, kaggle 2.2.4, Python 3.12.13; Kaggle `no_credentials` with `token_path` |
+| no leak | the fake token appears in none of: the connection card, the three connect answers, the Doctor, the Kaggle live block, `GET /config` |
+| persisted | `settings.json` `installed_plugins` carries `kaggle-classification 1.0.0rc10` (installed 2026-10-09T00:33:01Z) |
+
+The services were then started with the rc10 start script copied beside the rc9 one
+(`start_tester_rc10.ps1 -ProjectRoot …\home\projects`, the defaults 5015 / 5020): both ports answer, the
+compute log registers the `/kaggle-classification` namespace; left running for the hand test of Connect
+and Submit in the Hub. The environment holds no Kaggle token (an empty `home\.kaggle` folder is the
+only trace of the fake-token check). Not proven here: a real token's "Connected to Kaggle as <username>"
+(the harness check in session 8 used a stubbed service; the real path is Rishikesh's hand test).
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
