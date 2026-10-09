@@ -281,12 +281,16 @@ SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon("
               "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(",
               "psKaggleLine(", "kgWhenSpan(", "stHeroBlock(", "kgValEditedWarning(",
               # rc10: the "Other ways to connect" row (esc + kgIcon inside)
-              "psOtherWayRow(")
+              "psOtherWayRow(",
+              # rc13: the shared checks accordion and its rows (markup built from literals, esc + kgIcon inside)
+              "kgChecksAccordion(", "kgChecksSummary(", "kgCheckRow(")
 SAFE_IDENTS = {
     # markup accumulators / constants the fragment builds from literals and the calls above
     "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
     "KG_HINT_HTML", "KG_BTN_IMPORT", "KG_BTN_RERUN", "KG_BTN_DL", "KG_BTN_DL_RESUME", "KG_BTN_TOPUP", "KG_ICONS", "KG_STAGE_LABELS",
     "orig", "glyph", "label", "when",
+    # rc13: the shared checks accordion (markup it built, its id prefix, the summary and body it is handed)
+    "prefix", "summary", "body",
     # numbers, enum values and loop variables the fragment defines
     "passed", "total", "i", "s", "split", "status", "pct", "quartile", "r", "g", "b", "cls", "name", "g.title", "kind",
     # boolean flags used only to pick between literal branches

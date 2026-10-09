@@ -2123,6 +2123,38 @@
       // The checks arrive in stable backend order: the kit-vs-manifest structure checks first,
       // then the table checks (competition integrity).
       function kgIsTableCheck(c) { return /^(train|val) (row count|label map|zero-weight)|existing tables reused|target table names/.test(c.label || ''); }
+      // One collapsible checks list for every tab (Import since rc11, Train and Predict since rc13): the
+      // summary line is a button ("N/N checks passed ▸"), the list sits in an accordion panel. Collapsed when
+      // every check passes unless ``open``; the caller orders failures first and opens it on any failure.
+      function kgChecksAccordion(prefix, open, summary, body) {
+        return '<div class="kg-checks-head-row">' +
+          '<button type="button" class="kgl-acc-summary" id="' + prefix + '-checks-toggle" aria-expanded="' + (open ? 'true' : 'false') +
+          '" aria-controls="' + prefix + '-checks-panel">' +
+          '<span class="kgl-acc-caret" aria-hidden="true">' + KG_CARET_SVG + '</span>' + summary + '</button></div>' +
+          '<div class="kgl-acc' + (open ? ' open' : '') + '" id="' + prefix + '-checks-panel"' + (open ? '' : ' hidden') + '>' +
+          '<div class="kgl-acc-inner">' + body + '</div></div>';
+      }
+      function kgChecksSummary(passed, total) {
+        var allOk = passed === total;
+        return (allOk ? '<span class="ok" style="display:flex;color:var(--success)">' + kgIcon('check-circle') + '</span>'
+                      : '<span class="bad" style="display:flex;color:var(--danger, #ef4444)">' + kgIcon('x-circle') + '</span>') +
+          '<span>' + fmtCount(passed) + '/' + fmtCount(total) + ' checks passed' +
+          (allOk ? '' : ' · ' + fmtCount(total - passed) + ' failed') + '</span>';
+      }
+      function kgFailuresFirst(checks) {
+        return checks.filter(function (c) { return !c.ok; }).concat(checks.filter(function (c) { return c.ok; }));
+      }
+      function kgCheckRow(c, i, animate) {
+        var d = kgCheckDisplay(c);
+        var remedy = c.ok ? '' : kgRemedyFor(c.label || '');
+        return '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+          (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>' : '<span class="bad">' + kgIcon('x') + '</span>') +
+          '<span class="kg-check-body">' + esc(d.label) +
+          (d.detail ? ' <span class="detail">(' + esc(d.detail) + ')</span>' : '') +
+          (remedy ? '<span class="remedy">' + esc(remedy) + '</span>' : '') +
+          '</span></div>';
+      }
+
       // rc11 (item 12): "N/N checks passed ▸" collapsed when every check passes (``expand`` opens it once,
       // right after an import); a failure auto-expands with the failing checks first, each with its fix hint.
       function renderChecks(checks, animate, expand) {
@@ -2132,37 +2164,19 @@
         var total = checks.length;
         var allOk = passed === total;
         var open = !allOk || !!expand;
-        var html = '<div class="kg-checks-head-row">' +
-          '<button type="button" class="kgl-acc-summary" id="kg-checks-toggle" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="kg-checks-panel">' +
-          '<span class="kgl-acc-caret" aria-hidden="true">' + KG_CARET_SVG + '</span>' +
-          (allOk ? '<span class="ok" style="display:flex;color:var(--success)">' + kgIcon('check-circle') + '</span>'
-                 : '<span class="bad" style="display:flex;color:var(--danger, #ef4444)">' + kgIcon('x-circle') + '</span>') +
-          '<span>' + fmtCount(passed) + '/' + fmtCount(total) + ' checks passed' +
-          (allOk ? '' : ' · ' + fmtCount(total - passed) + ' failed') + '</span></button></div>';
-        var ordered = checks.filter(function (c) { return !c.ok; }).concat(checks.filter(function (c) { return c.ok; }));
+        var ordered = kgFailuresFirst(checks);
         var groups = [
           { title: 'Dataset structure', items: ordered.filter(function (c) { return !kgIsTableCheck(c); }) },
           { title: 'Competition integrity', items: ordered.filter(kgIsTableCheck) }
         ];
-        html += '<div class="kgl-acc' + (open ? ' open' : '') + '" id="kg-checks-panel"' + (open ? '' : ' hidden') + '><div class="kgl-acc-inner">' +
-          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
+        var body = '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
         groups.forEach(function (g) {
           if (!g.items.length) { return; }
-          html += '<div><div class="kg-checks-head">' + g.title + '</div>';
-          g.items.forEach(function (c, i) {
-            var remedy = c.ok ? '' : kgRemedyFor(c.label || '');
-            var d = kgCheckDisplay(c);
-            html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
-                    (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
-                          : '<span class="bad">' + kgIcon('x') + '</span>') +
-                    '<span class="kg-check-body">' + esc(d.label) +
-                    (d.detail ? ' <span class="detail">(' + esc(d.detail) + ')</span>' : '') +
-                    (remedy ? '<span class="remedy">' + esc(remedy) + '</span>' : '') +
-                    '</span></div>';
-          });
-          html += '</div>';
+          body += '<div><div class="kg-checks-head">' + g.title + '</div>';
+          g.items.forEach(function (c, i) { body += kgCheckRow(c, i, animate); });
+          body += '</div>';
         });
-        el('kg-checks').innerHTML = html + '</div></div></div>';
+        el('kg-checks').innerHTML = kgChecksAccordion('kg', open, kgChecksSummary(passed, total), body + '</div>');
         kgBindAccordion('kg-checks-toggle', 'kg-checks-panel');
       }
 
@@ -3564,27 +3578,37 @@
       }
 
       // ── Provenance panel: the product's whole point, promoted ────────
-      function trRenderProvenance(checks, animate) {
+      // rc13: the verdict line stays; the list is the Import tab's collapsible component, "Provenance verified ·
+      // 9/9 checks ▸" collapsed when every check passes (opened once when the checks arrive live, ``expand``;
+      // a re-render in the same visit keeps it open), auto-expanded with the failures first on any failure.
+      var trChecksOpened = false;
+      function trRenderProvenance(checks, animate, expand) {
         var box = el('tr-checks');
         if (!checks || !checks.length) { box.innerHTML = ''; return; }
         trLastChecks = checks;
-        var allOk = checks.every(function (c) { return c.ok; });
+        var passed = checks.filter(function (c) { return c.ok; }).length;
+        var total = checks.length;
+        var allOk = passed === total;
+        if (expand) { trChecksOpened = true; }
+        var open = !allOk || trChecksOpened;
         var html = '<div class="kg-verdict">' +
           (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
                  : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
           '<span>' + (allOk ? 'Verified provenance recorded'
-                            : 'Provenance check failed') + '</span></div>' +
-          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '"><div>' +
-          '<div class="kg-checks-head">Provenance verified</div>';
-        checks.forEach(function (c, i) {
-          html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+                            : 'Provenance check failed') + '</span></div>';
+        var summary = '<span>Provenance verified · ' + fmtCount(passed) + '/' + fmtCount(total) + ' checks' +
+          (allOk ? '' : ' · ' + fmtCount(total - passed) + ' failed') + '</span>';
+        var body = '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '"><div>';
+        kgFailuresFirst(checks).forEach(function (c, i) {
+          body += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
                   (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
                         : '<span class="bad">' + kgIcon('x') + '</span>') +
                   '<span class="kg-check-body">' + esc(c.label) +
                   (c.detail ? ' <span class="detail">(' + esc(c.detail) + ')</span>' : '') +
                   '</span></div>';
         });
-        box.innerHTML = html + '</div></div>';
+        box.innerHTML = html + kgChecksAccordion('tr', open, summary, body + '</div></div>');
+        kgBindAccordion('tr-checks-toggle', 'tr-checks-panel');
       }
 
       // ── Terminal states (banner vocabulary) + revisit ────────────────
@@ -3603,6 +3627,7 @@
         el('tr-state').textContent = '';
         trLogReset();
         trHadChecks = false;
+        trChecksOpened = false;
         trNewToken();
         el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
         el('tr-latest').checked = true;   // item 4: a new run follows the newest labels
@@ -3705,7 +3730,7 @@
         var checks = (job.checks && job.checks.length)
           ? job.checks : ((job.result || {}).checks || []);
         if (checks.length) {
-          trRenderProvenance(checks, animate && !trHadChecks);
+          trRenderProvenance(checks, animate && !trHadChecks, animate && !trHadChecks);
           trHadChecks = true;
         }
         var facts = job.facts || {};
@@ -3754,7 +3779,7 @@
           if (job.status !== 'running' && job.status !== 'queued') { return; }
           trRenderRunView(job);
           if (job.checks && job.checks.length) {
-            trRenderProvenance(job.checks, !trHadChecks);
+            trRenderProvenance(job.checks, !trHadChecks, !trHadChecks);
             trHadChecks = true;
           }
           var tp = job.progress || {};
@@ -4819,6 +4844,7 @@
           } else if (mode === 'train-state4' || mode === 'train-state4-noproject') {
             gateGreen();
             trRenderTerminal(doneJob(mode === 'train-state4-noproject'), false, false);
+            trRenderProvenance(PROV, false, true);   // the live arrival opens the list this once
             el('tr-log').textContent = LOG.concat(PROV.map(function (c) { return 'PASS ' + c.label + ': ' + c.detail; }))
               .concat(['best.pt: ' + weights + ' (exists: True)']).join('\n');
             el('tr-log-details').style.display = 'block';
@@ -5159,28 +5185,26 @@
         }
       }
 
-      // The checks in the checks vocabulary, grouped: Checkpoint · Test inputs · Submission format.
-      function psRenderChecks(checks, animate) {
+      // The checks in the checks vocabulary, grouped: Checkpoint · Test inputs · Submission format. rc13: the
+      // Import tab's collapsible component, "10/10 checks passed ▸" collapsed when every check passes (opened
+      // once when the results arrive live, ``expand``), auto-expanded with the failures first on any failure.
+      function psRenderChecks(checks, animate, expand) {
         if (!checks || !checks.length) { return ''; }
         var total = checks.length;
         var passed = checks.filter(function (c) { return c.ok; }).length;
         var allOk = passed === total;
+        var open = !allOk || !!expand;
         var groups = [];
         checks.forEach(function (c) {
           var g = c.group || 'Submission format';
           if (groups.indexOf(g) === -1) { groups.push(g); }
         });
-        var html = '<div class="kg-verdict">' +
-          (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
-                 : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
-          '<span>' + passed + '/' + total + ' checks passed' +
-          (allOk ? '' : ' (' + (total - passed) + ' failed)') + '</span></div>' +
-          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
+        var body = '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
         var i = 0;
         groups.forEach(function (g) {
-          html += '<div><div class="kg-checks-head">' + esc(g) + '</div>';
-          checks.filter(function (c) { return (c.group || 'Submission format') === g; }).forEach(function (c) {
-            html += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
+          body += '<div><div class="kg-checks-head">' + esc(g) + '</div>';
+          kgFailuresFirst(checks.filter(function (c) { return (c.group || 'Submission format') === g; })).forEach(function (c) {
+            body += '<div class="kg-check"' + (animate ? ' style="--kgl-i:' + i + '"' : '') + '>' +
                     (c.ok ? '<span class="ok">' + kgIcon('check') + '</span>'
                           : '<span class="bad">' + kgIcon('x') + '</span>') +
                     '<span class="kg-check-body">' + esc(c.label) +
@@ -5188,9 +5212,9 @@
                     '</span></div>';
             i += 1;
           });
-          html += '</div>';
+          body += '</div>';
         });
-        return html + '</div>';
+        return kgChecksAccordion('ps', open, kgChecksSummary(passed, total), body + '</div>');
       }
 
       // D5: the predicted-class distribution card (ExDark's Prediction sanity card, task-inherent
@@ -5248,18 +5272,19 @@
 
       // Results panel = step 1's decision surface. First live completion enters with the checks
       // cascade; a re-run replaces content in place (same-type re-render: no replay).
-      function psRenderResults(job, animate) {
+      function psRenderResults(job, animate, expand) {
         var facts = job.facts || {};
         var checks = job.checks || [];
         psLastChecks = checks;
         psLastSanity = facts.sanity || null;
         var enter = animate && !psResultsShown;
         psResultsShown = true;
-        var html = psRenderChecks(checks, enter);
+        var html = psRenderChecks(checks, enter, enter || !!expand);
         var row = psSanityHtml(facts.sanity) + psHeroHtml(facts.local_score);
         if (row) { html += '<div class="kg-results-row' + (enter ? ' kgl-enter' : '') + '">' + row + '</div>'; }
         html += psCsvRowHtml(job.id, facts.csv_path || '');
         el('ps-results').innerHTML = html;
+        if (el('ps-checks-toggle')) { kgBindAccordion('ps-checks-toggle', 'ps-checks-panel'); }
         kgBindCopy(el('ps-results'));
         el('ps-results').querySelectorAll('[data-download]').forEach(function (b) {
           b.addEventListener('click', function () { downloadCsv(b.getAttribute('data-download')); });
@@ -5971,7 +5996,7 @@
         }
         function results(opts) {
           psResultsShown = false;
-          psRenderResults(predictJob(opts), false);
+          psRenderResults(predictJob(opts), false, true);   // the live arrival opens the list this once
           el('ps-predict-btn').innerHTML = KG_BTN_PREDICT_RERUN;
           psSetBasis({ job_id: 'devpredict1', run_name: devRun, local_score: opts.score, when: now - 160, persisted: false });
         }
@@ -6946,6 +6971,7 @@
         if (mode && mode.indexOf('train-') === 0) { trDevForce(mode); return; }
         if (mode && mode.indexOf('submit-') === 0) { psDevForce(mode); return; }
         if (mode && mode.indexOf('status-') === 0) { stDevForce(mode); return; }
+        showTab('import');   // an Import fixture renders on its own tab, whatever tab the browser saved
         var devDest = 'C:\\Users\\participant\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\competition';
         var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
         var devDlKit = devDest + '\\v1\\starter_kit';

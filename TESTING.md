@@ -211,8 +211,9 @@ On the Train tab set **Epochs** to **2** (leave everything else), then click **S
   written 2, best val accuracy "NN.NN % (epoch N)"), a progress bar filling per batch, three chips (Train
   loss · Val loss · Val accuracy) with sparklines, "Show log" filling live; after epoch 2 the note "Collecting per-sample
   metrics and embeddings on 7,800 rows…"; then the green banner "**Training complete: NN.N% val
-  accuracy at epoch N** (the checkpoint Predict uses)", a **Verified provenance recorded** panel with
-  9 checks, buttons **Continue to Submit**, **Open Run in Dashboard**, **Open Run in Projects** (the
+  accuracy at epoch N** (the checkpoint Predict uses)", a **Verified provenance recorded** panel whose
+  **Provenance verified · 9/9 checks** list is expanded this once (collapsed with a ▸ on later visits),
+  buttons **Continue to Submit**, **Open Run in Dashboard**, **Open Run in Projects** (the
   Watch button is gone: the run is no longer live). On a
   GPU about 1–2 minutes end to end; on a CPU about 5–8 minutes. Val accuracy after 2 epochs is low
   (30–55 %), that is expected.
@@ -226,7 +227,8 @@ Click **Continue to Submit** (or open **3 Predict + Submit**).
   this run's record · best checkpoint sha256 …", the locked row "Kit · …\data\test · 1,800 images"
   and the green line "Test images verified: 1,800 files match the kit's files.json". Click **Run
   inference**: a progress block "Val check: n / 1,200 images" then "Inference: n / 1,800 images",
-  then **10/10 checks passed**, the **Predicted-class distribution** card (six class tags with
+  then **10/10 checks passed** (expanded this once, collapsed with a ▸ on later visits), the
+  **Predicted-class distribution** card (six class tags with
   counts; after only two epochs an amber "The predicted-class distribution is skewed …" note under
   the tags is normal), the hero stat "NN.NN % · Val accuracy · Your locked validation split, not the
   leaderboard.", and a CSV row `submission_<timestamp>.csv` with **Copy CSV path** and **Download
