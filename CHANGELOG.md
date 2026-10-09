@@ -3,6 +3,30 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [Unreleased] (session 11, 2026-10-09: the post-rc12 quality-of-life pass)
+
+The UI look is frozen at rc12: further UI changes are incremental only (no layout changes, no redesigns) and
+participants keep every control they had in rc10.
+
+### Changed
+- **Collapsible checks on Train and Predict**, the Import tab's component: Train's provenance list collapses to
+  "Provenance verified · 9/9 checks ▸" when every check passes (the "Verified provenance recorded" verdict and the
+  hint box stay), Predict's to "10/10 checks passed ▸" (the predicted-class distribution and val accuracy cards stay).
+  Both open once when the checks arrive live, collapse on later visits, and auto-expand with the failures first on
+  any failure. Nothing else on either tab moves.
+- **Accessibility, without a layout or copy change** (the `web-design-guidelines` audit): one visible keyboard focus
+  ring (`:focus-visible`) on every interactive element; the grey tints that vanished on the Hub's dark theme take its
+  dark tokens there (light mode untouched); card and section titles carry `role="heading"`; every new-tab link carries
+  `rel="noopener"`; the "Connect in Step 2" link answers Enter and Space; every field carries `name`, `autocomplete`,
+  `spellcheck` and, for numbers, `inputmode`; the four progress bars are `role="progressbar"` with a live value.
+- **Typography** (the `writing-guidelines` audit): curly apostrophes and quotes in every displayed string and in
+  TESTING.md; the table-name helper now says "Table name for the imported train and val tables."; the LR-schedule help
+  no longer shows a literal backslash ("the kit's step decay"); the two untagged code fences in TESTING.md are
+  tagged `text`. No instruction changed meaning.
+
+### Added
+- Vercel's `web-design-guidelines` and `writing-guidelines` agent skills under `.claude/skills/` (`skills-lock.json`).
+
 ## [1.0.0rc12] — 2026-10-09 (session 10: the Import tab back on the rc10 layout)
 
 Decision (Rishikesh, 2026-10-09): the rc11 Import redesign was too minimal. The Import tab goes back to
