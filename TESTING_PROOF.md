@@ -166,6 +166,42 @@ in this environment; the proof never reads it and scans every answer for a token
 - The browser steps of TESTING.md 7.2 (the Imported view, Re-import…, the stale view), 7.5b (the submit
   confirmation, the Doctor after Connect) and 7.7 (the Kaggle heading) are the hand test's.
 
+## Run 12 — 1.0.0rc11 → 1.0.0rc12 on the clean environment, plus the rc12 fragment and copy checks — PASS (2026-10-09, 11:10:58 → 11:17:19, four runs of the proof)
+
+The clean environment (`../3lc-hub-rc9-clean/`, the one Rishikesh hand-tests in; the services stopped for the run,
+restarted after it on 5015 / 5020 with `start_tester_rc12.ps1`), the rc12 test catalog beside the default one,
+`run_proof_rc12.ps1` → `proof_clean_rc12.py` on the in-process compute 1.1.0 host (the rc11 proof plus the rc12
+checks: the served fragment carries the rc10 form and rc11's behaviour and no Advanced disclosure, no em dash in what
+rc12 composes, the re-import name series). A Kaggle token may be present; the proof never reads it and scans every
+answer for a token-shaped string.
+
+- **Run a (the upgrade, 11:10:58):** plugin state present (ui_config 37,216 B, 3 ledger lines, 1 prediction, 1 kit
+  record, 9,602 kit files; the import record names table `initial-2`, so this environment had a re-import before);
+  version dirs `1.0.0rc9`, `1.0.0rc10`, `1.0.0rc11`. Host up in 6.6 s. Available: the card lists **1.0.0rc12**,
+  source pinned to `@v1.0.0rc12`, compatible. Update: **succeeded in 55.0 s**. First-use provisioning **6.7 s**;
+  `GET /config` says version **1.0.0rc12**, plugin home unchanged (`plugin-state/kaggle-classification`, resolved by
+  compute-home). The plugin state is byte-identical before and after. rc11 payload: `import_state` **success**
+  (table `initial-2`, 18/18 validated, 20 log lines), `kit_state` success with **9,600 images**, `manifest_fallback`
+  inactive (remote). **`GET /import/preflight` names `initial-3`** as the next re-import (rc11 would have said
+  `initial-2-2`). `GET /download/verify`: 9,601 of 9,601 matched in 8.6 s. The proof then FAILED its own first
+  draft of the fragment check: it counted em dashes in the whole served page, and the compute host wraps the
+  fragment with its job tracker script, whose comments carry **6 em dashes of the host's own**.
+- **Runs b and c (11:13:47, 11:14:57), rc12 → rc12:** the check scoped to the installed package's `ui.html` (found
+  under the rc12 venv, served verbatim around the SDK's injected script): rc10 form present, rc11 behaviour present,
+  nothing gone-on-purpose present, **0 em dashes in the plugin's fragment**, 6 in the host wrapper. Run c then
+  FAILED on the config payload: **58 em dashes, every one inside job logs persisted by earlier versions** (the
+  rc10-era training run's epoch and provenance lines, the prediction's check lines in `train_state` /
+  `predict_state`), history rc12 does not rewrite. The Doctor and the preflight carry none.
+- **Run d (11:16:36 → 11:17:19), rc12 → rc12:** the payload check counts persisted logs instead of failing on them:
+  `config_composed` **0**, `config_persisted_logs` 58, `doctor` 0, `preflight` 0. Install 20.0 s (already
+  installed), provisioning 6.0 s, state identical, verify 9,601 / 9,601 in 5.8 s, version dirs
+  `1.0.0rc10` · `1.0.0rc11` · `1.0.0rc12` (the host's keep-3 removed rc9), the persisted record names
+  `@v1.0.0rc12`. No token-shaped string in any answer. **PASS**, `proof_clean_rc12.json` (runs a to c kept as
+  `proof_clean_rc12_run_a/b/c.json` + `.log`).
+- The browser steps of TESTING.md 7.1 and 7.2 (the rc10 form, the Imported view around it, the collapsed checks,
+  Re-import fresh on a reused row, the stale view), 7.5b and 7.7 are the hand test's. The fixture shots of every
+  Import state are in `docs/ui-review/after-rc12/` (untracked).
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
