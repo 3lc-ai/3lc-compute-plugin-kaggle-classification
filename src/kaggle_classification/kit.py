@@ -71,7 +71,7 @@ class _Cancelled(Exception):
 
 
 def default_dest(manifest: Manifest) -> Path:
-    """``<plugin home>/data/<competition id>`` — the kit lives with everything else the plugin owns."""
+    """``<plugin home>/data/<competition id>``: the kit lives with everything else the plugin owns."""
     return storage.plugin_home() / "data" / manifest.competition.id
 
 
@@ -345,11 +345,11 @@ def read_record(manifest: Manifest) -> dict[str, Any] | None:
 def download_state(manifest: Manifest) -> dict[str, Any]:
     """Revisit state for the Download section, re-verified against disk AND the shipped version.
 
-      "empty"      — no completed download on record.
-      "success"    — the kit on disk is the version the manifest ships.
-      "superseded" — a complete kit of an OLDER version. Not a fault: the participant keeps
+      "empty":      no completed download on record.
+      "success":    the kit on disk is the version the manifest ships.
+      "superseded": a complete kit of an OLDER version. Not a fault: the participant keeps
                      training; the copy names the newer kit.
-      "stale"      — the recorded kit is gone from disk.
+      "stale":      the recorded kit is gone from disk.
 
     "superseded" is not folded into "stale": one state string over two conditions is the
     divergence class the ExDark v1.2.12 release closed, and the two need opposite copy.
@@ -571,7 +571,7 @@ def run_download(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
         msg = f"{broken_count} files do not match {FILES_INDEX_NAME} after extraction. {_RERUN_RESUMES}"
         raise RuntimeError(msg)
     if delta["extra"]:
-        # Not a failure: the kit is the participant's working copy — extras are theirs.
+        # Not a failure: the kit is the participant's working copy, extras are theirs.
         check("no unexpected files in the kit tree", True, f"{len(delta['extra'])} extra files present, left in place")
         for path in delta["extra"][:20]:
             log(f"  EXTRA {path}")

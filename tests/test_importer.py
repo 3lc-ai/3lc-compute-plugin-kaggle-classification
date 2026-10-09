@@ -113,6 +113,18 @@ def test_existing_tables_are_reused_and_revalidated_like_exdark(project_root, ki
     assert third["table_name"] == "initial-2"
     assert tlc.Url(first["tables"]["train"]["url"]).exists() and tlc.Url(third["tables"]["val"]["url"]).exists()
     assert session.populated_session(manifest)["table_name"] == "initial-2"
+    # rc12: the series continues from the session's name (now ``initial-2``): the next re-import writes
+    # ``initial-3``, never ``initial-2-2``; the preflight names it the same way.
+    assert importer.preflight({}, manifest)["reimport_name"] == "initial-3"
+    fourth, _ = _run(manifest, mode="reimport")
+    assert fourth["table_name"] == "initial-3"
+    assert session.populated_session(manifest)["table_name"] == "initial-3"
+    assert importer.preflight({}, manifest)["reimport_name"] == "initial-4"
+    # The generator alone: a ``-N`` tail continues the series; a free name is returned as typed.
+    assert importer.fresh_table_name(manifest, "intel-scene", "initial") == "initial-4"
+    assert importer.fresh_table_name(manifest, "intel-scene", "initial-3") == "initial-4"
+    assert importer.fresh_table_name(manifest, "intel-scene", "initial-7") == "initial-7"
+    assert importer.fresh_table_name(manifest, "intel-scene", "other") == "other"
 
 
 def test_kit_defect_fails_before_any_table_and_names_every_problem(project_root, kit_and_manifest):

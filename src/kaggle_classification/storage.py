@@ -1,6 +1,6 @@
 # Copyright 2026 3LC Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Where the plugin keeps its own state — resolved once, never from HOME first, and never lost
+"""Where the plugin keeps its own state, resolved once, never from HOME first, and never lost
 on a plugin update.
 
 The ExDark plugin derived its home from ``Path.home()`` and paid for it: the worker's
@@ -8,21 +8,21 @@ The ExDark plugin derived its home from ``Path.home()`` and paid for it: the wor
 looking at (the redirected-home bug). This module resolves the plugin's directory in
 this order and records which rule won, so ``GET /config`` can say where state lives:
 
-1. ``KAGGLE_CLASSIFICATION_HOME`` — an explicit operator override.
+1. ``KAGGLE_CLASSIFICATION_HOME``: an explicit operator override.
 2. A storage helper on the installed SDK, if a future SDK grows one (probed by name;
    0.3.x has none).
 3. **The compute home** (session 5, 1.0.0rc3): when the worker runs from the host's managed
    layout ``<compute home>/managed-plugins/<id>/<version>`` (a catalog install) or
    ``<compute home>/managed-plugins/<id>`` (a folder source), the state lives in
-   ``<compute home>/plugin-state/<id>`` — OUTSIDE the version dir, so a plugin update keeps the
+   ``<compute home>/plugin-state/<id>``: OUTSIDE the version dir, so a plugin update keeps the
    kit, the import record, the train / predict records and the ledger. The first resolution
    after an update carries the newest previous version's ``.plugin-state`` forward (a copy, the
    old copy is never deleted; the paths inside the records are rewritten to the new home).
 4. The worker's state root, once a job has revealed it (``ctx.state_dir.parent``).
-5. The SDK worker's default state root, ``<cwd>/.plugin-state/<plugin id>`` — the
+5. The SDK worker's default state root, ``<cwd>/.plugin-state/<plugin id>``: the
    worker creates it before it serves, so inside a worker this always exists and is
    independent of HOME (the 1.0.x host passes no ``--state-root``).
-6. ``~/.3lc-kaggle-classification`` — dev runs and tests only.
+6. ``~/.3lc-kaggle-classification``: dev runs and tests only.
 
 Import-light: stdlib plus the SDK's cheap contract surface.
 """
@@ -82,8 +82,8 @@ def _sdk_helper_dir() -> Path | None:
 
 def managed_layout(cwd: Path) -> tuple[Path, Path] | None:
     """``(shared home, the managed plugin dir)`` when ``cwd`` is the host's managed layout for this
-    plugin — ``<compute home>/managed-plugins/<id>/<version>`` (catalog install) or
-    ``<compute home>/managed-plugins/<id>`` (folder source) — else None."""
+    plugin, ``<compute home>/managed-plugins/<id>/<version>`` (catalog install) or
+    ``<compute home>/managed-plugins/<id>`` (folder source), else None."""
     try:
         if cwd.parent.name == PLUGIN_ID and cwd.parent.parent.name == MANAGED_DIR_NAME:
             return cwd.parents[2] / SHARED_STATE_DIR_NAME / PLUGIN_ID, cwd.parent
@@ -95,8 +95,8 @@ def managed_layout(cwd: Path) -> tuple[Path, Path] | None:
 
 
 def previous_state_dirs(managed_dir: Path) -> list[Path]:
-    """Every ``.plugin-state/<id>`` under the managed plugin dir that holds a session store — the
-    version dirs' (catalog installs) and the folder source's own — newest store first."""
+    """Every ``.plugin-state/<id>`` under the managed plugin dir that holds a session store, the
+    version dirs' (catalog installs) and the folder source's own, newest store first."""
     found: list[Path] = []
     candidates = [managed_dir]
     try:

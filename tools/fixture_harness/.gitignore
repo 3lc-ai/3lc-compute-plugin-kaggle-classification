@@ -1,0 +1,6 @@
+# Copies and downloads shoot.py makes beside itself; never commit them.
+ui.html
+main.css
+plugin-common.css
+config.json
+shoot_index.json

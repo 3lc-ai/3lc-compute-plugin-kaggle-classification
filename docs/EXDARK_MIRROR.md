@@ -142,3 +142,13 @@ The Import tab and the shell leave the mirror on purpose. Each line names ExDark
 
 The `?kgdev` fixture map grows by `state1-bundled`, `state2-existing`, `state6-found`, `state6-stale`,
 `dl-verify-fail`, `dl-fail-checks`, `dl-fail-kaggle`. The esc() census and the literal census stay green.
+
+**rc12 (Rishikesh, 2026-10-09): the rc11 Import redesign was too minimal; the Import tab went back to the
+rc10 layout.** Items 7, 8, 10 and 11 are ExDark's again (the open form with the three fields and their
+helper text, the locked splits block, the detected line, the glance card without the test count, Explore
+train / val in the banner, per-row Re-import fresh without a dialog); the facts line and the Advanced
+disclosure are gone. Items 1 to 6, 9 and 12 to 22 stay as rc11 shipped them (item 3's view now renders
+around the form, never instead of it; item 5's stale view keeps Re-import… with its confirmation; item
+14's notice sits above the kit folder). The only visual addition rc12 keeps is item 12, the collapsible
+checks list, in rc10's slot. rc12 also bans the em dash from every participant surface
+(`tests/test_copy_rules.py`).

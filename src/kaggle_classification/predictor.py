@@ -58,7 +58,7 @@ LOG_KEEP = 300
 INVALID_SUFFIX = ".INVALID.csv"
 
 NOT_A_RUN = (
-    "Direct weights files are not accepted. Select a run trained in this plugin — predictions must "
+    "Direct weights files are not accepted. Select a run trained in this plugin: predictions must "
     "carry verified provenance."
 )
 SHA_MISMATCH = (
@@ -133,7 +133,7 @@ def run_entries() -> list[dict[str, Any]]:
 
 
 def assess_run(r: dict[str, Any], *, check_run: bool = True) -> tuple[bool, str]:
-    """``(usable, reason)`` — the display-side verdicts ``GET /runs`` shows (ExDark's four, plus ours:
+    """``(usable, reason)``: the display-side verdicts ``GET /runs`` shows (ExDark's four, plus ours:
     interrupted, provenance failed, the sha mismatches). ``resolve_checkpoint`` repeats the hard ones."""
     status = str(r.get("status") or "")
     weights = str(r.get("weights") or "")
@@ -161,7 +161,7 @@ def assess_run(r: dict[str, Any], *, check_run: bool = True) -> tuple[bool, str]
 
 
 def list_runs() -> list[dict[str, Any]]:
-    """``GET /runs``: the Run picker's rows, newest first, with ``usable`` + ``reason`` — only the runs
+    """``GET /runs``: the Run picker's rows, newest first, with ``usable`` + ``reason``: only the runs
     of the import record's project (``trainer.runs_in_project``). The gate (``resolve_checkpoint``)
     still resolves any plugin run by id; the filter is what the picker offers."""
     out = []
@@ -743,7 +743,7 @@ def run_predict(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[st
     rec.record["checks"] = checks
     set_checks(checks)
     rlog(f"Run: {ck['run_name']} ({ck['run_url']})")
-    rlog(f"Checkpoint: {ck['weights']} — sha256 {ck['sha256_recorded'][:12]}… matches the train record and the Run")
+    rlog(f"Checkpoint: {ck['weights']} · sha256 {ck['sha256_recorded'][:12]}… matches the train record and the Run")
     rlog(f"Test images: {inputs['count']:,} verified against {kit.FILES_INDEX_NAME} under {inputs['test_dir']}")
 
     try:
@@ -851,11 +851,11 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
     })
     rec.record["checks"] = checks
     set_checks(checks)
-    log(("PASS " if val_ok else "FAIL ") + checks[-1]["label"] + f" — {checks[-1]['detail']}")
+    log(("PASS " if val_ok else "FAIL ") + checks[-1]["label"] + f": {checks[-1]['detail']}")
     if not val_ok:
         msg = (
             f"The checkpoint does not reproduce the run’s recorded val accuracy (recorded "
-            f"{recorded if recorded is not None else '—'} %, now {val_acc:.2f} % on the locked val split). The checkpoint "
+            f"{recorded if recorded is not None else '–'} %, now {val_acc:.2f} % on the locked val split). The checkpoint "
             "or the val table changed since training. Re-train, or pick another run."
         )
         raise PredictRefused(msg)
@@ -905,7 +905,7 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
     rec.record["checks"] = checks
     set_checks(checks)
     for c in fmt:
-        log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f" — {c['detail']}")
+        log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f": {c['detail']}")
     csv_sha = sha256_of(csv_path)
     rec.record["facts"].update({"csv_path": str(csv_path), "csv_sha256": csv_sha, "rows": len(rows)})
     set_field("csv_path", str(csv_path))
@@ -916,7 +916,7 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
     rec.record["facts"]["sanity"] = sanity
     set_field("sanity", sanity)
     log("Distribution: " + " · ".join(f"{k} {v:,}" for k, v in sanity["per_class"].items()) +
-        f" — mean confidence {sanity['mean_confidence']}, {sanity['low_confidence']:,} below {LOW_CONFIDENCE}")
+        f" · mean confidence {sanity['mean_confidence']}, {sanity['low_confidence']:,} below {LOW_CONFIDENCE}")
     if sanity.get("warning"):
         log(f"WARNING: {sanity['warning']}")
 
@@ -1014,7 +1014,7 @@ def run_kaggle_submit(params: dict[str, Any], ctx: Any, manifest: Manifest) -> d
     rec.record["facts"]["submission"] = submission
     set_field("submission", submission)
     if submission["status"] != "submitted":
-        rlog(f"Submit step: {submission['status']} — {submission.get('reason', '')}")
+        rlog(f"Submit step: {submission['status']} · {submission.get('reason', '')}")
 
     # The outcome also lands on the predict record (ExDark writes facts.submission back) and in the ledger.
     try:

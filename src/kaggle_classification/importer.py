@@ -14,7 +14,7 @@ Contract (docs/PLAN.md §C "Importer", session 2 decisions):
   plus one row per pool image with ``label = manifest.undefined_label_id`` (the LAST map entry,
   named ``undefined`` so the Dashboard can filter ``label == undefined``) and ``weight = 0.0``.
   ``val``: labeled rows only, all weights ``1.0``; its URL is recorded as the locked revision.
-  ``test`` is NEVER registered — the predictor reads ``data/test/`` directly.
+  ``test`` is NEVER registered, the predictor reads ``data/test/`` directly.
 * Tables are written with ``tlc.Table.from_dict`` and an explicit schema (``ImageSchema(url)``,
   ``CategoricalLabelSchema(classes + [undefined])``, ``SampleWeightSchema``) under
   ``<tlc.config.project_root_url>/<project>/datasets/<manifest.dataset_name(split)>/tables/<table>``.
@@ -23,7 +23,7 @@ Contract (docs/PLAN.md §C "Importer", session 2 decisions):
   target URL is REUSED, never rewritten, and the post-write checks run on it. ``mode =
   "reimport"`` writes FRESH tables under the next free name (``<table>-2``, ``<table>-3``, …) for
   both splits together and is kept for the re-import decision (#26). Existing tables are never
-  touched — a participant's edited revisions stay intact.
+  touched, a participant's edited revisions stay intact.
 * No partial tables: the second table failing, a verification failing, or a cancel after the
   first write deletes what this job created before it reports.
 * After writing, each table is re-read and checked: row count == ``manifest.expected_rows``,
@@ -42,6 +42,7 @@ The ``ctx`` is the duck-typed job context ``kit.py`` uses (``log``, ``set_checks
 from __future__ import annotations
 
 import csv
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -61,6 +62,8 @@ REGISTERED_SPLITS = ("train", "val")
 MODES = ("import", "reimport")
 # How many fresh names to try before giving up (``initial-2`` … ``initial-99``).
 _MAX_FRESH_SUFFIX = 99
+# A name the generator produced earlier (``initial-2``): its base and its number, so the series continues.
+_FRESH_SUFFIX_RE = re.compile(r"^(.+)-(\d+)$")
 
 
 class ImportRefused(RuntimeError):
@@ -113,7 +116,7 @@ def _images_in(directory: Path) -> list[Path]:
 
 def scan_kit(kit_root: Path, manifest: Manifest) -> KitScan:
     """Walk ``<kit_root>/data`` exactly as the builder lays it out. Never raises on a missing
-    piece — the validators report what is missing, in one message."""
+    piece, the validators report what is missing, in one message."""
     scan = KitScan(kit_root=kit_root)
     data = kit_root / DATA_DIR_NAME
     train = data / "train"
@@ -219,7 +222,7 @@ def validate_kit(scan: KitScan, manifest: Manifest) -> list[dict[str, Any]]:
 
 def decode_images(paths: list[Path], report: Any = None) -> tuple[int, list[str]]:
     """Open and verify every image (PIL). Returns ``(ok_count, first_failures)``. A kit whose
-    images do not decode is a kit defect — the import stops and reports rather than registering
+    images do not decode is a kit defect, the import stops and reports rather than registering
     rows the trainer would choke on."""
     from PIL import Image
 
@@ -283,9 +286,15 @@ def existing_tables(manifest: Manifest, project: str, table_name: str) -> dict[s
 
 
 def fresh_table_name(manifest: Manifest, project: str, table_name: str) -> str:
-    """``table_name`` if neither split has a table under it, else the first ``<name>-N`` (N from 2)
-    free for BOTH splits — one name for the pair, so the lineage roots stay siblings."""
-    candidates = [table_name] + [f"{table_name}-{n}" for n in range(2, _MAX_FRESH_SUFFIX + 1)]
+    """``table_name`` if neither split has a table under it, else the first ``<base>-N`` free for BOTH
+    splits, one name for the pair, so the lineage roots stay siblings. The series continues (rc12): after
+    ``initial-2`` the next name is ``initial-3``, never ``initial-2-2`` (a ``-N`` tail with N >= 2 is the
+    generator's own, so the base is the part before it and the count starts at N + 1)."""
+    base, start = table_name, 2
+    m = _FRESH_SUFFIX_RE.match(table_name)
+    if m and int(m.group(2)) >= 2:
+        base, start = m.group(1), int(m.group(2)) + 1
+    candidates = [table_name] + [f"{base}-{n}" for n in range(start, _MAX_FRESH_SUFFIX + 1)]
     for name in candidates:
         if not any(_url_exists(table_url(project, manifest.dataset_name(s), name)) for s in REGISTERED_SPLITS):
             return name
@@ -434,7 +443,7 @@ def delete_tables(urls: list[str]) -> list[str]:
 
 def table_defaults(manifest: Manifest, project: str, table_name: str) -> dict[str, Any]:
     """``GET /tables/defaults``: the canonical URL per registered split for the given project /
-    table pair, with an exists flag — what the Train field derives when no override is stored."""
+    table pair, with an exists flag, what the Train field derives when no override is stored."""
     out: dict[str, Any] = {"project": project, "table": table_name}
     for split in REGISTERED_SPLITS:
         url = table_url(project, manifest.dataset_name(split), table_name)
@@ -533,10 +542,10 @@ def list_project_tables(
     Layout-derived: ``table_url`` rebuilds ``<root>/<project>/datasets/<dataset>/tables/<table>``,
     so the datasets root is walked directly. Rows come in tree order: a root first, then its
     children depth-first (newest last), each row with ``depth`` (0 = a root), ``parent`` (the URL
-    it was derived from), ``in_lineage`` (descends from ``seed_url``, the import record's seed —
+    it was derived from), ``in_lineage`` (descends from ``seed_url``, the import record's seed,
     the only tables Train accepts), ``labeled_rows`` (cached by URL) and ``runs_used`` (from the
     train records). ``latest`` marks what ``latest_url`` resolves to from the seed (or the first
-    root) — the resolution ``use_latest`` training follows. Read-only; an unreadable table folder
+    root), the resolution ``use_latest`` training follows. Read-only; an unreadable table folder
     is skipped, never a failure."""
     probe = table_url(project, "__probe__", "initial")
     datasets_root = Path(probe).parent.parent.parent
@@ -620,7 +629,7 @@ def read_record() -> dict[str, Any] | None:
 
 def _found_state(manifest: Manifest | None) -> dict[str, Any]:
     """rc11 (item 2): no import record, but both canonical tables of the session's project / table
-    pair exist on disk (a reinstall that reset the plugin's state, a shared project root) — the tab
+    pair exist on disk (a reinstall that reset the plugin's state, a shared project root), the tab
     renders them as found, Train and the stepper count Import as done, and the Imported view offers
     validation through a reuse import. Anything short of both tables is ``empty``."""
     try:
@@ -656,8 +665,8 @@ def _found_state(manifest: Manifest | None) -> dict[str, Any]:
 def import_state(manifest: Manifest | None = None) -> dict[str, Any]:
     """The Import tab's one source of truth (rc11, item 1): the record re-verified against disk.
 
-    ``empty`` — no record and no tables; ``found`` — no record but both tables exist on disk;
-    ``success`` — both recorded tables still exist; ``stale`` — a recorded table is gone (``missing``
+    ``empty``: no record and no tables; ``found``: no record but both tables exist on disk;
+    ``success``: both recorded tables still exist; ``stale``: a recorded table is gone (``missing``
     names it; the record is kept so the participant knows what was there). Every state with tables
     carries ``tables`` (url, exists, rows, revision, latest_revision, reused) and the last validation
     result with its timestamp (``validation``: passed / total / ok / at / checks)."""
@@ -712,8 +721,8 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     """The Import form's read-only gate, in the shape ExDark's ``/import/preflight`` answers so
     the ported fragment renders it unchanged (docs/EXDARK_MIRROR.md #20). Never writes.
 
-    ``error`` — the kit folder is missing or unreadable (parse failure / path not found).
-    ``all_ok`` — every kit-vs-manifest structural check passes; ``splits`` carries per-split
+    ``error``: the kit folder is missing or unreadable (parse failure / path not found).
+    ``all_ok``: every kit-vs-manifest structural check passes; ``splits`` carries per-split
     ``{found, expected, ok}`` (train counts labeled + pool), ``unlabeled`` the pool,
     ``classes`` ``{names, count, canonical}`` (the class directories in manifest order), and
     ``problems`` the failing checks as ``{label, detail, remedy}`` rows for the mismatch view.
@@ -874,7 +883,7 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
     created: list[str] = []
     urls: dict[str, str] = {}
     description = (
-        f"{manifest.competition.display_name} — kit {manifest.kit.version}, imported by kaggle-classification"
+        f"{manifest.competition.display_name}: kit {manifest.kit.version}, imported by kaggle-classification"
     )
     undefined_rows = {"train": len(scan.train_undefined), "val": 0}
     try:

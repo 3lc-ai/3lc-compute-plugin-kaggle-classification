@@ -1,6 +1,6 @@
 # Copyright 2026 3LC Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""The competition manifest — schema v1, validation, and resolution.
+"""The competition manifest, schema v1, validation, and resolution.
 
 Everything competition-specific the plugin knows comes from one manifest
 document: classes, split sizes, the locked model, training defaults and
@@ -10,7 +10,7 @@ this package carries a competition constant; they ask the ``Manifest``.
 Resolution (``resolve``): **remote wins whenever it is reachable and the
 fetched document validates**; the cache is the last remote document that
 validated; the bundled ``manifests/<id>-v1.yaml`` is the last resort. There is
-no "newer than" comparison — a hotfix or a rollback on the CDN takes effect on
+no "newer than" comparison, a hotfix or a rollback on the CDN takes effect on
 the next load whatever the version fields say. A remote document that fetches
 but fails validation is logged, falls to the cache, and surfaces a warning the
 UI shows; a bad hotfix must never brick a participant.
@@ -73,7 +73,7 @@ def manifest_path(competition_id: str) -> str:
     return f"kaggle/{competition_id}/{MANIFEST_NAME}"
 
 
-# Hosts a manifest may be served from — and therefore point the kit at, since shard URLs
+# Hosts a manifest may be served from, and therefore point the kit at, since shard URLs
 # resolve against the manifest's own URL. The release default is the prod CDN alone; the dev CDN
 # and loopback are allowed ONLY while the base-URL override is set (tests/test_packaging.py
 # fails the release if the dev host is reachable without it). Loopback may use plain http.
@@ -306,7 +306,7 @@ class Manifest:
     @property
     def undefined_label_id(self) -> int:
         """The label id of the unlabeled pool rows: one past the last real class (the Intel
-        convention — ``undefined`` is the LAST map entry, so ``label < num_classes`` is the
+        convention, ``undefined`` is the LAST map entry, so ``label < num_classes`` is the
         "has a real label" test the trainer and the metrics masking rely on)."""
         return self.num_classes
 
@@ -383,7 +383,7 @@ def _str(value: Any, where: str) -> str:
 
 def _display(value: Any, where: str) -> str:
     """A string the fragment renders. Markup and control characters are refused here, and the
-    fragment only ever assigns these through ``textContent`` — escaped at both ends."""
+    fragment only ever assigns these through ``textContent``: escaped at both ends."""
     text = _str(value, where)
     if _MARKUP_RE.search(text):
         msg = f"{where}: must not contain markup or control characters"
@@ -459,7 +459,7 @@ def parse_manifest(
     ``document_url`` is where this document lives (defaults to the canonical layout URL under
     the base in force); its host must be allowed, and every kit URL resolves against it.
     Raises ``ManifestError`` naming the offending field. Unknown fields are recorded on
-    ``Manifest.warnings`` and logged, never fatal — a newer manifest must still load on an
+    ``Manifest.warnings`` and logged, never fatal, a newer manifest must still load on an
     older plugin.
     """
     hosts = allowed_hosts() if hosts is None else hosts
@@ -499,7 +499,7 @@ def parse_manifest(
         msg = f"competition.id: must be lowercase letters, digits and hyphens, got {competition.id!r}"
         raise ManifestError(msg)
 
-    # classes — ids contiguous 0..N-1, names unique and renderable
+    # classes, ids contiguous 0..N-1, names unique and renderable
     raw_classes = _require(data, "classes", "manifest")
     if not isinstance(raw_classes, list) or not raw_classes:
         msg = "classes: expected a non-empty list"
@@ -528,7 +528,7 @@ def parse_manifest(
     doc_url = document_url or f"{base_url()}/{manifest_path(competition.id)}"
     doc_url = _check_document_url(doc_url, hosts, "manifest url")
 
-    # kit — a relative prefix, shard names plain filenames
+    # kit, a relative prefix, shard names plain filenames
     raw_kit = _require(data, "kit", "manifest")
     if "base_url" in raw_kit:
         msg = "kit.base_url: absolute kit URLs are not allowed; use kit.path relative to the manifest"
@@ -586,14 +586,14 @@ def parse_manifest(
         ),
     )
 
-    # model — pretrained must be false (the fairness contract); backbone + head allowlisted. The
+    # model, pretrained must be false (the fairness contract); backbone + head allowlisted. The
     # pre-session-3 ``arch: resnet18`` spelling is accepted as the kit's model (torchvision resnet18
     # with the kit MLP head) with a warning, so a document on the CDN keeps loading until re-uploaded.
     raw_model = _require(data, "model", "manifest")
     _warn_unknown(raw_model, {"arch", "backbone", "head", "pretrained", "image_size"}, "model", warnings)
     pretrained = _bool(_require(raw_model, "pretrained", "model"), "model.pretrained")
     if pretrained:
-        msg = "model.pretrained: must be false — every participant trains from random init"
+        msg = "model.pretrained: must be false. Every participant trains from random init"
         raise ManifestError(msg)
     if "backbone" in raw_model or "head" in raw_model:
         backbone = _str(_require(raw_model, "backbone", "model"), "model.backbone")
@@ -618,7 +618,7 @@ def parse_manifest(
         image_size=_int(_require(raw_model, "image_size", "model"), "model.image_size", minimum=1),
     )
 
-    # training — bounds are [lo, hi] with lo <= hi; defaults and presets must sit inside them
+    # training, bounds are [lo, hi] with lo <= hi; defaults and presets must sit inside them
     raw_training = _require(data, "training", "manifest")
     _warn_unknown(
         raw_training, {"defaults", "bounds", "presets", "embeddings", "editable", "options"}, "training", warnings
@@ -736,7 +736,7 @@ def parse_manifest(
         daily_limit=_int(_require(raw_sub, "daily_limit", "submission"), "submission.daily_limit", minimum=1),
     )
 
-    # ui — display strings renderable, help links https only
+    # ui, display strings renderable, help links https only
     raw_ui = _require(data, "ui", "manifest")
     _warn_unknown(raw_ui, {"loop_banner_text", "help_links"}, "ui", warnings)
     raw_links = raw_ui.get("help_links", [])
@@ -781,7 +781,7 @@ def parse_index(data: Any, index_url_: str) -> list[dict[str, Any]]:
 
     ``manifest_url`` is relative to the INDEX's own URL (``intel-scene/manifest.json`` beside
     ``kaggle/classification-index.json`` resolves to ``kaggle/intel-scene/manifest.json``); an
-    absolute value is accepted only on the index's host — the index must not send the plugin
+    absolute value is accepted only on the index's host, the index must not send the plugin
     elsewhere.
     """
     base = index_url_
@@ -852,7 +852,7 @@ def _now_iso() -> str:
 
 
 def load_bundled(competition_id: str = DEFAULT_COMPETITION_ID) -> Manifest:
-    """The manifest shipped inside the wheel — always available, possibly stale. Its kit resolves
+    """The manifest shipped inside the wheel, always available, possibly stale. Its kit resolves
     against the canonical layout URL under the base in force (prod, or the override)."""
     path = bundled_path(competition_id)
     raw = path.read_bytes()
@@ -927,7 +927,7 @@ def write_cache(competition_id: str, data: Any, *, raw: bytes, source_url: str, 
 
 def read_cache(competition_id: str, *, hosts: frozenset[str] | set[str] | None = None) -> Manifest | None:
     """The last remote document that validated, or None (missing, unreadable, no longer valid, or
-    fetched from a host the allowlist in force no longer admits — a dev-tier cache is not served
+    fetched from a host the allowlist in force no longer admits, a dev-tier cache is not served
     once the override is gone)."""
     doc_path, meta_path = _cache_paths(competition_id)
     if not (doc_path.is_file() and meta_path.is_file()):
@@ -1106,7 +1106,7 @@ def resolve_manifest_for_job() -> tuple[Manifest, dict[str, Any]]:
     """Re-resolve at job start and return the document plus the provenance record every job
     writes into its outputs (sha256, source, competition id, kit version)."""
     if remote_down_recently():
-        # rc11 (item 15): the index failed within the last REMOTE_DOWN_TTL_S seconds — resolve locally at
+        # rc11 (item 15): the index failed within the last REMOTE_DOWN_TTL_S seconds, resolve locally at
         # once (no 5 s budget per job start) and let the background refresh keep probing the CDN.
         resolution = resolve(network=False)
         warnings = list(resolution.warnings) + [

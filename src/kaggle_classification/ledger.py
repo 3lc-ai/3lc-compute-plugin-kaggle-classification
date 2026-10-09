@@ -3,7 +3,7 @@
 """The ledger: an append-only JSON-lines record of every prediction and submission.
 
 Contract (docs/PLAN.md "Ledger", docs/PREDICT_MIRROR.md §6): one line per step under the plugin
-home (``ledger.jsonl``), carrying the inputs an organizer verifies a leaderboard entry against —
+home (``ledger.jsonl``), carrying the inputs an organizer verifies a leaderboard entry against:
 the run URL, the checkpoint hash (recorded and on disk), the manifest provenance, the CSV hash,
 the Kaggle submission ref and its read-back status. Session 4 writes predict and submit entries;
 session 5 adds the per-run verification bundle on top of them (``build_verification_bundle``).

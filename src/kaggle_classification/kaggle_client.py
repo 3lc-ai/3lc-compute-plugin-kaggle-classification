@@ -4,16 +4,16 @@
 # under Apache-2.0 for this project.
 """The Kaggle API surface the Predict + Submit tab uses (docs/PREDICT_MIRROR.md §7).
 
-Credentials are read by the ``kaggle`` client from its own sources only — ``KAGGLE_API_TOKEN``,
+Credentials are read by the ``kaggle`` client from its own sources only, ``KAGGLE_API_TOKEN``,
 ``~/.kaggle/access_token``, the legacy ``~/.kaggle/kaggle.json`` (``KAGGLE_CONFIG_DIR`` relocates
 it), or ``KAGGLE_USERNAME`` + ``KAGGLE_KEY``. ``~`` is the WORKER's home, which on a redirected-home
 host is the service's, not the browsing participant's.
 
-The guided connect flow (rc10, a deliberate divergence from ExDark — CONTEXT.md decisions 2026-10-08):
+The guided connect flow (rc10, a deliberate divergence from ExDark, CONTEXT.md decisions 2026-10-08):
 ``connect(raw)`` takes the token the participant pasted into the Predict + Submit tab, trims it,
-checks the ``KGAT_`` shape, writes it to ``token_path()`` — the exact file kagglesdk reads
+checks the ``KGAT_`` shape, writes it to ``token_path()``: the exact file kagglesdk reads
 (``os.path.expanduser("~/.kaggle/access_token")``, so a redirected ``USERPROFILE`` / ``HOME`` is
-honoured by construction) — as plain ASCII, no BOM, no trailing newline, user-only permissions on
+honoured by construction), as plain ASCII, no BOM, no trailing newline, user-only permissions on
 POSIX, then verifies it through the client's own ``authenticate()`` (one introspect call) and
 reports the username. The token's value is never logged, never echoed in a response or a reason,
 never stored anywhere else; a token Kaggle rejects is removed again. ``connect_help()`` is the
@@ -21,11 +21,11 @@ never stored anywhere else; a token Kaggle rejects is removed again. ``connect_h
 the environment variable and the legacy file.
 
 kaggle 2.x authenticates inside ``authenticate()`` and, when nothing is found, prints help and
-calls ``exit(1)`` — a ``SystemExit`` inside the plugin worker. ``credentials_present`` runs first and
+calls ``exit(1)``: a ``SystemExit`` inside the plugin worker. ``credentials_present`` runs first and
 ``authenticated_api`` also catches ``SystemExit``, so the worker never dies on a missing token.
 
 Calls: ``get_competition`` (entered flag, Kaggle's daily limit, title), ``get_submission_limits``
-(the used-today counter; ``competition_submissions`` is the fallback — the list call answers 403 on
+(the used-today counter; ``competition_submissions`` is the fallback, the list call answers 403 on
 an unlaunched competition, verified 2026-10-01), ``competition_submit``, ``get_submission`` (the D12
 read-back by ref; the list is its fallback). The slug always comes from the manifest (D8); the daily
 limit the UI shows is the manifest's (D7), Kaggle's refusal is authoritative. Import-light: the
@@ -59,7 +59,7 @@ def config_dir() -> Path:
 
 def token_path() -> Path:
     """The ONE file the connect flow writes: what kagglesdk reads as ``~/.kaggle/access_token``
-    (``os.path.expanduser`` — ``USERPROFILE`` on Windows, ``HOME`` elsewhere — so a redirected home on the
+    (``os.path.expanduser``: ``USERPROFILE`` on Windows, ``HOME`` elsewhere, so a redirected home on the
     compute service resolves to the redirected folder, never to the browsing participant's profile)."""
     return Path(os.path.expanduser("~/.kaggle/access_token"))
 
@@ -315,7 +315,7 @@ def list_submissions(api: Any, slug: str, page_size: int = 20) -> list[dict[str,
 
 
 def submission_limits(api: Any, slug: str) -> dict[str, Any]:
-    """GetSubmissionLimits: ``num_today`` / ``num_allowed_now`` / ``num_total`` — answers on an
+    """GetSubmissionLimits: ``num_today`` / ``num_allowed_now`` / ``num_total``: answers on an
     unlaunched competition where ListSubmissions does not (verified 2026-10-01)."""
     from kagglesdk.competitions.types.competition_api_service import ApiGetSubmissionLimitsRequest
 
@@ -401,8 +401,8 @@ def classify_error(exc: BaseException) -> str:
 
 def read_back(api: Any, slug: str, ref: str, *, schedule: tuple[float, ...] = READ_BACK_SCHEDULE_S,
               sleep: Any = time.sleep) -> dict[str, Any]:
-    """D12: Kaggle's own verdict on the submission — ``status`` (PENDING / COMPLETE / ERROR), the
-    public score and the error description — read by ref (``get_submission``; the submissions list is
+    """D12: Kaggle's own verdict on the submission, ``status`` (PENDING / COMPLETE / ERROR), the
+    public score and the error description, read by ref (``get_submission``; the submissions list is
     the fallback), waiting a bounded time for the scoring to finish. Never raises: when neither call
     answers the result is ``{status: "unknown"}``."""
     last: dict[str, Any] = {"status": "unknown", "ref": str(ref)}
@@ -434,7 +434,7 @@ def submit(csv_path: str, message: str, slug: str, daily_limit: int, log: Any,
     if api is None:
         return {"status": "skipped", "reason": reason}
     # Cheap pre-probe: a submit against a not-joined competition cannot succeed. Probe failure is
-    # not a verdict — fall through and let Kaggle answer.
+    # not a verdict, fall through and let Kaggle answer.
     kaggle_limit: int | None = None
     try:
         info = competition_info(api, slug)

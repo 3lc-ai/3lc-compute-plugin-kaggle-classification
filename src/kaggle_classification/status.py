@@ -6,8 +6,8 @@
 history joined from the ledger with Kaggle's verdict per ref, the live Kaggle section, the Doctor
 panel and the verification bundle.
 
-Everything here reads: the session store's records, the ledger, the Run folders on disk and — only
-on the explicit live paths — the Kaggle API (``GetSubmission`` by ref, the submissions list, the
+Everything here reads: the session store's records, the ledger, the Run folders on disk and, only
+on the explicit live paths, the Kaggle API (``GetSubmission`` by ref, the submissions list, the
 leaderboard view). Nothing is rewritten: the ledger stays append-only, the verdicts Kaggle gives
 after the fact are cached in memory per worker. No credential value is ever read or reported; the
 bundle refuses to include a member that matches a secret pattern. Import-light: tlc, torch and the
@@ -38,7 +38,7 @@ LIVE_CACHE_S = 300.0        # a Kaggle verdict read live is kept this long befor
 LIVE_CALLS_MAX = 10         # GetSubmission calls per history request, at most
 LEADERBOARD_TOP = 5
 BUNDLE_README = (
-    "3LC Kaggle Classification plugin — verification bundle\n"
+    "3LC Kaggle Classification plugin: verification bundle\n"
     "\n"
     "What this is: the records an organizer verifies a leaderboard entry against, exported by the\n"
     "plugin's Status tab. Every link in the chain is a hash or a URL an earlier stage produced:\n"
@@ -48,15 +48,15 @@ BUNDLE_README = (
     "\n"
     "Members: README.txt, plugin.json, manifest_provenance.json, import_record.json,\n"
     "train_revisions.json, runs/<job id>.json, predictions/<job id>.json, submissions/<job id>.json,\n"
-    "ledger.jsonl (verbatim), and project/<project>/ — the 3LC records copied from the project folder in\n"
+    "ledger.jsonl (verbatim), and project/<project>/, the 3LC records copied from the project folder in\n"
     "its own layout: datasets/<dataset>/tables/<revision>/object.3lc.json (+ row_cache.parquet where one\n"
     "exists) for every train revision in the seed lineage and for the locked val table; runs/<run>/\n"
     "object.3lc.json with the per-sample metrics tables (metrics_*/object.3lc.json + .parquet) for every\n"
     "run of the project; runs/<run>/model/best.pt for the runs the checkpoint rule selects; and\n"
     "files.json listing every copied file with its sha256, size and source path.\n"
     "\n"
-    "Checkpoint rule: by default best.pt of at most two runs — the run behind the best public score and\n"
-    "the run behind the most recent submission (one file when they are the same run) — each verified\n"
+    "Checkpoint rule: by default best.pt of at most two runs, the run behind the best public score and\n"
+    "the run behind the most recent submission (one file when they are the same run), each verified\n"
     "against the ledger's checkpoint sha256 (and the run record's and the Run's) before it is included;\n"
     "the participant may pick other submitted runs (at most two) in the Status tab; organizers can export\n"
     "with ?checkpoints=none or ?checkpoints=all. A checkpoint that fails verification is skipped and\n"
@@ -436,7 +436,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
     record = importer.read_record() or {}
     # The no-network resolution is cache / bundled by design; the background refresh (kicked here, as
     # GET /config kicks it) says whether the remote document was fetched. The row reports the effective
-    # source, the fetched-at stamp and a failed fetch's error — not the stale local label (session 5 §3).
+    # source, the fetched-at stamp and a failed fetch's error, not the stale local label (session 5 §3).
     refresh = manifest_mod.refresh_in_background()
     try:
         resolution = manifest_mod.resolve(network=False)
@@ -604,7 +604,7 @@ def _rel_in_project(folder: Path, kind: str, fallback: str) -> str:
 
 def _table_ancestry(url: str, seed_url: str) -> list[str]:
     """``url`` and its ancestors (``input_table_url`` / ``input_tables``, relative to the table folder)
-    up to the seed — a torch-free JSON walk, at most 50 steps."""
+    up to the seed, a torch-free JSON walk, at most 50 steps."""
     out: list[str] = []
     seen: set[str] = set()
     cur = str(url or "")
@@ -631,7 +631,7 @@ def _table_ancestry(url: str, seed_url: str) -> list[str]:
 
 
 def _table_folder_files(folder: Path) -> list[Path]:
-    """A table's 3LC records: its object file and the parquet files beside it — never an image."""
+    """A table's 3LC records: its object file and the parquet files beside it, never an image."""
     out = [p for p in [folder / "object.3lc.json"] if p.is_file()]
     out += sorted(p for p in folder.glob("*.parquet") if p.is_file())
     return out
@@ -685,7 +685,7 @@ def bundle_tables(manifest: Manifest, project: str, record: dict[str, Any]) -> l
 def eligible_checkpoint_runs(manifest: Manifest) -> list[dict[str, Any]]:
     """The project's SUBMITTED runs (a ``submit`` ledger entry with a Kaggle ref), newest submission first,
     each with its best public score, its latest submission's ref and time, the ledger's checkpoint sha256
-    and the run record's best.pt — what the Status tab's checklist offers."""
+    and the run record's best.pt, what the Status tab's checklist offers."""
     rows = prediction_history(manifest, live=False)
     runs_by_id = {str(r.get("id")): r for r in trainer.runs_in_project(
         [r for r in trainer.read_state().get("runs") or [] if isinstance(r, dict)])}
@@ -722,7 +722,7 @@ def eligible_checkpoint_runs(manifest: Manifest) -> list[dict[str, Any]]:
 
 def default_checkpoint_runs(eligible: list[dict[str, Any]]) -> list[str]:
     """The checkpoint rule: the run behind the best public score and the run behind the most recent
-    submission — one id when they are the same run; empty when nothing was submitted."""
+    submission, one id when they are the same run; empty when nothing was submitted."""
     picks: list[str] = []
     scored = [e for e in eligible if isinstance(e.get("public_score"), float)]
     if scored:
@@ -918,7 +918,7 @@ def bundle_plan(manifest: Manifest, *, checkpoints: str = "default", runs: Any =
 
 
 def bundle_preview(manifest: Manifest, *, checkpoints: str = "default", runs: Any = None) -> dict[str, Any]:
-    """``GET /status/bundle/preview``: the plan without its member texts — the size line and the checklist."""
+    """``GET /status/bundle/preview``: the plan without its member texts, the size line and the checklist."""
     plan = bundle_plan(manifest, checkpoints=checkpoints, runs=runs)
     out = {k: v for k, v in plan.items() if k not in ("text_members", "files")}
     out["members"] = sorted(list(plan["text_members"]) + [f["name"] for f in plan["files"]]
@@ -984,7 +984,7 @@ def verification_bundle_file(manifest: Manifest, *, checkpoints: str = "default"
 
 
 def verification_bundle(manifest: Manifest, *, checkpoints: str = "default", runs: Any = None) -> tuple[bytes, str]:
-    """``(zip bytes, file name)`` — :func:`verification_bundle_file` read back (tests, small exports)."""
+    """``(zip bytes, file name)``: :func:`verification_bundle_file` read back (tests, small exports)."""
     path, name = verification_bundle_file(manifest, checkpoints=checkpoints, runs=runs)
     return path.read_bytes(), name
 

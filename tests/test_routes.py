@@ -116,18 +116,23 @@ def test_fragment_is_the_exdark_import_tab():
         'id="kg-tabs"', 'id="kg-state-import"', "Starter kit → 3LC tables", "Predict → CSV → Kaggle", "History &amp; leaderboard",
         'id="kg-conn-banner"', 'id="kg-dl-section"', 'id="kg-dl-offer"', 'id="kg-dl-dest"', 'id="kg-dl-btn"', 'id="kg-dl-progress"',
         'id="kg-import-banner"', 'id="kg-import-form"', 'for="kg-kit"', 'id="kg-project"', 'id="kg-table"',
-        'id="kg-glance"', 'id="kg-import-btn"', "Import &amp; Validate", 'id="kg-import-progress"', 'id="kg-checks"', 'id="kg-result"',
+        'id="kg-glance"', 'id="kg-splits-body"', "Splits to import", 'id="kg-import-btn"', "Import &amp; Validate",
+        'id="kg-import-progress"', 'id="kg-checks"', 'id="kg-result"',
         'id="kg-log-toggle"', "Show log", "data-kg-footer", "Continue to Train", "<span>Explore</span>",
         "Tables not found.", "Go to Import", "Compute service unreachable, retrying", "Reconnected.", "Copy diagnostics",
-        "Importing… (safe to navigate away)", "Dataset at a glance",
+        "Importing… (safe to navigate away)", "Dataset at a glance", "Revision name for the imported tables.",
+        "Path on the machine running the compute service.", "function kgSplitsPlaceholder", "function kgRenderSplitsLocked",
+        "Detected: train / val · ", "Matches the competition manifest.", "Explore ' + split", "kg-badge-reused", "kg-badge-created",
+        "Re-import fresh", "function kgReimportFresh", "kg-reimport-slot",
         "var KG_REMEDIES", "function kgRenderProgress", "function renderResult", "function renderFailBanner",
         "function dlRenderQuiet", "function dlRenderSuperseded", "function dlRenderProgress", "prefers-reduced-motion: no-preference",
-        # rc11 (CONTEXT.md decisions 2026-10-09, back-port to ExDark after the event): the Import tab and shell pass.
-        'id="kg-imported"', 'id="kg-reimport-confirm"', 'id="kg-adv-toggle"', 'id="kg-manifest-note"', 'id="kg-kaggle-fallback"',
-        'id="kg-kit-manual"', 'id="kg-hero-toggle"', "Matches competition manifest ✓", "function kgRenderImported", "function kgRenderStale",
+        # rc11 (CONTEXT.md decisions 2026-10-09, back-port to ExDark after the event): the shell pass and the Import
+        # tab's behaviour, kept by rc12 under the rc10 layout.
+        'id="kg-reimport-confirm"', 'id="kg-manifest-note"', 'id="kg-kaggle-fallback"',
+        'id="kg-kit-manual"', 'id="kg-hero-toggle"', "function kgRenderImported", "function kgRenderStale", "function kgReflectRecord",
         "function kgRenderImportFromState", "function kgConfirmReimport", "function kgReloadConfig", "function kgRenderManifestNote",
         "function kgShowKaggleFallback", "function kgRenderKitManual", "function kgHeroInit", "function kgDisplayPath",
-        "Found existing tables", "'found existing'", "'imported'", "Re-import…", "Your existing tables and label edits are kept.",
+        "Found existing tables", "Re-import…", "Your existing tables and label edits are kept.",
         "Starter kit ready", "images + manifest", "Re-verify", "/competitions/' + slug + '/data", "Open the Data page on Kaggle",
         "is missing on disk", "checks passed", "if (kgImporting) { return; }",
     ):
@@ -149,10 +154,14 @@ def test_fragment_is_the_exdark_import_tab():
     # manifest's display name; the ?kgdev fixtures ported.
     assert "kgStartImport({ reimport: mode === 'reimport'" in html
     assert "mode: opts.reimport ? 'reimport' : 'import'" in html
-    # rc11: gone on purpose — the locked splits block, Start over, the per-row Re-import, the Explore buttons in the
-    # banner, the REUSED / CREATED badges, the native confirm() on Submit.
-    for gone in ('id="kg-splits-body"', "Start over</button>", "Re-import fresh", "kg-badge-reused", "Explore ' + split", "window.confirm('This spends"):
+    # Gone on purpose: Start over and rc10's thin revisit view (rc11), the native confirm() on Submit (rc11), the
+    # Advanced disclosure and the rc11 facts line (rc12: the rc10 form is always visible).
+    for gone in ("Start over</button>", "window.confirm('This spends", "function kgRenderRevisit", 'id="kg-adv-toggle"',
+                 'id="kg-imported"', "kg-imported-facts", "kgOpenAdvanced", "under Advanced"):
         assert gone not in html, gone
+    # rc12: the Imported view keeps the form on screen (never display: none on the import record's view).
+    imported_fn = html[html.index("function kgRenderImported(") : html.index("function kgReflectRecord(")]
+    assert "el('kg-import-form').style.display = ''" in imported_fn and "display = 'none'" not in imported_fn
     assert "var currentSeen = false;" in html
     assert "querySelector('.kg-id-title').textContent = comp.display_name" in html
     assert "function kgDevForce(mode)" in html and "function kgDevDisableActions()" in html

@@ -30,9 +30,9 @@ Contract (docs/PLAN.md §B and §C "Trainer", docs/TRAIN_MIRROR.md, decisions D1
   determinism follow the kit (D6).
 * Per epoch: train loss, val loss, val accuracy (``tlc.log``, the progress channel); best by val
   accuracy (strict ``>``) saved atomically as ``<run>/model/best.pt``, ``last.pt`` every epoch (D12).
-* End of training only: per-sample metrics on ALL train rows and all val rows — ``predicted``
+* End of training only: per-sample metrics on ALL train rows and all val rows, ``predicted``
   (class map), ``confidence``, ``loss`` (NaN for undefined rows, never fabricated), 3-D ``embeddings``
-  (UMAP fit on train, val transformed; PCA fallback) — via ``run.add_metrics``. Beside the table's own
+  (UMAP fit on train, val transformed; PCA fallback), via ``run.add_metrics``. Beside the table's own
   ``label`` and ``weight`` those are the collected columns (PLAN §B); no ``prob_*``, no ``accuracy``.
 * Robustness: a durable train record in the session store (``train_state``), worker-pid orphan
   detection (a compute restart mid-run reads back as ``stale``), sleep gaps logged, cooperative
@@ -285,7 +285,7 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
         "use_latest": bool(use_latest),
         "train_table_url": str(params.get("train_table_url") or "").strip().strip('"'),
         "client_token": str(params.get("client_token") or "").strip(),
-        # Locked, from the manifest — merged last, never from the form.
+        # Locked, from the manifest, merged last, never from the form.
         "backbone": manifest.model.backbone,
         "head": manifest.model.head,
         "arch": manifest.model.arch,
@@ -432,7 +432,7 @@ def foreign_rows(table: Any, kit_dir: str, *, sample: int = 3) -> dict[str, Any]
 
 
 def scan_rows(table: Any, manifest: Manifest) -> tuple[list[int], list[float]]:
-    """``(labels, weights)`` read once from ``table.table_rows`` — the row view, no image decoding."""
+    """``(labels, weights)`` read once from ``table.table_rows``: the row view, no image decoding."""
     labels: list[int] = []
     weights: list[float] = []
     for row in table.table_rows:
@@ -806,8 +806,8 @@ def prewarm_status() -> dict[str, Any]:
 
 
 # Item 6 of the 2026-09-29 re-check: a run summary written before part E has no ``params`` and no
-# ``elapsed_s``. They are backfilled once — the settings from the Run's own recorded parameters (a
-# torch-free read of its object.3lc.json), the elapsed time from the record's timestamps — and the
+# ``elapsed_s``. They are backfilled once, the settings from the Run's own recorded parameters (a
+# torch-free read of its object.3lc.json), the elapsed time from the record's timestamps, and the
 # summary is written back so the read happens once. A Run that cannot be read leaves
 # ``params_missing`` with the reason, which disables "Use these settings" for that run.
 BACKFILL_PARAM_KEYS = ("epochs", "batch_size", "lr", "weight_decay", "seed", "optimizer")
@@ -954,8 +954,8 @@ def resolve_device(raw: Any) -> str:
 def device_label(device: str, requested: Any, fallback_reason: str = "") -> str:
     """The one sentence the log line and the in-run header share: WHY the run is on this device.
 
-    ``"cuda (auto)"`` — blank field, resolved; ``"cpu (forced in Advanced)"`` — the participant typed
-    it; ``"cpu (fallback: OutOfMemoryError: …)"`` — the accelerator failed at start and the run
+    ``"cuda (auto)"``: blank field, resolved; ``"cpu (forced in Advanced)"``: the participant typed
+    it; ``"cpu (fallback: OutOfMemoryError: …)"``: the accelerator failed at start and the run
     retried on CPU. A forced device that falls back still names the fallback."""
     dev = str(device)
     if fallback_reason:
@@ -1257,7 +1257,7 @@ def get_run_parameters(run: Any) -> dict[str, Any]:
 
 
 def check_provenance(run_url: str, manifest: Manifest, expected: dict[str, Any]) -> list[dict[str, Any]]:
-    """The Run's own record proves the locked contract — eight checks read back from the Run."""
+    """The Run's own record proves the locked contract, eight checks read back from the Run."""
     import tlc
 
     run = tlc.Run.from_url(tlc.Url(run_url))
@@ -1550,7 +1550,7 @@ def _train_and_collect(
         if st.last_hb and now - st.last_hb > SLEEP_GAP_S:
             gap = int(now - st.last_hb)
             rec.record["gaps"].append({"at": now, "seconds": gap})
-            log(f"No progress for {gap // 60} min — the machine slept? Training continues.")
+            log(f"No progress for {gap // 60} min. The machine slept? Training continues.")
         st.last_hb = now
         rec.touch()
 
@@ -1593,7 +1593,7 @@ def _train_and_collect(
     # ── The Run: under the same project root the importer writes to (the tests' seam) ────────
     run = tlc.init(
         project_name=kw["project_name"], run_name=kw["run_name"],
-        description=f"{manifest.competition.display_name} — {arch} from scratch, kaggle-classification",
+        description=f"{manifest.competition.display_name}: {arch} from scratch, kaggle-classification",
         root_url=importer.project_root_url(),
     )
     run_url = str(run.url)
@@ -1686,7 +1686,7 @@ def _train_and_collect(
         st.history.append({"e": epoch, "tl": round(train_loss, 4), "vl": round(val_loss, 4), "va": round(val_acc, 2)})
         tlc.log({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss, "val_accuracy": val_acc,
                  "lr": float(optimizer.param_groups[0]["lr"])})
-        # last.pt every epoch; best.pt on a strict improvement — both atomic (D10, D12).
+        # last.pt every epoch; best.pt on a strict improvement, both atomic (D10, D12).
         state_cpu = {k: v.detach().cpu() for k, v in model.state_dict().items()}
         st.last_path, st.last_sha = save_checkpoint(run_url, state_cpu, CHECKPOINT_LAST)
         if val_acc > st.best_val:
@@ -1697,7 +1697,7 @@ def _train_and_collect(
             set_field("best_checkpoint_sha256", st.best_sha)
         rec.record["facts"]["last_checkpoint_sha256"] = st.last_sha
         log(
-            f"epoch {epoch}/{epochs} — train_loss={train_loss:.4f}, val_loss={val_loss:.4f}, "
+            f"epoch {epoch}/{epochs}: train_loss={train_loss:.4f}, val_loss={val_loss:.4f}, "
             f"val_accuracy={val_acc:.2f}%" + (" (new best)" if st.best_epoch == epoch else "")
         )
         flush_progress(force=True)
@@ -1740,7 +1740,7 @@ def _train_and_collect(
         rec.record["checks"] = checks
         set_checks(checks)
         for c in checks:
-            log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f" — {c['detail']}")
+            log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f": {c['detail']}")
         result = finish_result("cancelled", None, None, None)
         rec.finish("cancelled", result=result)
         _release(model, optimizer)
@@ -1808,13 +1808,13 @@ def _train_and_collect(
     rec.record["checks"] = checks
     set_checks(checks)
     for c in checks:
-        log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f" — {c['detail']}")
+        log(("PASS " if c["ok"] else "FAIL ") + c["label"] + f": {c['detail']}")
     run.set_status_completed()
     log(f"best.pt: {st.best_path} (exists: {Path(st.best_path).is_file() if st.best_path else False})")
     result = finish_result("completed", collect_s, collect_rows, reducer_used)
     rec.finish("completed", result=result)
     # End-of-job cards on the Hub's Queue card (S6-6): counts and the one headline, as the sam3 /
-    # image-metrics / importer plugins do — never a per-epoch training metric (the SDK guide's rule).
+    # image-metrics / importer plugins do, never a per-epoch training metric (the SDK guide's rule).
     set_metric("rows collected", collect_rows)
     set_metric("metrics tables written", tables_written)
     if st.best_epoch:
@@ -1847,7 +1847,7 @@ def _collect(
     val_view: Any, train_url: str, val_url: str, batch_size: int, workers: int, epoch: int, log: Any,
     heartbeat: Any, is_cancelled: Any, progress: Any = None, phase: Any = None,
 ) -> tuple[str, int] | None:
-    """PLAN §B: predicted, confidence, loss (NaN for undefined rows), 3-D embeddings — UMAP fit on
+    """PLAN §B: predicted, confidence, loss (NaN for undefined rows), 3-D embeddings, UMAP fit on
     train (labeled + undefined together), val transformed into the same space, PCA fallback. The
     columns are label, weight, predicted, confidence, loss and Embedding (3D): no ``prob_*`` (part C)
     and no ``accuracy`` (item 8 of the re-check). ``progress(done, total)`` is called after every batch

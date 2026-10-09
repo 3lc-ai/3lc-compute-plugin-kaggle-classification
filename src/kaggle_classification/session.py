@@ -4,7 +4,7 @@
 # under Apache-2.0 for this project.
 """Disk-backed store for last-used UI values: one JSON file, one canonical **session**.
 
-The session object holds the facts every tab shares — project, table name,
+The session object holds the facts every tab shares, project, table name,
 the kit directory, the device, and explicit per-field table-URL overrides.
 Tabs render projections of it and no tab owns a default: backend defaults
 derive from the competition manifest, and the fragment gets them via
@@ -17,7 +17,7 @@ a stale browser-cached fragment, and silently dropping its writes would be a
 new silent divergence. The retired sets are data (``_RETIRED_*``), empty on a
 fresh line, so the enforcement exists before it is needed.
 
-Never store secrets here — Kaggle credentials stay in the kaggle client's own files.
+Never store secrets here, Kaggle credentials stay in the kaggle client's own files.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from kaggle_classification import storage
 _log = logging.getLogger(__name__)
 
 # Everything the plugin owns lives under one home (ui_config.json, the kit record, the kit data,
-# the manifest cache): one directory to document, one to delete. Resolved by storage.py — never
+# the manifest cache): one directory to document, one to delete. Resolved by storage.py, never
 # from HOME first (the redirected-home bug the ExDark plugin shipped).
 
 
@@ -58,7 +58,7 @@ _ALLOWED_TABS = (
     "session", "competition", "train", "predict", "import_state", "train_state", "predict_state", "submit_state",
 )
 
-# Retired keys — one logical fact must not reappear under a second key. Kept as data so save()
+# Retired keys, one logical fact must not reappear under a second key. Kept as data so save()
 # can enforce it; empty until a migration retires something.
 _RETIRED_TABS: tuple[str, ...] = ()
 _RETIRED_TAB_KEYS: dict[str, tuple[str, ...]] = {}
@@ -90,7 +90,7 @@ def default_session(manifest: Manifest) -> dict[str, Any]:
 
 
 def populated_session(manifest: Manifest) -> dict[str, Any]:
-    """The stored session with missing fields filled from the defaults — what
+    """The stored session with missing fields filled from the defaults, what
     ``GET /config`` serves, so the fragment carries no default literals."""
     stored = load().get("session")
     return {**default_session(manifest), **(stored if isinstance(stored, dict) else {})}
@@ -99,7 +99,7 @@ def populated_session(manifest: Manifest) -> dict[str, Any]:
 # ── URL helpers (public: trainer/predictor asserts reuse them) ──────────
 # Table URLs follow the deterministic layout
 # <project root>/<project>/datasets/<dataset>/tables/<table>; both slash styles occur in real
-# configs. The PROJECT ROOT IS CONFIGURABLE, so "projects" is NOT a literal path segment — the
+# configs. The PROJECT ROOT IS CONFIGURABLE, so "projects" is NOT a literal path segment, the
 # project is identified by POSITION in the layout tail, anchored at end-of-string.
 #
 # MIRRORED IN ui.html once the pickers exist (session 2): the fragment classifies overrides at
@@ -132,14 +132,14 @@ def url_table(url: str) -> str | None:
 def classify_override(url: str, project: str, table_name: str, expected_dataset: str) -> str:
     """One predicate for whether a table-URL value may live in ``session.overrides``:
 
-      "drop"     — wrong project, wrong dataset for the slot's split (individually valid,
+      "drop":     wrong project, wrong dataset for the slot's split (individually valid,
                    wrong in context), or unparseable. Never stored.
-      "suppress" — byte-equivalent to what derivation yields (right project, right dataset,
+      "suppress": byte-equivalent to what derivation yields (right project, right dataset,
                    table == session table). Stored as an override it would silently freeze
-                   future table-name changes — so it is not stored either.
-      "keep"     — a genuine same-project, same-split revision choice.
+                   future table-name changes, so it is not stored either.
+      "keep":     a genuine same-project, same-split revision choice.
 
-    ``expected_dataset`` is ``manifest.dataset_name(split)`` — the caller names the split's
+    ``expected_dataset`` is ``manifest.dataset_name(split)``: the caller names the split's
     dataset so this module stays manifest-free.
     """
     if url_project(url) != project or url_dataset(url) != expected_dataset:
@@ -201,7 +201,7 @@ def _retired_keys_in(update: dict[str, Any]) -> list[str]:
 def save(update: dict[str, Any]) -> dict[str, Any]:
     """Merge per-tab snapshots into the stored config; return the result.
 
-    Raises ``ValueError`` if the update carries retired keys — nothing current
+    Raises ``ValueError`` if the update carries retired keys, nothing current
     writes them, so their presence means a stale cached fragment; rejecting
     the whole POST keeps the store coherent and makes the skew visible.
     """
@@ -209,7 +209,7 @@ def save(update: dict[str, Any]) -> dict[str, Any]:
     if bad:
         msg = (
             "config update contains retired keys (" + ", ".join(sorted(bad)) + "). If this write "
-            "came from the plugin page, the browser is holding a stale fragment — hard-refresh the page."
+            "came from the plugin page, the browser is holding a stale fragment: hard-refresh the page."
         )
         raise ValueError(msg)
     competition = update.get("competition")
@@ -231,7 +231,7 @@ def save(update: dict[str, Any]) -> dict[str, Any]:
 def publish_kit_dir(manifest: Manifest, kit_dir: Path | str) -> None:
     """The one server-side session writer: a verified kit download sets ``session.kit_dir``
     so the Import form starts populated. Merges onto the freshest load; a browser save racing
-    this write wins or loses whole — last writer wins, by design."""
+    this write wins or loses whole, last writer wins, by design."""
     session = populated_session(manifest)
     session["kit_dir"] = str(kit_dir)
     save({"session": session})

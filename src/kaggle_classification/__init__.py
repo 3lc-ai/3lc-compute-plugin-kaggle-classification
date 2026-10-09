@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Kaggle image-classification hackathon plugin for the 3LC Hub.
 
-Tabbed workflow: Import / Train / Predict + Submit / Status — the tab bar
+Tabbed workflow: Import / Train / Predict + Submit / Status, the tab bar
 doubles as the pipeline stepper. Session 1 ships the scaffold, the competition
 manifest, the session store and the kit download stage; the tabs are stubs.
 
@@ -54,7 +54,7 @@ TABS = ("import", "train", "predict_submit", "status")
 
 
 def generic_timing(progress: dict[str, Any]) -> dict[str, Any] | None:
-    """The timing line of the Hub's Queue & Progress card, in the SDK's generic shape — what the timm
+    """The timing line of the Hub's Queue & Progress card, in the SDK's generic shape, what the timm
     plugin sends through ``tlc_plugin_sdk.shared.generic_job.epoch_progress``: ``{elapsed_s, eta_s,
     avg_step_s, step_label}`` (docs/TRAIN_MIRROR.md §15). Only the keys the payload carries are sent
     (the card renders "Elapsed | ETA | Per epoch" from whatever is present); ``None`` when the payload
@@ -77,7 +77,7 @@ JOB_LABELS = {"download_kit": "Download starter kit", "import": "Import", "train
 
 
 def job_label(kind: str, params: dict[str, Any], manifest: Any) -> str:
-    """The Queue card's opening subtitle: ``<job> · <project>`` (rc11, item 17). Never a rows summary —
+    """The Queue card's opening subtitle: ``<job> · <project>`` (rc11, item 17). Never a rows summary:
     that stays in the log lines."""
     from kaggle_classification import session
 
@@ -129,7 +129,7 @@ class _JobCtxAdapter:
         self._sdk.emit("fact", {"job_id": self.job_id, "key": key, "value": value})
 
     def set_metric(self, label: str, value: Any) -> None:
-        """A key/value card on the Hub's Queue & Progress card — end-of-job counts only, as the sam3,
+        """A key/value card on the Hub's Queue & Progress card, end-of-job counts only, as the sam3,
         image-metrics and importer plugins use it (session 6, TRAIN_MIRROR §15 S6-6): never a training
         metric, which the SDK guide keeps off the generic panel."""
         self._sdk.metric(str(label), value)
@@ -189,7 +189,7 @@ class KaggleClassificationPlugin(ComputePlugin):
             f"Manifest: {provenance['manifest_source']} ({provenance['competition_id']}, kit "
             f"{provenance['kit_version']}, sha256 {str(provenance['manifest_sha256'])[:12]})"
         )
-        # rc11 (item 17): the Queue card's subtitle opens as "<job> · <project>" — the host owns the title
+        # rc11 (item 17): the Queue card's subtitle opens as "<job> · <project>": the host owns the title
         # (always the plugin's name, tlc_compute job_manager `to_generic`), the label is ours.
         ctx.progress(percent=0.0, label=job_label(kind, params, current))
 

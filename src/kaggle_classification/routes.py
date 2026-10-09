@@ -2,34 +2,34 @@
 # SPDX-License-Identifier: Apache-2.0
 """Custom routes, as relative Litestar handlers under ``/api/plugins/kaggle-classification/``.
 
-* ``GET /config`` — the populated session plus the ``_meta`` block the fragment renders and
+* ``GET /config``: the populated session plus the ``_meta`` block the fragment renders and
   never defines: version, repository, the manifest as resolved WITHOUT the network (cache or
   bundled, so the page renders at once), its provenance and warnings, the picker candidates,
   the plugin home, the kit destination and revisit state, and the background-refresh status.
   The first call in a while kicks off a remote refresh on a thread; the fragment polls
   ``GET /manifest`` until it settles and re-renders. The browser never fetches the CDN.
-* ``GET /manifest`` — the same resolution payload alone, for that poll.
-* ``POST /manifest/select`` — pick one of several active competitions.
-* ``POST /config`` — merge per-tab snapshots; retired keys answer 400.
-* ``GET /import/preflight`` — the Import form's read-only gate (params, kit, collisions, the
-  fresh name a re-import would use); ``GET /import/state`` — the revisit record, re-verified.
-* ``GET /train/preflight`` — the Train form's read-only gate (existence, split identity, seed
+* ``GET /manifest``: the same resolution payload alone, for that poll.
+* ``POST /manifest/select``: pick one of several active competitions.
+* ``POST /config``: merge per-tab snapshots; retired keys answer 400.
+* ``GET /import/preflight``: the Import form's read-only gate (params, kit, collisions, the
+  fresh name a re-import would use); ``GET /import/state``: the revisit record, re-verified.
+* ``GET /train/preflight``: the Train form's read-only gate (existence, split identity, seed
   lineage, usable rows and class coverage for the base and latest revision);
-  ``GET /train/state`` — the durable train record (orphan-checked) and the run history;
-  ``GET /tables/list`` / ``GET /tables/defaults`` — the revision picker and the derived URLs
+  ``GET /train/state``: the durable train record (orphan-checked) and the run history;
+  ``GET /tables/list`` / ``GET /tables/defaults``: the revision picker and the derived URLs
   (ExDark's, ported). All torch-free: the device probe runs on a thread and is served cached.
-* ``GET /runs`` — the Predict run picker (the train records with ``usable`` + ``reason``);
-  ``GET /predict/preflight`` — the test-images gate (every file against the kit's files.json);
-  ``GET /submit/state`` — the durable predict + submit records, the CSV re-verified on disk;
-  ``GET /kaggle/connection`` — the connection card (credentials, joined, the daily limit);
-  ``POST /kaggle/connect`` — the guided connect flow (rc10): the pasted token is validated, written
+* ``GET /runs``: the Predict run picker (the train records with ``usable`` + ``reason``);
+  ``GET /predict/preflight``: the test-images gate (every file against the kit's files.json);
+  ``GET /submit/state``: the durable predict + submit records, the CSV re-verified on disk;
+  ``GET /kaggle/connection``: the connection card (credentials, joined, the daily limit);
+  ``POST /kaggle/connect``: the guided connect flow (rc10): the pasted token is validated, written
   to the file the Kaggle client reads on the compute service and verified; never echoed or logged;
-  ``GET /submissions/{job_id}/download`` — the CSV download fallback (docs/PREDICT_MIRROR.md §8).
-* ``GET /status/history`` — the Status tab's run history and the prediction / submission history
+  ``GET /submissions/{job_id}/download``: the CSV download fallback (docs/PREDICT_MIRROR.md §8).
+* ``GET /status/history``: the Status tab's run history and the prediction / submission history
   joined from the ledger (``?live=1`` reads Kaggle's verdict by ref for refs still unresolved);
-  ``GET /status/kaggle`` — the live Kaggle section (submissions list, leaderboard, rank; fenced);
-  ``GET /status/doctor`` — the Doctor panel; ``GET /status/bundle`` — the verification bundle as a
-  zip download (``?checkpoints=`` + ``runs=``), ``GET /status/bundle/preview`` — its member list, size
+  ``GET /status/kaggle``: the live Kaggle section (submissions list, leaderboard, rank; fenced);
+  ``GET /status/doctor``: the Doctor panel; ``GET /status/bundle``: the verification bundle as a
+  zip download (``?checkpoints=`` + ``runs=``), ``GET /status/bundle/preview``: its member list, size
   and the checkpoint checklist before the export (docs/STATUS_MIRROR.md §2).
 
 Handlers are ``def`` with ``sync_to_thread=True`` (Litestar runs them in a threadpool)
@@ -38,7 +38,7 @@ because they touch the disk store. Built fresh per call, for per-app registratio
 Litestar is imported at MODULE level on purpose, like the timm and ExDark plugins' routes
 modules: with ``from __future__ import annotations`` the handlers' return annotations are
 strings that Litestar resolves against this module's globals when the worker mounts them,
-and a ``Response`` imported inside ``get_route_handlers`` is not in those globals — the
+and a ``Response`` imported inside ``get_route_handlers`` is not in those globals, the
 worker then dies at startup with ``NameError: name 'Response' is not defined`` (found live on
 compute 1.1.0). This module is imported lazily by ``get_route_handlers`` in ``__init__``, so
 the package import stays light.
@@ -284,7 +284,7 @@ def get_route_handlers() -> list[Any]:
     @post("/kaggle/connect", status_code=200, sync_to_thread=True)
     def kaggle_connect(data: dict[str, Any]) -> dict[str, Any]:
         """The Connect button: ``{token}`` in, ``{ok, username, path, connection}`` or ``{ok: false, kind,
-        reason}`` out — one plain sentence per failure, the field kept. The token's value is never part
+        reason}`` out, one plain sentence per failure, the field kept. The token's value is never part
         of the response, the log or any record; on success the fresh connection card rides along."""
         from kaggle_classification import kaggle_client, manifest, predictor
 
@@ -364,7 +364,7 @@ def get_route_handlers() -> list[Any]:
     @get("/status/bundle", sync_to_thread=True)
     def status_bundle(checkpoints: str = "default", runs: str = "") -> Response[bytes]:
         """The verification bundle (#10, session 6): the records, the project's tables and runs (their 3LC
-        records and metrics, never images) and the checkpoints the rule selects — ``?checkpoints=default``
+        records and metrics, never images) and the checkpoints the rule selects, ``?checkpoints=default``
         (the rule) or ``selected&runs=<train job ids>`` (the Status tab's checklist, at most two);
         ``none`` / ``all`` are for organizers. Written under the plugin home, streamed as a file; never a
         secret (a match refuses the whole export, HTTP 400)."""
