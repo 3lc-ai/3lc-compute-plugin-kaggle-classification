@@ -1,4 +1,4 @@
-# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc11 tagged in session 9)
+# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc12 tagged in session 10)
 
 Vocabulary lives in [CONTEXT.md](CONTEXT.md). This file is the operating
 protocol; depth lives in the docs linked in §E — link, don't duplicate. The
@@ -31,6 +31,11 @@ environments, credential locations); it points here at the repo boundary.
   renders what `GET /config` serves and defines nothing. `test_manifest.py::
   test_no_competition_literal_outside_the_manifest` and
   `test_routes.py::test_plugin_compute_and_fragment` enforce it.
+- **No em dashes in the plugin.** Nothing a participant reads carries `—`: the
+  fragment, every module's strings (run and table descriptions, job subtitles,
+  Doctor text, the bundle README), `plugin.toml`, `catalog.json`, TESTING.md and
+  the tester scripts. A period, colon, comma or middle dot instead.
+  `test_copy_rules.py` enforces it (rc12).
 - **License lineage.** Apache-2.0 on every module (`SPDX-License-Identifier`
   header). Code adapted from `3lc-compute-plugin-kaggle` carries the
   relicensing header verbatim and is listed in `docs/STUDY.md` G-5; the word

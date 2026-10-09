@@ -12,8 +12,8 @@ detection). This one is **Apache-2.0** and links no Ultralytics code.
 
 ## Status
 
-Release candidate **1.0.0rc10** (2026-10-08): all four tabs — Import, Train, Predict + Submit,
-Status — mirror the ExDark plugin control for control (`docs/EXDARK_MIRROR.md`,
+Release candidate **1.0.0rc12** (2026-10-09): all four tabs, Import, Train, Predict + Submit,
+Status, mirror the ExDark plugin control for control (`docs/EXDARK_MIRROR.md`,
 `docs/TRAIN_MIRROR.md`, `docs/PREDICT_MIRROR.md`, `docs/STATUS_MIRROR.md`). Testers start
 with `TESTING.md`. See `docs/PLAN.md` for the locked decisions, `CLAUDE.md` for the
 operating protocol, `CONTEXT.md` for vocabulary, `CHANGELOG.md` for what shipped.

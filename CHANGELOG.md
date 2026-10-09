@@ -3,6 +3,48 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc12] — 2026-10-09 (session 10: the Import tab back on the rc10 layout)
+
+Decision (Rishikesh, 2026-10-09): the rc11 Import redesign was too minimal. The Import tab goes back to
+the rc10 layout; the only visual addition kept is the collapsible checks list. rc11's behaviour stays.
+
+### Changed
+- **The Import tab is the rc10 layout again.** The form is always visible: the starter kit folder, the
+  project name and the table name with their helper text, the "Detected: train / val · N classes
+  (manifest order) · N / N images. Matches the competition manifest." line, the locked **Splits to
+  import** block, the **Dataset at a glance** card (train / unlabeled / val and the class tags). The
+  post-import banner carries **Continue to Train**, **Explore train** and **Explore val**; the table rows
+  carry the REUSED / CREATED badge, the path, Copy, Explore and **Re-import fresh** on a reused row (no
+  dialog: nothing is discarded); **Show log** follows. The rc11 facts line, the **Advanced** disclosure
+  and the Re-import… confirmation on the Imported view are gone; the stale view keeps its Re-import…
+  with the confirmation. The Kaggle Data-page notice sits above the kit folder.
+- **Kept from rc11, unchanged in behaviour:** the tab and the stepper render from the `GET /config`
+  payload; the revisit shows the full post-import content (rc10's thin view does not come back);
+  "Found existing tables · validated" vs "Imported · validated"; the import lock while a job runs; the
+  stale-record message; the CDN bundled-manifest notice; the Kaggle Data-page fallback when a download
+  or a verification fails; the five-minute remote-down memory; the header collapse; every other-tab
+  change (the in-app submit confirmation, Other ways collapsed, the "Run inference first" line, the
+  Kaggle heading, the Doctor refresh, the Queue subtitle).
+- **The checks list stays collapsible:** "N/N checks passed ▸" collapsed when all pass, auto-expanded
+  with the failures first when any fails, where rc10's checks report sat.
+- **No em dashes anywhere in the plugin:** the fragment, run and table descriptions, job subtitles, the
+  Doctor's text, the bundle README, every refusal and log line, `plugin.toml`, TESTING.md and the
+  catalog descriptions. A period, colon, comma or middle dot instead; the empty cells of the Runs and
+  History tables use the en dash the History table already used for an absent public score.
+
+### Fixed
+- **Re-import naming:** after `initial-2` the next re-import writes `initial-3`, never `initial-2-2`
+  (`importer.fresh_table_name` continues the series from a generated `-N` tail; `GET /import/preflight`
+  names it the same way).
+
+### Added
+- `tests/test_copy_rules.py`: fails on an em dash in `ui.html`, in every module's text, `plugin.toml`,
+  `catalog.json`, `TESTING.md` and the tester scripts, and in the served config payload and the bundle
+  README. `test_importer.py` pins the fourth re-import at `initial-3`.
+- `tools/fixture_harness/`: the static screenshot harness (the Hub's public CSS, a stubbed `PLUGIN_API`,
+  a config payload the plugin generates against a scratch home, Playwright on Edge), checked in; the
+  rc12 shots of every Import fixture are in `docs/ui-review/after-rc12/` (untracked).
+
 ## [1.0.0rc11] — 2026-10-09 (session 9: the Import tab and shell UI pass)
 
 A deliberate divergence from the ExDark mirror on the Import tab and the shell (CONTEXT.md, decided
