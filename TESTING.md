@@ -7,8 +7,8 @@ competition itself is **not launched yet**, so there is nothing to submit to Kag
 leaderboard; the plugin says so where it matters. Plan on 30–45 minutes the first time, most of it
 waiting for downloads.
 
-Everything you install lands in one folder you create. Delete that folder afterwards and nothing is
-left behind except your 3LC login.
+Everything you install goes into one folder you create. Delete that folder afterwards and only your
+3LC login remains.
 
 ## 1. Prerequisites
 
@@ -24,8 +24,8 @@ left behind except your 3LC login.
 
 A Kaggle account is optional. The services run with their home folder redirected to your tester
 folder, so a Kaggle token elsewhere on the machine is not seen; step 7.5b lets you connect one from the
-plugin page (the token is then saved inside the tester folder and nowhere else). Nothing is submitted
-either way: the competition is unlaunched.
+plugin page (the plugin then saves the token inside the tester folder and nowhere else). The plugin submits
+nothing either way: the competition is unlaunched.
 
 ## 2. Install the two services into a venv
 
@@ -42,8 +42,8 @@ uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/
 .\.venv\Scripts\3lc.exe login
 ```
 
-`3lc login` asks for the API key (type or paste it; it is never shown). On Windows the key is stored
-under your real profile, so this login is also valid for any other 3LC use on the machine.
+`3lc login` asks for the API key (type or paste it; it is never shown). On Windows, 3LC stores the key
+under your real profile, so this login also covers any other 3LC use on the machine.
 
 **macOS / Linux (bash or zsh):**
 
@@ -125,7 +125,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc12**. On the very first start the compute service first installs its eight stock plugins
+   **1.0.0rc12**. On the first start the compute service first installs its eight stock plugins
    (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
    so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin’s own Python environment (torch is the
@@ -139,7 +139,7 @@ Loop” row, four tabs, **1 Import · 2 Train · 3 Predict + Submit · 4 Status*
 open with a **Download starter kit** button. From your second visit on, the header collapses to one
 line (**Show details** expands it). The footer reads `3LC Kaggle Classification plugin
 v1.0.0rc12`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
-“Setting up the plugin environment. The first run takes a few minutes.” just wait: that is the
+“Setting up the plugin environment. The first run takes a few minutes.” wait: that is the
 first-use provisioning, it continues by itself.
 
 ## 7. The test checklist
@@ -165,7 +165,7 @@ Click **Download starter kit**.
 
 ### 7.2 Import
 
-Click **Import & Validate** (leave the kit folder, Project name and Table name as they are).
+Click **Import & validate** (leave the kit folder, Project name and Table name as they are).
 
 - You should see: three progress rows (Import train / Import val / Validate), then the green banner
   “Imported · validated: intel-scene_train · intel-scene_val” above the form with **Continue to Train**,
@@ -174,8 +174,9 @@ Click **Import & Validate** (leave the kit folder, Project name and Table name a
   CREATED, each with the table path, Copy and **Explore**, and **Show log**. A few seconds. The tab bar
   now marks **1 Import** done. Reopen the tab (or reload the page): the same view comes back, with the
   note “Tables already exist in project intel-scene …” under the detected line and the checks
-  collapsed. Do not click **Import & Validate** a second time (it keeps the tables and marks the rows
-  REUSED, each with a **Re-import fresh** button that writes a second pair named initial-2).
+  collapsed. Do not click **Import & validate** a second time (it keeps the tables and marks the rows
+  REUSED, each with a **Re-import fresh** button that, after a one-line confirmation, writes a second pair
+  named initial-2).
 - If not: Copy diagnostics, a screenshot of the checks expanded.
 
 ### 7.3 Label a batch in the Dashboard and commit
@@ -199,7 +200,7 @@ In the Loop row click **fix labels** (it opens the 3LC Dashboard on the train ta
 
 ### 7.4 Train 2 epochs
 
-On the Train tab set **Epochs** to **2** (leave everything else), then click **Start Training**.
+On the Train tab set **Epochs** to **2** (leave everything else), then click **Start training**.
 
 - You should see: the in-run header “<run name> · running · Epoch 1/2 · cuda (auto)” (or “cpu
   (auto)” without a GPU) with a **Watch run in Projects** button at its right edge a few seconds after
@@ -213,7 +214,7 @@ On the Train tab set **Epochs** to **2** (leave everything else), then click **S
   metrics and embeddings on 7,800 rows…”; then the green banner “**Training complete: NN.N% val
   accuracy at epoch N** (the checkpoint Predict uses)”, a **Verified provenance recorded** panel whose
   **Provenance verified · 9/9 checks** list is expanded this once (collapsed with a ▸ on later visits),
-  buttons **Continue to Submit**, **Open Run in Dashboard**, **Open Run in Projects** (the
+  buttons **Continue to Submit**, **Open run in Dashboard**, **Open run in Projects** (the
   Watch button is gone: the run is no longer live). On a
   GPU about 1–2 minutes end to end; on a CPU about 5–8 minutes. Val accuracy after 2 epochs is low
   (30–55 %), that is expected.

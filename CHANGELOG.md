@@ -24,6 +24,13 @@ participants keep every control they had in rc10.
   no longer shows a literal backslash ("the kit's step decay"); the two untagged code fences in TESTING.md are
   tagged `text`. No instruction changed meaning.
 
+- **Review-list decisions (session 12):** the spinner and the refresh icon pulse in opacity under
+  `prefers-reduced-motion` instead of rotating; button labels are sentence case on every tab ("Import & validate",
+  "Start training", "Re-run training", "Open run in Dashboard", "Open run in Projects"; tab names stay
+  capitalised in "Continue to Train" and "Go to Import"); **Re-import fresh** asks first, with the Re-import… line
+  naming the table the server would write and saying the existing tables and label edits are kept; TESTING.md
+  lost its filler words and three passive or metaphor sentences.
+
 ### Added
 - Vercel's `web-design-guidelines` and `writing-guidelines` agent skills under `.claude/skills/` (`skills-lock.json`).
 

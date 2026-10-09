@@ -127,6 +127,7 @@
   .kg-stat .val { transition: opacity var(--kgl-motion-fast) var(--kgl-ease-out); }
   @keyframes kg-rot { to { transform: rotate(360deg); } }
   .kg-spin .kgi { animation: kg-rot var(--kgl-motion-spin) linear infinite; }
+  .kgc .spinner { animation: kg-rot var(--kgl-motion-spin, 800ms) linear infinite; }
   .kg-conn-fade { opacity: 0; transition: opacity var(--kgl-motion-slow) var(--kgl-ease-out); }
   .kgl-acc { transition: grid-template-rows var(--kgl-motion-slow) var(--kgl-ease-inout); }
   .kgl-acc-caret { transition: transform var(--kgl-motion-slow) var(--kgl-ease-inout); }
@@ -302,7 +303,12 @@
 .kgc .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
 .kgc .btn-ghost:hover { color: var(--text-secondary); border-color: var(--border); }
 .kgc .btn-secondary { background: transparent; }
-.kgc .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: kg-rot var(--kgl-motion-spin, 800ms) linear infinite; }
+.kgc .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; }
+/* Reduced motion (session 12): the loading indicators pulse in opacity instead of rotating. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes kg-pulse { 50% { opacity: .35; } }
+  .kgc .spinner, .kgc .kg-spin .kgi { animation: kg-pulse 1.2s ease-in-out infinite; }
+}
 .kgc .divider { border: 0; border-top: 1px solid var(--border-light, rgba(0,0,0,.06)); margin: 14px 0; }
 .kgc .badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
 .kgc .badge-status-queued { background: var(--bg-secondary, rgba(0,0,0,.06)); color: var(--text-muted); }
@@ -498,7 +504,7 @@
 
         <hr class="divider">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button type="button" id="kg-import-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Import &amp; Validate</button>
+          <button type="button" id="kg-import-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Import &amp; validate</button>
           <span class="spinner" id="kg-import-spinner" style="display: none;"></span>
           <span id="kg-import-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
@@ -693,7 +699,7 @@
 
         <hr class="divider">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button type="button" id="tr-start-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Start Training</button>
+          <button type="button" id="tr-start-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Start training</button>
           <button type="button" id="tr-cancel-btn" class="btn btn-secondary" disabled>Cancel</button>
           <span class="spinner" id="tr-spinner" style="display: none;"></span>
           <span id="tr-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
@@ -1207,8 +1213,8 @@
       }
 
       // Primary CTA labels (icon + text), used everywhere the label resets.
-      var KG_BTN_IMPORT = kgIcon('upload', 'kgi-16') + '<span>Import &amp; Validate</span>';
-      var KG_BTN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run Import &amp; Validate</span>';
+      var KG_BTN_IMPORT = kgIcon('upload', 'kgi-16') + '<span>Import &amp; validate</span>';
+      var KG_BTN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run import &amp; validate</span>';
       el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
 
       // ── Copy diagnostics ──────────────────────────────────────────────
@@ -1873,7 +1879,7 @@
 
       var KG_HINT_HTML =
         '<div class="form-help">Point this at the starter kit folder (the one holding ' +
-        '<code>files.json</code>), typically <code>…\\starter_kit</code>. The download above fills it in.</div>';
+        '<code>files.json</code>), for example <code>…\\starter_kit</code>. The download above fills it in.</div>';
 
       function kgSplitsPlaceholder() {
         // With the folder filled in, the splits are not undetected but unmatched: say so
@@ -2325,12 +2331,12 @@
       }
 
       // Re-import fresh (decision 2026-09-28, docs/EXDARK_MIRROR.md #26; rc12 restores ExDark's button and
-      // placement): the job writes FRESH `<table>-N` tables beside the existing pair and never overwrites a
-      // table or its revisions, so, unlike ExDark, there is no revision count to confirm and no dialog:
-      // nothing is discarded. The form's values are the job's (the preflight has run on them).
+      // placement; session 12 adds the one-line confirmation): the job writes FRESH `<table>-N` tables beside
+      // the existing pair and never overwrites a table or its revisions. The confirmation is the Re-import…
+      // one: the server names the table first and the line says the existing tables and label edits are kept.
       function kgReimportFresh() {
         if (kgDevMode) { return; }
-        kgStartImport({ reimport: true });
+        kgConfirmReimport('reimport');
       }
 
       var KG_BTN_REIMPORT = kgIcon('refresh-cw', 'kgi-12') + '<span>Re-import…</span>';
@@ -3220,8 +3226,8 @@
       var kgTraining = null;                                    // _meta.training (served facts)
       var kgTrainState = { state: 'empty', current: null, runs: [] };   // GET /train/state
 
-      var KG_BTN_TRAIN = kgIcon('play', 'kgi-16') + '<span>Start Training</span>';
-      var KG_BTN_TRAIN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run Training</span>';
+      var KG_BTN_TRAIN = kgIcon('play', 'kgi-16') + '<span>Start training</span>';
+      var KG_BTN_TRAIN_RERUN = kgIcon('refresh-cw', 'kgi-16') + '<span>Re-run training</span>';
       el('tr-start-btn').innerHTML = KG_BTN_TRAIN;
 
       // One token per form state: the worker refuses a second start carrying a token it has
@@ -3680,9 +3686,9 @@
           '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="tr-continue-submit">' +
           '<span>Continue to Submit</span>' + kgIcon('arrow-right') + '</button>' +
           (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(link) +
-                  '"><span>Open Run in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+                  '"><span>Open run in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
           (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(projectsHref) +
-                  '"><span>Open Run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
+                  '"><span>Open run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
           (revisit ? '<button type="button" class="btn btn-ghost btn-sm" id="tr-start-new">Start new run</button>' : '') +
           '</div></div></div>';
         el('tr-banner').innerHTML = banner;
