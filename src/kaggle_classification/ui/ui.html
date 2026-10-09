@@ -222,6 +222,20 @@
 .kg-csv-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; }
 .kg-csv-row .fname { font-weight: 600; color: var(--text); }
 .kg-csv-row .path { min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; color: var(--text-muted); }
+.kg-csv-row .path.full { flex-basis: 100%; white-space: normal; word-break: break-all; overflow: visible; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.kg-csv-row .kg-csv-note { flex-basis: 100%; font-size: 11.5px; color: var(--text-muted); margin-top: -2px; }
+/* rc10: the Kaggle connection line at the top of Predict + Submit, and the guided connect form (CONTEXT.md decisions 2026-10-08) */
+.kg-kstatus { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); margin: 0 0 12px; min-height: 18px; }
+.kg-kstatus .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+.kg-kstatus.ok .dot { background: var(--success); }
+.kg-kstatus.warn .dot { background: var(--warning, #d97706); }
+.kg-kstatus a { cursor: pointer; }
+.kg-kconnect { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.kg-kconnect .form-control { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; }
+.kg-other-ways { margin-top: 6px; }
+.kg-other-ways .kg-locked-row { align-items: flex-start; }
+.kg-other-ways .kg-locked-row .val { white-space: normal; word-break: break-all; font-weight: 400; font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.kg-other-ways .kg-locked-row .kg-lock-actions { margin-top: 1px; }
 .kg-metric-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
 .kg-metric { border: 1px solid var(--border-light, rgba(0,0,0,.08)); border-radius: 6px; padding: 6px 10px; min-width: 96px; }
 .kg-metric .lbl { font-size: 10.5px; color: var(--text-muted); }
@@ -693,6 +707,8 @@
       <!-- The import gate card (ExDark's Train gate): the tab needs the kit on disk -->
       <div id="ps-gate"></div>
       <div id="ps-body">
+      <!-- rc10: the Kaggle connection line, before anything is predicted (fed by GET /kaggle/connection) -->
+      <div id="ps-kstatus" class="kg-kstatus" aria-live="polite"></div>
 
       <!-- ── Step 1: Predict (free, repeatable) ─────────────────────── -->
       <div id="ps-step1">
@@ -747,8 +763,10 @@
       <div id="ps-step2">
         <div class="kg-sec-head">Step 2 · Submit to Kaggle</div>
         <div id="ps-basis"></div>
+        <!-- rc10: the connection card sits OUTSIDE the muted block so Kaggle can be connected before a
+             prediction exists (the competition row, the message and Submit stay muted until then). -->
+        <div id="ps-kconn" style="margin-bottom: 12px;"></div>
         <div id="ps-step2-body" class="kg-step-muted">
-          <div id="ps-kconn" style="margin-bottom: 12px;"></div>
           <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
             <div class="form-group">
               <!-- D8: the slug is competition identity, locked from the manifest (no field, nothing posted). -->
@@ -4930,16 +4948,20 @@
                '<div class="note">Your locked validation split, not the leaderboard.</div></div>';
       }
 
+      // rc10: the full path of the saved CSV is always shown, with the manual-upload note (a participant
+      // who never connects Kaggle from here still has a submission file to upload by hand).
       function psCsvRowHtml(jobId, csvPath) {
         if (!csvPath) { return ''; }
         var fname = csvPath.replace(/^.*[\\\/]/, '');
         return '<div class="kg-csv-row">' +
           '<span class="fname">' + esc(fname) + '</span>' +
-          '<span class="path" title="' + esc(csvPath) + '">' + esc(midTrunc(csvPath, 56)) + '</span>' +
           '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(csvPath) +
           '" title="Copy CSV path (a path on the compute service\'s machine — Download CSV works from anywhere)" aria-label="Copy CSV path">' + kgIcon('copy') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm kgi-btn" data-download="' + esc(jobId) +
-          '">' + kgIcon('download') + '<span>Download CSV</span></button></div>';
+          '">' + kgIcon('download') + '<span>Download CSV</span></button>' +
+          '<span class="path full">' + esc(csvPath) + '</span>' +
+          '<span class="kg-csv-note">Saved at that path on the compute service\'s machine. You can upload it by hand on ' +
+          'Kaggle\'s Submit page (Download CSV fetches it to this browser); Step 2 submits it from here once Kaggle is connected.</span></div>';
       }
 
       // Results panel = step 1's decision surface. First live completion enters with the checks
@@ -5135,7 +5157,113 @@
             psConnState = null;
             el('ps-kconn').innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
               '<span>Could not check the Kaggle connection: ' + esc(e.message) + '</span></div>';
+            psKStatus('', 'Kaggle: could not check the connection');
             psCheckSubmitReady();
+          });
+      }
+
+      // rc10 (a deliberate divergence from ExDark, CONTEXT.md decisions 2026-10-08): the not-connected
+      // state is a guided connect form — one line on where the token comes from, a masked field, Connect —
+      // instead of ExDark's paragraph of per-OS commands (which named $env:USERPROFILE / ~ although the
+      // compute service may run with a redirected home). The service writes the token to the exact file its
+      // Kaggle client reads (resolved server side) and verifies it; the browser never keeps the value.
+      var KG_CARET_SVG = '<svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg>';
+
+      function psKStatus(cls, text, withConnect) {
+        var box = el('ps-kstatus');
+        if (!box) { return; }
+        box.className = 'kg-kstatus' + (cls ? ' ' + cls : '');
+        box.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + text + '</span>' +
+          (withConnect ? ' · <a data-kconnect tabindex="0" role="button">Connect in Step 2</a>' : '');
+        var go = box.querySelector('[data-kconnect]');
+        if (go) {
+          go.addEventListener('click', function () {
+            var f = el('ps-kg-token');
+            if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); }
+          });
+        }
+      }
+
+      function psOtherWayRow(label, text) {
+        if (!text) { return ''; }
+        return '<div class="kg-locked-row"><span class="lbl">' + esc(label) + '</span><span class="val">' + esc(text) +
+          '</span><span class="kg-lock-actions"><button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' +
+          esc(text) + '" title="Copy" aria-label="Copy">' + kgIcon('copy', 'kgi-12') + '</button></span></div>';
+      }
+
+      function psConnectFormHtml(s) {
+        var c = s.connect || {};
+        return '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+          '<span><strong>Kaggle isn’t connected yet.</strong><br>' +
+          '<span style="opacity:.85">Get a token at kaggle.com › Settings › API › Create New Token, then paste it here.</span></span></div>' +
+          '<div class="kg-kconnect">' +
+          '<input id="ps-kg-token" type="password" class="form-control" placeholder="KGAT_…" autocomplete="off" ' +
+          'autocapitalize="off" spellcheck="false" aria-label="Kaggle access token"' + (kgDevMode ? ' disabled' : '') + '>' +
+          '<button type="button" id="ps-kg-connect" class="btn btn-primary kgi-btn"' + (kgDevMode ? ' disabled' : '') + '>' +
+          kgIcon('check-circle', 'kgi-16') + '<span>Connect</span></button>' +
+          '<span class="spinner" id="ps-kg-spinner" style="display:none"></span></div>' +
+          '<div id="ps-kg-msg" aria-live="polite"></div>' +
+          '<div class="kg-log-details" style="margin-top:10px">' +
+          '<button type="button" class="kgl-acc-summary" id="ps-kg-other-toggle" aria-expanded="false" aria-controls="ps-kg-other-panel">' +
+          '<span class="kgl-acc-caret" aria-hidden="true">' + KG_CARET_SVG + '</span> Other ways to connect</button>' +
+          '<div class="kgl-acc" id="ps-kg-other-panel" hidden><div class="kgl-acc-inner"><div class="kg-other-ways">' +
+          psOtherWayRow(c.shell || 'Terminal', c.command) +
+          psOtherWayRow('Env var', c.env_var) +
+          psOtherWayRow('Legacy', c.legacy) +
+          '</div></div></div></div>';
+      }
+
+      function psBindConnect(box) {
+        var btn = el('ps-kg-connect'), field = el('ps-kg-token');
+        if (!btn || !field) { return; }
+        kgBindCopy(box);
+        kgBindAccordion('ps-kg-other-toggle', 'ps-kg-other-panel');
+        btn.addEventListener('click', psConnect);
+        field.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); psConnect(); }
+        });
+      }
+
+      function psConnectMsg(kind, text) {
+        var msg = el('ps-kg-msg');
+        if (!msg) { return; }
+        msg.innerHTML = kind === 'err'
+          ? '<div class="kg-callout err">' + kgIcon('x-circle') + '<span>' + esc(text) + '</span></div>'
+          : '<div class="form-help" style="margin-top:6px">' + esc(text) + '</div>';
+      }
+
+      function psConnect() {
+        if (kgDevMode) { return; }
+        var field = el('ps-kg-token'), btn = el('ps-kg-connect'), sp = el('ps-kg-spinner');
+        if (!field || !btn) { return; }
+        var token = field.value;
+        if (!token.trim()) { psConnectMsg('err', 'Paste the token first.'); field.focus(); return; }
+        btn.disabled = true; field.disabled = true; if (sp) { sp.style.display = ''; }
+        psConnectMsg('', 'Saving the token on the compute service and checking it with Kaggle…');
+        function restore() {
+          btn.disabled = false; field.disabled = false; if (sp) { sp.style.display = 'none'; }
+          field.focus();
+        }
+        API.authFetch(PLUGIN_ROOT + '/kaggle/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (res && res.ok) {
+              field.value = '';   // the browser keeps nothing
+              psRenderConnState(res.connection && res.connection.state ? res.connection
+                                : { state: 'ready', username: res.username || '' });
+              return;
+            }
+            restore();
+            psConnectMsg('err', (res && res.reason) || 'Could not connect to Kaggle.');
+          })
+          .catch(function (e) {
+            restore();
+            if (kgConn.fail(e, function () {})) { return; }
+            psConnectMsg('err', 'Could not reach the compute service: ' + e.message);
           });
       }
 
@@ -5143,9 +5271,9 @@
         psConnState = s;
         var box = el('ps-kconn');
         if (s.state === 'no_credentials') {
-          box.innerHTML = '<div class="kg-callout err">' + kgIcon('x-circle') +
-            '<span><strong>Kaggle account not connected.</strong><br>' +
-            '<span style="opacity:.85">' + esc(s.help || '') + '</span></span></div>';
+          box.innerHTML = psConnectFormHtml(s);
+          psBindConnect(box);
+          psKStatus('warn', 'Kaggle: not connected', true);
         } else if (s.state === 'not_joined') {
           box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
             '<span><strong>Join the competition on Kaggle first.</strong> Your account (<strong>' +
@@ -5154,6 +5282,7 @@
             '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" href="' +
             esc(s.competition_url || psManifestFacts().competitionUrl || '#') + '" target="_blank"><span>Open competition page</span>' +
             kgIcon('external-link', 'kgi-12') + '</a></div></span></div>';
+          psKStatus('warn', 'Kaggle: connected as <strong>' + esc(s.username || '?') + '</strong> · competition not joined');
         } else if (s.state === 'ready') {
           var b = psBudget();
           var budgetTxt = '';
@@ -5173,9 +5302,11 @@
               ? '<div class="kg-callout info" style="margin-top:6px">' + kgIcon('info') +
                 '<span>Daily limit reached, resets 00:00 UTC. Your CSV is saved and ready.</span></div>'
               : '');
+          psKStatus('ok', 'Kaggle: connected' + (s.username ? ' as <strong>' + esc(s.username) + '</strong>' : '') + budgetTxt);
         } else {
           box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
             '<span>' + esc(s.error ? 'Could not check the Kaggle connection: ' + s.error : 'Connection state unknown.') + '</span></div>';
+          psKStatus('', 'Kaggle: ' + (s.error ? 'could not check the connection' : 'connection state unknown'));
         }
         psCheckSubmitReady();
       }
@@ -5622,7 +5753,11 @@
             loadDevRuns(true);
             gateGreen();
             results({ checks: CHECKS(), sanity: SANITY(true), score: SCORE(valAcc) });
-            psRenderConnState({ state: 'no_credentials', help: 'Kaggle credentials not found. Create an API token on kaggle.com (Settings -> API -> Create New Token) and save it to ~/.kaggle/access_token on the machine running the compute service. The generated submission.csv is saved locally, so you can always upload it manually on the competition\'s Submit page.' });
+            psRenderConnState({ state: 'no_credentials', token_path: 'C:\\Users\\participant\\.kaggle\\access_token', connect: {
+              shell: 'PowerShell', path: 'C:\\Users\\participant\\.kaggle\\access_token',
+              command: 'New-Item -ItemType Directory -Force "C:\\Users\\participant\\.kaggle" | Out-Null; Set-Content -LiteralPath "C:\\Users\\participant\\.kaggle\\access_token" -Value "KGAT_<your token>" -NoNewline -Encoding ascii',
+              env_var: 'KAGGLE_API_TOKEN=KGAT_<your token> in the compute service\'s environment, then restart it',
+              legacy: 'C:\\Users\\participant\\.kaggle\\kaggle.json with {"username": "<you>", "key": "<legacy API key>"}' } });
           } else if (mode === 'submit-notjoined') {
             loadDevRuns(true);
             gateGreen();
@@ -5997,7 +6132,7 @@
           ? 'connected' + (kg.username ? ' as ' + kg.username : '') +
             (typeof kg.submissions_used_today === 'number' && kg.daily_limit
               ? ' · ' + fmtCount(kg.daily_limit - kg.submissions_used_today) + ' of ' + fmtCount(kg.daily_limit) + ' left today' : '')
-          : kg.state === 'no_credentials' ? 'not connected (no credentials on the compute host)'
+          : kg.state === 'no_credentials' ? 'not connected · connect on the Predict + Submit tab (Step 2)'
           : kg.state === 'not_joined' ? 'connected' + (kg.username ? ' as ' + kg.username : '') + ' · competition not joined'
           : kg.state ? 'could not check: ' + (kg.error || kg.state) : 'not checked';
         var kitText = k.state === 'success' ? k.kit_version + ' · ' + fmtCount(k.file_count) + ' files verified at download'
@@ -6016,7 +6151,7 @@
                        (m.competition_id ? ' · ' + m.competition_id + ' kit ' + (m.kit_version || '?') : '') +
                        (m.manifest_fetched_at ? ' · fetched ' + stAgoIso(m.manifest_fetched_at) : ''), m.manifest_document_url || ''],
           ['Kit', kitText, k.kit_dir || ''],
-          ['Kaggle', kagText, ''],
+          ['Kaggle', kagText, kg.token_path || ''],
           ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : '') +
                           (h.migrated_from && h.migrated_from.source ? ' · carried forward from the previous version' : ''),
            (h.migrated_from && h.migrated_from.source) ? h.path + ' (carried forward from ' + h.migrated_from.source + ' at ' + h.migrated_from.at + ')' : (h.path || '')],
@@ -6437,7 +6572,7 @@
             stRenderHero([], null, []);
             stRenderRuns([]);
             renderHistoryFrom([]);
-            renderKaggleFrom({ connected: false, reason: 'Connect your Kaggle account. Create an API token on kaggle.com and save it to ~/.kaggle/access_token on the machine running the compute service.' });
+            renderKaggleFrom({ connected: false, reason: 'Connect your Kaggle account on the Predict + Submit tab (Step 2: paste a token, Connect).' });
           } else if (mode === 'status-history') {
             stHistory = { runs: RUNS, predictions: RECORDS, best_public_score: { score: 0.68222, run_name: RECORDS[0].run_name, ref: '56790001' } };
             stRenderHero(RECORDS, stHistory.best_public_score, []);

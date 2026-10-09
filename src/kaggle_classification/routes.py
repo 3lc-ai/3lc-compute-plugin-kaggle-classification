@@ -22,6 +22,8 @@
   ``GET /predict/preflight`` — the test-images gate (every file against the kit's files.json);
   ``GET /submit/state`` — the durable predict + submit records, the CSV re-verified on disk;
   ``GET /kaggle/connection`` — the connection card (credentials, joined, the daily limit);
+  ``POST /kaggle/connect`` — the guided connect flow (rc10): the pasted token is validated, written
+  to the file the Kaggle client reads on the compute service and verified; never echoed or logged;
   ``GET /submissions/{job_id}/download`` — the CSV download fallback (docs/PREDICT_MIRROR.md §8).
 * ``GET /status/history`` — the Status tab's run history and the prediction / submission history
   joined from the ledger (``?live=1`` reads Kaggle's verdict by ref for refs still unresolved);
@@ -272,6 +274,22 @@ def get_route_handlers() -> list[Any]:
         except Exception as exc:
             return {"state": "error", "error": f"{type(exc).__name__}: {exc}"}
 
+    @post("/kaggle/connect", status_code=200, sync_to_thread=True)
+    def kaggle_connect(data: dict[str, Any]) -> dict[str, Any]:
+        """The Connect button: ``{token}`` in, ``{ok, username, path, connection}`` or ``{ok: false, kind,
+        reason}`` out — one plain sentence per failure, the field kept. The token's value is never part
+        of the response, the log or any record; on success the fresh connection card rides along."""
+        from kaggle_classification import kaggle_client, manifest, predictor
+
+        raw = (data or {}).get("token") if isinstance(data, dict) else None
+        out = kaggle_client.connect(raw)
+        if out.get("ok"):
+            try:
+                out["connection"] = predictor.kaggle_connection(manifest.resolve(network=False).manifest)
+            except Exception as exc:
+                out["connection"] = {"state": "error", "error": f"{type(exc).__name__}: {exc}"}
+        return out
+
     @get("/submissions/{job_id:str}/download", sync_to_thread=True)
     def download_submission(job_id: str) -> Response[bytes]:
         """Stream a prediction's validated CSV to the browser (the manual-upload fallback)."""
@@ -373,6 +391,6 @@ def get_route_handlers() -> list[Any]:
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
         train_preflight, train_state, tables_list, tables_defaults,
-        list_runs, predict_preflight, submit_state, kaggle_connection, download_submission,
+        list_runs, predict_preflight, submit_state, kaggle_connection, kaggle_connect, download_submission,
         status_history, status_kaggle, status_doctor, status_bundle, status_bundle_preview,
     ]

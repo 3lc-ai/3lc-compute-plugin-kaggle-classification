@@ -322,7 +322,8 @@ def kaggle_live(manifest: Manifest) -> dict[str, Any]:
     slug = manifest.competition.slug
     out: dict[str, Any] = {"slug": slug, "competition_url": kaggle_client.competition_url(slug)}
     if not kaggle_client.credentials_present():
-        return {**out, "connected": False, "reason": "Connect your Kaggle account. " + kaggle_client.credentials_help()}
+        return {**out, "connected": False,
+                "reason": "Connect your Kaggle account on the Predict + Submit tab (Step 2: paste a token, Connect)."}
     api, reason = kaggle_client.authenticated_api()
     if api is None:
         return {**out, "connected": False, "reason": reason}
@@ -490,7 +491,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             conn = kaggle_client.connection(manifest.competition.slug, int(manifest.submission.daily_limit))
             out["kaggle"] = {k: conn.get(k) for k in (
                 "state", "username", "slug", "competition_url", "daily_limit", "kaggle_daily_limit",
-                "submissions_used_today", "probe_error", "competition_title",
+                "submissions_used_today", "probe_error", "competition_title", "token_path",
             )}
         except Exception as exc:
             out["kaggle"] = {"state": "error", "error": f"{type(exc).__name__}: {exc}"}

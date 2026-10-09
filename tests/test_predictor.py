@@ -375,7 +375,7 @@ def no_credentials(tmp_path, monkeypatch):
 def test_credentials_absent_never_raises_system_exit(no_credentials):
     assert kaggle_client.credentials_present() is False
     api, reason = kaggle_client.authenticated_api()
-    assert api is None and "Kaggle credentials not found" in reason and "upload it manually" in reason
+    assert api is None and "Kaggle isn't connected yet" in reason and "Connect" in reason
     srcs = kaggle_client.credential_sources()
     assert srcs["access_token"].startswith(str(no_credentials)) and srcs["kaggle_json"].endswith("kaggle.json")
 

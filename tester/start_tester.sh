@@ -8,15 +8,16 @@
 # Run it from the tester folder that holds the venv (TESTING.md step 2). Everything the services write
 # lands under that folder: ./home (HOME for the services: the 3LC key you log in with, the compute
 # service's settings, the plugin's venv and state, the downloaded kit, the prediction CSVs, the ledger)
-# and ./logs. A Kaggle token under your real home is NOT seen by the services (HOME is redirected), so
-# nothing here can submit to Kaggle.
+# and ./logs. A Kaggle token under your real home is NOT seen by the services (HOME is redirected); the
+# plugin's Connect button (TESTING.md 7.5b) writes the token it is given to ./home/.kaggle/access_token,
+# nowhere else.
 #
 # Environment overrides (all optional):
 #   OBJECT_PORT=5015       the 3LC object service port (the Getting Started page's default)
 #   COMPUTE_PORT=5020      the compute service port (the Getting Started page's default)
 #   PROJECT_ROOT=<dir>     keep the plugin's tables and runs in their own 3LC project root
 #   MANIFEST_BASE=<url>    the competition manifest tier; default https://competitions.dev.3lc.ai
-#   TEST_CATALOG=<url>     the plugin catalog listing the release candidate (default: the 1.0.0rc9 test catalog)
+#   TEST_CATALOG=<url>     the plugin catalog listing the release candidate (default: the 1.0.0rc10 test catalog)
 #   UV_CACHE_DIR=<dir>     reuse an existing uv cache (otherwise a fresh one under ./home)
 
 set -u
@@ -29,7 +30,7 @@ OBJECT_PORT="${OBJECT_PORT:-5015}"
 COMPUTE_PORT="${COMPUTE_PORT:-5020}"
 PROJECT_ROOT="${PROJECT_ROOT:-}"
 MANIFEST_BASE="${MANIFEST_BASE:-https://competitions.dev.3lc.ai}"
-TEST_CATALOG="${TEST_CATALOG:-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc9/catalog-test.json}"
+TEST_CATALOG="${TEST_CATALOG:-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc10/catalog-test.json}"
 DEFAULT_CATALOG="https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json"
 
 say() { echo "$*"; echo "$*" >> "$ROOT/start_tester.last.log"; }

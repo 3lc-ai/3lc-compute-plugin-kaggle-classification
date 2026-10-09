@@ -67,7 +67,8 @@ def test_route_handlers_build_when_litestar_is_present():
     assert paths == {
         "/config", "/manifest", "/manifest/select", "/import/preflight", "/import/state", "/download/verify",
         "/train/preflight", "/train/state", "/tables/list", "/tables/defaults",
-        "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/submissions/{job_id:str}/download",
+        "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/kaggle/connect",
+        "/submissions/{job_id:str}/download",
         "/status/history", "/status/kaggle", "/status/doctor", "/status/bundle", "/status/bundle/preview",
     }
 
@@ -256,7 +257,9 @@ ESC = "function esc(s) {"
 # and boolean flags the fragment itself computes (used in ternaries over literals).
 SAFE_CALLS = ("esc(", "kgIcon(", "fmtCount(", "fmtDur(", "dlMB(", "kgCheckIcon(", "kgDiagBtn(", "kgClassTint(",
               "dashTableLink(", "kgWithObjectService(", "encodeURIComponent(", "kgFmtAgo(", "link(", "trUsableLine(",
-              "psKaggleLine(", "kgWhenSpan(", "stHeroBlock(", "kgValEditedWarning(")
+              "psKaggleLine(", "kgWhenSpan(", "stHeroBlock(", "kgValEditedWarning(",
+              # rc10: the "Other ways to connect" row (esc + kgIcon inside)
+              "psOtherWayRow(")
 SAFE_IDENTS = {
     # markup accumulators / constants the fragment builds from literals and the calls above
     "html", "banner", "mhtml", "chips", "lines", "badge", "elapsed", "fade", "entering", "text", "head", "tail", "counts",
@@ -297,6 +300,9 @@ SAFE_IDENTS = {
     "psBasis.when", "ps.finished_at", "ss.finished_at", "ss.status", "ss.reason", "s.username", "s.probe_error",
     "sanity.warning", "names.length", "n", "pc", "b.left", "b.limit", "data.ok", "data.checking", "data.count",
     "run", "run.usable",
+    # rc10, the guided connect flow: the caret constant, the ?kgdev flag (disabled attributes over literals), the
+    # status line's connect-link flag
+    "KG_CARET_SVG", "kgDevMode", "withConnect",
     # the Status tab (session 5): ExDark's hero-block arguments (pre-escaped markup and the big/val flag),
     # the pre-built table cells (runCell, actions, pub, deltaCell, o.html — all from esc / kgIcon above)
     # and the launched flag the Kaggle callout branches on

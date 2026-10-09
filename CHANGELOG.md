@@ -3,6 +3,45 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc10] — 2026-10-08 (session 8: the guided Kaggle connect flow)
+
+### Changed
+- **Connecting Kaggle is a form, not a paragraph** — a deliberate divergence from the ExDark plugin
+  (CONTEXT.md, decided 2026-10-08; `docs/PREDICT_MIRROR.md` §13 D13). The rc9 hand test found the
+  "Kaggle account not connected" card far too detailed and wrong on a redirected-home host: it told the
+  participant to write the token under `$env:USERPROFILE` / `~`, while the compute service — every
+  `start_tester` environment, the hub-rc9-clean environment — runs with its home redirected, so the token
+  landed where the service never looks. The not-connected state now shows "Kaggle isn't connected yet",
+  one line on where the token comes from (kaggle.com › Settings › API › Create New Token), a masked token
+  field and **Connect**. `POST /kaggle/connect` trims the paste, checks the `KGAT_` shape, writes the token
+  to the exact file its Kaggle client reads (`os.path.expanduser("~/.kaggle/access_token")`, resolved on
+  the service, so a redirected home is honoured by construction) as plain ASCII, no BOM, no trailing
+  newline, user-only permissions on macOS / Linux, verifies it through the client's own authenticate call
+  and answers **Connected to Kaggle as <username>**. One plain sentence on failure (not a token / Kaggle
+  rejected it / no network / the service's `KAGGLE_API_TOKEN` would override it), the field kept; a token
+  Kaggle rejects is removed again. The card sits outside Step 2's muted block, so Kaggle can be connected
+  before anything is predicted.
+- The token is never logged, never echoed in a response, a reason or a record, masked in the field and
+  dropped from the browser after the connect; the Doctor and the connection card carry its PATH only.
+- Under a collapsed **Other ways to connect**: the compute service's OS-specific one-line command with
+  the resolved path filled in, the `KAGGLE_API_TOKEN` variable, the legacy `kaggle.json` — one line each,
+  with Copy.
+- The results panel always shows the saved `submission_<stamp>.csv`'s full path (never truncated) with
+  the note that it can be uploaded by hand on Kaggle's Submit page.
+- Kaggle's connection state is shown at the top of Predict + Submit before anything is predicted
+  ("Kaggle: not connected · Connect in Step 2" / "connected as <user> · N of M left today"); the Doctor's
+  Kaggle row points at Step 2 and copies the token's path; the Status tab's Kaggle live block and a
+  skipped submit say where to connect instead of repeating instructions.
+- `TESTING.md` §7.5b tests the Connect button (optional, with a real token; still no submit).
+
+### Added
+- `tests/test_kaggle_connect.py`: the write path under a redirected home (the kagglesdk path identity,
+  the bytes, the POSIX modes), the "Other ways" lines for win32 / linux / darwin, the format validation
+  (what a paste carries, what is refused), the connect outcomes (ok · rejected removes the file ·
+  unreachable keeps it · bad format and env override write nothing · errors scrubbed), the route, and the
+  no-token-leak scan over every served surface (the card, the Doctor with and without Kaggle, the Status
+  tab's live block, the session store, `GET /config`, the verification bundle).
+
 ## [1.0.0rc9] — 2026-10-07 (session 7: the tester release — rc8 plus documentation, no code change)
 
 ### Changed
