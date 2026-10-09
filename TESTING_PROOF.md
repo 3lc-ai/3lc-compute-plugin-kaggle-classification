@@ -144,6 +144,28 @@ and Submit in the Hub. The environment holds no Kaggle token (an empty `home\.ka
 only trace of the fake-token check). Not proven here: a real token's "Connected to Kaggle as <username>"
 (the harness check in session 8 used a stubbed service; the real path is Rishikesh's hand test).
 
+## Run 11 — 1.0.0rc10 → 1.0.0rc11 on the clean environment, plus the rc11 payload checks — PASS (2026-10-09, 10:10:14 → 10:11:19)
+
+The clean environment (`../3lc-hub-rc9-clean/`, the one Rishikesh hand-tests in; the services stopped for the run,
+restarted after it on 5015 / 5020 with `start_tester_rc11.ps1`), the rc11 test catalog beside the default one,
+`run_proof_rc11.ps1` → `proof_clean_rc11.py` on the in-process compute 1.1.0 host. A Kaggle token may be present
+in this environment; the proof never reads it and scans every answer for a token-shaped string.
+
+- Before: plugin state present (ui_config 35,084 B, 3 ledger lines, 1 prediction, 1 kit record, 9,602 kit files);
+  version dirs `1.0.0rc9`, `1.0.0rc10`. Host up in 6.8 s.
+- Available: the card lists **1.0.0rc11**, source pinned to `@v1.0.0rc11`, compatible. Update (POST install with
+  that source): **succeeded in 35.2 s**. First-use provisioning **6.4 s**; `GET /config` says version
+  **1.0.0rc11**, plugin home unchanged (`plugin-state/kaggle-classification`, resolved by compute-home). The plugin
+  state is byte-identical before and after.
+- rc11 payload: `import_state.state` **success** (both tables with url / exists / revision, validation ok),
+  `kit_state` success with **9,600 images**, source download, a verification stamp; `manifest_fallback`
+  inactive (source remote, refresh done). `GET /import/preflight`: all_ok, `reimport_name` **initial-2**, both
+  existing tables named with their rows. `GET /download/verify` on the recorded kit: ok, 9,601 of 9,601 matched in
+  9.5 s, image_count 9,600; the kit's `verified_at` advanced. The Doctor's manifest block carries the fallback
+  field. No token-shaped string in any answer. **PASS**, `proof_clean_rc11.json`.
+- The browser steps of TESTING.md 7.2 (the Imported view, Re-import…, the stale view), 7.5b (the submit
+  confirmation, the Doctor after Connect) and 7.7 (the Kaggle heading) are the hand test's.
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
