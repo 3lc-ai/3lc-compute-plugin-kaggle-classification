@@ -20,7 +20,7 @@
 <div class="kgc">
 <div class="plugin-page-narrow" style="padding: 24px; max-width: 900px; margin: 0 auto;">
 <style>
-/* ── Kaggle plugin styles (shared tokens from main.css / plugin-common.css), ExDark's, verbatim where used ── */
+/* ── Kaggle plugin styles (shared tokens from main.css / plugin-common.css), ExDark’s, verbatim where used ── */
 .plugin-page-narrow {
   --kgl-motion-fast: 120ms;   /* button/hover feedback, badge swaps */
   --kgl-motion-tab: 150ms;    /* tab-switch crossfade (View Transitions) */
@@ -156,7 +156,7 @@
 .kg-footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); margin: -6px 2px 16px; }
 .kg-footer a { color: inherit; text-decoration: none; }
 .kg-footer a:hover { color: var(--text-secondary); }
-/* ── Status tab (ExDark's, verbatim): hero strip + history table. Three questions at a glance: how good is
+/* ── Status tab (ExDark’s, verbatim): hero strip + history table. Three questions at a glance: how good is
    my best, what happened last, what can I do now. Paths never render in the table (actions carry them);
    relative times carry absolute titles. ── */
 .kg-hero-strip { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
@@ -196,7 +196,7 @@
 .kg-callout.info > .kgi { color: var(--text-muted); }
 .kg-callout.ok { background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.25); }
 .kg-callout.ok > .kgi { color: var(--success); }
-/* ── Train tab (ExDark's blocks, verbatim where used): locked rows, inline bounds error,
+/* ── Train tab (ExDark’s blocks, verbatim where used): locked rows, inline bounds error,
    in-run metric strip + sparkline, the revision picker popover, the usable-row line ── */
 .kg-locked-rows { margin: -4px 0 14px; }
 .kg-locked-row { display: flex; align-items: center; gap: 10px; padding: 5px 2px; border-bottom: 1px solid var(--border-light, rgba(0,0,0,.06)); font-size: 12.5px; }
@@ -208,7 +208,7 @@
 .kg-check-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; padding: 3px 0; }
 .kg-field-err { display: flex; gap: 6px; align-items: flex-start; margin-top: 4px; color: var(--danger, #ef4444); font-size: 11px; line-height: 1.4; }
 .kg-field-err .kgi { margin-top: 1px; }
-/* ── Predict + Submit tab (ExDark's two-step flow): step 2 muted until a validated prediction
+/* ── Predict + Submit tab (ExDark’s two-step flow): step 2 muted until a validated prediction
    exists (the controls also get the disabled attribute, the muting is visual, the gate is real);
    the results row = the distribution card + the hero stat side by side, collapsing narrow ── */
 .kg-step-muted { opacity: .55; pointer-events: none; }
@@ -270,7 +270,7 @@
 .kgc .fmt-icon { display: flex; color: var(--text-muted); margin-top: 2px; }
 .kgc .fmt-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
 .kgc .fmt-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
-/* Fallbacks for the Hub's shared classes, so the fragment also reads outside the Hub theme */
+/* Fallbacks for the Hub’s shared classes, so the fragment also reads outside the Hub theme */
 .kgc .card { border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); background: var(--bg-card); }
 .kgc .card-header { padding: 12px 16px 0; }
 .kgc .card-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
@@ -285,6 +285,18 @@
 .kgc .btn { font: inherit; font-size: 12.5px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); cursor: pointer; text-decoration: none; }
 .kgc .btn:disabled { opacity: .5; cursor: not-allowed; }
 .kgc .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+/* rc13 (web-design-guidelines): one visible keyboard focus ring for every interactive element of the fragment
+   (:focus-visible only, so a mouse click shows none); the Hub’s CSS defines none of its own. */
+.kgc .btn:focus-visible, .kgc .kg-tab:focus-visible, .kgc .kgl-acc-summary:focus-visible, .kgc a:focus-visible,
+.kgc [role="button"]:focus-visible, .kgc .form-control:focus-visible, .kgc input[type="checkbox"]:focus-visible,
+.kgc .kg-pop-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* rc13: the grey tints that are black-on-transparent in light mode have no token (--bg-secondary is not a Hub
+   token); on the Hub’s dark theme they vanish, so they take the dark tokens there. Light mode is untouched. */
+[data-theme="dark"] .kgc .kg-badge-reused, [data-theme="dark"] .kgc .badge-status-queued { background: var(--badge-gray-bg, rgba(255,255,255,.08)); }
+[data-theme="dark"] .kgc .kg-log-details pre { background: var(--bg, rgba(255,255,255,.04)); }
+[data-theme="dark"] .kgc .plugin-progress-wrap { background: var(--border-light, rgba(255,255,255,.1)); }
+[data-theme="dark"] .kgc .kg-callout.ok, [data-theme="dark"] .kgc .kg-badge-created, [data-theme="dark"] .kgc .kg-pop-badge { background: var(--success-bg, rgba(64,196,216,.12)); }
+[data-theme="dark"] .kgc .kg-callout.err { background: var(--error-bg, rgba(217,145,126,.12)); }
 .kgc .btn-lg { padding: 8px 16px; font-size: 13px; }
 .kgc .btn-sm { padding: 4px 9px; font-size: 12px; }
 .kgc .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
@@ -351,9 +363,9 @@
       <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
       <a data-goto="train">train</a>
       <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
-      <a id="kg-loop-inspect" target="_blank">inspect <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
+      <a id="kg-loop-inspect" target="_blank" rel="noopener">inspect <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
       <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
-      <a id="kg-loop-fixlabels" target="_blank" title="Edit labels in the Dashboard, then retrain with Use latest revision on">fix labels <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
+      <a id="kg-loop-fixlabels" target="_blank" rel="noopener" title="Edit labels in the Dashboard, then retrain with Use latest revision on">fix labels <svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h-2A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5v-2"/><path d="M9.5 2.5H13.5V6.5"/><path d="M13.5 2.5L8 8"/></svg></a>
       <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
       <a data-goto="train">retrain</a>
       <span class="kg-loop-sep"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span>
@@ -387,7 +399,7 @@
   <div class="kg-panel" id="kg-panel-import">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div>
-      <div class="card-title"><span class="plugin-section-number">1</span> Import</div>
+      <div class="card-title" role="heading" aria-level="2"><span class="plugin-section-number">1</span> Import</div>
       <div class="card-subtitle" id="kg-import-subtitle"></div>
     </div></div>
     <div class="card-body">
@@ -399,7 +411,7 @@
            use the form below). Hidden until the tab-open resolution decides
            its state; the whole section hides on Import revisit. -->
       <div id="kg-dl-section" hidden>
-        <div class="kg-sec-head">Starter kit</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Starter kit</div>
         <div id="kg-dl-banner" role="status"></div>
         <div id="kg-dl-offer" hidden>
           <!-- Two blurbs, TOGGLED by dlShowOffer, never rewritten. #kg-dl-dest
@@ -457,22 +469,22 @@
           <div>
             <div class="form-group">
               <label class="form-label required" for="kg-kit">Starter kit folder</label>
-              <input id="kg-kit" type="text" class="form-control"
+              <input id="kg-kit" name="kit_dir" type="text" class="form-control"
                      placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false">
               <div class="form-help">Path on the machine running the compute service.
                 Browsing from another computer? The starter kit must be unzipped on the
-                service's machine, and this is its path there.</div>
+                service’s machine, and this is its path there.</div>
               <div id="kg-preflight"></div>
               <div id="kg-kit-manual"></div>
             </div>
             <div class="form-group">
               <label class="form-label" for="kg-project">Project name</label>
-              <input id="kg-project" type="text" class="form-control" autocomplete="off">
+              <input id="kg-project" name="project_name" type="text" class="form-control" autocomplete="off" spellcheck="false">
             </div>
             <div class="form-group">
               <label class="form-label" for="kg-table">Table name</label>
-              <input id="kg-table" type="text" class="form-control">
-              <div class="form-help">Revision name for the imported tables. <code>initial</code> is the convention for a first import.</div>
+              <input id="kg-table" name="table_name" type="text" class="form-control" autocomplete="off" spellcheck="false">
+              <div class="form-help">Table name for the imported train and val tables. <code>initial</code> is the convention for a first import.</div>
             </div>
           </div>
           <div>
@@ -516,7 +528,7 @@
   <div class="kg-panel" id="kg-panel-train">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div>
-      <div class="card-title"><span class="plugin-section-number">2</span> Train</div>
+      <div class="card-title" role="heading" aria-level="2"><span class="plugin-section-number">2</span> Train</div>
       <div class="card-subtitle" id="kg-train-subtitle">Trains the competition baseline on your imported tables and
         records verified provenance (the locked from-scratch contract) on the 3LC Run.</div>
     </div></div>
@@ -540,12 +552,12 @@
       <div id="tr-banner"></div>
 
       <form id="tr-form" onsubmit="return false;">
-        <div class="kg-sec-head">Tables</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Tables</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div class="form-group kg-pick-wrap">
             <label class="form-label required" for="tr-train-url">Train table URL</label>
             <div class="kg-url-row">
-              <input id="tr-train-url" type="text" class="form-control" autocomplete="off" spellcheck="false">
+              <input id="tr-train-url" name="train_table_url" type="text" class="form-control" autocomplete="off" spellcheck="false">
               <button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-train-pick"
                       title="Pick a table revision" aria-label="Pick a table revision"
                       aria-haspopup="listbox" aria-expanded="false"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l6 3-6 3-6-3z"/><path d="M2 8.75l6 3 6-3"/><path d="M2 11.75l6 3 6-3"/></svg></button>
@@ -561,18 +573,18 @@
         </div>
         <div id="tr-tables-gate"></div>
         <div class="form-group" style="margin-top: 10px;">
-          <label class="kg-check-label"><input id="tr-latest" type="checkbox" checked> Use latest revision</label>
-          <div class="form-help">Trains on the train table's newest revision (<code>.latest()</code>),
-            picking up your label edits from the Dashboard. On for every new run; only "Use these
-            settings" on a previous run pins that run's revision.</div>
+          <label class="kg-check-label"><input id="tr-latest" name="use_latest" type="checkbox" checked> Use latest revision</label>
+          <div class="form-help">Trains on the train table’s newest revision (<code>.latest()</code>),
+            picking up your label edits from the Dashboard. On for every new run; only “Use these
+            settings” on a previous run pins that run’s revision.</div>
         </div>
 
         <hr class="divider">
-        <div class="kg-sec-head">Training parameters</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Training parameters</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div class="form-group" data-field="epochs">
             <label class="form-label" for="tr-epochs">Epochs</label>
-            <input id="tr-epochs" type="number" class="form-control" step="1">
+            <input id="tr-epochs" name="epochs" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
             <div class="form-help">Passes over the usable rows. <span id="tr-epochs-ref"></span>
               <span data-range="epochs"></span></div>
             <div id="tr-duration"></div>
@@ -580,7 +592,7 @@
           </div>
           <div class="form-group" data-field="batch_size">
             <label class="form-label" for="tr-batch">Batch size</label>
-            <input id="tr-batch" type="number" class="form-control" step="1">
+            <input id="tr-batch" name="batch_size" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
             <div class="form-help">Images per training step. Raise it until GPU memory runs out;
               lower it on CUDA out-of-memory. 16 fits any card at <span id="tr-batch-px"></span>px.
               <span data-range="batch_size"></span></div>
@@ -588,15 +600,15 @@
           </div>
           <div class="form-group" data-field="lr">
             <label class="form-label" for="tr-lr">Learning rate</label>
-            <input id="tr-lr" type="number" class="form-control" step="0.00001">
+            <input id="tr-lr" name="learning_rate" type="number" class="form-control" step="0.00001" inputmode="decimal" autocomplete="off">
             <div class="form-help">Initial learning rate for Adam. Higher learns faster but can diverge;
               <span id="tr-lr-sched"></span> <span data-range="lr"></span></div>
             <div class="kg-field-slot" data-for="tr-lr"></div>
           </div>
           <div class="form-group" data-field="weight_decay">
             <label class="form-label" for="tr-wd">Weight decay</label>
-            <input id="tr-wd" type="number" class="form-control" step="0.001">
-            <div class="form-help">L2 penalty on the weights (the optimizer's <code>weight_decay</code>). 0 is the
+            <input id="tr-wd" name="weight_decay" type="number" class="form-control" step="0.001" inputmode="decimal" autocomplete="off">
+            <div class="form-help">L2 penalty on the weights (the optimizer’s <code>weight_decay</code>). 0 is the
               baseline; a small value regularises a from-scratch model. <span data-range="weight_decay"></span></div>
             <div class="kg-field-slot" data-for="tr-wd"></div>
           </div>
@@ -605,19 +617,19 @@
           <div class="form-group" data-field="optimizer" hidden>
             <label class="form-label" for="tr-optimizer">Optimizer</label>
             <div class="kg-select-wrap">
-              <select id="tr-optimizer" class="form-control"></select>
+              <select id="tr-optimizer" name="optimizer" class="form-control"></select>
               <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
             </div>
-            <div class="form-help">Which optimizer updates the weights. Switching applies that optimizer's
+            <div class="form-help">Which optimizer updates the weights. Switching applies that optimizer’s
               usual learning rate above when the field still holds the previous default.</div>
           </div>
           <div class="form-group" data-field="schedule" hidden>
             <label class="form-label" for="tr-schedule">LR schedule</label>
             <div class="kg-select-wrap">
-              <select id="tr-schedule" class="form-control"></select>
+              <select id="tr-schedule" name="schedule" class="form-control"></select>
               <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
             </div>
-            <div class="form-help">How the learning rate changes over the run: the kit\'s step decay, a
+            <div class="form-help">How the learning rate changes over the run: the kit’s step decay, a
               cosine decay to zero, or constant.</div>
           </div>
         </div>
@@ -632,24 +644,24 @@
               <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; margin-top: 10px;">
                 <div class="form-group">
                   <label class="form-label" for="tr-device">Device</label>
-                  <input id="tr-device" type="text" class="form-control" value="" placeholder="auto">
+                  <input id="tr-device" name="device" type="text" class="form-control" value="" placeholder="auto" autocomplete="off" spellcheck="false">
                   <div class="form-help">Blank = auto-select: CUDA GPU if available, else <code>mps</code>
                     (Apple silicon GPU), else CPU. Or set a GPU index (<code>0</code> for the first NVIDIA
                     GPU), <code>mps</code>, or <code>cpu</code>. Training on CPU is very slow. If the
                     accelerator fails at start, the run retries on CPU and says so. The run header names
                     the reason: <code>cuda (auto)</code>, <code>cpu (forced in Advanced)</code> or
-                    <code>cpu (fallback: …)</code>. Use these settings never copies a run's device.</div>
+                    <code>cpu (fallback: …)</code>. Use these settings never copies a run’s device.</div>
                 </div>
                 <div class="form-group" data-field="workers">
                   <label class="form-label" for="tr-workers">Workers</label>
-                  <input id="tr-workers" type="number" class="form-control" step="1">
+                  <input id="tr-workers" name="workers" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
                   <div class="form-help">Dataloader worker processes. <span id="tr-workers-note"></span>
                     <span data-range="workers"></span></div>
                   <div class="kg-field-slot" data-for="tr-workers"></div>
                 </div>
                 <div class="form-group" data-field="seed">
                   <label class="form-label" for="tr-seed">Seed</label>
-                  <input id="tr-seed" type="number" class="form-control" step="1">
+                  <input id="tr-seed" name="seed" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
                   <div class="form-help">Random seed for the initialisation, the augmentation and the
                     sampler. The same seed, data and settings reproduce a run; the Run records it.
                     <span data-range="seed"></span></div>
@@ -661,7 +673,7 @@
         </div>
 
         <hr class="divider">
-        <div class="kg-sec-head">3LC settings</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">3LC settings</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div class="form-group">
             <label class="form-label">Project</label>
@@ -674,7 +686,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="tr-runname">Run name</label>
-            <input id="tr-runname" type="text" class="form-control">
+            <input id="tr-runname" name="run_name" type="text" class="form-control" autocomplete="off" spellcheck="false">
             <div class="form-help">Blank generates a timestamped name.</div>
           </div>
         </div>
@@ -707,15 +719,15 @@
            the only state. The Status tab's history table comes later from the same records. -->
       <div id="tr-runs" hidden>
         <hr class="divider">
-        <div class="kg-sec-head">Previous runs</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Previous runs</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div class="form-group">
             <label class="form-label" for="tr-runs-select">Run</label>
             <div class="kg-select-wrap">
-              <select id="tr-runs-select" class="form-control"></select>
+              <select id="tr-runs-select" name="previous_run" class="form-control"></select>
               <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
             </div>
-            <div class="form-help">This project's plugin runs, newest first.</div>
+            <div class="form-help">This project’s plugin runs, newest first.</div>
           </div>
         </div>
         <div id="tr-run-card"></div>
@@ -729,8 +741,8 @@
   <div class="kg-panel" id="kg-panel-submit">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div>
-      <div class="card-title"><span class="plugin-section-number">3</span> Predict + Submit</div>
-      <div class="card-subtitle">Inference on the kit's test images (<span class="kg-contract-imgsz"></span>px, locked) becomes a validated
+      <div class="card-title" role="heading" aria-level="2"><span class="plugin-section-number">3</span> Predict + Submit</div>
+      <div class="card-subtitle">Inference on the kit’s test images (<span class="kg-contract-imgsz"></span>px, locked) becomes a validated
         <code>submission.csv</code>; submitting it to Kaggle spends one of your daily attempts.</div>
     </div></div>
     <div class="card-body">
@@ -744,7 +756,7 @@
 
       <!-- ── Step 1: Predict (free, repeatable) ─────────────────────── -->
       <div id="ps-step1">
-        <div class="kg-sec-head">Step 1 · Predict</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Step 1 · Predict</div>
         <div id="ps1-banner"></div>
         <form id="ps-form" onsubmit="return false;">
           <div class="form-group">
@@ -756,7 +768,7 @@
             <div id="ps-src-run">
               <div class="kg-url-row">
                 <div class="kg-select-wrap" style="flex: 1; min-width: 0;">
-                  <select id="ps-run" class="form-control"><option value="">Loading runs…</option></select>
+                  <select id="ps-run" name="run" class="form-control"><option value="">Loading runs…</option></select>
                   <span class="kg-select-caret"><svg class="kgi kgi-12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6L8 10.5 12.5 6"/></svg></span>
                 </div>
                 <button type="button" id="ps-run-refresh" class="btn btn-ghost btn-sm kgi-btn"
@@ -775,7 +787,7 @@
             </div>
             <div class="form-group">
               <label class="form-label" for="ps-device">Device</label>
-              <input id="ps-device" type="text" class="form-control" value="" placeholder="auto">
+              <input id="ps-device" name="predict_device" type="text" class="form-control" value="" placeholder="auto" autocomplete="off" spellcheck="false">
               <div class="form-help">Blank = auto (CUDA &rarr; <code>mps</code> &rarr; CPU).</div>
             </div>
           </div>
@@ -793,7 +805,7 @@
 
       <!-- ── Step 2: Submit to Kaggle (spends a daily attempt) ──────── -->
       <div id="ps-step2">
-        <div class="kg-sec-head">Step 2 · Submit to Kaggle</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Step 2 · Submit to Kaggle</div>
         <div id="ps-basis"></div>
         <!-- rc10: the connection card sits OUTSIDE the muted block so Kaggle can be connected before a
              prediction exists (the competition row, the message and Submit stay muted until then). -->
@@ -808,9 +820,9 @@
             </div>
             <div class="form-group">
               <label class="form-label" for="ps-message">Submission message</label>
-              <input id="ps-message" type="text" class="form-control" placeholder="<run_name> via 3LC plugin">
+              <input id="ps-message" name="submission_message" type="text" class="form-control" placeholder="<run_name> via 3LC plugin" autocomplete="off">
               <div class="form-help">Shows in your Kaggle submission history. Blank uses
-                "&lt;run name&gt; via 3LC plugin".</div>
+                “&lt;run name&gt; via 3LC plugin”.</div>
             </div>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
@@ -844,7 +856,7 @@
   <div class="kg-panel" id="kg-panel-status">
   <div class="card" style="margin-bottom: 16px;">
     <div class="card-header"><div>
-      <div class="card-title"><span class="plugin-section-number">4</span> Status</div>
+      <div class="card-title" role="heading" aria-level="2"><span class="plugin-section-number">4</span> Status</div>
       <div class="card-subtitle">Your best score, latest activity, and submission history.</div>
     </div></div>
     <div class="card-body">
@@ -858,16 +870,16 @@
           <button type="button" id="st-refresh-btn" class="btn btn-ghost btn-sm kgi-btn"
                   title="Refresh" aria-label="Refresh status"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.97"/><path d="M13.5 2.5V6H10"/></svg></button>
         </div>
-        <div class="kg-sec-head">Runs</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Runs</div>
         <div id="st-runs" class="kg-st-wrap"><div class="form-help">Loading…</div></div>
         <hr class="divider">
-        <div class="kg-sec-head">History</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">History</div>
         <div id="st-history" class="kg-st-wrap"><div class="form-help">Loading…</div></div>
         <hr class="divider">
-        <div class="kg-sec-head" id="st-kaggle-head">Kaggle live</div>
+        <div class="kg-sec-head" id="st-kaggle-head" role="heading" aria-level="3">Kaggle live</div>
         <div id="st-kaggle"><div class="form-help">Checking Kaggle…</div></div>
         <hr class="divider">
-        <div class="kg-sec-head">Verification</div>
+        <div class="kg-sec-head" role="heading" aria-level="3">Verification</div>
         <div id="st-verify">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button type="button" id="st-export-btn" class="btn btn-secondary btn-sm kgi-btn"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8"/><path d="M4.75 7.25L8 10.5l3.25-3.25"/><path d="M3 13.25h10"/></svg><span>Export verification bundle</span></button>
@@ -1487,7 +1499,7 @@
       function kgRenderFooters(meta) {
         var repo = String(meta.repository_url || '');
         var link = function (href, label, icon) {
-          return '<a href="' + esc(href) + '" target="_blank" class="kgi-btn" ' +
+          return '<a href="' + esc(href) + '" target="_blank" rel="noopener" class="kgi-btn" ' +
                  'style="display:inline-flex;gap:4px;color:inherit">' +
                  (icon ? kgIcon(icon, 'kgi-12') : '') + '<span>' + label + '</span></a>';
         };
@@ -1690,7 +1702,7 @@
         box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
           '<span><strong>Couldn’t download the starter kit.</strong> ' + (reason ? esc(reason) + ' ' : '') +
           'Download it from the competition’s Data page on Kaggle, unzip it, and paste the folder path below.' +
-          (url ? '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(url) +
+          (url ? '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(url) +
             '"><span>Open the Data page on Kaggle</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>' : '') +
           '</span></div>';
       }
@@ -2232,7 +2244,7 @@
                   (KG_STAGE_LABELS[s] || esc(s)) + '</span>' + badge + elapsed + '</div>';
           if (isCur) {
             html += '<div class="plugin-progress-wrap" style="margin:4px 0 8px">' +
-                    '<div class="plugin-progress-bar indeterminate" style="width:30%"></div></div>';
+                    '<div class="plugin-progress-bar indeterminate" style="width:30%" role="progressbar" aria-label="Importing"></div></div>';
           }
         });
         box.innerHTML = html;
@@ -2265,7 +2277,7 @@
           KG_SPLITS.forEach(function (split) {
             var t = tables[split];
             if (t && t.url && t.exists !== false && dashboardUrl) {
-              banner += '<a class="btn btn-secondary btn-sm" target="_blank" href="' +
+              banner += '<a class="btn btn-secondary btn-sm" target="_blank" rel="noopener" href="' +
                         dashTableLink(t.url) + '">Explore ' + split + '</a>';
             }
           });
@@ -2294,8 +2306,8 @@
             '<span class="path" title="' + esc(pathShown) + '">' + esc(midTrunc(pathShown, 52)) + '</span>' +
             '<span class="kg-row-actions">' +
             '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(t.url) +
-              '" title="Copy full table path (a path on the compute service\'s machine)" aria-label="Copy full table path">' + kgIcon('copy') + '</button>' +
-            (dashboardUrl && !missing ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
+              '" title="Copy full table path (a path on the compute service’s machine)" aria-label="Copy full table path">' + kgIcon('copy') + '</button>' +
+            (dashboardUrl && !missing ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' +
               dashTableLink(t.url) + '"><span>Explore</span>' +
               kgIcon('arrow-right', 'kgi-12') + '</a>' : '') +
             '<span class="kg-reimport-slot">' +
@@ -2804,7 +2816,7 @@
             '<span class="kg-run-meta"><span class="epoch" id="kg-dl-prog-label"></span>' +
             '<span id="kg-dl-prog-elapsed"></span></span>' +
             '<button type="button" id="kg-dl-cancel" class="btn btn-ghost btn-sm" style="margin-left: auto;">Cancel</button></div>' +
-            '<div class="plugin-progress-wrap"><div class="plugin-progress-bar" id="kg-dl-prog-bar" style="width:0%"></div></div>' +
+            '<div class="plugin-progress-wrap" role="progressbar" aria-label="Starter kit download" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="kg-dl-prog-wrap"><div class="plugin-progress-bar" id="kg-dl-prog-bar" style="width:0%"></div></div>' +
             '<span class="kg-visually-hidden" id="kg-dl-announce" aria-live="polite"></span>';
           el('kg-dl-cancel').addEventListener('click', dlCancel);
         }
@@ -2818,6 +2830,7 @@
           ? 'elapsed ' + fmtDur(Date.now() / 1000 - job.created_at) : '';
         var pct = Math.min(100, Math.round(p.percent || 0));
         el('kg-dl-prog-bar').style.width = pct + '%';
+        el('kg-dl-prog-wrap').setAttribute('aria-valuenow', String(pct));
         kgSetTitleProgress(pct);
         var quartile = Math.floor(pct / 25) * 25;
         var ann = el('kg-dl-announce');
@@ -3082,7 +3095,7 @@
                   }
                   html += '<button type="button" class="kg-pop-row' + (off ? ' kg-pop-row-off' : '') +
                           '" data-url="' + esc(t.url) + '" data-latest="' + (t.latest ? '1' : '0') + '"' +
-                          (off ? ' disabled title="Different import: can\'t be trained on (not a revision of the imported table)"' : '') +
+                          (off ? ' disabled title="Different import: can’t be trained on (not a revision of the imported table)"' : '') +
                           ' style="padding-left:' + (8 + depth * 14) + 'px">' +
                           '<span class="kg-pop-name">' + (depth ? '<span class="kg-pop-tree">└─</span>' : '') + esc(t.name) + '</span>' +
                           (t.latest ? '<span class="kg-pop-badge">LATEST</span>' : '') +
@@ -3092,7 +3105,7 @@
               });
               var graph = kgHubProjectsHref(kgCurrentProject(), 'datasets');
               if (html && graph) {
-                html += '<div class="kg-pop-foot"><a class="kgi-btn" target="_blank" href="' + esc(graph) +
+                html += '<div class="kg-pop-foot"><a class="kgi-btn" target="_blank" rel="noopener" href="' + esc(graph) +
                         '"><span>Open revision graph in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>';
               }
               pop.innerHTML = html ||
@@ -3276,8 +3289,8 @@
         lr: 'Locked for this competition: every run starts from the same learning rate.',
         weight_decay: 'Locked for this competition: the same L2 penalty for every run.',
         seed: 'Locked for this competition: the same seed for every run, so only the data differs.',
-        optimizer: 'The starter kit\'s optimizer. The learning rate and weight decay are yours to tune.',
-        schedule: 'The starter kit\'s step schedule (StepLR): the learning rate is multiplied by the factor at every step. Fixed so runs stay comparable.'
+        optimizer: 'The starter kit’s optimizer. The learning rate and weight decay are yours to tune.',
+        schedule: 'The starter kit’s step schedule (StepLR): the learning rate is multiplied by the factor at every step. Fixed so runs stay comparable.'
       };
       function trIsEditable(key) {
         var t = kgTraining || {};
@@ -3301,7 +3314,7 @@
           ? (mf.backbone_label || model.arch) + ' from random init · ' + model.image_size + 'px' : '';
         var rows = [
           ['Model', model.arch ? (mf.backbone_label || model.arch) + (mf.head_label ? ' · ' + mf.head_label : '') : '',
-           'The starter kit\'s model, exactly: torchvision ResNet-18 from scratch with the kit\'s MLP head. Identical for every participant; the leaderboard measures your data work, not your compute.'],
+           'The starter kit’s model, exactly: torchvision ResNet-18 from scratch with the kit’s MLP head. Identical for every participant; the leaderboard measures your data work, not your compute.'],
           ['Init', model.arch ? (mf.init_label || 'random (pretrained = false)') + (mf.torchvision_version ? ' · torchvision ' + mf.torchvision_version : '') : '',
            'No pretrained weights anywhere: every participant starts from the same random initialisation rule. The Run records pretrained = false and the framework version as proof.'],
           ['Image size', model.image_size ? String(model.image_size) : '',
@@ -3421,7 +3434,7 @@
         box.innerHTML = '<div class="kg-locked-row" title="' + esc(url) + '"><span class="lbl">Locked</span>' +
           '<span class="val">' + esc(kgTableRef(url) || midTrunc(url, 40)) + (rows ? ' · ' + fmtCount(rows) + ' rows' : '') + '</span>' +
           '<span class="kg-lock-actions"><button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(url) +
-          '" title="Copy val table path (a path on the compute service\'s machine)" aria-label="Copy val table path">' + kgIcon('copy', 'kgi-12') + '</button>' +
+          '" title="Copy val table path (a path on the compute service’s machine)" aria-label="Copy val table path">' + kgIcon('copy', 'kgi-12') + '</button>' +
           kgIcon('lock', 'kgi-12') + '</span></div>' + kgValEditedWarning();
         kgBindCopy(box);
       }
@@ -3513,7 +3526,7 @@
             '<span id="tr-run-device"></span>' +
             '<span id="tr-run-elapsed"></span><span id="tr-run-eta"></span></span>' +
             '<span id="tr-run-watch" class="kg-run-watch"></span></div>' +
-            '<div class="plugin-progress-wrap" id="tr-run-track">' +
+            '<div class="plugin-progress-wrap" id="tr-run-track" role="progressbar" aria-label="Training" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
             '<div class="plugin-progress-bar" id="tr-run-bar" style="width:0%"></div></div>' +
             '<div class="kg-metric-strip" id="tr-metric-strip"></div>' +
             '<div id="tr-run-note"></div>';
@@ -3528,7 +3541,7 @@
           var watchHref = (status === 'running' && facts.run_url)
             ? kgHubProjectsHref(facts.project_name || (job.params || {}).project_name || '') : '';
           var watchHtml = watchHref
-            ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(watchHref) +
+            ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(watchHref) +
               '"><span>Watch run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '';
           if (watchBox.innerHTML !== watchHtml) { watchBox.innerHTML = watchHtml; }
         }
@@ -3561,8 +3574,9 @@
           bar.style.width = '30%';
         } else {
           bar.classList.remove('indeterminate');
-          bar.style.width =
-            (total ? Math.min(100, Math.round(100 * (epoch + within) / total)) : 0) + '%';
+          var barPct = total ? Math.min(100, Math.round(100 * (epoch + within) / total)) : 0;
+          bar.style.width = barPct + '%';
+          el('tr-run-track').setAttribute('aria-valuenow', String(barPct));
         }
         trRenderMetricStrip(p.history || []);
         // Stage note: the final per-sample pass after the last epoch (and the CPU retry, the
@@ -3660,14 +3674,14 @@
               '<span style="min-width:0;overflow:hidden;white-space:nowrap;color:var(--text-secondary)" ' +
               'title="' + esc(weights) + '">' + esc(midTrunc(weights, 64)) + '</span>' +
               '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(weights) +
-              '" title="Copy checkpoint path (a path on the compute service\'s machine)" aria-label="Copy checkpoint path">' + kgIcon('copy') + '</button></div>'
+              '" title="Copy checkpoint path (a path on the compute service’s machine)" aria-label="Copy checkpoint path">' + kgIcon('copy') + '</button></div>'
             : '') +
           '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
           '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="tr-continue-submit">' +
           '<span>Continue to Submit</span>' + kgIcon('arrow-right') + '</button>' +
-          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(link) +
                   '"><span>Open Run in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
-          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(projectsHref) +
                   '"><span>Open Run in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
           (revisit ? '<button type="button" class="btn btn-ghost btn-sm" id="tr-start-new">Start new run</button>' : '') +
           '</div></div></div>';
@@ -3740,7 +3754,7 @@
             el('tr-result').innerHTML =
               '<div class="kg-callout info">' + kgIcon('info') + '<span>Review per-sample ' +
               'losses and embeddings in the Run to find label issues; fix them in the ' +
-              'Dashboard and retrain with "Use latest revision" on. That loop is the ' +
+              'Dashboard and retrain with “Use latest revision” on. That loop is the ' +
               'competition.</span></div>';
           }
           trShowForm(!revisit);
@@ -3866,7 +3880,7 @@
                         'Pick a revision of the imported train table.');
         }
         if (info.label_map_ok === false) {
-          headline = headline || 'This table\'s class map is not the imported one.';
+          headline = headline || 'This table’s class map is not the imported one.';
           problems.push('Label edits must keep the competition classes. Pick a revision of the imported train table.');
         }
         if (maxRows && typeof rev.rows === 'number' && rev.rows > maxRows) {
@@ -4459,7 +4473,7 @@
           ['Status', '<span class="badge badge-status-' + esc(badgeCls) + '">' + esc(trStatusLabel(r.status)) + '</span>'],
           ['Trained on', rev ? esc(rev) + (typeof r.usable_rows === 'number' ? ' · ' + fmtCount(r.usable_rows) + ' usable rows' : '') : '–'],
           ['Settings', esc(trHpLine(r.params) || (r.params_missing ? 'not recorded' : '–')) +
-                       (r.params_source === 'run' ? ' <span style="color:var(--text-muted)">(from the Run\'s record)</span>' : '')],
+                       (r.params_source === 'run' ? ' <span style="color:var(--text-muted)">(from the Run’s record)</span>' : '')],
           ['Best', esc(best)],
           ['Device', esc(r.device_label || r.device || r.device_class || '–')],
           ['Elapsed', r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '–']
@@ -4468,9 +4482,9 @@
           return '<div class="kg-locked-row"><span class="lbl">' + esc(row[0]) + '</span><span class="val">' + row[1] + '</span></div>';
         }).join('') + '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
-          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+          (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(link) +
                   '"><span>Open in Dashboard</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
-          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+          (projectsHref ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(projectsHref) +
                   '"><span>Open in Projects</span>' + kgIcon('external-link', 'kgi-12') + '</a>' : '') +
           '<button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-run-use"' +
           (r.params_missing ? ' disabled title="' + esc(r.params_missing) + '"' : '') + '>' + kgIcon('refresh-cw', 'kgi-12') +
@@ -4512,7 +4526,7 @@
               trVerifyTables(true);
               note.textContent += ' Train table set to ' + kgTableRef(r.train_table_url) + '.';
             } else {
-              note.textContent += ' That run\'s train table is not in the current lineage; the table field was left as is.';
+              note.textContent += ' That run’s train table is not in the current lineage; the table field was left as is.';
             }
           })
           .catch(function () { /* settings applied; the table stays */ });
@@ -5165,7 +5179,7 @@
             '<span class="badge badge-status-running">running</span>' +
             '<span class="kg-run-meta"><span class="epoch" id="ps-prog-count"></span>' +
             '<span id="ps-prog-elapsed"></span></span></div>' +
-            '<div class="plugin-progress-wrap"><div class="plugin-progress-bar" id="ps-prog-bar" style="width:0%"></div></div>' +
+            '<div class="plugin-progress-wrap" role="progressbar" aria-label="Inference" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="ps-prog-wrap"><div class="plugin-progress-bar" id="ps-prog-bar" style="width:0%"></div></div>' +
             '<span class="kg-visually-hidden" id="ps-prog-announce" aria-live="polite"></span>';
         }
         var total = p.total_images || 0;
@@ -5177,6 +5191,7 @@
         var pct = (typeof p.percent === 'number') ? Math.max(0, Math.min(100, Math.round(p.percent)))
           : (total ? Math.min(100, Math.round(100 * (p.images || 0) / total)) : 0);
         el('ps-prog-bar').style.width = pct + '%';
+        el('ps-prog-wrap').setAttribute('aria-valuenow', String(pct));
         // Screen-reader announcements throttle to quartiles, not poll ticks.
         var quartile = Math.floor(pct / 25) * 25;
         var ann = el('ps-prog-announce');
@@ -5262,12 +5277,12 @@
         return '<div class="kg-csv-row">' +
           '<span class="fname">' + esc(fname) + '</span>' +
           '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(csvPath) +
-          '" title="Copy CSV path (a path on the compute service\'s machine. Download CSV works from anywhere)" aria-label="Copy CSV path">' + kgIcon('copy') + '</button>' +
+          '" title="Copy CSV path (a path on the compute service’s machine. Download CSV works from anywhere)" aria-label="Copy CSV path">' + kgIcon('copy') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm kgi-btn" data-download="' + esc(jobId) +
           '">' + kgIcon('download') + '<span>Download CSV</span></button>' +
           '<span class="path full">' + esc(csvPath) + '</span>' +
-          '<span class="kg-csv-note">Saved at that path on the compute service\'s machine. You can upload it by hand on ' +
-          'Kaggle\'s Submit page (Download CSV fetches it to this browser); Step 2 submits it from here once Kaggle is connected.</span></div>';
+          '<span class="kg-csv-note">Saved at that path on the compute service’s machine. You can upload it by hand on ' +
+          'Kaggle’s Submit page (Download CSV fetches it to this browser); Step 2 submits it from here once Kaggle is connected.</span></div>';
       }
 
       // Results panel = step 1's decision surface. First live completion enters with the checks
@@ -5488,9 +5503,13 @@
           (withConnect ? ' · <a data-kconnect tabindex="0" role="button">Connect in Step 2</a>' : '');
         var go = box.querySelector('[data-kconnect]');
         if (go) {
-          go.addEventListener('click', function () {
+          var goConnect = function () {
             var f = el('ps-kg-token');
-            if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); }
+            if (f) { f.scrollIntoView({ block: 'center', behavior: kgMotionOK() ? 'smooth' : 'auto' }); f.focus(); }
+          };
+          go.addEventListener('click', goConnect);
+          go.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goConnect(); }
           });
         }
       }
@@ -5508,7 +5527,7 @@
           '<span><strong>Kaggle isn’t connected yet.</strong><br>' +
           '<span style="opacity:.85">Get a token at kaggle.com › Settings › API › Create New Token, then paste it here.</span></span></div>' +
           '<div class="kg-kconnect">' +
-          '<input id="ps-kg-token" type="password" class="form-control" placeholder="KGAT_…" autocomplete="off" ' +
+          '<input id="ps-kg-token" name="kaggle_token" type="password" class="form-control" placeholder="KGAT_…" autocomplete="off" spellcheck="false" ' +
           'autocapitalize="off" spellcheck="false" aria-label="Kaggle access token"' + (kgDevMode ? ' disabled' : '') + '>' +
           '<button type="button" id="ps-kg-connect" class="btn btn-primary kgi-btn"' + (kgDevMode ? ' disabled' : '') + '>' +
           kgIcon('check-circle', 'kgi-16') + '<span>Connect</span></button>' +
@@ -5593,7 +5612,7 @@
             esc(s.username || '?') + '</strong>) has not accepted the competition rules yet; ' +
             'submissions would be rejected.' +
             '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" href="' +
-            esc(s.competition_url || psManifestFacts().competitionUrl || '#') + '" target="_blank"><span>Open competition page</span>' +
+            esc(s.competition_url || psManifestFacts().competitionUrl || '#') + '" target="_blank" rel="noopener"><span>Open competition page</span>' +
             kgIcon('external-link', 'kgi-12') + '</a></div></span></div>';
           psKStatus('warn', 'Kaggle: connected as <strong>' + esc(s.username || '?') + '</strong> · competition not joined');
         } else if (s.state === 'ready') {
@@ -5657,7 +5676,7 @@
           '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
           '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="ps-continue-status">' +
           '<span>Continue to Status</span>' + kgIcon('arrow-right') + '</button>' +
-          '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(viewUrl) +
+          '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(viewUrl) +
           '"><span>View on Kaggle</span>' + kgIcon('external-link', 'kgi-12') + '</a>' +
           '</div></div></div>';
         el('ps-continue-status').addEventListener('click', function () { showTab('status'); });
@@ -6089,7 +6108,7 @@
             psRenderConnState({ state: 'no_credentials', token_path: 'C:\\Users\\participant\\.kaggle\\access_token', connect: {
               shell: 'PowerShell', path: 'C:\\Users\\participant\\.kaggle\\access_token',
               command: 'New-Item -ItemType Directory -Force "C:\\Users\\participant\\.kaggle" | Out-Null; Set-Content -LiteralPath "C:\\Users\\participant\\.kaggle\\access_token" -Value "KGAT_<your token>" -NoNewline -Encoding ascii',
-              env_var: 'KAGGLE_API_TOKEN=KGAT_<your token> in the compute service\'s environment, then restart it',
+              env_var: 'KAGGLE_API_TOKEN=KGAT_<your token> in the compute service’s environment, then restart it',
               legacy: 'C:\\Users\\participant\\.kaggle\\kaggle.json with {"username": "<you>", "key": "<legacy API key>"}' } });
           } else if (mode === 'submit-notjoined') {
             loadDevRuns(true);
@@ -6294,12 +6313,12 @@
             ? r.best_val_accuracy.toFixed(1) + '% at epoch ' + fmtCount(r.best_epoch)
             : (r.status === 'running' ? 'training…' : 'no checkpoint');
           var runCell = link
-            ? '<a href="' + esc(link) + '" target="_blank" title="Open the Run in the Dashboard"><strong>' + esc(stRunName(r)) + '</strong></a>'
+            ? '<a href="' + esc(link) + '" target="_blank" rel="noopener" title="Open the Run in the Dashboard"><strong>' + esc(stRunName(r)) + '</strong></a>'
             : '<strong>' + esc(stRunName(r)) + '</strong>';
           var actions =
-            (link ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" href="' + esc(link) +
+            (link ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(link) +
                     '" title="Open Run in Dashboard" aria-label="Open Run in Dashboard">' + kgIcon('external-link') + '</a>' : '') +
-            (projectsHref ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" href="' + esc(projectsHref) +
+            (projectsHref ? '<a class="btn btn-ghost btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(projectsHref) +
                     '" title="Open Run in Projects" aria-label="Open Run in Projects">' + kgIcon('git-branch') + '</a>' : '');
           html += '<tr><td>' + runCell + '</td>' +
                   '<td>' + esc(r.train_table_url ? kgTableRef(r.train_table_url) : '–') + '</td>' +
@@ -6331,7 +6350,7 @@
         records.forEach(function (row) {
           var link = row.run_url ? dashRunLink(row.run_url) : '';
           var runCell = link
-            ? '<a href="' + esc(link) + '" target="_blank" title="Open the originating Run in the Dashboard"><strong>' + esc(stRunName(row)) + '</strong></a>'
+            ? '<a href="' + esc(link) + '" target="_blank" rel="noopener" title="Open the originating Run in the Dashboard"><strong>' + esc(stRunName(row)) + '</strong></a>'
             : '<strong>' + esc(stRunName(row)) + '</strong>';
           var score = (typeof row.val_accuracy === 'number')
             ? '<span class="score">' + esc(psFmtPct(row.val_accuracy)) + '</span>' : '<span class="kg-delta-flat">–</span>';
@@ -6426,7 +6445,7 @@
                 'Your submissions still score normally, and the History above keeps every submission with the score Kaggle returned.'
               : 'Kaggle’s submission list isn’t available for this competition right now (a known Kaggle API limitation). ' +
                 'Your submissions still score normally on the web leaderboard.') +
-            '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
+            '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' +
             esc(lbUrl) + '"><span>View leaderboard on Kaggle</span>' + kgIcon('external-link', 'kgi-12') +
             '</a></div></span></div>';
           if (rawErrors.length) {

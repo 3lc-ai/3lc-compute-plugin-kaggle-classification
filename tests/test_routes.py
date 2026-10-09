@@ -120,7 +120,7 @@ def test_fragment_is_the_exdark_import_tab():
         'id="kg-import-progress"', 'id="kg-checks"', 'id="kg-result"',
         'id="kg-log-toggle"', "Show log", "data-kg-footer", "Continue to Train", "<span>Explore</span>",
         "Tables not found.", "Go to Import", "Compute service unreachable, retrying", "Reconnected.", "Copy diagnostics",
-        "Importing… (safe to navigate away)", "Dataset at a glance", "Revision name for the imported tables.",
+        "Importing… (safe to navigate away)", "Dataset at a glance", "Table name for the imported train and val tables.",
         "Path on the machine running the compute service.", "function kgSplitsPlaceholder", "function kgRenderSplitsLocked",
         "Detected: train / val · ", "Matches the competition manifest.", "Explore ' + split", "kg-badge-reused", "kg-badge-created",
         "Re-import fresh", "function kgReimportFresh", "kg-reimport-slot",
@@ -236,7 +236,7 @@ def test_fragment_is_the_exdark_train_tab():
         "function trStatusLabel", "return status === 'stale' ? 'interrupted' : (status || '?');", "function trRunFolder",
         "return trRunFolder(r) + ' · ' + trStatusLabel(r.status)", "esc(trStatusLabel(r.status))", "esc(trStatusLabel(status))",
         # Item 6: older runs show backfilled settings; unrecoverable ones disable Use these settings with a reason.
-        "r.params_missing ? 'not recorded'", "(from the Run\\'s record)", "if (!r.params_missing) { el('tr-run-use')",
+        "r.params_missing ? 'not recorded'", "(from the Run’s record)", "if (!r.params_missing) { el('tr-run-use')",
         # Item 7: the tree connector is inline before the name and names never wrap; a three-level fixture.
         '<span class="kg-pop-name">', ".kg-pop-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }",
         ".kg-pop-tree { display: inline;", "'train-state2-tree'", "depth: 2, parent: aUrl", "var kgDevTables = null;",
