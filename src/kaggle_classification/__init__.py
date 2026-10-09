@@ -72,6 +72,25 @@ def generic_timing(progress: dict[str, Any]) -> dict[str, Any] | None:
     return out
 
 
+JOB_LABELS = {"download_kit": "Download starter kit", "import": "Import", "train": "Train", "predict": "Predict",
+              "kaggle_submit": "Submit to Kaggle"}
+
+
+def job_label(kind: str, params: dict[str, Any], manifest: Any) -> str:
+    """The Queue card's opening subtitle: ``<job> · <project>`` (rc11, item 17). Never a rows summary —
+    that stays in the log lines."""
+    from kaggle_classification import session
+
+    label = JOB_LABELS.get(kind, kind or "Job")
+    project = str(params.get("project_name") or "").strip()
+    if not project:
+        try:
+            project = str(session.populated_session(manifest).get("project_name") or "")
+        except Exception:
+            project = ""
+    return f"{label} · {project}" if project else label
+
+
 class _JobCtxAdapter:
     """Duck-typed job context the stage modules program against, over the SDK ``JobContext``.
 
@@ -170,6 +189,9 @@ class KaggleClassificationPlugin(ComputePlugin):
             f"Manifest: {provenance['manifest_source']} ({provenance['competition_id']}, kit "
             f"{provenance['kit_version']}, sha256 {str(provenance['manifest_sha256'])[:12]})"
         )
+        # rc11 (item 17): the Queue card's subtitle opens as "<job> · <project>" — the host owns the title
+        # (always the plugin's name, tlc_compute job_manager `to_generic`), the label is ours.
+        ctx.progress(percent=0.0, label=job_label(kind, params, current))
 
         if kind == "download_kit":
             try:

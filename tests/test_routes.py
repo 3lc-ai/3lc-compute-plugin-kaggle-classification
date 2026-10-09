@@ -115,13 +115,21 @@ def test_fragment_is_the_exdark_import_tab():
         'class="kg-id-row"', "Competition constraints", 'id="kg-loop"', 'id="kg-loop-inspect"', 'id="kg-loop-fixlabels"',
         'id="kg-tabs"', 'id="kg-state-import"', "Starter kit → 3LC tables", "Predict → CSV → Kaggle", "History &amp; leaderboard",
         'id="kg-conn-banner"', 'id="kg-dl-section"', 'id="kg-dl-offer"', 'id="kg-dl-dest"', 'id="kg-dl-btn"', 'id="kg-dl-progress"',
-        'id="kg-import-banner"', 'id="kg-import-form"', 'for="kg-kit"', 'id="kg-project"', 'id="kg-table"', 'id="kg-splits-body"',
+        'id="kg-import-banner"', 'id="kg-import-form"', 'for="kg-kit"', 'id="kg-project"', 'id="kg-table"',
         'id="kg-glance"', 'id="kg-import-btn"', "Import &amp; Validate", 'id="kg-import-progress"', 'id="kg-checks"', 'id="kg-result"',
-        'id="kg-log-toggle"', "Show log", "data-kg-footer", "Continue to Train", "Explore ", "REUSED", "CREATED", "Start over",
+        'id="kg-log-toggle"', "Show log", "data-kg-footer", "Continue to Train", "<span>Explore</span>",
         "Tables not found.", "Go to Import", "Compute service unreachable, retrying", "Reconnected.", "Copy diagnostics",
-        "Importing… (safe to navigate away)", "Dataset at a glance", "Detected: train / val", "Matches the competition manifest",
-        "var KG_REMEDIES", "function kgRenderProgress", "function renderResult", "function renderFailBanner", "function kgRenderRevisit",
+        "Importing… (safe to navigate away)", "Dataset at a glance",
+        "var KG_REMEDIES", "function kgRenderProgress", "function renderResult", "function renderFailBanner",
         "function dlRenderQuiet", "function dlRenderSuperseded", "function dlRenderProgress", "prefers-reduced-motion: no-preference",
+        # rc11 (CONTEXT.md decisions 2026-10-09, back-port to ExDark after the event): the Import tab and shell pass.
+        'id="kg-imported"', 'id="kg-reimport-confirm"', 'id="kg-adv-toggle"', 'id="kg-manifest-note"', 'id="kg-kaggle-fallback"',
+        'id="kg-kit-manual"', 'id="kg-hero-toggle"', "Matches competition manifest ✓", "function kgRenderImported", "function kgRenderStale",
+        "function kgRenderImportFromState", "function kgConfirmReimport", "function kgReloadConfig", "function kgRenderManifestNote",
+        "function kgShowKaggleFallback", "function kgRenderKitManual", "function kgHeroInit", "function kgDisplayPath",
+        "Found existing tables", "'found existing'", "'imported'", "Re-import…", "Your existing tables and label edits are kept.",
+        "Starter kit ready", "images + manifest", "Re-verify", "/competitions/' + slug + '/data", "Open the Data page on Kaggle",
+        "is missing on disk", "checks passed", "if (kgImporting) { return; }",
     ):
         assert needle in html, needle
     # Dropped on purpose (allowed difference 4): the Ultralytics band and the YOLO format banner on
@@ -139,13 +147,18 @@ def test_fragment_is_the_exdark_import_tab():
     # Decisions of 2026-09-28 (EXDARK_MIRROR §3): Re-import fresh in ExDark's slot, writing fresh
     # tables (mode=reimport, never overwrite); ExDark's exact stepper dot; the hero title is the
     # manifest's display name; the ?kgdev fixtures ported.
-    assert "Re-import fresh" in html and "kgStartImport({ reimport: true })" in html
+    assert "kgStartImport({ reimport: mode === 'reimport'" in html
     assert "mode: opts.reimport ? 'reimport' : 'import'" in html
+    # rc11: gone on purpose — the locked splits block, Start over, the per-row Re-import, the Explore buttons in the
+    # banner, the REUSED / CREATED badges, the native confirm() on Submit.
+    for gone in ('id="kg-splits-body"', "Start over</button>", "Re-import fresh", "kg-badge-reused", "Explore ' + split", "window.confirm('This spends"):
+        assert gone not in html, gone
     assert "var currentSeen = false;" in html
     assert "querySelector('.kg-id-title').textContent = comp.display_name" in html
     assert "function kgDevForce(mode)" in html and "function kgDevDisableActions()" in html
-    for state in ("state1", "state2", "state2-mismatch", "state2-error", "state3", "state4", "state5", "state6",
-                  "state6-superseded", "dl-empty", "dl-running", "dl-verify", "dl-success", "dl-fail", "dl-cancelled",
+    for state in ("state1", "state1-bundled", "state2", "state2-existing", "state2-mismatch", "state2-error", "state3",
+                  "state4", "state5", "state6", "state6-found", "state6-stale", "state6-superseded", "dl-empty", "dl-running",
+                  "dl-verify", "dl-verify-fail", "dl-success", "dl-fail", "dl-fail-checks", "dl-fail-kaggle", "dl-cancelled",
                   "dl-revisit", "dl-superseded"):
         assert f"mode === '{state}'" in html, state
     # Fix c: a stale result never sits next to a new amber/red preflight.
@@ -307,6 +320,11 @@ SAFE_IDENTS = {
     # the pre-built table cells (runCell, actions, pub, deltaCell, o.html — all from esc / kgIcon above)
     # and the launched flag the Kaggle callout branches on
     "big", "mainHtml", "noteHtml", "runCell", "actions", "pub", "deltaCell", "o.html", "s.launched",
+    # rc11 (the Import tab and shell pass): the pre-escaped pieces and the flags the new templates branch on
+    "reusedAll", "validated", "revText", "rowsText", "whenText", "pathShown", "kitShown", "whenLbl", "found", "v", "kit",
+    "facts", "missing.length", "imgs", "state.source", "state.verified_at", "state.imported_at", "left", "fb", "mode",
+    "t.exists", "t.latest_revision", "t.revision", "res.image_count", "res.file_count", "failed.length", "hasCsv", "url",
+    "known", "kitDir", "testN", "KG_BTN_REIMPORT",
 }
 HEAD = re.compile(
     r"(?:\.innerHTML\s*\+?=|\bvar (?:html|banner|mhtml|chips|lines|badge|elapsed|text|head|tail|KG_[A-Z_]+)\s*=|"

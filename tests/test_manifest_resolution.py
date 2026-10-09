@@ -360,3 +360,79 @@ def test_manifest_document_may_be_yaml_or_json():
     assert m._decode_document(json.dumps(data).encode()) == data
     assert m._decode_document(m.bundled_path().read_bytes())["competition"]["id"] == "intel-scene"
     assert copy.deepcopy(data) == data
+
+
+# ── rc11: the fallback notice and the remote-down memory (items 13 and 15) ────────────────
+
+
+def test_fallback_status_is_quiet_until_a_remote_attempt_concludes(cdn):
+    """A fresh start renders cache / bundled without the network; the notice must not flash before the
+    first refresh has answered."""
+    status = m.fallback_status("bundled")
+    assert status["active"] is False and status["refresh_state"] == "idle"
+
+
+def test_fallback_status_names_the_bundled_copy_once_the_index_is_unreachable(cdn):
+    cdn.close()
+    res = m.resolve()
+    assert res.manifest.source == "bundled"
+    status = m.fallback_status(res.manifest.source)
+    assert status["active"] is True and status["source"] == "bundled"
+    assert status["reason"] == "Using the built-in competition manifest; the server couldn't be reached."
+    assert status["detail"]  # the urllib error, for the Doctor's copy-diagnostics only
+
+
+def test_fallback_status_clears_when_the_remote_answers_again(cdn, monkeypatch):
+    cdn.close()
+    m.resolve()
+    assert m.remote_down_recently() is True
+    # A new CDN on a new port: the override follows it, the next resolution succeeds and clears the mark.
+    fresh = LocalCDN(cdn.root)
+    try:
+        monkeypatch.setenv(m.MANIFEST_BASE_URL_ENV, fresh.base)
+        _remote(fresh)
+        res = m.resolve()
+        assert res.manifest.source == "remote"
+        assert m.remote_down_recently() is False
+        m._refresh.update({"state": "done", "source": "remote", "warnings": []})
+        assert m.fallback_status("cache")["active"] is False
+    finally:
+        fresh.close()
+
+
+def test_job_start_skips_the_fetch_budget_while_the_remote_is_known_down(cdn, monkeypatch):
+    """Item 15: after one unreachable index, a job start resolves locally at once and kicks the
+    background retry instead of paying the budget again."""
+    cdn.close()
+    m.resolve()
+    assert m.remote_down_recently()
+    calls = []
+
+    def no_fetch(*a, **k):
+        calls.append(1)
+        raise m.FetchError("down")
+
+    monkeypatch.setattr(m, "fetch_bytes", no_fetch)
+    kicked = []
+    monkeypatch.setattr(m, "refresh_in_background", lambda **kw: kicked.append(kw) or {"state": "running"})
+    t1 = time.monotonic()
+    manifest, prov = m.resolve_manifest_for_job()
+    assert time.monotonic() - t1 < 1.0
+    assert calls == [] and kicked == [{"force": True}]
+    assert prov["manifest_source"] == "bundled"
+    # The TTL passes: the next job start probes the CDN again.
+    monkeypatch.setattr(m, "REMOTE_DOWN_TTL_S", 0.0)
+    assert m.remote_down_recently() is False
+
+
+def test_refresh_records_the_resolution_warnings(cdn):
+    cdn.close()
+    m.refresh_in_background(force=True)
+    for _ in range(200):
+        if m.refresh_status()["state"] != "running":
+            break
+        time.sleep(0.05)
+    done = m.refresh_status()
+    assert done["state"] == "done" and done["source"] == "bundled"
+    assert any("could not be reached" in w for w in done["warnings"])
+    assert m.fallback_status("bundled")["active"] is True

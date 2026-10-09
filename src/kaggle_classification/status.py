@@ -450,6 +450,8 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
     prov["manifest_fetched_at"] = prov.get("manifest_fetched_at") or cache_info.get("fetched_at")
     prov["refresh_state"] = refresh.get("state")
     prov["refresh_error"] = refresh.get("error")
+    # rc11 (item 13): the same notice the Import tab shows when the manifest in use is not the remote one.
+    prov["fallback"] = manifest_mod.fallback_status(prov.get("manifest_source_local"))
     try:
         kit_state = kit.download_state(manifest)
     except Exception as exc:

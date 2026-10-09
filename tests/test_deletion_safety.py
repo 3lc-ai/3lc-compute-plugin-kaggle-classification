@@ -55,20 +55,24 @@ def test_the_only_table_deletion_is_the_import_rollback():
 
 
 def test_start_over_is_a_view_change_only():
-    """ExDark's Start over (kgEnterFormState): the form comes back, the banners clear, the download
-    section re-resolves with read-only fetches. No job starts, nothing is deleted."""
+    """The form state (kgEnterFormState) is a view change: the form comes back, the banners clear, the download
+    section re-resolves from the config payload. No job starts, nothing is deleted. rc11: Start over is gone;
+    the one Re-import… action confirms with the server-named table and then starts a job that writes beside."""
     html = (SRC / "ui" / "ui.html").read_text(encoding="utf-8")
-    assert "el('kg-start-over').addEventListener('click', function () { kgEnterFormState(true); });" in html
+    assert "function kgEnterFormState(animate)" in html and "el('kg-start-over')" not in html
     body = re.search(r"function kgEnterFormState\(animate\) \{(.*?)\n      \}", html, re.S).group(1)
     assert "el('kg-import-form').style.display = ''" in body and "dlInit()" in body
     for forbidden in ("PluginJobs.start", "kgStartJob(", "DELETE", "'reimport'"):
         assert forbidden not in body, forbidden
     # No plugin route deletes anything, and the fragment never issues a DELETE.
     assert "method: 'DELETE'" not in html and '"DELETE"' not in html
-    # Re-import fresh (decision 2026-09-28): ExDark's button, but it starts a mode=reimport job that
-    # writes fresh tables beside the old ones. No overwrite anywhere in the fragment or the backend.
-    reimport = re.search(r"function kgReimportFresh\(split, url\) \{(.*?)\n      \}", html, re.S).group(1)
-    assert "kgStartImport({ reimport: true })" in reimport
+    # Re-import… (rc11, item 10): a read-only preflight names the table first, the participant confirms, and only
+    # then a mode=reimport (or, for a stale record, mode=import) job starts. Nothing is overwritten anywhere.
+    reimport = re.search(r"function kgConfirmReimport\(mode\) \{(.*?)\n      \}", html, re.S).group(1)
+    assert "/import/preflight?kit_dir=" in reimport and "kgStartImport({ reimport: mode === 'reimport'" in reimport
+    assert "Your existing tables and label edits are kept." in reimport
+    for forbidden in ("DELETE", "overwrite"):
+        assert forbidden not in reimport, forbidden
     # No overwrite request can leave the fragment: no such string literal, no force flag.
     assert "'overwrite'" not in html and '"overwrite"' not in html and "force_splits" not in html
 

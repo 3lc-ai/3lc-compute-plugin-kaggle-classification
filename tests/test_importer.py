@@ -212,3 +212,54 @@ def test_build_rows_is_manifest_ordered_with_the_pool_last(kit_and_manifest):
     # a manifest whose class ids are not 0..N-1 in file order still maps by id
     shuffled = dataclasses.replace(manifest, classes=tuple(reversed(manifest.classes)))
     assert importer.label_map(shuffled)[shuffled.undefined_label_id] == importer.UNDEFINED_LABEL_NAME
+
+
+# ── rc11: the Import tab's server truth (items 1, 3, 5, 10) ─────────────────────────────
+
+
+def test_import_state_carries_tables_validation_and_the_log(project_root, kit_and_manifest):
+    kit_root, manifest = kit_and_manifest
+    result, ctx = _run(manifest)
+    state = importer.import_state(manifest)
+    assert state["state"] == "success" and state["missing"] == []
+    assert state["project"] == manifest.default_project and state["table_name"] == "initial"
+    for split in ("train", "val"):
+        t = state["tables"][split]
+        assert t["exists"] is True and t["revision"] == "initial" and t["latest_revision"] == "initial"
+        assert t["rows"] == result["tables"][split]["rows"] and t["reused"] is False
+    v = state["validation"]
+    assert v["ok"] is True and v["passed"] == v["total"] == len(ctx.checks) and v["at"] >= state["imported_at"]
+    assert state["log"] == ctx.logs and any(line.startswith("train: created") for line in state["log"])
+    assert state["kit_dir"] == str(kit_root)
+
+
+def test_import_state_names_the_missing_table_when_stale(project_root, kit_and_manifest):
+    kit_root, manifest = kit_and_manifest
+    result, _ = _run(manifest)
+    tlc.Url(result["tables"]["val"]["url"]).delete()
+    state = importer.import_state(manifest)
+    assert state["state"] == "stale" and state["missing"] == ["val"]
+    assert state["tables"]["val"]["exists"] is False and state["tables"]["train"]["exists"] is True
+    assert state["validation"]["ok"] is True   # what was validated then, kept for the participant
+
+
+def test_tables_on_disk_without_a_record_are_found(project_root, kit_and_manifest):
+    """Item 2: a reset plugin state over an existing project root counts Import as done."""
+    kit_root, manifest = kit_and_manifest
+    result, _ = _run(manifest)
+    session.save({"import_state": {}})
+    assert importer.read_record() is None
+    state = importer.import_state(manifest)
+    assert state["state"] == "found" and state["validation"] is None
+    assert state["tables"]["train"]["rows"] == result["tables"]["train"]["rows"]
+    assert state["record"]["lineage_root"]["train_url"] == result["tables"]["train"]["url"]
+    tlc.Url(result["tables"]["train"]["url"]).delete()
+    assert importer.import_state(manifest) == {"state": "empty"}
+
+
+def test_preflight_names_the_table_a_reimport_would_write(project_root, kit_and_manifest):
+    kit_root, manifest = kit_and_manifest
+    assert importer.preflight({}, manifest)["reimport_name"] == "initial"
+    _run(manifest)
+    pre = importer.preflight({}, manifest)
+    assert pre["existing"]["train"]["exists"] is True and pre["reimport_name"] == "initial-2"

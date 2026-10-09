@@ -1037,11 +1037,13 @@ def resolve(
             entries = parse_index(json.loads(fetch_bytes(index_url()).decode("utf-8")), index_url())
         except FetchError as exc:
             _log.info("manifest index unreachable: %s", exc)
+            _mark_remote_down(str(exc))
             warnings.append(f"The competition index could not be reached; {_fallback_note(cid)}.")
         except (ManifestError, ValueError) as exc:
             _log.warning("manifest index invalid: %s", exc)
             warnings.append(f"The competition index on the CDN is invalid ({exc}); {_fallback_note(cid)}.")
         else:
+            _clear_remote_down()
             active = [e for e in entries if e["active"]]
             if not active:
                 warnings.append("The competition index lists no active competition; using the bundled manifest.")
@@ -1103,7 +1105,18 @@ def load_manifest(*, network: bool = True) -> Manifest:
 def resolve_manifest_for_job() -> tuple[Manifest, dict[str, Any]]:
     """Re-resolve at job start and return the document plus the provenance record every job
     writes into its outputs (sha256, source, competition id, kit version)."""
-    resolution = resolve(network=True)
+    if remote_down_recently():
+        # rc11 (item 15): the index failed within the last REMOTE_DOWN_TTL_S seconds — resolve locally at
+        # once (no 5 s budget per job start) and let the background refresh keep probing the CDN.
+        resolution = resolve(network=False)
+        warnings = list(resolution.warnings) + [
+            f"The competition index could not be reached; {_fallback_note(resolution.manifest.competition.id)} "
+            "(retrying in the background)."
+        ]
+        resolution = Resolution(resolution.manifest, tuple(warnings), resolution.candidates)
+        refresh_in_background(force=True)
+    else:
+        resolution = resolve(network=True)
     for note in resolution.warnings:
         _log.warning("manifest (job start): %s", note)
     return resolution.manifest, resolution.manifest.provenance
@@ -1112,7 +1125,62 @@ def resolve_manifest_for_job() -> tuple[Manifest, dict[str, Any]]:
 # ── Background refresh (the fragment never waits on the network) ──────────
 
 _refresh_lock = threading.Lock()
-_refresh: dict[str, Any] = {"state": "idle", "started_at": None, "finished_at": None, "error": None, "source": None}
+_refresh: dict[str, Any] = {
+    "state": "idle", "started_at": None, "finished_at": None, "error": None, "source": None, "warnings": [],
+}
+# rc11 (item 15): once the index proved unreachable, job starts stop paying the fetch budget for a while
+# and re-resolve locally; the refresh keeps retrying on its thread, and a success clears the mark.
+REMOTE_DOWN_TTL_S = 300.0
+_remote_down: dict[str, Any] = {"since": None, "error": None}
+
+
+def _mark_remote_down(error: str) -> None:
+    with _refresh_lock:
+        if _remote_down["since"] is None:
+            _remote_down["since"] = time.monotonic()
+        _remote_down["error"] = error
+
+
+def _clear_remote_down() -> None:
+    with _refresh_lock:
+        _remote_down.update({"since": None, "error": None})
+
+
+def remote_down_recently() -> bool:
+    """True while the last index fetch failed less than ``REMOTE_DOWN_TTL_S`` ago."""
+    with _refresh_lock:
+        since = _remote_down["since"]
+    return since is not None and time.monotonic() - float(since) < REMOTE_DOWN_TTL_S
+
+
+def fallback_status(local_source: str | None = None) -> dict[str, Any]:
+    """What the fragment and the Doctor say about the manifest in use (rc11, item 13): ``active`` when
+    the effective source is not the remote document AND a remote attempt has concluded (never while the
+    first refresh is still running, so a fresh start does not flash a warning). ``source`` is the
+    effective source, ``reason`` the participant-facing sentence."""
+    refresh = refresh_status()
+    local = local_source
+    if local is None:
+        try:
+            local = resolve(network=False).manifest.source
+        except Exception:
+            local = "bundled"
+    state = refresh.get("state")
+    effective = refresh.get("source") if (state == "done" and refresh.get("source")) else local
+    concluded = state in ("done", "failed") or remote_down_recently()
+    active = bool(concluded and effective != "remote")
+    reason = ""
+    if active:
+        if effective == "bundled":
+            reason = "Using the built-in competition manifest; the server couldn't be reached."
+        else:
+            reason = "Using the last downloaded competition manifest; the server couldn't be reached."
+    detail = ""
+    with _refresh_lock:
+        detail = str(_remote_down.get("error") or refresh.get("error") or "")
+    warnings = list(refresh.get("warnings") or [])
+    return {"active": active, "source": effective, "local_source": local, "reason": reason, "detail": detail,
+            "warnings": warnings, "refresh_state": state}
 
 
 def refresh_status() -> dict[str, Any]:
@@ -1134,7 +1202,8 @@ def refresh_in_background(*, force: bool = False) -> dict[str, Any]:
         try:
             resolution = resolve(network=True)
             with _refresh_lock:
-                _refresh.update({"state": "done", "source": resolution.manifest.source, "error": None})
+                _refresh.update({"state": "done", "source": resolution.manifest.source, "error": None,
+                                 "warnings": list(resolution.warnings)})
         except Exception as exc:  # a refresh failure must never take the routes down
             _log.exception("manifest refresh failed")
             with _refresh_lock:
@@ -1150,4 +1219,6 @@ def refresh_in_background(*, force: bool = False) -> dict[str, Any]:
 def reset_refresh_state() -> None:
     """Tests only."""
     with _refresh_lock:
-        _refresh.update({"state": "idle", "started_at": None, "finished_at": None, "error": None, "source": None})
+        _refresh.update({"state": "idle", "started_at": None, "finished_at": None, "error": None, "source": None,
+                         "warnings": []})
+        _remote_down.update({"since": None, "error": None})

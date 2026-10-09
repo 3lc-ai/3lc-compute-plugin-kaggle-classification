@@ -618,21 +618,66 @@ def read_record() -> dict[str, Any] | None:
     return data if isinstance(data, dict) and data.get("tables") else None
 
 
-def import_state() -> dict[str, Any]:
-    """The last successful import, re-verified against disk (table existence decides).
+def _found_state(manifest: Manifest | None) -> dict[str, Any]:
+    """rc11 (item 2): no import record, but both canonical tables of the session's project / table
+    pair exist on disk (a reinstall that reset the plugin's state, a shared project root) — the tab
+    renders them as found, Train and the stepper count Import as done, and the Imported view offers
+    validation through a reuse import. Anything short of both tables is ``empty``."""
+    try:
+        from kaggle_classification import manifest as manifest_mod
 
-    ``empty`` — no record; ``success`` — both tables still exist; ``stale`` — a recorded table
-    is gone (the record is shown so the participant knows what was there)."""
+        current = manifest or manifest_mod.resolve(network=False).manifest
+        sess = session.populated_session(current)
+        project, table_name = str(sess["project_name"]), str(sess["table_name"])
+        existing = existing_tables(current, project, table_name)
+    except Exception:
+        return {"state": "empty"}
+    if not all(v["exists"] for v in existing.values()):
+        return {"state": "empty"}
+    tables = {
+        split: {"url": v["url"], "exists": True, "rows": v["rows"], "revision": session.url_table(v["url"]),
+                "latest_revision": session.url_table(_latest_url(v["url"])) or session.url_table(v["url"]),
+                "reused": True}
+        for split, v in existing.items()
+    }
+    # The record-shaped block Train's val lock and the Loop read (no val_locked: the lock is the table itself).
+    record = {"project_name": project, "table_name": table_name,
+              "tables": {s: {"url": t["url"], "rows": t["rows"], "reused": True} for s, t in tables.items()},
+              "lineage_root": {"train_url": tables["train"]["url"], "val_url": tables["val"]["url"]}}
+    return {
+        "state": "found", "verified": {s: True for s in REGISTERED_SPLITS},
+        "latest": {s: _latest_url(t["url"]) for s, t in tables.items()},
+        "record": record, "val_edited": False, "val_latest_url": "",
+        "project": project, "table_name": table_name, "tables": tables, "missing": [],
+        "validation": None, "imported_at": None, "kit_dir": "", "log": [],
+    }
+
+
+def import_state(manifest: Manifest | None = None) -> dict[str, Any]:
+    """The Import tab's one source of truth (rc11, item 1): the record re-verified against disk.
+
+    ``empty`` — no record and no tables; ``found`` — no record but both tables exist on disk;
+    ``success`` — both recorded tables still exist; ``stale`` — a recorded table is gone (``missing``
+    names it; the record is kept so the participant knows what was there). Every state with tables
+    carries ``tables`` (url, exists, rows, revision, latest_revision, reused) and the last validation
+    result with its timestamp (``validation``: passed / total / ok / at / checks)."""
     record = read_record()
     if not record:
-        return {"state": "empty"}
+        return _found_state(manifest)
     verified: dict[str, bool] = {}
     latest: dict[str, str] = {}
+    tables: dict[str, dict[str, Any]] = {}
     for split in REGISTERED_SPLITS:
-        url = str(((record.get("tables") or {}).get(split) or {}).get("url") or "")
+        rec = (record.get("tables") or {}).get(split) or {}
+        url = str(rec.get("url") or "")
         verified[split] = bool(url) and _url_exists(url)
         if verified[split]:
             latest[split] = _latest_url(url)
+        tables[split] = {
+            "url": url, "exists": verified[split], "rows": rec.get("rows"),
+            "revision": session.url_table(url), "reused": bool(rec.get("reused")),
+            "latest_revision": session.url_table(latest[split]) if verified[split] else None,
+        }
     state = "success" if all(verified.values()) else "stale"
     # ``latest``: the newest revision descending from each seed table (tlc's own ``latest()``),
     # so the Loop's Dashboard step opens what the participant is actually labeling. Equal to the
@@ -642,10 +687,20 @@ def import_state() -> dict[str, Any]:
     # val in the Dashboard are ignored.
     val_locked = str(((record.get("val_locked") or {}).get("url")) or "")
     val_latest = str(latest.get("val") or "")
+    checks = [c for c in (record.get("checks") or []) if isinstance(c, dict)]
+    validation = {
+        "passed": sum(1 for c in checks if c.get("ok")), "total": len(checks),
+        "ok": bool(checks) and all(c.get("ok") for c in checks),
+        "at": record.get("validated_at") or record.get("completed_at"), "checks": checks,
+    } if checks else None
     return {
         "state": state, "verified": verified, "latest": latest, "record": record,
         "val_edited": bool(val_locked and val_latest and _norm(val_latest) != _norm(val_locked)),
         "val_latest_url": val_latest,
+        "project": str(record.get("project_name") or ""), "table_name": str(record.get("table_name") or ""),
+        "tables": tables, "missing": [s for s in REGISTERED_SPLITS if not verified[s]],
+        "validation": validation, "imported_at": record.get("completed_at"),
+        "kit_dir": str(record.get("kit_dir") or ""), "log": list(record.get("log") or []),
     }
 
 
@@ -698,6 +753,11 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     out["problems"] = [{"label": c["label"], "detail": c.get("detail", "")} for c in failed]
     out["all_ok"] = not failed
     out["existing"] = existing_tables(manifest, params["project_name"], params["table_name"])
+    try:
+        out["reimport_name"] = fresh_table_name(manifest, params["project_name"], params["table_name"])
+    except ImportRefused as exc:
+        out["reimport_name"] = ""
+        out["reimport_error"] = str(exc)
     out["project_root"] = project_root_url()
     return out
 
@@ -708,7 +768,12 @@ def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
 def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str, Any]:
     """The import job. Raises ``ImportRefused`` / ``RuntimeError`` with a participant-facing
     message on failure (no tables left behind); returns ``{"cancelled": True}`` when stopped."""
-    log = ctx.log
+    log_lines: list[str] = []
+
+    def log(message: str) -> None:
+        log_lines.append(str(message))
+        ctx.log(message)
+
     set_checks = ctx.set_checks
     set_progress = getattr(ctx, "set_progress", lambda p: None)
     set_field = getattr(ctx, "set_field", lambda k, v: None)
@@ -879,6 +944,9 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         "manifest_provenance": manifest.provenance,
         "job_id": job_id,
         "completed_at": time.time(),
+        # rc11: the validation stamp the Imported view shows, and the job's own log (the host keeps none).
+        "validated_at": time.time(),
+        "log": log_lines,
     }
     write_record(record)
     if actual_name != table_name:

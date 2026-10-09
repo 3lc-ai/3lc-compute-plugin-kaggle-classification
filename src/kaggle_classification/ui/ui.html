@@ -95,8 +95,6 @@
 .kg-row-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 .kg-reimport-slot { min-width: 134px; display: flex; justify-content: flex-end; }
 .kg-btn-danger-hover:hover { color: var(--danger, #ef4444) !important; border-color: rgba(239,68,68,.35) !important; background: rgba(239,68,68,.06) !important; }
-.kg-badge-created { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(5,150,105,.1); color: var(--success); white-space: nowrap; min-width: 58px; text-align: center; }
-.kg-badge-reused { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--bg-secondary, rgba(0,0,0,.06)); color: var(--text-muted); white-space: nowrap; min-width: 58px; text-align: center; }
 .kg-log-details { margin-top: 14px; }
 .kgl-acc-summary { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 5px; }
 .kgl-acc-summary:hover { color: var(--text-secondary); }
@@ -305,6 +303,31 @@
 .kgc .alert-error { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.25); }
 .kgc .alert-error .alert-icon { color: var(--danger, #ef4444); display: flex; margin-top: 1px; }
 .kgc [hidden] { display: none !important; }
+/* ── rc11: the Import tab and shell pass (CONTEXT.md decisions 2026-10-09; back-port to ExDark after the event) ── */
+.kg-tabs .kg-tab { flex: 0 1 auto; padding-left: 18px; padding-right: 18px; }
+.kg-tabs .kg-tab[data-tab="status"] { margin-left: auto; border-left: 1px solid var(--border); padding-left: 22px; }
+.kg-loop a[data-goto], .kg-loop a[href] { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.kg-loop a:hover { text-decoration-thickness: 2px; }
+.kg-hero-toggle { margin-left: auto; align-self: flex-start; white-space: nowrap; }
+.plugin-hero.kg-hero-collapsed { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.plugin-hero.kg-hero-collapsed .kg-id-row { align-items: center; flex: 0 1 auto; }
+.plugin-hero.kg-hero-collapsed .kg-id-sub, .plugin-hero.kg-hero-collapsed .kg-micro-label, .plugin-hero.kg-hero-collapsed .kg-loop { display: none; }
+.plugin-hero.kg-hero-collapsed .kg-constraints { margin-top: 0; flex: 1 1 auto; }
+.plugin-hero.kg-hero-collapsed .kg-hero-toggle { align-self: center; }
+.kg-imported-facts { display: flex; gap: 6px 18px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--text-secondary); margin: 10px 0 2px; }
+.kg-imported-facts .lbl { color: var(--text-muted); font-size: 11px; margin-right: 4px; }
+.kg-imported-facts .kg-path { font-size: 11.5px; color: var(--text-muted); }
+.kg-table-row .rev { color: var(--text-secondary); white-space: nowrap; }
+.kg-table-row .when { color: var(--text-muted); white-space: nowrap; font-size: 11.5px; }
+.kg-checks-head-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.kg-confirm { margin-top: 10px; }
+.kg-confirm .kg-confirm-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.kg-other-ways .kg-locked-row .val { white-space: nowrap; overflow-x: auto; word-break: normal; padding-bottom: 2px; }
+.kg-kit-line { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; font-size: 12px; margin-top: 6px; line-height: 1.5; }
+.kg-kit-line .kgi { flex-shrink: 0; }
+.kg-kit-line.ok { color: var(--success); }
+.kg-kit-line .kg-kit-text { flex: 1; min-width: 0; }
+.kg-kit-line .kg-kit-actions { margin-left: auto; display: flex; gap: 6px; }
 </style>
 
   <!-- ── Hero ──────────────────────────────────────────────────────── -->
@@ -316,6 +339,7 @@
         <p class="kg-id-sub">Import the dataset, train the fixed baseline, predict and submit.
           The whole competition loop without leaving the Hub.</p>
       </div>
+      <button type="button" id="kg-hero-toggle" class="btn btn-ghost btn-sm kg-hero-toggle" aria-expanded="true">Hide details</button>
     </div>
     <div class="kg-constraints">
       <div class="kg-micro-label">Competition constraints</div>
@@ -420,37 +444,51 @@
         <hr class="divider">
       </div>
 
+      <!-- rc11: one quiet notice when the manifest in use is not the remote document (item 13) -->
+      <div id="kg-manifest-note"></div>
       <!-- Success / failure banner (rendered by JS) -->
       <div id="kg-import-banner"></div>
+      <!-- rc11: the Imported view's facts (project, tables, kit, Re-import…) — rendered from the config payload,
+           OUTSIDE the form so hiding the form never hides them (the rc10 revisit bug) -->
+      <div id="kg-imported" hidden></div>
+      <div id="kg-reimport-confirm"></div>
 
       <form id="kg-import-form" onsubmit="return false;">
-        <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
-          <div>
-            <div class="form-group">
-              <label class="form-label required" for="kg-kit">Starter kit folder</label>
-              <input id="kg-kit" type="text" class="form-control"
-                     placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false">
-              <div class="form-help">Path on the machine running the compute service.
-                Browsing from another computer? The starter kit must be unzipped on the
-                service's machine, and this is its path there.</div>
-              <div id="kg-preflight"></div>
+        <div id="kg-preflight"></div>
+        <div id="kg-glance"></div>
+        <!-- rc11 (item 7): the folder, project and table fields live under Advanced; the kit download fills the folder in -->
+        <div class="kg-log-details" id="kg-adv-details" style="margin-top: 12px;">
+          <button type="button" class="kgl-acc-summary" id="kg-adv-toggle" aria-expanded="false" aria-controls="kg-adv-panel">
+            <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Advanced
+          </button>
+          <div class="kgl-acc" id="kg-adv-panel" hidden>
+            <div class="kgl-acc-inner">
+              <div id="kg-kaggle-fallback"></div>
+              <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; margin-top: 10px;">
+                <div>
+                  <div class="form-group">
+                    <label class="form-label required" for="kg-kit">Starter kit folder</label>
+                    <input id="kg-kit" type="text" class="form-control"
+                           placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false">
+                    <div class="form-help">The folder holding <code>files.json</code>, on the machine running the
+                      compute service. The download above fills it in; a kit from Kaggle's Data page works too.</div>
+                    <div id="kg-kit-manual"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-group">
+                    <label class="form-label" for="kg-project">Project name</label>
+                    <input id="kg-project" type="text" class="form-control" autocomplete="off">
+                    <div class="form-help">The 3LC project the tables land in (the competition id by default).</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="kg-table">Table name</label>
+                    <input id="kg-table" type="text" class="form-control">
+                    <div class="form-help">The first import is called <code>initial</code>; a re-import gets the next free name.</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="kg-project">Project name</label>
-              <input id="kg-project" type="text" class="form-control" autocomplete="off">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="kg-table">Table name</label>
-              <input id="kg-table" type="text" class="form-control">
-              <div class="form-help">Revision name for the imported tables. <code>initial</code> is the convention for a first import.</div>
-            </div>
-          </div>
-          <div>
-            <div class="form-group" id="kg-splits-group">
-              <label class="form-label">Splits to import</label>
-              <div id="kg-splits-body"></div>
-            </div>
-            <div id="kg-glance"></div>
           </div>
         </div>
 
@@ -460,21 +498,23 @@
           <span class="spinner" id="kg-import-spinner" style="display: none;"></span>
           <span id="kg-import-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
-        <div id="kg-import-progress" style="margin-top: 12px;"></div>
-        <div id="kg-checks"></div>
-        <div id="kg-result"></div>
-        <div class="kg-log-details" id="kg-log-details" style="display: none;">
-          <button type="button" class="kgl-acc-summary" id="kg-log-toggle"
-                  aria-expanded="false" aria-controls="kg-log-panel">
-            <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
-          </button>
-          <div class="kgl-acc" id="kg-log-panel" hidden>
-            <div class="kgl-acc-inner">
-              <pre id="kg-log"></pre>
-            </div>
+      </form>
+      <!-- rc11: the outcome (progress, checks, table rows, log) sits outside the form: the Imported view and a
+           running / failed job share it -->
+      <div id="kg-import-progress" style="margin-top: 12px;"></div>
+      <div id="kg-checks"></div>
+      <div id="kg-result"></div>
+      <div class="kg-log-details" id="kg-log-details" style="display: none;">
+        <button type="button" class="kgl-acc-summary" id="kg-log-toggle"
+                aria-expanded="false" aria-controls="kg-log-panel">
+          <span class="kgl-acc-caret" aria-hidden="true"><svg class="kgi kgi-12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></span> Show log
+        </button>
+        <div class="kgl-acc" id="kg-log-panel" hidden>
+          <div class="kgl-acc-inner">
+            <pre id="kg-log"></pre>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   </div>
   <div class="kg-footer" data-kg-footer></div>
@@ -832,7 +872,7 @@
         <div class="kg-sec-head">History</div>
         <div id="st-history" class="kg-st-wrap"><div class="form-help">Loading…</div></div>
         <hr class="divider">
-        <div class="kg-sec-head">Kaggle live</div>
+        <div class="kg-sec-head" id="st-kaggle-head">Kaggle live</div>
         <div id="st-kaggle"><div class="form-help">Checking Kaggle…</div></div>
         <hr class="divider">
         <div class="kg-sec-head">Verification</div>
@@ -874,9 +914,10 @@
       var NS = '/' + PLUGIN_ID;
       var PLUGIN_ROOT = computeUrl + '/api/plugins/' + PLUGIN_ID;
       // Dev affordance (ExDark's): ?kgdev=<state> renders a UI state from static fixtures —
-      // no fetches, no job side effects. Values: state1, state2, state2-mismatch, state2-error,
-      // state3, state4, state5, state6, state6-superseded, dl-empty, dl-running, dl-verify,
-      // dl-success, dl-fail, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
+      // no fetches, no job side effects. Values: state1, state1-bundled, state2, state2-existing,
+      // state2-mismatch, state2-error, state3, state4, state5, state6, state6-found, state6-stale,
+      // state6-superseded, dl-empty, dl-running, dl-verify, dl-verify-fail, dl-success, dl-fail,
+      // dl-fail-checks, dl-fail-kaggle, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
       // train-state2-missing, train-state2-rows, train-state2-invalid, train-state2-undefined-weight,
       // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state2-foreign,
       // train-state2-val-edited, train-state3,
@@ -1367,6 +1408,31 @@
       }
       kgBindAccordion('kg-log-toggle', 'kg-log-panel');
       kgBindAccordion('kg-dl-log-toggle', 'kg-dl-log-panel');
+      kgBindAccordion('kg-adv-toggle', 'kg-adv-panel');
+
+      // rc11 (item 16): the header card collapses to one line from the second visit on (per browser); the
+      // toggle's choice persists too.
+      var KG_HERO_KEY = 'kgc.hero';
+      function kgHeroInit() {
+        var hero = ROOT_EL.querySelector('.plugin-hero'), btn = el('kg-hero-toggle');
+        if (!hero || !btn) { return; }
+        var pref = null;
+        try { pref = localStorage.getItem(KG_HERO_KEY); } catch (e) { /* sandboxed */ }
+        var collapsed = pref === 'collapsed';
+        if (pref === null) { try { localStorage.setItem(KG_HERO_KEY, 'collapsed'); } catch (e) { /* sandboxed */ } }
+        function applyHero() {
+          hero.classList.toggle('kg-hero-collapsed', collapsed);
+          btn.textContent = collapsed ? 'Show details' : 'Hide details';
+          btn.setAttribute('aria-expanded', String(!collapsed));
+        }
+        btn.addEventListener('click', function () {
+          collapsed = !collapsed;
+          try { localStorage.setItem(KG_HERO_KEY, collapsed ? 'collapsed' : 'expanded'); } catch (e) { /* sandboxed */ }
+          applyHero();
+        });
+        applyHero();
+      }
+      kgHeroInit();
 
       // ── Canonical session ─────────────────────────────────────────────
       // One session object (project, table, kit folder, device, overrides) every tab shares;
@@ -1376,6 +1442,10 @@
       var kgMeta = null;
       var kgConfigDone = false;
       var kgImportState = { state: 'empty' };
+      var kgKitState = { state: 'empty' };     // rc11: _meta.kit_state, the Import tab's second fact
+      var kgFallback = null;                   // rc11: _meta.manifest_fallback (item 13)
+      // rc11 (item 2): Import is done when both tables exist on disk — with a record (success) or without (found).
+      function kgImported() { return kgImportState.state === 'success' || kgImportState.state === 'found'; }
 
       function kgSessionSave() {
         if (!kgSession) { return; }
@@ -1554,6 +1624,8 @@
       function kgApplyLoadedConfig(cfg) {
         kgMeta = cfg._meta || {};
         kgImportState = kgMeta.import_state || { state: 'empty' };
+        kgKitState = kgMeta.kit_state || { state: 'empty' };
+        kgFallback = kgMeta.manifest_fallback || null;
         kgApplySession(cfg);
         kgPluginVersion = String(kgMeta.version || '');
         kgRenderFooters(kgMeta);
@@ -1567,6 +1639,79 @@
         applyConfig(cfg);
         if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
         kgRenderLoopLinks();
+        kgRenderManifestNote();
+      }
+
+      // rc11: re-read GET /config after a job or a Verify so every Import fact comes from the one payload
+      // (never from job facts or a second resolution). Form values are NOT re-applied — only the facts.
+      function kgReloadConfig() {
+        return API.authFetch(PLUGIN_ROOT + '/config')
+          .then(function (r) { return r.json(); })
+          .then(function (cfg) {
+            if (!cfg || !cfg._meta) { return null; }
+            kgMeta = cfg._meta;
+            kgImportState = kgMeta.import_state || { state: 'empty' };
+            kgKitState = kgMeta.kit_state || { state: 'empty' };
+            kgFallback = kgMeta.manifest_fallback || null;
+            kgTrainState = kgMeta.train_state || kgTrainState;
+            kgSubmitState = kgMeta.predict_state || kgSubmitState;
+            if (kgSession && cfg.session && cfg.session.kit_dir) { kgSession.kit_dir = cfg.session.kit_dir; }
+            kgRenderManifestNote();
+            return cfg;
+          })
+          .catch(function (e) { kgConn.fail(e); return null; });
+      }
+
+      // rc11 (item 13): one quiet line when the manifest in use is the built-in or the cached copy. Rendered
+      // only once a remote attempt has concluded (the server decides: manifest_fallback.active).
+      function kgRenderManifestNote() {
+        var box = el('kg-manifest-note');
+        if (!box) { return; }
+        var fb = kgFallback || {};
+        if (!fb.active) { box.innerHTML = ''; return; }
+        box.innerHTML = '<div class="kg-callout info" style="margin-bottom:10px">' + kgIcon('info') +
+          '<span>' + esc(fb.reason || 'Using a local copy of the competition manifest.') + '</span></div>';
+      }
+
+      // rc11 (item 7): one separator style on screen — a Windows path shows backslashes, anything else
+      // forward slashes. Copy buttons carry the raw value.
+      function kgDisplayPath(p) {
+        p = String(p || '');
+        if (/^[A-Za-z]:[\\/]/.test(p)) { return p.replace(/\//g, '\\'); }
+        return p;
+      }
+      function kgFmtDate(ts) {
+        if (!ts) { return ''; }
+        var d = new Date(ts * 1000);
+        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+      function kgKaggleDataUrl() {
+        var slug = kgManifest && kgManifest.competition ? kgManifest.competition.slug : '';
+        return slug ? 'https://www.kaggle.com/competitions/' + slug + '/data' : '';
+      }
+      function kgOpenAdvanced() {
+        var toggle = el('kg-adv-toggle'), panel = el('kg-adv-panel');
+        if (!toggle || !panel || toggle.getAttribute('aria-expanded') === 'true') { return; }
+        toggle.click();
+      }
+      // rc11 (item 14): the manual route when the download cannot be completed. Opens Advanced and
+      // points at Kaggle's Data page; the pasted folder goes through the full preflight and file checks.
+      function kgShowKaggleFallback(reason) {
+        var box = el('kg-kaggle-fallback');
+        if (!box) { return; }
+        var url = kgKaggleDataUrl();
+        box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+          '<span><strong>Couldn’t download the starter kit.</strong> ' + (reason ? esc(reason) + ' ' : '') +
+          'Download it from the competition’s Data page on Kaggle, unzip it, and paste the folder path here.' +
+          (url ? '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' + esc(url) +
+            '"><span>Open the Data page on Kaggle</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>' : '') +
+          '</span></div>';
+        kgOpenAdvanced();
+      }
+      function kgClearKaggleFallback() {
+        var box = el('kg-kaggle-fallback');
+        if (box) { box.innerHTML = ''; }
       }
 
       function kgFetchConfig(resolve) {
@@ -1679,7 +1824,7 @@
                            (kgTrainState.project_runs || kgTrainState.runs || []).some(function (r) { return !!r.weights; }));
         // Submit is done when a submit record with status submitted exists (EXDARK #1: from the
         // session store, re-verified by GET /submit/state).
-        var p = { import: kgImportState.state === 'success', train: trainDone, submit: kgSubmitState.state === 'submitted' };
+        var p = { import: kgImported(), train: trainDone, submit: kgSubmitState.state === 'submitted' };
         var steps = ['import', 'train', 'submit'];
         var currentSeen = false;
         steps.forEach(function (s) {
@@ -1702,7 +1847,7 @@
       // Gate card on the tabs that need the imported tables (ExDark's Train gate). The Predict and
       // Status bodies render behind it once an import record exists (session 5 ungated Status).
       function kgRenderGates() {
-        var imported = kgImportState.state === 'success';
+        var imported = kgImported();
         [['ps-gate', 'Predict + Submit', 'ps-body'], ['st-gate', 'Status', 'st-body']].forEach(function (pair) {
           var box = el(pair[0]);
           if (!box) { return; }
@@ -1730,18 +1875,8 @@
       var kgImporting = false;
 
       var KG_HINT_HTML =
-        '<div class="form-help">Point this at the starter kit folder (the one holding ' +
-        '<code>files.json</code>), typically <code>…\\starter_kit</code>. The download above fills it in.</div>';
-
-      function kgSplitsPlaceholder() {
-        // With the folder filled in, the splits are not undetected but unmatched: say so
-        // (deviation from ExDark's single placeholder, review 2026-09-28 fix c).
-        var text = el('kg-kit').value.trim()
-          ? 'Splits are detected once the kit folder matches the competition manifest.'
-          : 'Enter the kit folder above to auto-detect splits.';
-        el('kg-splits-body').innerHTML =
-          '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">' + text + '</div>';
-      }
+        '<div class="form-help">No starter kit folder yet. Download the starter kit above, or paste a kit folder under ' +
+        '<strong>Advanced</strong>.</div>';
 
       // A stale result must not sit next to a new verdict (review 2026-09-28 fix c; ExDark clears
       // only at import start and Start over): when the preflight leaves a green/idle state for a
@@ -1756,27 +1891,19 @@
         el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
       }
 
-      function kgRenderSplitsLocked() {
-        var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">';
-        ['Train', 'Val'].forEach(function (s) {
-          html += '<span style="display:flex;align-items:center;gap:5px;font-size:12px;opacity:.75;cursor:default" ' +
-                  'title="Both splits are required for a valid competition setup.">' +
-                  kgIcon('check-square', 'kgi-12 kgi-muted') + ' ' + s + ' ' +
-                  kgIcon('lock', 'kgi-12 kgi-muted') + '</span>';
-        });
-        html += '</div><div class="form-help">Both splits are mandatory for the competition. The test images stay on disk and are never registered.</div>';
-        el('kg-splits-body').innerHTML = html;
-      }
-
+      // rc11 (item 8): the glance card carries every count once — train / unlabeled / val from the preflight,
+      // the test count from the manifest with the one sentence about it — and the class tags.
       function kgRenderGlance(data, entering) {
         var box = el('kg-glance');
         if (!data || !data.all_ok) { box.innerHTML = ''; return; }
+        var testN = ((kgManifest || {}).splits || {}).test ? kgManifest.splits.test.count : 0;
         var html = '<div class="kg-glance' + (entering ? ' kgl-enter' : '') + '">' +
           '<div class="kg-micro-label">Dataset at a glance</div>' +
           '<div class="kg-glance-stats">';
         html += '<span class="kg-stat"><span class="lbl">train</span><span class="val">' + fmtCount(data.splits.train.labeled) + '</span></span>';
         html += '<span class="kg-stat"><span class="lbl">unlabeled</span><span class="val">' + fmtCount((data.unlabeled || {}).found) + '</span></span>';
         html += '<span class="kg-stat"><span class="lbl">val</span><span class="val">' + fmtCount(data.splits.val.found) + '</span></span>';
+        if (testN) { html += '<span class="kg-stat"><span class="lbl">test</span><span class="val">' + fmtCount(testN) + '</span></span>'; }
         html += '</div>';
         var names = (data.classes && data.classes.names) || [];
         if (names.length) {
@@ -1784,6 +1911,9 @@
             return '<span class="kg-tag" style="' + kgClassTint(i) + '">' + esc(n) + '</span>';
           }).join('') + '</div>';
         }
+        html += '<div class="form-help" style="margin-top:8px">Train and val become 3LC tables. ' +
+          (testN ? 'The ' + fmtCount(testN) + ' test images stay on disk and are never imported.' : 'The test images stay on disk and are never imported.') +
+          '</div>';
         box.innerHTML = html + '</div>';
       }
 
@@ -1803,31 +1933,38 @@
         if (transitioned && (kind === 'mismatch' || kind === 'error')) { kgClearStaleResult(); }
 
         if (!data) {
-          box.innerHTML = KG_HINT_HTML;
-          kgSplitsPlaceholder();
+          box.innerHTML = el('kg-kit').value.trim() ? '' : KG_HINT_HTML;
           kgRenderGlance(null);
           return;
         }
         if (data.checking) {
-          box.innerHTML = '<div class="form-help">Checking dataset…</div>';
+          box.innerHTML = '<div class="form-help">Checking the kit folder…</div>';
           kgRenderGlance(null);
           return;
         }
         if (data.error) {
           box.innerHTML = '<div class="kg-callout err' + entering + '">' + kgIcon('x-circle') +
                           '<span>' + esc(data.error) + '</span></div>';
-          kgSplitsPlaceholder();
           kgRenderGlance(null);
+          kgRenderKitManual('');
           return;
         }
         if (data.all_ok) {
-          var counts = fmtCount(data.splits.train.found) + ' / ' + fmtCount(data.splits.val.found);
+          // rc11: the verdict alone (the counts live in the glance card once); existing tables are named here
+          // before the import, since the job reuses and re-validates them.
+          var ex = data.existing || {};
+          var found = ['train', 'val'].filter(function (sp) { return ex[sp] && ex[sp].exists; });
           var html = '<div class="kg-verdict"><span class="ok">' + kgIcon('check-circle') + '</span>' +
-                     '<span>Detected: train / val · ' + fmtCount((data.classes.names || []).length) + ' classes (manifest order) · ' + counts +
-                     ' images. Matches the competition manifest.</span></div>';
+                     '<span>Matches competition manifest ✓</span></div>';
+          if (found.length) {
+            html += '<div class="kg-callout info" style="margin-top:8px">' + kgIcon('info') +
+              '<span>Tables already exist in project <strong>' + esc((data.params || {}).project_name || kgCurrentProject()) +
+              '</strong> (' + found.map(function (sp) { return esc(sp) + ', ' + fmtCount(ex[sp].rows) + ' rows'; }).join(' · ') +
+              '). Import validates and keeps them; nothing is overwritten.</span></div>';
+          }
           box.innerHTML = '<div class="' + (entering ? 'kgl-enter' : '') + '">' + html + '</div>';
-          kgRenderSplitsLocked();
           kgRenderGlance(data, !!entering);
+          kgRenderKitManual(data.kit_dir || el('kg-kit').value);
           return;
         }
         // Mismatch: name exactly what's off, with a remediation hint.
@@ -1844,7 +1981,6 @@
                     '<div style="margin-top:8px">' + kgDiagBtn() + '</div></span></div>';
         box.innerHTML = '<div class="' + (entering ? 'kgl-enter' : '') + '">' + mhtml + '</div>';
         kgBindDiag(box);
-        kgSplitsPlaceholder();
         kgRenderGlance(null);
       }
 
@@ -1978,22 +2114,29 @@
       // The checks arrive in stable backend order: the kit-vs-manifest structure checks first,
       // then the table checks (competition integrity).
       function kgIsTableCheck(c) { return /^(train|val) (row count|label map|zero-weight)|existing tables reused|target table names/.test(c.label || ''); }
-      function renderChecks(checks, animate) {
+      // rc11 (item 12): "N/N checks passed ▸" collapsed when every check passes (``expand`` opens it once,
+      // right after an import); a failure auto-expands with the failing checks first, each with its fix hint.
+      function renderChecks(checks, animate, expand) {
         if (!checks || !checks.length) { el('kg-checks').innerHTML = ''; return; }
         kgLastChecks = checks;
         var passed = checks.filter(function (c) { return c.ok; }).length;
         var total = checks.length;
         var allOk = passed === total;
-        var html = '<div class="kg-verdict">' +
-          (allOk ? '<span class="ok">' + kgIcon('check-circle') + '</span>'
-                 : '<span class="bad">' + kgIcon('x-circle') + '</span>') +
-          '<span>' + passed + '/' + total + ' checks passed' +
-          (allOk ? '' : ' (' + (total - passed) + ' failed)') + '</span></div>';
+        var open = !allOk || !!expand;
+        var html = '<div class="kg-checks-head-row">' +
+          '<button type="button" class="kgl-acc-summary" id="kg-checks-toggle" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="kg-checks-panel">' +
+          '<span class="kgl-acc-caret" aria-hidden="true">' + KG_CARET_SVG + '</span>' +
+          (allOk ? '<span class="ok" style="display:flex;color:var(--success)">' + kgIcon('check-circle') + '</span>'
+                 : '<span class="bad" style="display:flex;color:var(--danger, #ef4444)">' + kgIcon('x-circle') + '</span>') +
+          '<span>' + fmtCount(passed) + '/' + fmtCount(total) + ' checks passed' +
+          (allOk ? '' : ' · ' + fmtCount(total - passed) + ' failed') + '</span></button></div>';
+        var ordered = checks.filter(function (c) { return !c.ok; }).concat(checks.filter(function (c) { return c.ok; }));
         var groups = [
-          { title: 'Dataset structure', items: checks.filter(function (c) { return !kgIsTableCheck(c); }) },
-          { title: 'Competition integrity', items: checks.filter(kgIsTableCheck) }
+          { title: 'Dataset structure', items: ordered.filter(function (c) { return !kgIsTableCheck(c); }) },
+          { title: 'Competition integrity', items: ordered.filter(kgIsTableCheck) }
         ];
-        html += '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
+        html += '<div class="kgl-acc' + (open ? ' open' : '') + '" id="kg-checks-panel"' + (open ? '' : ' hidden') + '><div class="kgl-acc-inner">' +
+          '<div class="kg-checks-grid' + (animate ? ' kgl-cascade' : '') + '">';
         groups.forEach(function (g) {
           if (!g.items.length) { return; }
           html += '<div><div class="kg-checks-head">' + g.title + '</div>';
@@ -2010,7 +2153,8 @@
           });
           html += '</div>';
         });
-        el('kg-checks').innerHTML = html + '</div>';
+        el('kg-checks').innerHTML = html + '</div></div></div>';
+        kgBindAccordion('kg-checks-toggle', 'kg-checks-panel');
       }
 
       function midTrunc(s, max) {
@@ -2077,78 +2221,97 @@
                'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       }
 
-      // ── State 4: success banner + table summary rows ────────────────
+      // ── State 4 (rc11, items 3, 4, 11): the banner names what happened — "Imported · validated" for a
+      // fresh import, "Found existing tables · validated" for a reuse — with Continue to Train only. The rows
+      // carry the table name, the row count, when, the path (middle-truncated, full path in the tooltip, Copy)
+      // and Explore. ``rowsOnly`` skips the banner (the stale view has its own).
       var KG_SPLITS = ['train', 'val'];
-      function renderResult(result, animate) {
-        if (!result || !result.tables) { return; }
-        var banner = '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
-          '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
-          '<div style="flex:1;min-width:0">' +
-          '<strong>Imported &amp; validated: ' + esc(kgDatasetName('train')) + ' · ' + esc(kgDatasetName('val')) + '</strong>' +
-          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
-          '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="kg-continue-train">' +
-          '<span>Continue to Train</span>' + kgIcon('arrow-right') + '</button>';
-        KG_SPLITS.forEach(function (split) {
-          var t = result.tables[split];
-          if (t && t.url && dashboardUrl) {
-            banner += '<a class="btn btn-secondary btn-sm" target="_blank" href="' +
-                      dashTableLink(t.url) + '">Explore ' + split + '</a>';
-          }
-        });
-        if (kgRevisitActive) {
-          banner += '<button type="button" class="btn btn-ghost btn-sm" id="kg-start-over">Start over</button>';
+      function renderResult(state, animate, rowsOnly) {
+        var tables = (state && state.tables) || {};
+        var when = (state && state.imported_at) || null;
+        var reusedAll = KG_SPLITS.every(function (sp) { return tables[sp] && tables[sp].reused; });
+        var validated = !!(state && state.validation && state.validation.ok);
+        if (!rowsOnly) {
+          var head = reusedAll ? 'Found existing tables' : 'Imported';
+          var banner = '<div class="alert alert-success' + (animate ? ' kgl-enter' : '') + '">' +
+            '<span class="alert-icon">' + kgCheckIcon(animate) + '</span>' +
+            '<div style="flex:1;min-width:0">' +
+            '<strong>' + head + (validated ? ' · validated' : '') + ': ' + esc(kgDatasetName('train')) + ' · ' + esc(kgDatasetName('val')) + '</strong>' +
+            '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+            '<button type="button" class="btn btn-primary btn-sm kgi-btn" id="kg-continue-train">' +
+            '<span>Continue to Train</span>' + kgIcon('arrow-right') + '</button></div></div></div>';
+          el('kg-import-banner').innerHTML = banner;
+          el('kg-continue-train').addEventListener('click', function () { showTab('train'); });
         }
-        banner += '</div></div></div>';
-        el('kg-import-banner').innerHTML = banner;
-        el('kg-continue-train').addEventListener('click', function () { showTab('train'); });
-        if (kgRevisitActive) {
-          el('kg-start-over').addEventListener('click', function () { kgEnterFormState(true); });
-        }
-
-        // Summary rows: count · badge · middle-truncated path · actions. Full untruncated paths
-        // live only in the log accordion / Copy. Actions use the stock small-button vocabulary;
-        // the Re-import slot is fixed-width so Copy/Explore align across rows (created rows have
-        // nothing to force — by design).
         var html = '<div class="kg-table-rows">';
         KG_SPLITS.forEach(function (split) {
-          var t = result.tables[split];
+          var t = tables[split];
           if (!t) { return; }
-          var badge = t.reused
-            ? '<span class="kg-badge-reused" title="An identical table already existed and was reused. Validation still ran on it.">REUSED</span>'
-            : '<span class="kg-badge-created" title="Freshly imported from disk this run.">CREATED</span>';
+          var whenText = t.exists === false ? 'missing on disk'
+            : (t.reused ? 'found existing' : 'imported') + (when ? ' ' + kgFmtAgo(when) : '');
+          var revText = esc(t.revision || '') +
+            (t.latest_revision && t.latest_revision !== t.revision ? ' → ' + esc(t.latest_revision) + ' (latest)' : '');
+          var rowsText = typeof t.rows === 'number' ? fmtCount(t.rows) + ' rows' : '';
+          var pathShown = kgDisplayPath(t.url);
           html += '<div class="kg-table-row">' +
             '<span class="split">' + split + '</span>' +
-            '<span class="rows">' + fmtCount(t.rows) + ' rows</span>' + badge +
-            '<span class="path" title="' + esc(t.url) + '">' + esc(midTrunc(t.url, 52)) + '</span>' +
+            '<span class="rows">' + rowsText + '</span>' +
+            '<span class="rev" title="Table name">' + revText + '</span>' +
+            '<span class="when" title="' + esc(when ? kgFmtDate(when) : '') + '">' + esc(whenText) + '</span>' +
+            '<span class="path" title="' + esc(pathShown) + '">' + esc(midTrunc(pathShown, 44)) + '</span>' +
             '<span class="kg-row-actions">' +
             '<button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(t.url) +
               '" title="Copy full table path (a path on the compute service\'s machine)" aria-label="Copy full table path">' + kgIcon('copy') + '</button>' +
-            (dashboardUrl ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
-              dashTableLink(t.url) + '"><span>Explore</span>' +
-              kgIcon('arrow-right', 'kgi-12') + '</a>' : '') +
-            '<span class="kg-reimport-slot">' +
-            (t.reused ? '<button type="button" class="btn btn-ghost btn-sm kgi-btn kg-btn-danger-hover kg-reimport" ' +
-              'data-split="' + split + '" data-url="' + esc(t.url) +
-              '" title="Import this split again from disk as fresh tables beside the existing ones. Nothing is overwritten.">' +
-              kgIcon('refresh-cw', 'kgi-12') + '<span>Re-import fresh</span></button>' : '') +
-            '</span></span></div>';
+            (dashboardUrl && t.exists !== false ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" href="' +
+              dashTableLink(t.url) + '"><span>Explore</span>' + kgIcon('arrow-right', 'kgi-12') + '</a>' : '') +
+            '</span></div>';
         });
         el('kg-result').innerHTML = html + '</div>';
         kgBindCopy(el('kg-result'));
-        el('kg-result').querySelectorAll('.kg-reimport').forEach(function (b) {
-          b.addEventListener('click', function () {
-            kgReimportFresh(b.getAttribute('data-split'), b.getAttribute('data-url'));
-          });
-        });
       }
 
-      // Re-import fresh (decision 2026-09-28, docs/EXDARK_MIRROR.md #26): ExDark's button and
-      // placement, but the job writes FRESH `<table>-N` tables beside the existing pair and never
-      // overwrites a table or its revisions — so, unlike ExDark, there is no revision count to
-      // confirm and no dialog: nothing is discarded.
-      function kgReimportFresh(split, url) {
+      var KG_BTN_REIMPORT = kgIcon('refresh-cw', 'kgi-12') + '<span>Re-import…</span>';
+      // rc11 (item 10): one Re-import… action (replacing Start over and the per-row buttons). The server names
+      // the table a re-import would write (GET /import/preflight → reimport_name) BEFORE anything runs, and the
+      // confirmation says what is kept. ``mode`` is 'reimport' (new tables beside the pair) or 'import' (the
+      // stale view: the missing table is written again under its own name, the other reused and validated).
+      function kgConfirmReimport(mode) {
         if (kgDevMode) { return; }
-        kgStartImport({ reimport: true });
+        var box = el('kg-reimport-confirm');
+        var sess = kgSession || {};
+        var kit = (kgImportState && kgImportState.kit_dir) || sess.kit_dir || '';
+        var project = (kgImportState && kgImportState.project) || sess.project_name || '';
+        var table = (kgImportState && kgImportState.table_name) || sess.table_name || '';
+        box.innerHTML = '<div class="kg-callout info kg-confirm"><span class="spinner" aria-hidden="true"></span>' +
+          '<span>Checking the kit folder…</span></div>';
+        API.authFetch(PLUGIN_ROOT + '/import/preflight?kit_dir=' + encodeURIComponent(kit) +
+                      '&project_name=' + encodeURIComponent(project) + '&table_name=' + encodeURIComponent(table))
+          .then(function (r) { return r.json(); })
+          .then(function (pf) {
+            if (pf.error || !pf.all_ok) {
+              box.innerHTML = '<div class="kg-callout err">' + kgIcon('x-circle') + '<span>' +
+                esc(pf.error || 'The kit folder no longer matches the competition manifest. Check it under Advanced.') + '</span></div>';
+              return;
+            }
+            var name = mode === 'reimport' ? String(pf.reimport_name || '') : table;
+            var text = mode === 'reimport'
+              ? 'Re-import writes new tables named <strong>' + esc(name) + '</strong> for train and val in project <strong>' +
+                esc(project) + '</strong>. Your existing tables and label edits are kept.'
+              : 'Re-import writes the missing table again as <strong>' + esc(name) + '</strong> in project <strong>' +
+                esc(project) + '</strong> and validates the one that exists. Your existing tables and label edits are kept.';
+            box.innerHTML = '<div class="kg-callout info kg-confirm">' + kgIcon('info') + '<span style="flex:1">' + text +
+              '<div class="kg-confirm-actions"><button type="button" class="btn btn-primary btn-sm" id="kg-reimport-go">Re-import</button>' +
+              '<button type="button" class="btn btn-ghost btn-sm" id="kg-reimport-cancel">Cancel</button></div></span></div>';
+            el('kg-reimport-go').addEventListener('click', function () {
+              box.innerHTML = '';
+              kgStartImport({ reimport: mode === 'reimport', kit: kit, project: project, table: table });
+            });
+            el('kg-reimport-cancel').addEventListener('click', function () { box.innerHTML = ''; });
+          })
+          .catch(function (e) {
+            box.innerHTML = '';
+            if (!kgConn.fail(e)) { el('kg-import-state').textContent = 'Could not check the kit folder: ' + e.message; }
+          });
       }
 
       // ── State 5: red failure banner ──────────────────────────────────
@@ -2177,28 +2340,28 @@
         el('kg-import-spinner').style.display = 'none';
         kgCheckReady();
         kgRenderProgress(null);
-        renderChecks(job.checks, true);
         if (job.status === 'completed') {
           el('kg-import-state').textContent = '';
-          // The result rows come from the import record the server just wrote (two funnels).
-          API.authFetch(PLUGIN_ROOT + '/import/state').then(function (r) { return r.json(); }).then(function (state) {
-            kgImportState = state || kgImportState;
-            var snap = (state && state.record) || {};
-            var result = { tables: {} };
-            KG_SPLITS.forEach(function (s) { var t = (snap.tables || {})[s] || {}; result.tables[s] = { url: t.url || job.facts[s + '_table_url'] || '', rows: t.rows, reused: !!t.reused }; });
-            renderResult(result, true);
-            if (snap.checks && snap.checks.length) { renderChecks(snap.checks, false); }
-            renderPipeline();
+          // rc11: every fact of the Imported view comes from the re-read config payload (one funnel); the
+          // checks open once on this transition.
+          kgReloadConfig().then(function () {
+            kgRenderImportFromState({ expand: true, animate: true, keepLog: true });
             kgRefreshProjectScope();   // a new project's Train / Predict start from their forms
-            kgRenderLoopLinks();
             kgScrollTo(el('kg-import-banner'));
-          }).catch(function () { renderResult({ tables: { train: { url: job.facts.train_table_url || '' }, val: { url: job.facts.val_table_url || '' } } }, true); });
-        } else if (job.status === 'cancelled') {
+            var alertEl = el('kg-import-banner').firstChild;
+            if (alertEl && alertEl.setAttribute) { alertEl.setAttribute('tabindex', '-1'); alertEl.focus({ preventScroll: true }); }
+          });
+          return;
+        }
+        renderChecks(job.checks, true);
+        if (job.status === 'cancelled') {
           el('kg-import-state').textContent = 'Import cancelled. Nothing partial was left behind.';
+          if (kgRevisitActive) { kgRenderImportFromState({ keepLog: true }); }
         } else {
           el('kg-import-state').textContent = '';
           renderFailBanner(kgErrorText(job.error) || 'Import failed. See the checks below.', true);
           el('kg-import-btn').innerHTML = KG_BTN_RERUN;
+          if (kgRevisitActive) { kgRevisitActive = false; el('kg-import-form').style.display = ''; kgCheckReady(); }
           kgScrollTo(el('kg-import-banner'));
         }
         var alertEl = el('kg-import-banner').firstChild;
@@ -2213,8 +2376,11 @@
 
       function kgStartImport(opts) {
         opts = opts || {};
+        if (kgImporting) { return; }   // rc11 (item 6): a double click or a tab switch never starts two imports
         var kit, project, table;
-        if (kgRevisitActive && kgSession) {
+        if (opts.kit) {
+          kit = opts.kit; project = opts.project || ''; table = opts.table || '';
+        } else if (kgRevisitActive && kgSession) {
           kit = kgSession.kit_dir;
           project = kgSession.project_name;
           table = kgSession.table_name;
@@ -2224,13 +2390,13 @@
           project = el('kg-project').value.trim();
           table = el('kg-table').value.trim();
           if (!kit || !(kgPreflight && kgPreflight.all_ok)) {
-            el('kg-import-state').textContent = 'Import needs a passing preflight. The kit folder above hasn’t validated yet.';
+            el('kg-import-state').textContent = 'Import needs a passing preflight. The kit folder under Advanced hasn’t validated yet.';
             return;
           }
           kgImportCfgSettled();
         }
         if (!kit) {
-          el('kg-import-state').textContent = 'No starter kit folder recorded for this import. Start over restores the form.';
+          el('kg-import-state').textContent = 'No starter kit folder recorded for this import. Paste it under Advanced.';
           return;
         }
         kgImporting = true;
@@ -2240,6 +2406,8 @@
         el('kg-import-spinner').style.display = 'inline-block';
         el('kg-import-state').textContent = 'Starting…';
         el('kg-import-banner').innerHTML = '';
+        el('kg-imported').hidden = true;
+        el('kg-reimport-confirm').innerHTML = '';
         el('kg-checks').innerHTML = '';
         el('kg-result').innerHTML = '';
         kgLogReset();
@@ -2257,6 +2425,7 @@
             el('kg-import-spinner').style.display = 'none';
             kgRenderProgress(null);
             kgCheckReady();
+            if (kgRevisitActive) { kgRenderImportFromState({ keepLog: true }); }
             el('kg-import-state').textContent = kgConn.fail(e)
               ? 'Import didn’t start (service unreachable). Re-run once reconnected.'
               : 'Import request failed: ' + e.message;
@@ -2268,10 +2437,13 @@
         kgStartImport();
       });
 
-      // ── Tab-open state resolution (State 6 precedence) ────────────────
+      // ── Tab-open state resolution (rc11): one payload, three views ────
       function kgEnterFormState(animate) {
         kgRevisitActive = false;
         el('kg-import-form').style.display = '';
+        el('kg-imported').hidden = true;
+        el('kg-imported').innerHTML = '';
+        el('kg-reimport-confirm').innerHTML = '';
         el('kg-import-banner').innerHTML = '';
         el('kg-checks').innerHTML = '';
         el('kg-result').innerHTML = '';
@@ -2279,7 +2451,7 @@
         el('kg-import-state').textContent = '';
         kgLogReset();
         el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
-        if (animate) { kglEnter(el('kg-import-form')); el('kg-kit').focus(); }
+        if (animate) { kglEnter(el('kg-import-form')); }
         kgRenderPreflight(null);
         kgCheckReady();
         dlShowSection(true);
@@ -2289,21 +2461,89 @@
         });
       }
 
-      function kgRenderRevisit(state) {
-        var snap = state.record || {};
-        kgLastJobId = String(snap.job_id || '');
+      // The Imported view (rc11, items 2–4): every entry path lands here when both tables exist — the facts
+      // block (project, table, when, validated, kit, Re-import…), the rows, the collapsed checks line and the
+      // log, all from the config payload. ``opts.expand`` opens the checks once (right after an import).
+      function kgRenderImported(state, opts) {
+        opts = opts || {};
         kgRevisitActive = true;
+        kgLastJobId = String(((state || {}).record || {}).job_id || '');
+        el('kg-import-form').style.display = 'none';
+        el('kg-reimport-confirm').innerHTML = '';
+        el('kg-import-progress').innerHTML = '';
         dlShowSection(false);
         dlInit(true);
+        var v = state.validation || null;
+        var kit = state.kit_dir || (kgKitState && kgKitState.kit_dir) || '';
+        var found = state.state === 'found';
+        var whenLbl = found ? 'Found' : 'Imported';
+        var kitShown = kgDisplayPath(kit);
+        var html = '<div class="kg-imported-facts">' +
+          '<span><span class="lbl">Project</span>' + esc(state.project || kgCurrentProject()) + '</span>' +
+          '<span><span class="lbl">Table</span>' + esc(state.table_name || '') + '</span>' +
+          (state.imported_at ? '<span><span class="lbl">' + whenLbl + '</span>' + esc(kgFmtDate(state.imported_at)) + '</span>' : '') +
+          (v ? '<span><span class="lbl">Validated</span>' + esc(kgFmtDate(v.at)) + '</span>'
+             : '<span><span class="lbl">Validated</span>not yet · Re-import validates and keeps them</span>') +
+          (kit ? '<span class="kg-path" title="' + esc(kitShown) + '"><span class="lbl">Kit</span>' + esc(midTrunc(kitShown, 40)) +
+            ' <button type="button" class="btn btn-ghost btn-sm kgi-btn" data-copy="' + esc(kit) +
+            '" title="Copy the kit folder path" aria-label="Copy the kit folder path">' + kgIcon('copy', 'kgi-12') + '</button></span>' : '') +
+          '<span style="margin-left:auto"><button type="button" class="btn btn-ghost btn-sm kgi-btn" id="kg-reimport-btn"' +
+            (kgDevMode ? ' disabled' : '') + ' title="Import the kit again as new tables beside these. Nothing is overwritten.">' +
+            KG_BTN_REIMPORT + '</button></span>' +
+          '</div>';
+        var box = el('kg-imported');
+        box.innerHTML = html;
+        box.hidden = false;
+        kgBindCopy(box);
+        el('kg-reimport-btn').addEventListener('click', function () { kgConfirmReimport('reimport'); });
+        renderResult(state, !!opts.animate, false);
+        if (v && v.checks && v.checks.length) { renderChecks(v.checks, !!opts.animate, !!opts.expand); }
+        else { el('kg-checks').innerHTML = ''; }
+        if (state.log && state.log.length) {
+          el('kg-log-details').style.display = 'block';
+          el('kg-log').textContent = state.log.join('\n');
+        } else if (!opts.keepLog) {
+          kgLogReset();
+        }
+      }
+
+      // The stale view (rc11, item 5): a recorded table is gone from disk — say which, offer Re-import.
+      function kgRenderStale(state) {
+        kgRevisitActive = true;
         el('kg-import-form').style.display = 'none';
-        var result = { tables: {} };
-        KG_SPLITS.forEach(function (s) {
-          var t = (snap.tables || {})[s] || {};
-          result.tables[s] = { url: t.url || '', rows: t.rows, reused: !!t.reused };
-        });
-        renderResult(result);
-        renderChecks(snap.checks || []);
-        // No log on revisit: the host keeps no job log (docs/EXDARK_MIRROR.md #33).
+        el('kg-imported').hidden = true;
+        el('kg-imported').innerHTML = '';
+        el('kg-reimport-confirm').innerHTML = '';
+        el('kg-import-progress').innerHTML = '';
+        el('kg-checks').innerHTML = '';
+        kgLogReset();
+        dlShowSection(false);
+        dlInit(true);
+        var missing = state.missing || [];
+        var tables = state.tables || {};
+        var lines = missing.map(function (sp) {
+          var t = tables[sp] || {};
+          var shown = kgDisplayPath(t.url);
+          return '<div style="margin-top:4px"><strong>' + esc(sp) + '</strong> · ' + esc(t.revision || '') +
+            ' · <span class="kg-path" title="' + esc(shown) + '">' + esc(midTrunc(shown, 52)) + '</span></div>';
+        }).join('');
+        var head = missing.length === 1 ? 'A table from your import is missing on disk.' : 'The tables from your import are missing on disk.';
+        el('kg-import-banner').innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+          '<span style="flex:1"><strong>' + head + '</strong>' + lines +
+          '<div class="form-help" style="margin-top:6px">Recorded ' + esc(kgFmtDate(state.imported_at)) + ' in project <strong>' +
+          esc(state.project || '') + '</strong>. Re-import writes the missing table again and validates the other; nothing is overwritten.</div>' +
+          '<div class="kg-confirm-actions"><button type="button" class="btn btn-primary btn-sm kgi-btn" id="kg-stale-reimport"' +
+          (kgDevMode ? ' disabled' : '') + '>' + KG_BTN_REIMPORT + '</button></div></span></div>';
+        el('kg-stale-reimport').addEventListener('click', function () { kgConfirmReimport('import'); });
+        renderResult(state, false, true);
+      }
+
+      // rc11 (item 2): the tab renders from the config payload alone — no second resolution.
+      function kgRenderImportFromState(opts) {
+        renderPipeline(); kgRenderLoopLinks(); kgRenderGates();
+        if (kgImported()) { kgRenderImported(kgImportState, opts); }
+        else if (kgImportState.state === 'stale') { kgRenderStale(kgImportState); }
+        else { kgEnterFormState(); }
       }
 
       function kgInitImportTab() {
@@ -2313,8 +2553,8 @@
           .then(function (list) {
             var running = (list || []).filter(function (j) { return j.status === 'running' || j.status === 'queued'; });
             // Kind is inferred from the live label (host records carry no params).
-            var imp = running.filter(function (j) { return !/shard|extract|verifying files/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
-            var dl = running.filter(function (j) { return /shard|extract|verifying files/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
+            var imp = running.filter(function (j) { return !/shard|extract|verifying files|download/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
+            var dl = running.filter(function (j) { return /shard|extract|verifying files|download/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
             if (dl && !dlRunning) {
               dlJobId = dl.id; dlRunning = true;
               var djob = kgJobRecord(dl.id, 'download_kit');
@@ -2323,8 +2563,12 @@
               kgTrack(djob);
             }
             if (imp && !kgImporting) {
+              // rc11 (item 6): a running import locks the tab — the form stays, the button is disabled, progress shows.
               kgLastJobId = imp.id;
               kgImporting = true;
+              kgRevisitActive = false;
+              el('kg-import-form').style.display = '';
+              el('kg-imported').hidden = true;
               kgCheckReady();
               if (!dl) { dlShowSection(false); }
               el('kg-import-spinner').style.display = 'inline-block';
@@ -2334,15 +2578,7 @@
               kgTrack(job);
               return;
             }
-            return API.authFetch(PLUGIN_ROOT + '/import/state')
-              .then(function (r) { return r.json(); })
-              .catch(function (e) { kgConn.fail(e); return { state: 'empty' }; })
-              .then(function (state) {
-                kgImportState = state || { state: 'empty' };
-                renderPipeline(); kgRenderLoopLinks(); kgRenderGates();
-                if (state.state === 'success') { kgRenderRevisit(state); }
-                else { kgEnterFormState(); }
-              });
+            kgRenderImportFromState();
           });
       }
 
@@ -2390,37 +2626,61 @@
         if (animate) { kglEnter(el('kg-dl-offer')); }
       }
 
-      function dlRenderQuiet(fileCount, when, matched) {
+      // rc11 (item 9): the kit line — "Starter kit ready · 9,600 images + manifest · verified <date>" with Re-verify.
+      function dlRenderQuiet(state) {
         el('kg-dl-offer').hidden = true;
         el('kg-dl-progress').innerHTML = '';
-        var text = (matched !== null && matched !== undefined)
-          ? 'Starter kit verified just now: ' + fmtCount(matched) +
-            ' of ' + fmtCount(fileCount) + ' files match the manifest.'
-          : 'Starter kit downloaded' + (when ? ' ' + kgFmtAgo(when) : '') +
-            (fileCount ? ' (' + fmtCount(fileCount) + ' files verified then)' : '') + '.';
+        state = state || kgKitState || {};
+        var imgs = typeof state.image_count === 'number' ? fmtCount(state.image_count) + ' images + manifest'
+          : (state.file_count ? fmtCount(state.file_count) + ' files' : '');
+        var text = 'Starter kit ready' + (imgs ? ' · ' + imgs : '') +
+          (state.verified_at ? ' · verified ' + esc(kgFmtDate(state.verified_at)) : '') +
+          (state.source === 'manual' ? ' · from a folder you supplied' : '');
         el('kg-dl-banner').innerHTML =
-          '<div class="kg-preflight-ok">' + kgIcon('check-circle') +
-          '<span style="flex:1">' + text + '</span>' +
-          '<button type="button" id="kg-dl-verify" class="btn btn-ghost btn-sm kgi-btn" ' +
-          'title="Re-check every kit file against the published manifest (a few seconds)">' +
-          kgIcon('refresh-cw', 'kgi-12') + '<span>Verify</span></button></div>';
+          '<div class="kg-kit-line ok">' + kgIcon('check-circle') + '<span class="kg-kit-text">' + text + '</span>' +
+          '<span class="kg-kit-actions"><button type="button" id="kg-dl-verify" class="btn btn-ghost btn-sm kgi-btn" ' +
+          'title="Re-check every kit file against the manifest it shipped with (a few seconds)">' +
+          kgIcon('refresh-cw', 'kgi-12') + '<span>Re-verify</span></button></span></div>';
         el('kg-dl-verify').addEventListener('click', dlVerifyNow);
       }
 
-      function dlVerifyNow() {
+      // rc11 (item 14): under the kit field, a folder the participant supplied says whether its files were verified.
+      function kgRenderKitManual(kitDir) {
+        var box = el('kg-kit-manual');
+        if (!box) { return; }
+        kitDir = kgCleanPath(kitDir || '');
+        var k = kgKitState || {};
+        var known = (k.state === 'success' || k.state === 'superseded') && kgCleanPath(k.kit_dir || '').toLowerCase() === kitDir.toLowerCase();
+        if (!kitDir || known) { box.innerHTML = ''; return; }
+        box.innerHTML = '<div class="kg-kit-line">' + kgIcon('info', 'kgi-muted') +
+          '<span class="kg-kit-text">The structure matches the manifest; the files themselves were not verified yet.</span>' +
+          '<span class="kg-kit-actions"><button type="button" id="kg-kit-verify" class="btn btn-ghost btn-sm kgi-btn" ' +
+          'title="Check every file in this folder against the files.json it ships with">' + kgIcon('refresh-cw', 'kgi-12') +
+          '<span>Verify files</span></button></span></div>';
+        el('kg-kit-verify').addEventListener('click', dlVerifyManual);
+      }
+
+      function dlVerifyNow() { dlVerify(''); }
+      function dlVerifyManual() { dlVerify(kgCleanPath(el('kg-kit').value)); }
+      function dlVerify(kitDir) {
         if (kgDevMode) { return; }
-        var btn = el('kg-dl-verify');
-        if (!btn || btn.disabled) { return; }
-        btn.disabled = true;
-        btn.classList.add('kg-spin');
-        API.authFetch(PLUGIN_ROOT + '/download/verify')
+        var btn = kitDir ? el('kg-kit-verify') : el('kg-dl-verify');
+        if (btn) { btn.disabled = true; btn.classList.add('kg-spin'); }
+        API.authFetch(PLUGIN_ROOT + '/download/verify' + (kitDir ? '?kit_dir=' + encodeURIComponent(kitDir) : ''))
           .then(function (r) { return r.json(); })
           .then(function (v) {
-            if (v.ok) { dlRenderQuiet(v.file_count, null, v.matched); return; }
+            if (v.ok) {
+              return kgReloadConfig().then(function () {
+                if (!kgRevisitActive) { dlShowSection(true); dlRenderQuiet(kgKitState); }
+                kgRenderKitManual(kitDir || el('kg-kit').value);
+                kgClearKaggleFallback();
+              });
+            }
             var parts = [];
             if (v.missing_count) { parts.push(fmtCount(v.missing_count) + ' missing'); }
             if (v.mismatch_count) { parts.push(fmtCount(v.mismatch_count) + ' changed'); }
             var first = ((v.missing || []).concat(v.mismatch || [])[0]) || '';
+            dlShowSection(true);
             el('kg-dl-banner').innerHTML =
               '<div class="kg-callout err">' + kgIcon('x-circle') +
               '<span><strong>Verification failed.</strong> ' +
@@ -2428,11 +2688,12 @@
                        : parts.join(', ') + (first ? ' (first: ' + esc(first) + ')' : '') + '. ') +
               'Downloading again restores the kit.</span></div>';
             dlShowOffer(false, false);
+            kgShowKaggleFallback('The kit on disk does not match the manifest.');
+            if (btn) { btn.disabled = false; btn.classList.remove('kg-spin'); }
           })
           .catch(function (e) {
             kgConn.fail(e);
-            btn.disabled = false;
-            btn.classList.remove('kg-spin');
+            if (btn) { btn.disabled = false; btn.classList.remove('kg-spin'); }
           });
       }
 
@@ -2456,17 +2717,23 @@
         el('kg-dl-offer').hidden = true;
         el('kg-dl-progress').innerHTML = '';
         var res = job.result || {};
-        var files = res.file_count;
+        var imgs = typeof res.image_count === 'number' ? fmtCount(res.image_count) + ' images + manifest'
+          : (res.file_count ? fmtCount(res.file_count) + ' files' : '');
         var head = '<strong>Starter kit downloaded and verified.</strong> ';
-        var tail = (files ? fmtCount(files) + ' files match the published manifest. ' : '') +
-                   'The starter kit folder below is filled in and ready to import.';
+        var tail = (imgs ? imgs + ' match the published manifest. ' : '') +
+                   'The starter kit folder under Advanced is filled in and ready to import.';
         el('kg-dl-banner').innerHTML =
           '<div class="kg-callout ok' + (animate ? ' kgl-enter' : '') + '">' +
           kgIcon('check-circle') + '<span>' + head + tail + '</span></div>';
+        kgClearKaggleFallback();
       }
 
+      // rc11 (item 14): a resume is offered first; when it cannot help (a failed check — a wrong hash, a kit
+      // defect) or the network failed twice in this session, the manual route from Kaggle's Data page opens.
+      var dlFailCount = 0;
       function dlRenderFail(job, animate) {
         var failed = (job.checks || []).filter(function (c) { return !c.ok; });
+        dlFailCount++;
         var lines = failed.map(function (c) {
           return '<div style="font-size: 12px; margin-top: 4px;">' +
             esc(c.label) + (c.detail ? ' <span style="color: var(--text-muted);">(' + esc(c.detail) + ')</span>' : '') + '</div>';
@@ -2477,6 +2744,9 @@
           lines + '<div style="margin-top: 8px;">' + kgDiagBtn() + '</div></span></div>';
         kgBindDiag(el('kg-dl-banner'), dlBuildDiagnostics);
         dlShowOffer(true, false);
+        if (failed.length || dlFailCount >= 2) {
+          kgShowKaggleFallback(failed.length ? 'The downloaded files did not pass verification.' : 'The download failed again.');
+        }
       }
 
       function dlRenderCancelled(animate) {
@@ -2527,20 +2797,12 @@
           .catch(function () { if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; } });
       }
 
-      // Two funnels: kit_dir is a SESSION fact the server wrote. Re-read /config so it enters
-      // through the session funnel instead of being copied out of job facts.
+      // Two funnels: kit_dir is a SESSION fact the server wrote; kgReloadConfig has just re-read it.
       function dlAdoptSessionKit() {
-        API.authFetch(PLUGIN_ROOT + '/config')
-          .then(function (r) { return r.json(); })
-          .then(function (cfg) {
-            var kit = String(((cfg || {}).session || {}).kit_dir || '');
-            if (cfg && cfg._meta) { kgMeta = cfg._meta; }
-            if (!kit || !kgSession) { return; }
-            kgSession.kit_dir = kit;
-            el('kg-kit').value = kit;
-            kgRunPreflight(true);
-          })
-          .catch(function () { /* the offer's help still names the path */ });
+        var kit = String((kgSession || {}).kit_dir || '');
+        if (!kit) { return; }
+        el('kg-kit').value = kit;
+        kgRunPreflight(true);
       }
 
       function dlTerminal(job, animate) {
@@ -2549,13 +2811,13 @@
         el('kg-dl-progress').innerHTML = '';
         dlLastChecks = job.checks || null;
         if (job.status === 'completed') {
-          // The kit facts (file count) come from the kit record the server wrote.
-          API.authFetch(PLUGIN_ROOT + '/config').then(function (r) { return r.json(); }).then(function (cfg) {
-            var ks = ((cfg || {})._meta || {}).kit_state || {};
-            job.result = { file_count: ks.file_count, kit_version: ks.kit_version };
+          // The kit facts (file and image counts) come from the kit record the server wrote: one payload.
+          kgReloadConfig().then(function () {
+            var ks = kgKitState || {};
+            job.result = { file_count: ks.file_count, image_count: ks.image_count, kit_version: ks.kit_version };
             dlRenderSuccess(job, animate);
             dlAdoptSessionKit();
-          }).catch(function () { dlRenderSuccess(job, animate); dlAdoptSessionKit(); });
+          });
         } else if (job.status === 'cancelled') {
           dlRenderCancelled(animate);
         } else {
@@ -2622,26 +2884,23 @@
           return;
         }
         if (dlRunning) { if (revisitOnly) { dlShowSection(true); } return; }
-        API.authFetch(PLUGIN_ROOT + '/config')
-          .then(function (r) { return r.json(); })
-          .catch(function () { return {}; })
-          .then(function (cfg) {
-            var state = ((cfg || {})._meta || {}).kit_state || { state: 'empty' };
-            if (cfg && cfg._meta) { kgMeta = cfg._meta; }
-            if (state.state === 'superseded') {
-              dlJobId = String(state.job_id || '');
-              if (revisitOnly) { dlShowSection(true); }
-              dlRenderSuperseded(state);
-              return;
-            }
-            if (revisitOnly) { return; }
-            if (state.state === 'success') {
-              dlJobId = String(state.job_id || '');
-              dlRenderQuiet(state.file_count, state.completed_at);
-            } else {
-              dlShowOffer(state.state === 'stale', false);
-            }
-          });
+        // rc11: the section reads _meta.kit_state from the config payload (no second fetch).
+        configLoaded.then(function () {
+          var state = kgKitState || { state: 'empty' };
+          if (state.state === 'superseded') {
+            dlJobId = String(state.job_id || '');
+            if (revisitOnly) { dlShowSection(true); }
+            dlRenderSuperseded(state);
+            return;
+          }
+          if (revisitOnly) { return; }
+          if (state.state === 'success') {
+            dlJobId = String(state.job_id || '');
+            dlRenderQuiet(state);
+          } else {
+            dlShowOffer(state.state === 'stale', false);
+          }
+        });
       }
 
 
@@ -5102,8 +5361,12 @@
       function psRenderBasis() {
         var box = el('ps-basis');
         if (!psBasis) {
-          box.innerHTML = '<div class="form-help" style="margin-bottom: 10px;">Run inference first. ' +
-                          'A validated CSV unlocks this step.</div>';
+          // rc11 (item 20): once a prediction record exists its basis follows in a moment; never show the
+          // instruction over an existing CSV.
+          var hasCsv = kgSubmitState && (kgSubmitState.state === 'predicted' || kgSubmitState.state === 'submitted');
+          box.innerHTML = hasCsv ? '' :
+            '<div class="form-help" style="margin-bottom: 10px;">Run inference first. ' +
+            'A validated CSV unlocks this step.</div>';
           return;
         }
         var score = psBasis.local_score;
@@ -5255,6 +5518,8 @@
               field.value = '';   // the browser keeps nothing
               psRenderConnState(res.connection && res.connection.state ? res.connection
                                 : { state: 'ready', username: res.username || '' });
+              stDoctorLoaded = false;
+              stLoadDoctor(true);   // rc11 (item 22): the Doctor's Kaggle row follows at once, not on the next Status visit
               return;
             }
             restore();
@@ -5413,10 +5678,30 @@
 
       el('ps-submit-btn').addEventListener('click', function () {
         if (kgDevMode || !psBasis) { return; }
+        psRenderSubmitConfirm();
+      });
+
+      // rc11 (item 18): an in-app confirmation (no native confirm()) naming the run, its val accuracy and the
+      // submissions remaining today; Submit starts the job, Cancel clears it.
+      function psRenderSubmitConfirm() {
         var b = psBudget();
-        var n = b ? b.limit : psManifestFacts().limit;
-        if (!window.confirm('This spends 1 of your ' + n + ' daily submissions. Submit "' +
-                            (psBasis.run_name || 'latest prediction') + '" now?')) { return; }
+        var score = psBasis.local_score;
+        var left = b && b.left !== null ? fmtCount(b.left) + ' of ' + fmtCount(b.limit) + ' left today'
+          : (b ? fmtCount(b.limit) + ' per day' : '');
+        el('ps-banner').innerHTML = '<div class="kg-callout info kg-confirm">' + kgIcon('info') +
+          '<span style="flex:1"><strong>Submit to Kaggle?</strong>' +
+          '<div style="margin-top:4px">Run <strong>' + esc(psBasis.run_name || 'latest prediction') + '</strong>' +
+          (score && typeof score.value === 'number' ? ' · val accuracy ' + esc(psFmtPct(score.value)) : '') +
+          (left ? ' · submissions: ' + esc(left) : '') + '. This uses one of today’s submissions.</div>' +
+          '<div class="kg-confirm-actions"><button type="button" class="btn btn-primary btn-sm" id="ps-submit-go">Submit</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="ps-submit-cancel">Cancel</button></div></span></div>';
+        el('ps-submit-go').addEventListener('click', psSubmitNow);
+        el('ps-submit-cancel').addEventListener('click', function () { el('ps-banner').innerHTML = ''; });
+        kgScrollTo(el('ps-banner'));
+      }
+
+      function psSubmitNow() {
+        if (kgDevMode || !psBasis || psSubmitting) { return; }
         psSubmitting = true;
         psCheckSubmitReady();
         el('ps-submit-spinner').style.display = 'inline-block';
@@ -5439,7 +5724,7 @@
               ? 'Submission didn’t start (service unreachable). Try again once reconnected.'
               : e.message;
           });
-      });
+      }
 
       psSetBasis(null);   // step 2 starts muted until a prediction lands
       psRenderGate(null);
@@ -6042,6 +6327,8 @@
       // ── Kaggle live: friendly degradation for third-party API limits (D4) ───────────
       function renderKaggleFrom(s) {
         var box = el('st-kaggle');
+        var headEl = el('st-kaggle-head');
+        if (headEl) { headEl.textContent = (s && s.launched === false) ? 'Kaggle (competition not launched yet)' : 'Kaggle live'; }
         if (!s || !s.connected || s.configured === false) {
           box.innerHTML = '<div class="kg-callout info">' + kgIcon('info') +
             '<span>' + esc((s && s.reason) || 'Kaggle is not connected yet.') + '</span></div>';
@@ -6135,9 +6422,13 @@
           : kg.state === 'no_credentials' ? 'not connected · connect on the Predict + Submit tab (Step 2)'
           : kg.state === 'not_joined' ? 'connected' + (kg.username ? ' as ' + kg.username : '') + ' · competition not joined'
           : kg.state ? 'could not check: ' + (kg.error || kg.state) : 'not checked';
-        var kitText = k.state === 'success' ? k.kit_version + ' · ' + fmtCount(k.file_count) + ' files verified at download'
-          : k.state === 'superseded' ? k.kit_version + ' on disk, the manifest ships ' + k.current_version
+        var kitImgs = typeof k.image_count === 'number' ? fmtCount(k.image_count) + ' images + manifest' : fmtCount(k.file_count) + ' files';
+        var kitWhen = k.verified_at ? ' · verified ' + kgFmtDate(k.verified_at) : '';
+        var kitSrc = k.source === 'manual' ? ' · folder supplied by hand' : '';
+        var kitText = k.state === 'success' ? k.kit_version + ' · ' + kitImgs + kitWhen + kitSrc
+          : k.state === 'superseded' ? k.kit_version + ' on disk, the manifest ships ' + k.current_version + kitWhen
           : k.state === 'stale' ? 'missing on disk' : k.state === 'empty' ? 'not downloaded' : (k.error || k.state || 'unknown');
+        var fb = m.fallback || {};
         return [
           ['Plugin', 'v' + (p.version || '?') + (p.commit ? ' · ' + String(p.commit).slice(0, 12) : ''), p.commit || ''],
           ['Compute service', health && health.version ? 'v' + health.version : 'unknown (health not readable)', ''],
@@ -6149,7 +6440,8 @@
                        (m.refresh_state === 'failed' ? ' (remote fetch failed: ' + (m.refresh_error || 'unknown error') + ')' : '') +
                        ' · ' + String(m.manifest_sha256 || '').slice(0, 12) +
                        (m.competition_id ? ' · ' + m.competition_id + ' kit ' + (m.kit_version || '?') : '') +
-                       (m.manifest_fetched_at ? ' · fetched ' + stAgoIso(m.manifest_fetched_at) : ''), m.manifest_document_url || ''],
+                       (m.manifest_fetched_at ? ' · fetched ' + stAgoIso(m.manifest_fetched_at) : '') +
+                       (fb.active ? ' · ' + (fb.reason || 'the server could not be reached') : ''), fb.detail || m.manifest_document_url || ''],
           ['Kit', kitText, k.kit_dir || ''],
           ['Kaggle', kagText, kg.token_path || ''],
           ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : '') +
@@ -6231,7 +6523,7 @@
       // Any job that finishes changes the counts the Doctor and the hero show (session 5 rc3).
       function stOnJobDone() {
         stDoctorLoaded = false;
-        if (!kgDevMode && el('kg-panel-status').classList.contains('active') && kgImportState.state === 'success') {
+        if (!kgDevMode && el('kg-panel-status').classList.contains('active') && kgImported()) {
           stFetchAll(false, true);
         }
       }
@@ -6429,7 +6721,7 @@
         // Gated on configLoaded (the import record decides whether the body renders at all).
         configLoaded.then(function () {
           kgRenderGates();
-          if (kgImportState.state !== 'success') { return; }
+          if (!kgImported()) { return; }
           stFetchAll(false, true);
           stStartAuto();
         });
@@ -6438,7 +6730,7 @@
       document.addEventListener('visibilitychange', function () {
         // Ticks skip while hidden; returning to a visible Status tab refreshes immediately.
         if (!document.hidden && !kgDevMode && el('kg-panel-status').classList.contains('active') &&
-            kgImportState.state === 'success') {
+            kgImported()) {
           configLoaded.then(function () { stFetchAll(false, false); });
         }
       });
@@ -6631,12 +6923,13 @@
         if (mode && mode.indexOf('train-') === 0) { trDevForce(mode); return; }
         if (mode && mode.indexOf('submit-') === 0) { psDevForce(mode); return; }
         if (mode && mode.indexOf('status-') === 0) { stDevForce(mode); return; }
-        var devDest = 'C:\\Users\\participant\\.3lc-compute\\managed-plugins\\kaggle-classification\\0.1.0\\.plugin-state\\kaggle-classification\\data\\competition';
+        var devDest = 'C:\\Users\\participant\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\competition';
         var devKit = 'C:\\Users\\participant\\Downloads\\starter_kit';
         var devDlKit = devDest + '\\v1\\starter_kit';
 
         function apply() {
           var m = kgManifest || {};
+          var id = (m.competition || {}).id || 'competition';
           var names = (m.classes || []).map(function (c) { return c.name; });
           var nC = names.length || 1;
           var perClass = ((m.splits || {}).train || {}).labeled_per_class || 0;
@@ -6647,9 +6940,10 @@
           var kitV = (m.kit || {}).version || 'v1';
           var shards = (m.kit || {}).shards || [];
           var fileCount = trainRows + valRows + testN + 1;   // + sample_submission.csv
+          var imageCount = trainRows + valRows + testN;
           var totalBytes = shards.reduce(function (a, s) { return a + (s.bytes || 0); }, 0);
-          var base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + ((m.competition || {}).id || 'competition') + '/datasets/';
-          function T(s, rows, reused) { return { url: base + kgDatasetName(s) + '/tables/initial', rows: rows, reused: reused }; }
+          var base = 'C:/Users/participant/AppData/Local/3LC/3LC/projects/' + id + '/datasets/';
+          var now = Date.now() / 1000;
           function CHECKS(valShort) {
             return [
               { label: 'files.json present and the kit version matches the manifest', ok: true, detail: kitV + ' vs ' + kitV },
@@ -6662,7 +6956,7 @@
               { label: 'sample_submission.csv rows == test images', ok: true, detail: fmtCount(testN) + ' rows vs ' + fmtCount(testN) + ' images' },
               { label: 'sample_submission.csv ids are the test image ids', ok: true, detail: 'every id has exactly one image' },
               { label: 'sample_submission.csv header matches the submission columns', ok: true, detail: 'found ' + JSON.stringify(((m.submission || {}).columns) || []) },
-              { label: 'every kit image decodes', ok: true, detail: fmtCount(trainRows + valRows + testN) + '/' + fmtCount(trainRows + valRows + testN) + ' decoded' },
+              { label: 'every kit image decodes', ok: true, detail: fmtCount(imageCount) + '/' + fmtCount(imageCount) + ' decoded' },
               { label: 'existing tables reused', ok: true, detail: 'train (' + trainRows + ' rows), val (' + valRows + ' rows)' },
               { label: 'train row count == ' + fmtCount(trainRows), ok: true, detail: fmtCount(trainRows) + ' rows' },
               { label: 'train label map is the manifest classes + undefined', ok: true, detail: names.concat(['undefined']).join(', ') },
@@ -6673,29 +6967,32 @@
             ];
           }
           var LOG = [
-            'Manifest: remote (' + ((m.competition || {}).id || '') + ', kit ' + kitV + ')',
+            'Manifest: remote (' + id + ', kit ' + kitV + ')',
             'PASS files.json present and the kit version matches the manifest: ' + kitV + ' vs ' + kitV,
-            'PASS every kit image decodes: ' + fmtCount(trainRows + valRows + testN) + '/' + fmtCount(trainRows + valRows + testN) + ' decoded',
+            'PASS every kit image decodes: ' + fmtCount(imageCount) + '/' + fmtCount(imageCount) + ' decoded',
             'PASS target table names are free: \'initial\'',
-            'train: created ' + T('train').url + ' (' + fmtCount(trainRows) + ' rows, 1.7s)',
-            'val: created ' + T('val').url + ' (' + fmtCount(valRows) + ' rows, 0.1s)',
+            'train: created ' + base + kgDatasetName('train') + '/tables/initial (' + fmtCount(trainRows) + ' rows, 1.7s)',
+            'val: created ' + base + kgDatasetName('val') + '/tables/initial (' + fmtCount(valRows) + ' rows, 0.1s)',
             'PASS train row count == ' + fmtCount(trainRows) + ': ' + fmtCount(trainRows) + ' rows',
             'PASS val row count == ' + fmtCount(valRows) + ': ' + fmtCount(valRows) + ' rows'
           ];
           var pfGreen = {
-            all_ok: true, kit_dir: devKit,
+            all_ok: true, kit_dir: devDlKit, params: { project_name: id, table_name: 'initial' },
             classes: { count: nC, canonical: true, names: names },
             splits: { train: { found: trainRows, expected: trainRows, labeled: labeled, ok: true }, val: { found: valRows, expected: valRows, ok: true } },
-            unlabeled: { found: pool, expected: pool }, problems: []
+            unlabeled: { found: pool, expected: pool }, problems: [], existing: {}, reimport_name: 'initial'
           };
+          var pfExisting = Object.assign({}, pfGreen, {
+            existing: { train: { exists: true, rows: trainRows }, val: { exists: true, rows: valRows } }, reimport_name: 'initial-2'
+          });
           var pfMismatch = {
-            all_ok: false, kit_dir: devKit,
+            all_ok: false, kit_dir: devKit, params: { project_name: id, table_name: 'initial' },
             classes: { count: nC, canonical: true, names: names },
             splits: { train: { found: trainRows, expected: trainRows, labeled: labeled, ok: true }, val: { found: valRows - 1, expected: valRows, ok: false } },
             unlabeled: { found: pool, expected: pool },
             problems: [{ label: 'val images per class == ' + fmtCount(valPer), detail: 'off: {"' + names[1] + '": ' + (valPer - 1) + '}' }]
           };
-          var DLLOG = ['Manifest: remote (' + ((m.competition || {}).id || '') + ', kit ' + kitV + ')',
+          var DLLOG = ['Manifest: remote (' + id + ', kit ' + kitV + ')',
             'PASS kit listed by the competition manifest: ' + kitV + ' from remote: ' + shards.length + ' shards, ' + fmtCount(totalBytes) + ' bytes',
             'PASS enough disk space at the destination: 361.3 GB free, ~0.3 GB needed']
             .concat(shards.map(function (s) { return s.name + ': ' + fmtCount(s.bytes) + ' bytes, sha256 verified'; }))
@@ -6705,147 +7002,148 @@
               'PASS extracted kit matches files.json: ' + fmtCount(fileCount) + '/' + fmtCount(fileCount) + ' files verified',
               'PASS kit split counts match the manifest', 'Session updated: Import now points at the downloaded kit',
               'Shard archives removed after verification']);
+          function KIT(when, source) {
+            return { state: 'success', source: source || 'download', kit_dir: devDlKit, kit_version: kitV, current_version: kitV,
+                     file_count: fileCount, image_count: imageCount, completed_at: when, verified_at: when, job_id: 'devdl1' };
+          }
+          function TABLE(split, rows, o) {
+            o = o || {};
+            return { url: base + kgDatasetName(split) + '/tables/initial', exists: o.exists !== false, rows: rows,
+                     revision: 'initial', latest_revision: o.latest || 'initial', reused: !!o.reused };
+          }
+          function IMPORTED(o) {
+            o = o || {};
+            return { state: o.found ? 'found' : 'success', project: id, table_name: 'initial',
+                     tables: { train: TABLE('train', trainRows, { reused: o.reused, latest: o.latest }),
+                               val: TABLE('val', valRows, { reused: o.reused, exists: !o.valMissing }) },
+                     missing: o.valMissing ? ['val'] : [],
+                     validation: o.found ? null : { passed: 18, total: 18, ok: true, at: o.when, checks: CHECKS() },
+                     imported_at: o.when, kit_dir: devDlKit, log: o.found ? [] : LOG,
+                     record: { job_id: 'devjob1', kit_dir: devDlKit, project_name: id, table_name: 'initial' } };
+          }
+          var s3 = shards[Math.min(2, shards.length - 1)] || { name: 'shard', bytes: 0, sha256: '' };
+          var netFail = {
+            error: 'Could not download ' + s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) +
+              ' of ' + fmtCount(s3.bytes) + ' bytes. Run the download again. Completed shards are kept, and the job resumes where it stopped.',
+            checks: []
+          };
 
-          kgRevisitActive = false;
+          // Reset every Import surface, then render the one state.
+          kgRevisitActive = false; kgImporting = false; dlRunning = false; dlFailCount = 0;
+          kgFallback = null; kgRenderManifestNote();
+          kgKitState = { state: 'empty' };
+          kgImportState = { state: 'empty' };
           el('kg-import-state').textContent = '';
-          if (mode && mode.indexOf('state') === 0) {
-            if (mode === 'state1') {
-              dlShowSection(true);
-              el('kg-dl-dest').textContent = devDest;
-              dlShowOffer(false, false);
-            } else if (mode === 'state3' || mode === 'state6') {
-              dlShowSection(false);
-            } else {
-              dlShowSection(true);
-              dlRenderQuiet(fileCount, Date.now() / 1000 - 7200);
-            }
+          el('kg-import-form').style.display = '';
+          el('kg-imported').hidden = true; el('kg-imported').innerHTML = '';
+          el('kg-reimport-confirm').innerHTML = '';
+          el('kg-import-banner').innerHTML = ''; el('kg-checks').innerHTML = ''; el('kg-result').innerHTML = '';
+          el('kg-import-progress').innerHTML = ''; el('kg-kaggle-fallback').innerHTML = '';
+          el('kg-dl-banner').innerHTML = ''; el('kg-dl-progress').innerHTML = '';
+          el('kg-import-btn').innerHTML = KG_BTN_IMPORT;
+          kgLogReset(); dlLogReset();
+          function form(kitValue, pf) {
+            el('kg-kit').value = kitValue || '';
+            kgPreflight = pf && pf.all_ok ? pf : null;
+            kgRenderPreflight(pf || null);
+            kgCheckReady();
           }
-          if (mode && mode.indexOf('dl-') === 0) {
-            dlShowSection(true);
-            el('kg-dl-dest').textContent = devDest;
-            var dlNow = Date.now() / 1000;
-            if (mode === 'dl-success' || mode === 'dl-revisit' || mode === 'dl-superseded') {
-              el('kg-kit').value = devDlKit;
-              kgPreflight = pfGreen;
-              kgRenderPreflight(pfGreen);
-            } else {
-              el('kg-kit').value = '';
-              kgPreflight = null;
-              kgRenderPreflight(null);
+          function dlQuiet(when) { kgKitState = KIT(when); dlShowSection(true); dlRenderQuiet(kgKitState); }
+          function dlOffer() { dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; } dlShowOffer(false, false); }
+          function imported(o, opts) { kgImportState = IMPORTED(o); renderPipeline(); kgRenderImported(kgImportState, opts); }
+
+          if (mode === 'state1' || mode === 'state1-bundled') {
+            dlOffer(); form('', null);
+            if (mode === 'state1-bundled') {
+              kgFallback = { active: true, source: 'bundled', reason: 'Using the built-in competition manifest; the server couldn’t be reached.' };
+              kgRenderManifestNote();
             }
-            kgCheckReady();
-            var s3 = shards[Math.min(2, shards.length - 1)] || { name: 'shard', bytes: 0 };
-            if (mode === 'dl-empty') {
-              dlShowOffer(false, false);
-            } else if (mode === 'dl-running' || mode === 'dl-verify') {
-              el('kg-dl-offer').hidden = true;
-              dlRenderProgress({
-                status: 'running',
-                created_at: dlNow - (mode === 'dl-verify' ? 51 : 23),
-                progress: mode === 'dl-verify'
-                  ? { percent: 94, label: 'Verifying files', phase: 'verify' }
-                  : { percent: 37, label: 'Downloading shard 3/' + shards.length, phase: 'download',
-                      bytes_done: Math.round(totalBytes * 0.37), bytes_total: totalBytes }
-              });
-              el('kg-dl-log').textContent = DLLOG.slice(0, mode === 'dl-verify' ? DLLOG.length - 4 : 5).join('\n');
-              el('kg-dl-log-details').style.display = 'block';
-            } else if (mode === 'dl-success') {
-              dlRenderSuccess({ result: { file_count: fileCount } }, false);
-              el('kg-dl-log').textContent = DLLOG.join('\n');
-              el('kg-dl-log-details').style.display = 'block';
-            } else if (mode === 'dl-fail') {
-              dlRenderFail({
-                error: 'Could not download ' + s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) +
-                  ' of ' + fmtCount(s3.bytes) + ' bytes. Run the download again. Completed shards are kept, and the job resumes where it stopped.',
-                checks: []
-              }, false);
-              el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat([
-                s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) + ' of ' + fmtCount(s3.bytes) + ' bytes, retrying',
-                'FAILED: Could not download ' + s3.name + '.'
-              ]).join('\n');
-              el('kg-dl-log-details').style.display = 'block';
-            } else if (mode === 'dl-cancelled') {
-              dlRenderCancelled(false);
-              el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat([
-                'Cancelled. Completed shards are kept; running the download again resumes.'
-              ]).join('\n');
-              el('kg-dl-log-details').style.display = 'block';
-            } else if (mode === 'dl-revisit') {
-              dlRenderQuiet(fileCount, dlNow - 7200);
-            } else if (mode === 'dl-superseded') {
-              dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
-                completed_at: dlNow - 259200, file_count: fileCount, kit_dir: devDlKit });
-            } else {
-              kgInitImportTab();
-            }
-            return;
-          }
-          if (mode === 'state1') {
-            el('kg-kit').value = '';
-            kgPreflight = null;
-            kgRenderPreflight(null);
-            kgCheckReady();
-          } else if (mode === 'state2') {
-            el('kg-kit').value = devKit;
-            kgPreflight = pfGreen;
-            kgRenderPreflight(pfGreen);
-            kgCheckReady();
+          } else if (mode === 'state2' || mode === 'state2-existing') {
+            dlQuiet(now - 7200); form(devDlKit, mode === 'state2-existing' ? pfExisting : pfGreen);
           } else if (mode === 'state2-mismatch') {
-            el('kg-kit').value = devKit;
-            kgPreflight = null;
-            kgRenderPreflight(pfMismatch);
-            kgCheckReady();
+            dlQuiet(now - 7200); form(devKit, pfMismatch);
           } else if (mode === 'state2-error') {
-            el('kg-kit').value = 'C:\\nope\\starter_kit';
-            kgPreflight = null;
-            kgRenderPreflight({ error: 'No kit found at C:\\nope\\starter_kit (files.json missing). Download the starter kit first.' });
-            kgCheckReady();
+            dlOffer(); form('C:\\nope\\starter_kit', { error: 'No kit found at C:\\nope\\starter_kit (files.json missing). Download the starter kit first.' });
           } else if (mode === 'state3') {
-            var now = Date.now() / 1000;
-            el('kg-kit').value = devKit;
-            kgPreflight = pfGreen;
-            kgRenderPreflight(pfGreen);
-            kgImporting = true;
-            kgCheckReady();
+            kgKitState = KIT(now - 7200); dlShowSection(false); form(devDlKit, pfGreen);
+            kgImporting = true; kgCheckReady();
             el('kg-import-spinner').style.display = 'inline-block';
             el('kg-import-state').textContent = 'Importing… (safe to navigate away)';
-            kgRenderProgress({
-              status: 'running',
-              progress: { stages: KG_IMPORT_STAGES, current: 'val', done: ['train'],
-                          started_at: { train: now - 9, val: now - 2 }, finished_at: { train: now - 2 } }
-            });
-            el('kg-log').textContent = LOG.slice(0, 5).join('\n');
-            el('kg-log-details').style.display = 'block';
+            kgRenderProgress({ status: 'running', progress: { stages: KG_IMPORT_STAGES, current: 'val', done: ['train'],
+              started_at: { train: now - 9, val: now - 2 }, finished_at: { train: now - 2 } } });
+            el('kg-log').textContent = LOG.slice(0, 5).join('\n'); el('kg-log-details').style.display = 'block';
           } else if (mode === 'state4') {
-            el('kg-kit').value = devKit;
-            kgPreflight = pfGreen;
-            kgRenderPreflight(pfGreen);
-            kgCheckReady();
-            renderResult({ tables: { train: T('train', trainRows, true), val: T('val', valRows, false) } });
-            renderChecks(CHECKS());
-            el('kg-log').textContent = LOG.join('\n');
-            el('kg-log-details').style.display = 'block';
+            kgKitState = KIT(now - 600); imported({ when: now - 30 }, { expand: true });
           } else if (mode === 'state5') {
-            el('kg-kit').value = devKit;
-            kgPreflight = pfGreen;
-            kgRenderPreflight(pfGreen);
-            kgCheckReady();
+            kgKitState = KIT(now - 600); dlShowSection(false); form(devDlKit, pfGreen);
             renderFailBanner('The val table did not verify after writing (see the checks). It was removed.');
             renderChecks(CHECKS(true));
             el('kg-import-btn').innerHTML = KG_BTN_RERUN;
             el('kg-log').textContent = LOG.concat(['FAIL val row count == ' + fmtCount(valRows) + ': ' + fmtCount(valRows - 1) + ' rows',
               'FAILED: The val table did not verify after writing.']).join('\n');
             el('kg-log-details').style.display = 'block';
-          } else if (mode === 'state6-superseded') {
-            kgRenderRevisit({ state: 'success', record: { project_name: (m.competition || {}).id, table_name: 'initial', kit_dir: devDlKit,
-              tables: { train: T('train', trainRows, true), val: T('val', valRows, true) }, checks: CHECKS() } });
-            dlShowSection(true);
-            el('kg-dl-dest').textContent = devDest;
-            dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
-              completed_at: Date.now() / 1000 - 259200, file_count: fileCount, kit_dir: devDlKit });
           } else if (mode === 'state6') {
-            kgRenderRevisit({ state: 'success', record: { project_name: (m.competition || {}).id, table_name: 'initial', kit_dir: devKit,
-              tables: { train: T('train', trainRows, true), val: T('val', valRows, true) }, checks: CHECKS() } });
+            kgKitState = KIT(now - 7200); imported({ when: now - 7200, latest: 'initial-labeled-2' });
+          } else if (mode === 'state6-found') {
+            kgKitState = KIT(now - 7200); imported({ found: true, reused: true });
+          } else if (mode === 'state6-stale') {
+            kgKitState = KIT(now - 259200); kgImportState = IMPORTED({ when: now - 259200, valMissing: true });
+            renderPipeline(); kgRenderStale(kgImportState);
+          } else if (mode === 'state6-superseded') {
+            kgKitState = KIT(now - 259200); imported({ when: now - 259200 });
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
+              completed_at: now - 259200, file_count: fileCount, kit_dir: devDlKit });
+          } else if (mode === 'dl-empty') {
+            dlOffer(); form('', null);
+          } else if (mode === 'dl-running' || mode === 'dl-verify') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            el('kg-dl-offer').hidden = true; form('', null);
+            dlRenderProgress({ status: 'running', created_at: now - (mode === 'dl-verify' ? 51 : 23),
+              progress: mode === 'dl-verify' ? { percent: 94, label: 'Verifying files', phase: 'verify' }
+                : { percent: 37, label: 'Downloading shard 3/' + shards.length, phase: 'download',
+                    bytes_done: Math.round(totalBytes * 0.37), bytes_total: totalBytes } });
+            el('kg-dl-log').textContent = DLLOG.slice(0, mode === 'dl-verify' ? DLLOG.length - 4 : 5).join('\n');
+            el('kg-dl-log-details').style.display = 'block';
+          } else if (mode === 'dl-success') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            kgKitState = KIT(now - 5); form(devDlKit, pfGreen);
+            dlRenderSuccess({ result: { file_count: fileCount, image_count: imageCount } }, false);
+            el('kg-dl-log').textContent = DLLOG.join('\n'); el('kg-dl-log-details').style.display = 'block';
+          } else if (mode === 'dl-fail' || mode === 'dl-fail-kaggle' || mode === 'dl-fail-checks') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            form('', null);
+            if (mode === 'dl-fail-kaggle') { dlFailCount = 1; }
+            dlRenderFail(mode === 'dl-fail-checks'
+              ? { error: s3.name + ' failed verification after three downloads. The copy on the content network may be damaged.',
+                  checks: [{ label: 'shard sha256 matches the manifest', ok: false,
+                             detail: s3.name + ': expected ' + String(s3.sha256 || '').slice(0, 12) + '…, got 3f9a0c1e7b2d…' }] }
+              : netFail, false);
+            el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat([
+              s3.name + ': connection ended at ' + fmtCount(Math.round(s3.bytes * 0.6)) + ' of ' + fmtCount(s3.bytes) + ' bytes, retrying',
+              'FAILED: Could not download ' + s3.name + '.'
+            ]).join('\n');
+            el('kg-dl-log-details').style.display = 'block';
+          } else if (mode === 'dl-cancelled') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            form('', null); dlRenderCancelled(false);
+            el('kg-dl-log').textContent = DLLOG.slice(0, 5).concat(['Cancelled. Completed shards are kept; running the download again resumes.']).join('\n');
+            el('kg-dl-log-details').style.display = 'block';
+          } else if (mode === 'dl-revisit') {
+            dlQuiet(now - 7200); form(devDlKit, pfGreen);
+          } else if (mode === 'dl-verify-fail') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            form(devDlKit, pfGreen);
+            el('kg-dl-banner').innerHTML = '<div class="kg-callout err">' + kgIcon('x-circle') +
+              '<span><strong>Verification failed.</strong> 3 changed (first: data/val/' + esc(names[0] || 'class') + '/00012.jpg). ' +
+              'Downloading again restores the kit.</span></div>';
+            dlShowOffer(false, false);
+            kgShowKaggleFallback('The kit on disk does not match the manifest.');
+          } else if (mode === 'dl-superseded') {
+            dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
+            kgKitState = KIT(now - 259200); form(devDlKit, pfGreen);
+            dlRenderSuperseded({ kit_version: kitV, current_version: 'v' + (parseInt(String(kitV).replace(/\D/g, ''), 10) + 1 || 2),
+              completed_at: now - 259200, file_count: fileCount, kit_dir: devDlKit });
           } else {
             kgInitImportTab();   // unknown value → normal resolution
             return;

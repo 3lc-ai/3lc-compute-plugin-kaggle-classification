@@ -282,6 +282,52 @@ def test_verify_now_passes_then_names_the_tamper(served, tmp_path):
     assert kit.verify_now(bump_version(manifest, "v2"))["ok"] is False
 
 
-def test_verify_now_requires_a_record(manifest, home):
+def test_verify_now_without_a_record_or_a_folder_says_so(manifest, home):
+    """rc11: no download on record and no kit folder in the session — one sentence, nothing written."""
     v = kit.verify_now(manifest)
-    assert v["ok"] is False and "No completed download" in v["error"]
+    assert v["ok"] is False and "No starter kit folder yet" in v["error"]
+    assert kit.download_state(manifest) == {"state": "empty"}
+
+
+# ── rc11: the kit line's facts and the manual kit's Verify (items 9 and 14) ─────────────
+
+
+def test_download_state_carries_the_image_count_and_the_verification_stamp(served, tmp_path):
+    manifest, _ = served
+    result = _run(tmp_path, manifest)
+    state = kit.download_state(manifest)
+    index = kit.load_files_index(Path(result["kit_dir"]))
+    assert state["source"] == "download"
+    assert state["image_count"] == kit.image_count_of(index) < state["file_count"]
+    assert state["verified_at"] == state["completed_at"]
+    v = kit.verify_now(manifest)
+    assert v["ok"] and v["image_count"] == state["image_count"] and v["verified_at"] >= state["completed_at"]
+    assert kit.download_state(manifest)["verified_at"] == v["verified_at"]
+
+
+def test_verify_now_checks_a_manual_kit_folder_and_records_it_on_a_pass(served, tmp_path):
+    """A participant who downloaded the kit from Kaggle pastes its folder: Verify runs the full files.json
+    pass on it, and a pass records it as a manual kit so the kit line and the Doctor report it."""
+    manifest, _ = served
+    result = _run(tmp_path, manifest)
+    folder = Path(result["kit_dir"])
+    kit.record_path(manifest).unlink()   # no download on record any more
+    session.save({"session": {}})
+    assert kit.download_state(manifest) == {"state": "empty"}
+    assert "No starter kit folder" in kit.verify_now(manifest)["error"]
+    v = kit.verify_now(manifest, kit_dir=str(folder))
+    assert v["ok"] is True and v["source"] == "manual" and v["kit_version"] == manifest.kit.version
+    state = kit.download_state(manifest)
+    assert state["state"] == "success" and state["source"] == "manual" and state["kit_dir"] == str(folder)
+    assert state["image_count"] == v["image_count"] and state["verified_at"] == v["verified_at"]
+    # The session's kit folder is the default when nothing is on record.
+    kit.record_path(manifest).unlink()
+    session.publish_kit_dir(manifest, folder)
+    assert kit.verify_now(manifest)["ok"] is True
+    # A tampered manual kit fails and records nothing.
+    kit.record_path(manifest).unlink()
+    next(folder.rglob("*.jpg")).write_bytes(b"xx")
+    v3 = kit.verify_now(manifest, kit_dir=str(folder))
+    assert v3["ok"] is False and v3["mismatch_count"] == 1
+    assert kit.download_state(manifest) == {"state": "empty"}
+    assert "No kit found" in kit.verify_now(manifest, kit_dir=str(tmp_path / "nowhere"))["error"]

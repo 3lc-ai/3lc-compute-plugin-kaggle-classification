@@ -305,6 +305,32 @@ def _write_record(manifest: Manifest, facts: dict[str, Any]) -> None:
     tmp.replace(path)
 
 
+IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".webp"})
+
+
+def image_count_of(files_index: dict[str, Any]) -> int:
+    """How many of the kit's files are images (the participant-facing count: "9,600 images + manifest",
+    never the raw file total that includes sample_submission.csv)."""
+    n = 0
+    for f in files_index.get("files") or []:
+        path = str(f.get("path") or "")
+        dot = path.rfind(".")
+        if dot >= 0 and path[dot:].lower() in IMAGE_SUFFIXES:
+            n += 1
+    return n
+
+
+def _update_record(manifest: Manifest, **facts: Any) -> None:
+    """Merge facts into the kit record (keeps ``completed_at``; ``_write_record`` would restamp it)."""
+    path = record_path(manifest)
+    current = read_record(manifest) or {}
+    current.update(facts)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(current, indent=1), encoding="utf-8")
+    tmp.replace(path)
+
+
 def read_record(manifest: Manifest) -> dict[str, Any] | None:
     path = record_path(manifest)
     if not path.is_file():
@@ -336,35 +362,68 @@ def download_state(manifest: Manifest) -> dict[str, Any]:
     if kit_root is None or not (kit_root / FILES_INDEX_NAME).is_file():
         return {"state": "stale", "reason": f"kit no longer on disk at {kit_dir or record.get('dest_dir')}"}
     recorded = str(record.get("kit_version") or "")
+    image_count = record.get("image_count")
+    if image_count is None:
+        try:
+            image_count = image_count_of(load_files_index(kit_root))
+        except (OSError, ValueError, RuntimeError):
+            image_count = None
     return {
         "state": "success" if recorded == manifest.kit.version else "superseded",
+        # rc11: "download" (the plugin fetched and verified it) or "manual" (a folder the participant supplied
+        # and the Verify action checked against its own files.json).
+        "source": str(record.get("source") or "download"),
         "dest_dir": record.get("dest_dir"),
         "kit_dir": kit_dir,
         "kit_version": recorded,
         "current_version": manifest.kit.version,
         "file_count": record.get("file_count"),
+        "image_count": image_count,
         "completed_at": record.get("completed_at"),
+        # When every file last matched files.json: the download's own pass, or the latest Verify.
+        "verified_at": record.get("verified_at") or record.get("completed_at"),
         "manifest_provenance": record.get("manifest_provenance"),
         "job_id": record.get("job_id", ""),
     }
 
 
-def verify_now(manifest: Manifest) -> dict[str, Any]:
-    """On-demand full re-verification for the revisit Verify action, against the ``files.json``
-    kept inside the kit (its OWN version's, so a superseded kit verifies honestly)."""
+def verify_now(manifest: Manifest, kit_dir: str | Path | None = None) -> dict[str, Any]:
+    """On-demand full re-verification for the Verify action, against the ``files.json`` kept inside the
+    kit (its OWN version's, so a superseded kit verifies honestly).
+
+    rc11 (item 14): a kit the participant supplied by hand (``kit_dir``, or the session's kit folder when
+    there is no download on record) verifies the same way; a pass records it as a ``manual`` kit, so the
+    kit line and the Doctor report it like a download. The record is only ever written on a pass."""
     state = download_state(manifest)
-    if state.get("state") not in ("success", "superseded"):
-        return {"ok": False, "error": "No completed download on record. Download the starter kit first."}
-    kit_root = Path(str(state["kit_dir"]))
+    manual = False
+    if kit_dir:
+        kit_root = Path(str(kit_dir)).expanduser()
+        manual = str(kit_root) != str(state.get("kit_dir") or "")
+    elif state.get("state") in ("success", "superseded"):
+        kit_root = Path(str(state["kit_dir"]))
+    else:
+        from kaggle_classification import session
+
+        folder = str(session.populated_session(manifest).get("kit_dir") or "").strip()
+        if not folder:
+            return {"ok": False, "error": "No starter kit folder yet. Download the starter kit, or paste its folder path."}
+        kit_root = Path(folder).expanduser()
+        manual = True
+    if not (kit_root / FILES_INDEX_NAME).is_file():
+        return {"ok": False, "error": f"No kit found at {kit_root} ({FILES_INDEX_NAME} missing)."}
     try:
         index = load_files_index(kit_root)
     except (OSError, ValueError, RuntimeError) as exc:
         return {"ok": False, "error": f"{FILES_INDEX_NAME} could not be read at {kit_root}: {exc}"}
     delta = verify_tree(index, kit_root)
     ok = not delta["mismatch"] and not delta["missing"]
-    return {
+    out = {
         "ok": ok,
+        "kit_dir": str(kit_root),
+        "source": "manual" if manual else str(state.get("source") or "download"),
         "file_count": len(index["files"]),
+        "image_count": image_count_of(index),
+        "kit_version": str(index.get("kit_version") or ""),
         "matched": delta["matched"],
         "missing_count": len(delta["missing"]),
         "mismatch_count": len(delta["mismatch"]),
@@ -372,6 +431,17 @@ def verify_now(manifest: Manifest) -> dict[str, Any]:
         "mismatch": delta["mismatch"][:20],
         "extra_count": len(delta["extra"]),
     }
+    if ok:
+        now = time.time()
+        if manual:
+            _update_record(manifest, source="manual", kit_dir=str(kit_root), dest_dir=str(kit_root.parent),
+                           kit_version=out["kit_version"], file_count=out["file_count"],
+                           image_count=out["image_count"], verified_at=now, completed_at=now,
+                           manifest_provenance=manifest.provenance, job_id="")
+        else:
+            _update_record(manifest, verified_at=now, image_count=out["image_count"])
+        out["verified_at"] = now
+    return out
 
 
 # ── The job ────────────────────────────────────────────────────────────────

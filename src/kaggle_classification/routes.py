@@ -83,12 +83,15 @@ def config_payload() -> dict[str, Any]:
         "manifest_warnings": payload["warnings"],
         "manifest_candidates": payload["candidates"],
         "manifest_refresh": payload["refresh"],
+        # rc11 (item 13): the one notice the Import tab and the Doctor show when the manifest in use is not
+        # the remote document (active only once a remote attempt has concluded).
+        "manifest_fallback": manifest.fallback_status(current.source),
         "plugin_home": storage.describe(),
         "kit_dest": str(kit.default_dest(current)),
         "kit_state": kit.download_state(current),
         # The Import tab's revisit view: the last successful import, re-verified against disk
         # (table existence decides, the record supplies the details).
-        "import_state": _import_state_safe(),
+        "import_state": _import_state_safe(current),
         # The Train tab's facts (defaults, effective bounds, the locked optimizer and schedule, the
         # benchmark for the first-run ETA) and its revisit record. Torch-free on this path.
         "training": trainer.training_facts(current),
@@ -117,13 +120,13 @@ def _train_state_safe() -> dict[str, Any]:
         return {"state": "empty", "current": None, "runs": [], "note": str(exc)}
 
 
-def _import_state_safe() -> dict[str, Any]:
+def _import_state_safe(current: Any = None) -> dict[str, Any]:
     """``importer.import_state()`` needs tlc for the on-disk check; without it (a light venv) the
     record is served unverified so the page still renders."""
     from kaggle_classification import importer
 
     try:
-        return importer.import_state()
+        return importer.import_state(current)
     except Exception as exc:
         record = importer.read_record()
         return {"state": "success" if record else "empty", "verified": None, "record": record, "note": str(exc)}
@@ -174,14 +177,18 @@ def get_route_handlers() -> list[Any]:
 
     @get("/import/state", sync_to_thread=True)
     def import_state() -> dict[str, Any]:
-        return _import_state_safe()
+        from kaggle_classification import manifest
+
+        return _import_state_safe(manifest.resolve(network=False).manifest)
 
     @get("/download/verify", sync_to_thread=True)
-    def download_verify() -> dict[str, Any]:
-        """The kit section's Verify action (ExDark's ``/download/verify``): the full files.json pass."""
+    def download_verify(kit_dir: str = "") -> dict[str, Any]:
+        """The kit section's Verify action (ExDark's ``/download/verify``): the full files.json pass. rc11:
+        ``?kit_dir=`` verifies a folder the participant supplied (recorded as a manual kit on a pass)."""
         from kaggle_classification import kit, manifest
 
-        return kit.verify_now(manifest.resolve(network=False).manifest)
+        folder = kit_dir.strip().strip('"') or None
+        return kit.verify_now(manifest.resolve(network=False).manifest, kit_dir=folder)
 
     @get("/train/preflight", sync_to_thread=True)
     def train_preflight(train_url: str = "") -> dict[str, Any]:
