@@ -1,4 +1,4 @@
-# TESTING.md — try the Kaggle Classification plugin (release candidate 1.0.0rc10)
+# TESTING.md — try the Kaggle Classification plugin (release candidate 1.0.0rc11)
 
 You are testing a 3LC Hub plugin that runs an image-classification Kaggle hackathon end to end:
 download a starter kit, import it as 3LC tables, label a few images in the Dashboard, train the
@@ -61,8 +61,8 @@ folder, because it redirects `HOME` there.)
 
 Download the one for your OS into the tester folder (next to `.venv`):
 
-- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc10/tester/start_tester.ps1
-- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc10/tester/start_tester.sh
+- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc11/tester/start_tester.ps1
+- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc11/tester/start_tester.sh
 
 What the script does: it starts the 3LC object service and the 3LC compute service with their home
 folder redirected to `.\home` under the tester folder, points the compute service at the test tier of
@@ -125,7 +125,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc10**. On the very first start the compute service first installs its eight stock plugins
+   **1.0.0rc11**. On the very first start the compute service first installs its eight stock plugins
    (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
    so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin's own Python environment (torch is the
@@ -136,8 +136,9 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 **What you should see:** a page headed **3LC Scene Classification Challenge** with three constraint
 chips (resnet18 · from scratch · 150px / 6 classes · 6,000 unlabeled / Scored by accuracy), "The
 Loop" row, four tabs — **1 Import · 2 Train · 3 Predict + Submit · 4 Status** — and the Import tab
-open with a **Download starter kit** button. The footer reads `3LC Kaggle Classification plugin
-v1.0.0rc10`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
+open with a **Download starter kit** button. From your second visit on, the header collapses to one
+line (**Show details** expands it). The footer reads `3LC Kaggle Classification plugin
+v1.0.0rc11`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
 "Setting up the plugin environment. The first run takes a few minutes." just wait: that is the
 first-use provisioning, it continues by itself.
 
@@ -153,18 +154,26 @@ Click **Download starter kit**.
 
 - You should see: progress rows (Manifest → Disk space → Download → Verify → Extract), a progress
   line with the shard and bytes ("Downloading shard 2/5 · 74 of 113 MB"), then a green line "Starter
-  kit downloaded and verified. 9,601 files match the published manifest. The starter kit folder below
-  is filled in and ready to import." About 70 s on a fast connection, a few minutes on a slow one.
+  kit downloaded and verified. 9,600 images + manifest match the published manifest. The starter kit
+  folder under Advanced is filled in and ready to import.", and under it "Matches competition
+  manifest ✓" with the **Dataset at a glance** card (train 600 · unlabeled 6,000 · val 1,200 · test
+  1,800, six class tags). About 70 s on a fast connection, a few minutes on a slow one. If the download
+  fails twice, the tab opens **Advanced** with a link to the competition's Data page on Kaggle: download
+  the kit there, unzip it and paste the folder path.
 - If not: Copy diagnostics (the failure banner has the button), a screenshot.
 
 ### 7.2 Import
 
-Click **Import & Validate** (keep Project name and Table name as they are).
+Click **Import & Validate** (the kit folder, Project name and Table name sit under **Advanced**; leave them).
 
-- You should see: three progress rows (Import train / Import val / Validate), then "Imported &
-  validated: intel-scene_train · intel-scene_val", **18/18 checks passed** (collapsed; click to
-  expand), two rows with **CREATED** badges: train **6,600** rows, val **1,200** rows, each with
-  **Open in Dashboard**. A few seconds. The tab bar now marks **1 Import** done.
+- You should see: three progress rows (Import train / Import val / Validate), then the Imported view: the
+  green banner "Imported · validated: intel-scene_train · intel-scene_val" with **Continue to Train**, a
+  facts line (Project intel-scene · Table initial · Imported <time> · Validated <time> · Kit <path> ·
+  **Re-import…**), **18/18 checks passed** expanded this once (collapsed with a ▸ on later visits), two
+  rows — train **6,600** rows · initial · imported just now, val **1,200** rows — each with Copy and
+  **Explore**, and **Show log**. A few seconds. The tab bar now marks **1 Import** done. Reopen the tab
+  (or reload the page): the same view comes back. Do not click **Re-import…** (it would write a second
+  pair of tables named initial-2 after a confirmation).
 - If not: Copy diagnostics, a screenshot of the checks expanded.
 
 ### 7.3 Label a batch in the Dashboard and commit
@@ -236,10 +245,11 @@ New Token**, copy the token (it starts with `KGAT_`), paste it into the field an
 - You should see: "Saving the token on the compute service and checking it with Kaggle…" for a few
   seconds, then the green card **Connected to Kaggle as <your Kaggle username>** (or the amber "Join the
   competition on Kaggle first" — expected while the competition is unlaunched; do not join), the top line
-  "Kaggle: connected as <you>", and later the Doctor's Kaggle row (7.7) "connected as <you>". The token
+  "Kaggle: connected as <you>", and the Doctor's Kaggle row (7.7) "connected as <you>" at once. The token
   now lives in `home\.kaggle\access_token` under your tester folder (macOS / Linux:
   `home/.kaggle/access_token`, mode 600) and nowhere else; deleting the tester folder removes it. With a
-  CSV from 7.5 present the **Submit to Kaggle** button becomes active — **do not click it**.
+  CSV from 7.5 present the **Submit to Kaggle** button becomes active — **do not click it** (it opens an
+  in-app confirmation naming the run, its val accuracy and the submissions left; **Cancel** closes it).
 - If not: the sentence the card shows (it never contains your token), a screenshot, Copy diagnostics.
 
 ### 7.6 Download CSV
@@ -262,15 +272,17 @@ Open **4 Status**.
   prediction, no Kaggle budget block), **Runs** with one row — your run, the revision it trained on,
   the labeled rows, "NN.N% at epoch N", the device, elapsed, COMPLETED, Dashboard / Projects links —
   **History** with one row — your prediction, its val accuracy, "–" under Public score and Δ, Outcome
-  "CSV generated (not submitted)", Copy CSV path and Download CSV icons — and **Kaggle live** with the
+  "CSV generated (not submitted)", Copy CSV path and Download CSV icons — and **Kaggle (competition not
+  launched yet)** (the heading says so until the competition is live) with the
   callout "Connect your Kaggle account on the Predict + Submit tab…" (expected; after 7.5b it shows your
   username and "No Kaggle submissions yet" or the unlaunched note instead). "Updated just now" with a
   refresh button; click it and the line resets.
-- Expand **Doctor** at the bottom: one row per fact — Plugin (v1.0.0rc10 and a commit), Compute
+- Expand **Doctor** at the bottom: one row per fact — Plugin (v1.0.0rc11 and a commit), Compute
   service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
   `+cu126` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
-  kit v1 — "cache" means the last fetched copy, the same document),
-  Kit (v1 · 9,601 files verified at download), Kaggle ("not connected · connect on the Predict + Submit
+  kit v1 — "cache" means the last fetched copy, the same document; if the server could not be reached, the
+  row and a quiet line on the Import tab say which local copy is in use),
+  Kit (v1 · 9,600 images + manifest · verified <date>), Kaggle ("not connected · connect on the Predict + Submit
   tab (Step 2)", or "connected as <you>" after 7.5b; its Copy button carries the token file's path, never
   the token), Plugin home, Free disk space,
   Python, Records (1 run · 1 prediction · 0 submissions). Click **Copy diagnostics** and paste the
@@ -304,7 +316,7 @@ you are done; your 3LC login (Windows) is the only thing outside it.
 Paste this into your message, filled in (one per problem is better than one for everything):
 
 ```
-Plugin test — 1.0.0rc10
+Plugin test — 1.0.0rc11
 OS / GPU:            (e.g. Windows 11, RTX 3060 · macOS 15, M2 · Ubuntu 24.04, no GPU)
 Step that differed:  (7.1 … 7.9, or "install" / "connect")
 What I expected:     (from the "You should see" line)
@@ -333,6 +345,9 @@ missing, send the Doctor rows and the newest `logs\compute-*.log`.
 - The competition is unlaunched: no Kaggle submit, no leaderboard, no submission list; the Status tab
   says "available after the competition launches".
 - The Hub's **Open in Projects** links render only when the page runs on hub.3lc.ai (they do).
+- The Queue page's job title is the plugin's name twice ("Kaggle Classification — Kaggle Classification");
+  the Hub composes it from the host's job record, which a plugin cannot set. The subtitle is ours
+  ("Train · intel-scene", then the epoch).
 - The first training run on a machine pays a one-time compile of the embedding reducer in its final
   pass (the plugin pre-warms it after Import, so it is usually already done).
 - Windows first: the macOS / Linux start script was written against the same services but was proven

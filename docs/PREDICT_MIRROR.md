@@ -494,3 +494,12 @@ checks the file exists).
 | D13c | The CSV row | file name · middle-truncated path · Copy · Download | file name · Copy · Download · the FULL path on its own line (monospace, never truncated) · the note "Saved at that path on the compute service's machine. You can upload it by hand on Kaggle's Submit page …" — always, so a participant who never connects from here still knows where the file is |
 | D13d | Connection status before predicting | only the card inside Step 2 | a one-line status at the top of the tab body (`#ps-kstatus`: "Kaggle: not connected · Connect in Step 2" / "connected as <user> · N of M left today" / "connected as <user> · competition not joined"), fed by the same `GET /kaggle/connection`; the Doctor's Kaggle row reads "not connected · connect on the Predict + Submit tab (Step 2)" and copies the token path; the Status tab's Kaggle live callout and a skipped submit point at Step 2 |
 | D13e | Where this is documented | — | CONTEXT.md decisions 2026-10-08, CHANGELOG 1.0.0rc10, TESTING.md §7.5b (the optional Connect step: a wrong paste, then a real token; still no submit) |
+
+## 14. Decided in session 9 (2026-10-09) — rc11, the UI pass (back-port to ExDark after the event)
+
+| # | Decision | ExDark | rc11 |
+|---|---|---|---|
+| D14 | **Submit confirmation** | native `window.confirm("This spends 1 of your N daily submissions. Submit "<run>" now?")` | an in-app callout in `#ps-banner` naming the run, its val accuracy and the submissions left today, **Submit** / **Cancel** (`psRenderSubmitConfirm` → `psSubmitNow`) |
+| D15 | **Other ways to connect** | collapsed; the command wraps | collapsed by default (unchanged); each line on one row with horizontal scroll and Copy |
+| D16 | **"Run inference first"** | shown whenever no basis is set | never shown while a prediction record exists (`kgSubmitState.state` predicted / submitted); the basis follows from the revisit |
+| D17 | **The Doctor after Connect** | refreshed on the next Status visit | `stLoadDoctor(true)` right after a successful Connect |

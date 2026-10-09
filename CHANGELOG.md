@@ -3,6 +3,69 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.0.0rc11] — 2026-10-09 (session 9: the Import tab and shell UI pass)
+
+A deliberate divergence from the ExDark mirror on the Import tab and the shell (CONTEXT.md, decided
+2026-10-09; `docs/EXDARK_MIRROR.md` §5) — **back-port to ExDark after the event**.
+
+### Changed
+- **The Import tab renders from server truth.** `GET /config` now carries everything the tab needs
+  (`_meta.import_state`: the state `empty` / `found` / `success` / `stale`, both tables with existence,
+  row count and table name, the missing split, the last validation result with its timestamp and checks,
+  the kit folder and the job's log; `_meta.kit_state`: image count, verification stamp, download or
+  manual source; `_meta.manifest_fallback`), and the tab plus the stepper read that payload and the live
+  job list only. Import counts as done when both tables exist on disk, with or without a record (a reset
+  plugin state over an existing project root shows **Found existing tables**).
+- **One Imported view** for every entry path: project, table, when, validated, the kit folder, one
+  **Re-import…** action, the rows (table name, row count, "imported" / "found existing" with the time,
+  middle-truncated path with the full path on hover and Copy, Explore), the collapsed
+  "N/N checks passed ▸" line and the log. A successful import transitions into it with the checks
+  expanded once. The revisit bug is gone: the outcome area sits outside the form, so hiding the form no
+  longer hides the checks and rows.
+- **Honest banner:** "Imported · validated" for a fresh import, "Found existing tables · validated" for a
+  reuse; the Explore buttons left the banner (the rows keep theirs).
+- **Stale record:** a recorded table missing on disk is named (split, table, path, when it was recorded)
+  with **Re-import…**, instead of the plain form.
+- **Re-import…** replaces Start over and the per-row Re-import buttons: an in-app confirmation names the
+  table a re-import would write (the server answers `reimport_name` on `GET /import/preflight` before
+  anything runs) and says "Your existing tables and label edits are kept."
+- **Locked while running:** the button is disabled, progress shows, and a double click or a tab switch
+  can never start two imports.
+- **Form cleanup:** the kit folder, project name and table name live under **Advanced**; the locked
+  "Splits to import" block is gone; the test-images sentence and every count live once in **Dataset at a
+  glance** (train / unlabeled / val / test + class tags); the preflight verdict reads "Matches
+  competition manifest ✓"; paths show one separator style with the full path on hover and a Copy button.
+- **Kit line:** "Starter kit ready · 9,600 images + manifest · verified <date>" with **Re-verify** (never
+  "9,601 files"); a folder the participant supplied verifies the same way (`GET /download/verify?kit_dir=`),
+  and a pass records it as a manual kit.
+- **Checks:** "N/N checks passed ▸" collapsed when all pass; a failure auto-expands with the failing checks
+  first, each with its fix hint.
+- **CDN fallback:** when the manifest in use is the built-in or the cached copy, one quiet notice on the
+  Import tab and the Doctor's Manifest row say so ("Using the built-in competition manifest; the server
+  couldn't be reached") — surfaced through `_meta.manifest_fallback`, never only the worker log. After
+  one unreachable index, job starts resolve locally at once for five minutes while the background refresh
+  keeps retrying (no 5 s budget per job start). When a download or a verification fails and a resume
+  will not help, Advanced opens with the manual route: "Couldn't download the starter kit. Download it
+  from the competition's Data page on Kaggle, unzip it, and paste the folder path here", linking the
+  competition's Data page.
+- **Shell:** the header card collapses to one line from the second visit on (per browser, **Show
+  details** / **Hide details**); the Loop's links are underlined links; Status sits apart, right-aligned
+  from steps 1–3.
+- **Other tabs:** the Queue card's subtitle opens as "<job> · <project>" (the title is the host's plugin
+  name — `tlc_compute` sets it, not the plugin); Submit asks in an in-app confirmation naming the run,
+  its val accuracy and the submissions left (no native `confirm()`); "Other ways to connect" lines never
+  wrap (horizontal scroll + Copy); "Run inference first" never shows over an existing CSV; the Status
+  tab's Kaggle heading reads "Kaggle (competition not launched yet)" until the competition is live; the
+  Doctor's Kaggle block refreshes right after a successful Connect.
+
+### Added
+- `?kgdev` fixtures: `state1-bundled`, `state2-existing`, `state6-found`, `state6-stale`, `dl-verify-fail`,
+  `dl-fail-checks`, `dl-fail-kaggle`.
+- Tests: the fallback status and the remote-down memory (`test_manifest_resolution.py`), the kit line's
+  facts and the manual kit's Verify (`test_kit.py`), the import state's tables / validation / log, the
+  stale split, the record-less found state and the re-import name (`test_importer.py`); the fragment
+  census follows the new templates.
+
 ## [1.0.0rc10] — 2026-10-08 (session 8: the guided Kaggle connect flow)
 
 ### Changed

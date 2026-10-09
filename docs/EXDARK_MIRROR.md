@@ -115,3 +115,30 @@ Train fields). Added: an `esc()` census (every value interpolated into an `inner
 passes through `esc()` or a markup-producing helper) and the markup-in-manifest test (a class
 name or display name of `<img src=x onerror=alert(1)>` renders as literal text: `esc` is run
 through node on that payload; skipped when node is absent).
+
+## 5. rc11 divergences (Rishikesh, 2026-10-09) — back-port to ExDark after the event
+
+The Import tab and the shell leave the mirror on purpose. Each line names ExDark's version and ours;
+`CHANGELOG.md` 1.0.0rc11 has the participant-facing wording. Plumbing stays ours as before.
+
+| # | ExDark | rc11 (ours) |
+|---|---|---|
+| 1 | The tab resolves its state three ways: `/config` for the form, `/import/state` for the revisit, `/config` again for the download section | `GET /config` carries the whole truth (`_meta.import_state` with `found` / `success` / `stale`, the tables with existence · rows · table name, the missing split, the validation result + stamp + checks, the kit folder, the log; `_meta.kit_state` with image count · verification stamp · source; `_meta.manifest_fallback`); the tab and the stepper read it plus the live job list (`kgRenderImportFromState`) |
+| 2 | Import done = the record exists | Done when both tables exist on disk, record or not (`importer._found_state`) |
+| 3 | Form vs revisit (`kgRenderRevisit` renders into the form it hides) | One Imported view outside the form (`#kg-imported` + the outcome area after the form): project, table, when, validated, kit, Re-import…, rows, collapsed checks, log; a successful import transitions into it with the checks expanded once |
+| 4 | "Imported & validated" always | "Imported · validated" for a fresh import, "Found existing tables · validated" for a reuse |
+| 5 | A stale record falls back to the plain form | The stale view names the missing table (split, table, path, recorded when) and offers Re-import… |
+| 6 | The button disables while a job runs | Plus a guard in `kgStartImport` (never two imports from a double click or a tab switch) |
+| 7 | Dataset YAML / Project / Table in the open form; "Revision name for the imported tables" | The three fields under **Advanced**; "Table name" is the one term; paths middle-truncated with the full path on hover and Copy, one separator style (`kgDisplayPath`) |
+| 8 | Locked "Splits to import" rows; "Detected: train / val / test · 12 classes (canonical order) · N / N / N images. Matches the competition dataset." | No splits block; "Matches competition manifest ✓"; every count once in Dataset at a glance (train / unlabeled / val / test + tags) with the test-images sentence |
+| 9 | "Starter kit downloaded 2h ago (14,005 files verified then)" + Verify | "Starter kit ready · 9,600 images + manifest · verified <date>" + Re-verify; never a raw file count |
+| 10 | Start over (view change) + per-row Re-import fresh | One **Re-import…** with an in-app confirmation naming the table the server would write (`reimport_name`) and "Your existing tables and label edits are kept." |
+| 11 | Explore train / val / test in the success banner | Per-row Explore only |
+| 12 | The checks grid always open | "N/N checks passed ▸" collapsed when all pass; a failure auto-expands with the failing checks first and their fix hints |
+| 13 | A fallback to the cached / bundled manifest is logged only | One quiet notice on the Import tab and in the Doctor ("Using the built-in competition manifest; the server couldn't be reached"); the warning rides `_meta.manifest_fallback`; after one unreachable index, job starts resolve locally for five minutes (`remote_down_recently`) while the refresh retries |
+| 14 | A failed download offers Resume | Resume first; when it cannot help (a failed check, or the second network failure) Advanced opens with the manual route and a link to the competition's Data page on Kaggle; a pasted folder goes through the full preflight and `GET /download/verify?kit_dir=` (a pass records it as a manual kit) |
+| 16 | The hero card is always expanded; Loop links styled like text; Status in the same tab row | The card collapses to one line from the second visit (per browser, Show / Hide details); Loop links underlined; Status right-aligned behind a divider |
+| 17–22 | — | The other tabs' items: the Queue subtitle "<job> · <project>" (the title is host-owned), the in-app submit confirmation (`docs/PREDICT_MIRROR.md` §14), "Other ways" lines never wrap, "Run inference first" never over a CSV, the "Kaggle (competition not launched yet)" heading, the Doctor refresh after Connect |
+
+The `?kgdev` fixture map grows by `state1-bundled`, `state2-existing`, `state6-found`, `state6-stale`,
+`dl-verify-fail`, `dl-fail-checks`, `dl-fail-kaggle`. The esc() census and the literal census stay green.
