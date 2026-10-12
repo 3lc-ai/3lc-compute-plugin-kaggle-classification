@@ -60,7 +60,7 @@ def main() -> int:
         facts = h.install(client, version)
         meta = client.get(f"{h.API}/config").json().get("_meta") or {}
         after = snapshot(root)
-        doc = client.get(f"{h.API}/status/doctor?kaggle=0").json()
+        doc = h.doctor(client)
         same = {k: before.get(k) for k in ("ui_config.json", "ledger.jsonl", "predictions", "kit_records", "runs")} == \
                {k: after.get(k) for k in ("ui_config.json", "ledger.jsonl", "predictions", "kit_records", "runs")}
         results.put("A9", "PASS" if facts.get("state") == "succeeded" and same and meta.get("version") == version else "FAIL",
@@ -72,8 +72,14 @@ def main() -> int:
         results.put("P3", "PASS" if gpu.get("driver") else "FAIL", gpu=gpu)
 
         # ── A10: uninstall + reinstall ────────────────────────────────────────
-        r = client.delete(f"/api/admin/plugins/{h.PLUGIN_ID}")
-        h.log(f"DELETE plugin -> {r.status_code} {r.text[:160]}")
+        code = h.uninstall(client)
+        h.log(f"DELETE plugin (install path) -> {code}")
+
+        class _R:   # the facts the rest of this block reads
+            status_code = code
+            text = ""
+
+        r = _R()
         gone = h.card_of(client)
         mid = snapshot(root)
         facts2 = h.install(client, version)
@@ -97,7 +103,7 @@ def main() -> int:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         with h.host_client() as client:
             h.wait_ready(client, 600)
-            doc = client.get(f"{h.API}/status/doctor?kaggle=0").json()
+            doc = h.doctor(client)
             dev = doc.get("device") or {}
             pre = client.get(f"{h.API}/train/preflight").json()
             hint = {k: pre.get(k) for k in ("estimate", "eta", "duration_hint", "stats", "device_class") if k in pre}

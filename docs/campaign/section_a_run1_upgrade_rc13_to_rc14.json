@@ -1,0 +1,168 @@
+{
+ "items": {
+  "A9": {
+   "status": "PASS",
+   "at": "2026-10-12T15:06:50",
+   "install": {
+    "state": "succeeded",
+    "error": "",
+    "install_s": 40.3,
+    "source": "3lc-compute-plugin-kaggle-classification[kaggle-classification] @ git+https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git@646cdf211725f5512f783fd25b708e3caba9ebd4",
+    "ready_s": 9.7,
+    "version": "1.0.0rc14"
+   },
+   "version": "1.0.0rc14",
+   "state_same": true,
+   "before": {
+    "exists": true,
+    "ui_config.json": 36588,
+    "ledger.jsonl": 5592,
+    "predictions": [
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "after": {
+    "exists": true,
+    "ui_config.json": 36588,
+    "ledger.jsonl": 5592,
+    "predictions": [
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "import_state": "success",
+   "kit_state": "success",
+   "doctor_gpu": null,
+   "doctor_versions": {
+    "sdk": "0.3.3",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "kaggle": "2.2.4",
+    "python": "3.12.3",
+    "platform": "win32 \u00b7 Windows-11-10.0.26200-SP0"
+   },
+   "doctor_uv": {
+    "plugin_venv": {
+     "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv",
+     "uv": "0.13.0",
+     "home": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312",
+     "python": "3.12.3",
+     "leaks_pythonhome": false
+    },
+    "host_venv": {
+     "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+     "uv": "0.13.0",
+     "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+     "python": "3.12",
+     "leaks_pythonhome": false
+    },
+    "pythonhome_in_worker": null,
+    "leaky_versions": [
+     "0.11.7",
+     "0.11.8"
+    ]
+   },
+   "doctor_images": {
+    "train": {
+     "state": "ok",
+     "url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial",
+     "checked": 8,
+     "missing": 0,
+     "examples": []
+    },
+    "val": {
+     "state": "ok",
+     "url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_val/tables/initial",
+     "checked": 8,
+     "missing": 0,
+     "examples": []
+    }
+   }
+  },
+  "P3": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:06:50",
+   "gpu": {}
+  },
+  "A10": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:07:05",
+   "delete_http": 404,
+   "card_after_delete": true,
+   "state_between": {
+    "exists": true,
+    "ui_config.json": 36588,
+    "ledger.jsonl": 5592,
+    "predictions": [
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "reinstall": {
+    "state": "succeeded",
+    "error": "",
+    "install_s": 10.2,
+    "source": "3lc-compute-plugin-kaggle-classification[kaggle-classification] @ git+https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git@646cdf211725f5512f783fd25b708e3caba9ebd4",
+    "ready_s": 4.4,
+    "version": "1.0.0rc14"
+   },
+   "import_state": "success",
+   "kit_state": "success"
+  },
+  "A11": {
+   "status": "PASS",
+   "at": "2026-10-12T15:07:10",
+   "ready_s": 4.3,
+   "boot_s": 4.6,
+   "provisioning": {
+    "plugin_id": "kaggle-classification",
+    "state": "ready",
+    "venv_python": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Scripts\\python.exe",
+    "managed_venv": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv",
+    "error": "",
+    "log_tail": ""
+   },
+   "version": "1.0.0rc14"
+  },
+  "A5": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:07:15",
+   "doctor_device": {
+    "probe": "running",
+    "device_class": null,
+    "cuda_available": null,
+    "workers_default": 0,
+    "gpu": null
+   },
+   "train_status": "refused",
+   "train_s": 0.0,
+   "device_label": "cpu (fallback: AcceleratorError: CUDA error: no kernel image is available for execution on the device)",
+   "avg_epoch_s": null,
+   "eta_at_epoch1": 0,
+   "setup_s": 4.3,
+   "collect_s": 29.1,
+   "preflight_hint": {},
+   "predict_status": "refused",
+   "predict_s": 0.0,
+   "predict_device": null,
+   "predict_checks": 0
+  }
+ }
+}

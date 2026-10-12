@@ -503,3 +503,31 @@ checks the file exists).
 | D15 | **Other ways to connect** | collapsed; the command wraps | collapsed by default (unchanged); each line on one row with horizontal scroll and Copy |
 | D16 | **"Run inference first"** | shown whenever no basis is set | never shown while a prediction record exists (`kgSubmitState.state` predicted / submitted); the basis follows from the revisit |
 | D17 | **The Doctor after Connect** | refreshed on the next Status visit | `stLoadDoctor(true)` right after a successful Connect |
+
+## 15. Anti-cheat review (session 15, 2026-10-12, docs/TEST_PLAN.md H)
+
+Every way a participant could submit predictions that were not produced by a plugin-trained run on
+the locked val split, and what happens. "Blocked" = the plugin refuses; "detectable" = the bundle and
+the ledger show it; "outside" = the plugin never sees it, Kaggle's own record is the evidence.
+
+| # | Vector | Outcome | Where |
+|---|---|---|---|
+| 1 | Hand-supplied weights (`weights_path` in a `/run predict` body, with or without a `train_job_id`) | **Blocked**: `train_job_id` wins and a bare path is refused for participants | `resolve_checkpoint` (§2); `test_train_job_id_wins_and_a_supplied_path_is_ignored`, `test_a_bare_weights_path_is_refused_for_everyone` |
+| 2 | A checkpoint file replaced or edited on disk after training (another model's weights under the run's `best.pt`) | **Blocked**: the three-way sha256 (train record, the Run's parameters, the file) refuses; the run picker shows "sha256 mismatch" | `resolve_checkpoint`; D2 of the campaign; `test_the_three_way_sha_gate_refuses_a_tampered_checkpoint` |
+| 3 | A run record edited by hand (`train_state` in the session store) to point at other weights | **Blocked** unless the Run's own parameters (a 3LC object under the project, written by the training job) are edited consistently too; **detectable**: the bundle copies the Run's `object.3lc.json`, whose `best_checkpoint_sha256` and contract must agree with the ledger's `checkpoint_sha256` | `run_parameters`; bundle `project/<name>/runs/` |
+| 4 | Training outside the plugin (the kit's `train.py`, a notebook) and submitting its predictions through the plugin | **Blocked**: only records under `train_state.runs` resolve; a Run created by another tool has no plugin record and no `best_checkpoint_sha256` parameter | `run_entries`, `assess_run` ("not a plugin run") |
+| 5 | A train revision that is not a descendant of the imported seed (a table built from the val or test images, a merge) | **Blocked**: the lineage walk refuses a revision outside the seed's lineage; `foreign_rows` refuses any image outside `<kit>/data/train/` | `trainer.run_training` (TRAIN_MIRROR S5-B3); `test_a_table_outside_the_seed_lineage_is_reported_and_refused` |
+| 6 | Val images moved into the train table through the Dashboard (label edits are fine; row additions are not) | **Blocked** by 5 (the rows' image paths are under `data/val/`) | `foreign_rows` |
+| 7 | Editing the locked val table so the local score lies | **Detectable, and harmless for the leaderboard**: every run is scored on the LOCKED revision (`val_locked.url`); a newer val revision only produces the "val edited" warning; the Kaggle score comes from Kaggle | `importer.import_state` (`val_edited`); PLAN §A |
+| 8 | Editing the submission CSV after the plugin wrote it, then submitting through the plugin | **Blocked**: the Submit job re-hashes the CSV against `facts.csv_sha256` | `run_kaggle_submit`; D3 of the campaign; `test_missing_or_changed_csv_is_empty_despite_the_record` |
+| 9 | Submitting any CSV on kaggle.com directly, bypassing the plugin | **Outside, detectable**: the ledger lists every plugin submission with Kaggle's submission ref; the Status tab's History joins the ledger with Kaggle's submission list by ref, so a Kaggle submission with no ledger entry is visible to the participant and, through the bundle's `ledger.jsonl`, to the organizers, who compare it with the competition's submission list | `status.history`, `kaggle_live_status`; bundle `ledger.jsonl` |
+| 10 | Editing `ledger.jsonl` by hand (adding a fake plugin submission, deleting one) | **Detectable**: Kaggle's submission list is the other half of the join; an entry whose ref Kaggle does not know, or a Kaggle submission the ledger lacks, shows as unmatched. The ledger is append-only in code, not tamper-proof on disk | `ledger.append`; organizers' comparison |
+| 11 | Replacing the kit's test images (predicting on other inputs) | **Blocked**: the test-inputs gate verifies every test file against the kit's `files.json` before inference | `test_inputs`; `test_test_inputs_gate_verifies_every_file_against_files_json` |
+| 12 | A model other than the locked contract (another backbone, pretrained weights, another image size) | **Blocked**: the contract is locked by the manifest and recorded on the Run; the provenance checks compare the Run against the manifest at train time; `load_model` loads the state dict strictly into the manifest's model | `check_provenance`, `load_model` |
+| 13 | Many submissions beyond the daily cap through retries | **Blocked** at the plugin (the count from Kaggle's own list) and by Kaggle itself | `kaggle_connection`; manifest `submission.daily_limit` |
+| 14 | Two participants sharing a checkpoint file | **Detectable**: the bundle carries the Run (its parameters name the machine's table URLs, the plugin version, the job id, the seed and the timings); identical `best_checkpoint_sha256` across two bundles is a one-line comparison | bundle `project/<name>/runs/`, `plugin.json` |
+
+What the plugin cannot do: prove that a submission on kaggle.com came from the plugin (vector 9) other
+than by the ledger join; the organizers' step is to compare each team's bundle ledger with Kaggle's
+submission list for that team and treat an unmatched Kaggle submission as a submission made outside
+the plugin. The bundle is the evidence; a team without a bundle has no evidence.

@@ -141,6 +141,21 @@ def install(client, version: str, timeout: float = 1800) -> dict[str, Any]:
     return facts
 
 
+def doctor(client, *, kaggle: bool = False, timeout: float = 120) -> dict[str, Any]:
+    """The Doctor once its device probe has finished (a fresh worker starts the probe on the first call)."""
+    t0 = time.time()
+    doc = client.get(f"{API}/status/doctor?kaggle={1 if kaggle else 0}").json()
+    while (doc.get("device") or {}).get("probe") != "done" and time.time() - t0 < timeout:
+        time.sleep(2)
+        doc = client.get(f"{API}/status/doctor?kaggle={1 if kaggle else 0}").json()
+    return doc
+
+
+def uninstall(client) -> int:
+    """The host's uninstall: ``DELETE /api/admin/plugins/install/{id}`` (the install path, reused)."""
+    return client.delete(f"/api/admin/plugins/install/{PLUGIN_ID}").status_code
+
+
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
 
@@ -187,7 +202,7 @@ def wait_terminal(client, job_id: str, *, timeout: float = 3600, until=None, qui
 
 def run_and_wait(client, kind: str, params: dict[str, Any] | None = None, **kw) -> dict[str, Any]:
     code, body = start(client, kind, params)
-    if code != 200 and code != 202 or not body.get("job_id") and not body.get("id"):
+    if not (200 <= code < 300) or not (body.get("job_id") or body.get("id")):   # the plugin's /run answers 201
         return {"status": "refused", "http": code, "body": body}
     jid = body.get("job_id") or body.get("id")
     job = wait_terminal(client, jid, **kw)

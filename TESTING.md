@@ -316,6 +316,45 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\start_tester.ps1 -Stop`. ma
 `./start_tester.sh --stop`. Both report “Stopped: ports … are free.” Delete the tester folder when
 you are done; nothing of the test lives outside it (the 3LC login is inside `home\` too).
 
+## 10. For the macOS and CPU-only testers: what only you can cover
+
+The Windows GPU path is exercised by the hardening campaign (docs/TEST_PLAN.md). These items need a
+Mac or a machine without an NVIDIA GPU; tick each one in your feedback.
+
+**macOS (Apple silicon or Intel)**
+
+- [ ] Step 2 on macOS: `uv venv --python 3.12` and `uv pip install "3lc-compute==1.1.0"` resolve (no CUDA
+      index is used on macOS: torch comes from PyPI). Report `uv --version` and the 3lc version installed.
+- [ ] The first start logs you in inside the tester folder (the key prompt appears once); the second
+      start does not ask again.
+- [ ] The Doctor's "CUDA in the worker" row says `not available · device class mps` on Apple silicon
+      (or `cpu` on Intel), and names no NVIDIA driver.
+- [ ] Train 2 epochs with Device blank: the run's Device reads `mps (auto)` on Apple silicon; the
+      pre-run duration hint and the in-run "remaining" are within 2× of the actual time.
+- [ ] Train 2 epochs with Device set to `cpu` by hand: `cpu (forced in Advanced)`.
+- [ ] Predict with Device blank: completes, 10/10 checks, the val check equals the run's best accuracy.
+- [ ] The Verification bundle downloads and opens; `README.txt` names your runs; no `KGAT_` string inside
+      (`grep -a KGAT_ <bundle>.zip` finds nothing).
+- [ ] Paths: the tester folder under a path with a space (`~/3lc tester`) works end to end.
+- [ ] Safari: the Hub's plugin page renders and the Train tab's in-run view updates (Chrome is the
+      documented browser; report what Safari does, it is not a blocker).
+
+**CPU-only Windows or Linux (no NVIDIA GPU, or `nvidia-smi` absent)**
+
+- [ ] Step 2 resolves the CUDA 13.0 torch build on Windows / Linux even without a GPU (about 2.5 GB);
+      report the download time.
+- [ ] The Doctor's "CUDA in the worker" row says `not available · device class cpu`, with no driver
+      sentence (no NVIDIA driver installed) or, with an old driver, the sentence naming the driver and
+      "R580 or newer".
+- [ ] Train 2 epochs with Device blank: `cpu (auto)`; the duration hint and the in-run remaining time are
+      within 2× of the actual time; the final per-sample pass completes (it is the slow part on CPU).
+- [ ] Predict with Device blank: completes on CPU, 10/10 checks.
+- [ ] Cancel a run during epoch 1: the record says cancelled and the run keeps its best checkpoint.
+- [ ] Close the browser during training and reopen the Hub: the Train tab shows the run in progress, or
+      the completed view if it finished meanwhile (never "Training…" on a finished run).
+- [ ] Linux only: the tester folder under `$HOME` with a space in its name, and a second start after a
+      reboot (the services come back on the same ports).
+
 ## 8. Feedback template
 
 Paste this into your message, filled in (one per problem is better than one for everything):
