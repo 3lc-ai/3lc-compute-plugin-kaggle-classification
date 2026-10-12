@@ -3,7 +3,11 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] (session 14, 2026-10-12: the fresh-env hand test's three defects; for rc14 with the hardening campaign)
+## [1.0.0rc14] — 2026-10-12 (sessions 14 and 15: the fresh-env hand test's three defects, the hardening campaign)
+
+The campaign (docs/TEST_PLAN.md, TESTING_PROOF.md run 14, `tools/hardening/`): sections A to E green on the
+brand-new participant environment, F1 to F3 load figures, the testers' checklist (TESTING.md section 10), the
+anti-cheat review (docs/PREDICT_MIRROR.md section 15). The plugin extra pins `3lc==3.4.1`.
 
 ### Fixed
 - **CUDA on current GPUs.** The torch index moves from `pytorch-cu126` to `pytorch-cu130` (same shape as the

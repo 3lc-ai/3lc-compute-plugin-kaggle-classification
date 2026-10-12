@@ -1,4 +1,4 @@
-# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc13 tagged in session 13)
+# CLAUDE.md — kaggle-classification plugin (release-candidate phase: 1.0.0rc14 tagged in session 15)
 
 Vocabulary lives in [CONTEXT.md](CONTEXT.md). This file is the operating
 protocol; depth lives in the docs linked in §E — link, don't duplicate. The

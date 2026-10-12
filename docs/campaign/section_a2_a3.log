@@ -1,0 +1,6 @@
+env root C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\a3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy (plugin state path length 334)
+$ uv venv --python 3.12 C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\a3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\yyyyyyyyyy
+$ uv pip install --python C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\a3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\yyyyyyyy
+$ C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\a3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+host: 3.12.13 3.4.1 1.1.0
+[18:36:50] A3: FAIL {"exception": "ImportError: DLL load failed while importing _core: The filename or extension is too long.", "host": "3.12.13 3.4.1 1.1.0", "python_requested": "3.12", "tlc_requested": null, "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\a3-xxxxxxxxxxxx

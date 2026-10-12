@@ -22,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 INDEX_PATH = "kaggle/classification-index.json"
-CATALOG = "https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc13/catalog-test.json"
+CATALOG = "https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/catalog-test.json"
 
 
 def fetch(url: str, *, headers: dict | None = None, timeout: float = 120) -> dict:

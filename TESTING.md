@@ -1,4 +1,4 @@
-# TESTING.md: try the Kaggle Classification plugin (release candidate 1.0.0rc13)
+# TESTING.md: try the Kaggle Classification plugin (release candidate 1.0.0rc14)
 
 You are testing a 3LC Hub plugin that runs an image-classification Kaggle hackathon end to end:
 download a starter kit, import it as 3LC tables, label a few images in the Dashboard, train the
@@ -45,6 +45,10 @@ uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/
 (No login yet: the start script logs you in on its first run, inside the tester folder, because the
 services run with your home redirected there. The key is typed at the prompt, never shown.)
 
+Keep the folder path short, as above. Windows limits a path to 260 characters unless long paths are
+enabled, and the plugin's environment adds about 130 characters below the tester folder; from a folder
+about 180 characters deep the services fail at start with "The filename or extension is too long".
+
 **macOS / Linux (bash or zsh):**
 
 ```bash
@@ -61,8 +65,8 @@ folder, because it redirects `HOME` there.)
 
 Download the one for your OS into the tester folder (next to `.venv`):
 
-- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc13/tester/start_tester.ps1
-- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc13/tester/start_tester.sh
+- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.ps1
+- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.sh
 
 What the script does: it starts the 3LC object service and the 3LC compute service with their home
 folder redirected to `.\home` under the tester folder, points the compute service at the test tier of
@@ -125,7 +129,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc13**. On the first start the compute service first installs its eight stock plugins
+   **1.0.0rc14**. On the first start the compute service first installs its eight stock plugins
    (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
    so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin’s own Python environment (torch is the
@@ -138,7 +142,7 @@ chips (resnet18 · from scratch · 150px / 6 classes · 6,000 unlabeled / Scored
 Loop” row, four tabs, **1 Import · 2 Train · 3 Predict + Submit · 4 Status**: and the Import tab
 open with a **Download starter kit** button. From your second visit on, the header collapses to one
 line (**Show details** expands it). The footer reads `3LC Kaggle Classification plugin
-v1.0.0rc13`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
+v1.0.0rc14`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
 “Setting up the plugin environment. The first run takes a few minutes.” wait: that is the
 first-use provisioning, it continues by itself.
 
@@ -282,7 +286,7 @@ Open **4 Status**.
   callout “Connect your Kaggle account on the Predict + Submit tab…” (expected; after 7.5b it shows your
   username and “No Kaggle submissions yet” or the unlaunched note instead). “Updated just now” with a
   refresh button; click it and the line resets.
-- Expand **Doctor** at the bottom: one row per fact, Plugin (v1.0.0rc13 and a commit), Compute
+- Expand **Doctor** at the bottom: one row per fact, Plugin (v1.0.0rc14 and a commit), Compute
   service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
   `+cu130` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
   kit v1, “cache” means the last fetched copy, the same document; if the server could not be reached, the
@@ -360,7 +364,7 @@ Mac or a machine without an NVIDIA GPU; tick each one in your feedback.
 Paste this into your message, filled in (one per problem is better than one for everything):
 
 ```text
-Plugin test · 1.0.0rc13
+Plugin test · 1.0.0rc14
 OS / GPU:            (e.g. Windows 11, RTX 3060 · macOS 15, M2 · Ubuntu 24.04, no GPU)
 Step that differed:  (7.1 … 7.9, or "install" / "connect")
 What I expected:     (from the "You should see" line)

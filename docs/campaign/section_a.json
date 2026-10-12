@@ -258,6 +258,52 @@
    "predict_device": null,
    "predict_checks": 0,
    "predict_checks_total": 0
+  },
+  "A1": {
+   "status": "PASS",
+   "at": "2026-10-12T18:36:49",
+   "install": "succeeded",
+   "install_s": 15.3,
+   "ready_s": 4.1,
+   "install_error": "",
+   "doctor": {
+    "version": "1.0.0rc14",
+    "python": "3.12.3",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "gpu": null,
+    "home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A1-t\u00e9st \u00e5r \u00fcn\u00efcode\\home\\.3lc-compute\\plugin-state\\kaggle-classification"
+   },
+   "download": "completed",
+   "download_s": 36.0,
+   "download_error": "",
+   "import": "completed",
+   "import_s": 6.0,
+   "import_error": "",
+   "train": "completed",
+   "train_s": 48.1,
+   "train_error": "",
+   "device_label": "cuda (auto)",
+   "predict": "completed",
+   "predict_s": 4.0,
+   "predict_error": "",
+   "host": "3.12.13 3.4.1 1.1.0",
+   "python_requested": "3.12",
+   "tlc_requested": null,
+   "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A1-t\u00e9st \u00e5r \u00fcn\u00efcode",
+   "state_path_len": 198,
+   "elapsed_s": 121.7
+  },
+  "A3": {
+   "status": "FAIL",
+   "at": "2026-10-12T18:36:50",
+   "exception": "ImportError: DLL load failed while importing _core: The filename or extension is too long.",
+   "host": "3.12.13 3.4.1 1.1.0",
+   "python_requested": "3.12",
+   "tlc_requested": null,
+   "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\a3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+   "state_path_len": 334,
+   "elapsed_s": 0.7
   }
  }
 }

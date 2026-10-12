@@ -1,0 +1,77 @@
+{
+ "started_at": "2026-10-12T18:42:07",
+ "hours": 3.0,
+ "cycles": [
+  {
+   "n": 1,
+   "at": "18:43:09",
+   "train": "completed",
+   "train_s": 48.1,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 27304,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 4556,
+     "working_set_mb": 2367,
+     "private_mb": 4469
+    },
+    {
+     "pid": 17756,
+     "working_set_mb": 96,
+     "private_mb": 76
+    }
+   ],
+   "max_working_set_mb": 2367,
+   "error": ""
+  },
+  {
+   "n": 2,
+   "at": "18:43:27",
+   "train": "completed",
+   "train_s": 14.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 27304,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 4556,
+     "working_set_mb": 2392,
+     "private_mb": 4489
+    },
+    {
+     "pid": 24552,
+     "working_set_mb": 96,
+     "private_mb": 77
+    }
+   ],
+   "max_working_set_mb": 2392,
+   "error": ""
+  }
+ ],
+ "memory_before": [
+  {
+   "pid": 27304,
+   "working_set_mb": 5,
+   "private_mb": 1
+  },
+  {
+   "pid": 4556,
+   "working_set_mb": 114,
+   "private_mb": 566
+  },
+  {
+   "pid": 31624,
+   "working_set_mb": 96,
+   "private_mb": 76
+  }
+ ]
+}

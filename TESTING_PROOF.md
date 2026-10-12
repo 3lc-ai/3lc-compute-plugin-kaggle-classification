@@ -230,7 +230,8 @@ uninstall + reinstall fails with "Access is denied" until the orphan is stopped.
 | A8 host 3lc 3.3.0 (oldest the host accepts) | PASS: plugin venv 3lc 3.4.1 (now pinned), install 10.3 s, the full cycle; host 3lc 3.4.1 is the fresh env itself (every item above) |
 | A6 / A7 GPU outside the arch list, driver older than R580 | unit-simulated (`test_arch_list_coverage_follows_torch_s_own_rule`, `test_auto_lands_on_cpu_with_the_reason…`, `test_a_driver_older_than_the_build_needs…`); the Doctor fixture `?kgdev=status-empty` renders both sentences; the real sm_120-on-cu126 case was the rc13 hand test that opened session 14 |
 | P3 driver named | PASS: `device.gpu.driver` 616.64, `driver_min` 580 |
-| A1 non-ASCII path, A3 path near 260 chars | see below (scratch tester folders) |
+| A1 a tester folder with spaces and non-ASCII characters (`…\envs\A1-tést år ünïcode`) | PASS: install 15.3 s, kit, import, train `cuda (auto)`, predict, all complete (a second Windows account could not be made here; the folder stands in for the user name) |
+| A3 a tester folder 180 characters deep (the plugin state path 334 characters) | FAIL at the host, before the plugin: `3lc` cannot load its native module ("DLL load failed while importing _core: The filename or extension is too long", the Windows 260-character limit). TESTING.md already prescribes `C:\3lc-tester`; it now says why. OPEN for the Hub team only if a participant insists on a deep folder (long-path support in Windows fixes it) |
 | A2 OneDrive | N/A here (no OneDrive); the testers' checklist |
 | B6 wrong / nested / trailing-slash folder | PASS: wrong and nested refused with "No kit found at … (files.json missing)"; the trailing slash and a quoted path accepted |
 | B3 kit file modified after verify | PASS after the fix: Re-verify names the file (1 mismatch); the import fails before any table with "differs from the files it shipped with"; restored, Re-verify ok |
