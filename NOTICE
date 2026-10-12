@@ -1,0 +1,57 @@
+3lc-compute-plugin-kaggle-classification
+Copyright 2026 3LC Inc.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Relicensing record (decided 2026-10-12)
+---------------------------------------
+
+Some modules of this plugin were adapted from 3LC's sibling plugin
+3lc-compute-plugin-kaggle (https://github.com/3lc-ai/3lc-compute-plugin-kaggle),
+whose repository is distributed under the GNU Affero General Public License v3.
+3LC Inc. is the sole copyright holder of that code and, as the copyright holder,
+ships the adapted modules in this project under the Apache License, Version 2.0.
+Each adapted file carries this header, verbatim:
+
+    # Adapted from 3lc-compute-plugin-kaggle (Copyright 3LC AI), relicensed by the copyright holder
+    # under Apache-2.0 for this project.
+
+Decision: recorded by Rishikesh Jadhav (3LC) on 2026-10-12. Gudbrand (3LC)
+agreed with the approach. Paul is out of office and will be informed; the
+decision is reversible if he objects. The list of adapted files is kept in
+docs/STUDY.md section G-5 and is enforced by tests/test_packaging.py.
+
+Evidence, checked on 2026-10-12 against a fresh clone of the origin repository
+(head 22183ad, tag v1.2.15, all 5 remote branches and 20 tags):
+
+- Authorship. The origin repository's whole history, 213 commits across every
+  ref (first commit 2026-07-20, last 2026-09-14), has one author and committer,
+  Rishikesh Jadhav, a 3LC employee; five commits were committed through the
+  GitHub web interface by the same author. No commit carries a Co-authored-by,
+  Signed-off-by or Reviewed-by trailer. Per file, with renames followed, every
+  origin file an adapted module derives from has that single author:
+  config_store.py (11 commits), downloader.py (6), predictor.py (20),
+  trainer.py (16), ui.html (73), routes.py (28), tests/test_url_regex_parity.py (1),
+  scripts/make_kit_manifest.py (1), tests/conftest.py (3), tests/test_config_store.py (1),
+  tests/test_downloader.py (5), tests/test_packaging.py (2), tests/test_jobs_bridge.py (1),
+  tests/test_ui_node_lifetime.py (1). No outside author appears anywhere.
+- No Ultralytics code. The origin modules that mention Ultralytics or YOLO do so
+  only in parts that were not carried: predictor.py's run_inference (the YOLO
+  call) and the device docstring, trainer.py's training call, checkpoint
+  constants and tlc_ultralytics imports, ui.html's licence band and YOLO format
+  copy, and conftest.py's from_yolo_url stub. The carried parts (the session
+  store, the downloader's stage machine, the kaggle client functions, the
+  kaggle live-status shape, the bounds message and the run-parameter readback
+  shapes, the fragment's shell and tab structure, the test patterns) contain
+  none, and this project's own tree imports nothing from Ultralytics; its only
+  mentions are two comments and a test asserting that the Ultralytics band and
+  the YOLO copy are absent. Training, inference and the data pipeline here are
+  written against timm, torch, torchvision and tlc.
+- The adapted files in this project: src/kaggle_classification/kaggle_client.py,
+  kit.py, predictor.py, session.py, status.py, trainer.py, ui/ui.html;
+  tests/conftest.py, test_ctx_adapter.py, test_kit.py, test_packaging.py,
+  test_session.py, test_ui_node_lifetime.py, test_url_regex_parity.py;
+  tools/build_kit.py.
+
+Code copied from 3lc-compute-plugin-timm (scripts/release_version.py,
+tests/test_release_version.py) was already Apache-2.0 and keeps its origin header.

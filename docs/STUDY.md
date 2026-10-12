@@ -429,7 +429,24 @@ also emit `files.json` (path, bytes, sha256) uploaded beside the shards and refe
 optional `kit.files_url`. Recommend (ii) as an additive optional field; Phase 3 emits it
 either way.
 
-### G-5. Relicensing record — modules adapted from `3lc-compute-plugin-kaggle` (for sign-off)
+### G-5. Relicensing record — modules adapted from `3lc-compute-plugin-kaggle` (signed off 2026-10-12)
+
+**Decision recorded 2026-10-12** (Rishikesh Jadhav; Gudbrand agreed with the approach; Paul is out of
+office and will be informed, reversible if he objects): the adapted modules ship here under Apache-2.0
+with the origin header below, 3LC Inc. being the copyright holder. The record participants and
+downstream users see is the repo's `NOTICE` file (shipped in the wheel's `dist-info/licenses/` and in the sdist). Evidence, from a fresh clone of the
+origin at its head (22183ad, v1.2.15, every remote branch and tag): the origin's whole history, 213
+commits (2026-07-20 to 2026-09-14), has one author and committer, Rishikesh Jadhav (five commits
+committed through the GitHub web interface by the same author), no Co-authored-by / Signed-off-by /
+Reviewed-by trailer, and every origin file in the table below has that single author with renames
+followed (`config_store.py` 11 commits, `downloader.py` 6, `predictor.py` 20, `trainer.py` 16,
+`ui.html` 73, `routes.py` 28, the tests and `make_kit_manifest.py` 1 to 5 each). The origin's
+Ultralytics / YOLO references were re-counted on the same clone: `predictor.py` 7 (all in
+`run_inference` and the device docstring), `trainer.py` 22 (the training call, the checkpoint
+constants, the `tlc_ultralytics` imports), `ui.html` 16 (the licence band and the YOLO copy),
+`conftest.py` 2 (the `from_yolo_url` stub), the rest 0; none of those parts was carried, and this
+tree imports nothing from Ultralytics (`grep -ri ultralytics src tests tools scripts` finds two
+comments and the test asserting the band and the copy are absent).
 
 Decision (Gate 0): no AGPL headers travel into this repo. The ExDark plugin's session store,
 downloader, tests and release-audit code are 3LC-authored and contain no Ultralytics-derived

@@ -74,6 +74,7 @@ include = [
     "/scripts",
     "/README.md",
     "/LICENSE",
+    "/NOTICE",
 ]
 
 # torch/torchvision index — MIRRORS THE TIMM PLUGIN EXACTLY (decision at Gate 0): the CUDA 12.6
