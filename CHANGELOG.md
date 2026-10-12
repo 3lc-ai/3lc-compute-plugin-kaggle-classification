@@ -3,7 +3,7 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] (session 11, 2026-10-09: the post-rc12 quality-of-life pass)
+## [1.0.0rc13] — 2026-10-12 (sessions 11 to 13: the post-rc12 pass, the first PC session, the three fixes)
 
 The UI look is frozen at rc12: further UI changes are incremental only (no layout changes, no redesigns) and
 participants keep every control they had in rc10.
