@@ -31,6 +31,20 @@ participants keep every control they had in rc10.
   naming the table the server would write and saying the existing tables and label edits are kept; TESTING.md
   lost its filler words and three passive or metaphor sentences.
 
+### Fixed
+- **Re-import on a stale record uses the kit on this machine** (session 13): the field's folder, else the
+  verified download, else the default destination; never the record's remembered path. The server resolves the
+  same way when a request names no folder (`importer.current_kit_dir`), and the stale view no longer prefills
+  the field with the remembered path.
+- **The kit field's "files themselves were not verified yet" line** and its Verify files button go away once the
+  kit line shows a verified download.
+- **Images missing on this machine are a refusal before training and a Doctor row** (session 13): Train samples
+  rows across the train revision and the locked val table (`trainer.missing_images`) and refuses, naming the
+  split, the count and an example, when a sampled image is not on disk; the Doctor's "Table images" row reports
+  the same check on the train seed and the locked val table (`import.images` in `GET /status/doctor`) and opens
+  red with the instruction to download the kit and re-import. A copied project or a moved kit is caught before
+  a run starts, not by a loader error mid-epoch.
+
 ### Added
 - Vercel's `web-design-guidelines` and `writing-guidelines` agent skills under `.claude/skills/` (`skills-lock.json`).
 - **The uv row in the Doctor** (session 13, 2026-10-12): the uv that created the plugin venv and, in the tester
