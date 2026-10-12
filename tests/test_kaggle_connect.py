@@ -139,6 +139,19 @@ def test_connect_removes_a_token_kaggle_rejects(redirected_home, monkeypatch):
     assert kaggle_client.credentials_present() is False
 
 
+def test_a_rejected_token_puts_the_previous_one_back(redirected_home, monkeypatch):
+    """Session 15 (plan D4): a mistyped new token must not cost a working connection. The previous
+    file's bytes go back on a rejection, the reason says so, and the response never carries a token."""
+    previous = "KGAT_previous0123456789abcdefghijklmnop"
+    kaggle_client.save_token(previous)
+    monkeypatch.setattr(kaggle_client, "_authenticate_raw", _auth_rejected)
+    out = kaggle_client.connect(TOKEN)
+    assert out["ok"] is False and out["kind"] == "rejected" and out["restored_previous"] is True and out["replaced_previous"] is False
+    assert out["reason"].endswith("Your previous token is still in place.")
+    assert (redirected_home / ".kaggle" / "access_token").read_bytes() == previous.encode("ascii")
+    assert previous not in json.dumps(out) and TOKEN not in json.dumps(out)
+
+
 def test_connect_keeps_the_token_when_kaggle_is_unreachable(redirected_home, monkeypatch):
     monkeypatch.setattr(kaggle_client, "_authenticate_raw", _auth_unreachable)
     out = kaggle_client.connect(TOKEN)

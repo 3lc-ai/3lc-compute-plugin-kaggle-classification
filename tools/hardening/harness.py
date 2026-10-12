@@ -73,6 +73,13 @@ def plugin_manifest(repo: Path) -> dict[str, Any]:
 
 
 def host_client(timeout: float = 1800):
+    # A plugin worker outlives the in-process host that spawned it (the TestClient's shutdown does not
+    # reach it), and on Windows a live worker holds the managed venv's python.exe, so the next host's
+    # update or reinstall fails with "Access is denied" (seen 2026-10-12, section A). Every host session
+    # starts clean; the scenarios that kill a worker on purpose do so explicitly.
+    stale = kill_workers()
+    if stale:
+        log(f"stopped {stale} plugin worker(s) left by a previous host")
     import tlc_compute.plugins.live_auth as live_auth
 
     live_auth.is_live_auth_exempt = lambda scope: True  # type: ignore[assignment]

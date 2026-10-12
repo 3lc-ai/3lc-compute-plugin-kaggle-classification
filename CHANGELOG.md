@@ -32,6 +32,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   "Training…" on screen. Fixture `?kgdev=train-state3-reconciled`; `tests/test_ui_train_reconcile.py`.
 - **The Runs tables show "cpu (fallback)"** with the full reason on hover and in the row detail (Train's run
   card and the Status Runs table), not the whole error in the cell.
+- **The import verifies every kit file against `files.json`** (size and sha256) before any table is written
+  (session 15, the hardening campaign's B3): a file edited after the download had verified it still passed
+  the structure and decode checks and was imported. Now it is the check "every kit file matches files.json",
+  failing with the first changed files named and the instruction to download the kit again.
+- **A rejected Kaggle token no longer costs a working one** (campaign D4): Connect kept the new token's file
+  in place and deleted it on Kaggle's rejection, which also deleted the previous, working token. The previous
+  file's bytes go back on a rejection and the sentence says "Your previous token is still in place."
+- **The Doctor names an NVIDIA driver older than the build needs** (campaign pre-item P3): `device.gpu.driver`
+  from `nvidia-smi`, the minimum series for the build's CUDA major (R580 for CUDA 13), and the sentence
+  "NVIDIA driver X is older than the R580 series this torch build needs; update the driver. Runs will use
+  CPU." Auto device resolution records it as the fallback reason.
+- **The Windows start script logs in inside the redirected home** on the first start (campaign pre-item P4):
+  3lc 3.3 and 3.4 read the API key from the redirected `LOCALAPPDATA`, so TESTING.md's `3lc login` from the
+  real profile left the services in an "API key not found" restart loop. The script now runs the login in its
+  console when no key is under `home\`, the way the macOS / Linux script does; TESTING.md step 2 drops the
+  login line and the host `3lc==3.3.0` pin (participants get what `uv pip install 3lc-compute` resolves,
+  3lc 3.4.1 today) and adds the NVIDIA driver row.
 
 ### Changed
 - plugin.toml carries the hardware sentence ("GPU recommended; works on CPU (slower). The environment pulls a

@@ -100,30 +100,40 @@ def main() -> int:
 
     # ── A5: CPU-only cycle (CUDA hidden from the host and its workers) ───────
     if not args.skip_cpu:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        # "-1", not "": on Windows an empty value deletes the variable instead of setting it.
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         with h.host_client() as client:
             h.wait_ready(client, 600)
             doc = h.doctor(client)
             dev = doc.get("device") or {}
-            pre = client.get(f"{h.API}/train/preflight").json()
-            hint = {k: pre.get(k) for k in ("estimate", "eta", "duration_hint", "stats", "device_class") if k in pre}
             t0 = time.time()
-            job = h.run_and_wait(client, "train", {"epochs": "2", "run_name": "campaign a5 cpu", "device": ""}, timeout=3600)
+            code, body = h.start(client, "train", {"epochs": "3", "run_name": "campaign a5 cpu", "device": ""})
+            jid = body.get("job_id") or body.get("id")
+            # The ETA read at the first epoch boundary, compared with the actual time to completion.
+            at1 = h.wait_terminal(client, jid, timeout=3600, quiet=True,
+                                  until=lambda j: "Epoch 2/" in str((j.get("progress") or {}).get("label") or "") or j.get("status") != "running")
+            t_eta = time.time()
+            prog1 = (client.get(f"{h.API}/train/state").json().get("current") or {}).get("progress") or {}
+            job = h.wait_terminal(client, jid, timeout=3600, quiet=True)
+            job["id"] = jid
+            actual_remaining = round(time.time() - t_eta, 1)
             train_s = round(time.time() - t0, 1)
             st = client.get(f"{h.API}/train/state").json()
             cur = st.get("current") or {}
             facts = cur.get("facts") or {}
-            prog = cur.get("progress") or {}
+            res = cur.get("result") or {}
             t0 = time.time()
-            pj = h.run_and_wait(client, "predict", {"train_job_id": job.get("id"), "device": ""}, timeout=3600)
+            pj = h.run_and_wait(client, "predict", {"train_job_id": jid, "device": ""}, timeout=3600, quiet=True)
             predict_s = round(time.time() - t0, 1)
-            ps = client.get(f"{h.API}/submit/state").json()
+            ss = client.get(f"{h.API}/submit/state").json()
+            eta1 = prog1.get("eta_s")
+            ratio = round(eta1 / actual_remaining, 2) if isinstance(eta1, (int, float)) and eta1 and actual_remaining else None
             results.put("A5", "PASS" if job.get("status") == "completed" and pj.get("status") == "completed" and str(facts.get("device")) == "cpu" else "FAIL",
                         doctor_device=dev, train_status=job.get("status"), train_s=train_s, device_label=facts.get("device_label"),
-                        avg_epoch_s=prog.get("avg_epoch_s"), eta_at_epoch1=prog.get("eta_s"), setup_s=(cur.get("result") or {}).get("setup_s"),
-                        collect_s=(cur.get("result") or {}).get("collect_s"), preflight_hint=hint,
-                        predict_status=pj.get("status"), predict_s=predict_s, predict_device=((ps.get("record") or {}).get("facts") or {}).get("device_label") or (ps.get("facts") or {}).get("device_label"),
-                        predict_checks=len((ps.get("record") or {}).get("checks") or ps.get("checks") or []))
+                        eta_s_at_epoch1=eta1, avg_epoch_s_at_epoch1=prog1.get("avg_epoch_s"), actual_remaining_s=actual_remaining, eta_over_actual=ratio,
+                        setup_s=res.get("setup_s"), collect_s=res.get("collect_s"), epoch_s_per_row=res.get("epoch_s_per_row"),
+                        predict_status=pj.get("status"), predict_s=predict_s, predict_device=ss.get("device_label"),
+                        predict_checks=sum(1 for c in (ss.get("checks") or []) if c.get("ok")), predict_checks_total=len(ss.get("checks") or []))
         del os.environ["CUDA_VISIBLE_DEVICES"]
     return 0
 

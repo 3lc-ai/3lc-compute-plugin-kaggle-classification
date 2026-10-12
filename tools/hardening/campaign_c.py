@@ -74,7 +74,8 @@ def main() -> int:
                     exposed[key] = (spec["min"], spec["max"])
             answers = {}
             for key, (lo, hi) in exposed.items():
-                for tag, val in (("below", lo - 1 if isinstance(lo, int) else lo / 10), ("above", hi + 1 if isinstance(hi, int) else hi * 10)):
+                whole = float(lo).is_integer() and float(hi).is_integer() and key != "lr" and key != "weight_decay"
+                for tag, val in (("below", int(lo) - 1 if whole else lo / 10), ("above", int(hi) + 1 if whole else hi * 10)):
                     job = h.run_and_wait(client, "train", {"epochs": "1", key: str(val), "run_name": f"campaign c7 {key} {tag}"}, timeout=300, quiet=True)
                     answers[f"{key} {tag}"] = {"status": job.get("status"), "error": str(job.get("error") or job.get("body") or "")[:140]}
             ok = bool(answers) and all(a["status"] in ("failed", "refused") and "between" in a["error"] for a in answers.values())
@@ -88,7 +89,7 @@ def main() -> int:
             job = h.run_and_wait(client, "train", {"epochs": "1", "batch_size": str(hi or 256), "run_name": "campaign c1 batch max"}, timeout=1800, quiet=True)
             cur = (tstate(client).get("current") or {})
             f = cur.get("facts") or {}
-            results.put("C1", "PASS" if job.get("status") == "completed" else "FAIL", batch=hi or 256, status=job.get("status"),
+            results.put("C1", "PASS" if job.get("status") == "completed" else "FAIL", batch=hi or 256, job_status=job.get("status"),
                         device_label=f.get("device_label"), fallback=f.get("device_fallback_reason"), error=str(job.get("error") or "")[:200],
                         note="an OOM is not reachable inside the bound on a 16 GB card; the fallback path is unit-tested and seen on rc13 (cu126)")
         except Exception as exc:
@@ -132,7 +133,7 @@ def main() -> int:
             runs = client.get(f"{h.API}/runs").json()
             listed = any(name in json.dumps(r, ensure_ascii=False) for r in (runs if isinstance(runs, list) else runs.get("runs") or []))
             results.put("C9", "PASS" if job.get("status") == "completed" and Path(run_url).is_dir() and listed else "FAIL",
-                        status=job.get("status"), run_url=run_url, listed=listed)
+                        job_status=job.get("status"), run_url=run_url, listed=listed)
             code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign c8 fifty"})
             jid = body.get("job_id") or body.get("id")
             at2 = h.wait_terminal(client, jid, timeout=1800, quiet=True, until=lambda j: label_epoch(j, 3))
@@ -153,18 +154,19 @@ def main() -> int:
             cur = tstate(client).get("current") or {}
             used = str((cur.get("facts") or {}).get("train_table_url") or "")
             results.put("C6", "PASS" if job.get("status") == "completed" and used.replace("\\", "/").rstrip("/").endswith("campaign-c6-edited") else "FAIL",
-                        revision=rev, trained_on=used, status=job.get("status"), checks=[c.get("label") for c in (cur.get("checks") or []) if not c.get("ok")])
+                        revision=rev, trained_on=used, job_status=job.get("status"), checks=[c.get("label") for c in (cur.get("checks") or []) if not c.get("ok")])
         except Exception as exc:
             results.put("C6", "FAIL", exception=f"{type(exc).__name__}: {exc}")
 
         # ── C3: the compute service killed mid-train ─────────────────────────
         try:
-            code, body = h.start(client, "train", {"epochs": "5", "run_name": "campaign c3 killed"})
+            code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign c3 killed"})
             jid = body.get("job_id") or body.get("id")
-            h.wait_terminal(client, jid, timeout=900, quiet=True, until=lambda j: label_epoch(j, 2))
+            h.wait_terminal(client, jid, timeout=900, quiet=True, until=lambda j: label_epoch(j, 3))
             killed = h.kill_workers()
             time.sleep(3)
-            c3 = {"job": jid, "workers_killed": killed}
+            still = h.job_of(client, jid) or {}
+            c3 = {"job": jid, "workers_killed": killed, "status_before_kill": str((still.get("progress") or {}).get("label") or "")}
         except Exception as exc:
             results.put("C3", "FAIL", exception=f"{type(exc).__name__}: {exc}")
             c3 = None

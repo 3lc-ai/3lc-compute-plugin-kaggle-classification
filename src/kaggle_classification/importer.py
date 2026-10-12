@@ -855,6 +855,33 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
     if is_cancelled():
         return {"cancelled": True}
 
+    # ── Every kit file against files.json (session 15, plan B3) ──────────
+    # The structure can match the manifest while a file was edited after the download verified it;
+    # the tables would then point at bytes the kit never shipped. Each file's size and sha256 are
+    # checked against the kit's own index before any table is written (a few seconds for 9,600 files).
+    stage("validate", 8.0, "Verifying every kit file against files.json")
+    t0 = time.time()
+    try:
+        delta = kit.verify_tree(kit.load_files_index(kit_root), kit_root)
+    except (OSError, ValueError, RuntimeError) as exc:
+        delta = {"matched": 0, "mismatch": [], "missing": [], "error": f"{type(exc).__name__}: {exc}"}
+    timings["verify_s"] = round(time.time() - t0, 2)
+    bad = list(delta.get("mismatch") or []) + list(delta.get("missing") or [])
+    detail = f"{delta.get('matched', 0):,} files match"
+    if delta.get("error"):
+        detail = str(delta["error"])
+    elif bad:
+        detail = (f"{len(delta.get('mismatch') or [])} changed, {len(delta.get('missing') or [])} missing; first: "
+                  + ", ".join(bad[:3]))
+    if not check("every kit file matches files.json (size and sha256)", not bad and not delta.get("error"), detail):
+        msg = (
+            f"The starter kit at {kit_root} differs from the files it shipped with ({detail}). Nothing was imported. "
+            "Download the starter kit again (Re-verify on the Import tab names the files), then import."
+        )
+        raise ImportRefused(msg)
+    if is_cancelled():
+        return {"cancelled": True}
+
     # ── Decode every image ───────────────────────────────────────────────
     stage("decode", 15.0, "Decoding every image")
     t0 = time.time()

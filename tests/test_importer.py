@@ -144,8 +144,26 @@ def test_undecodable_image_is_a_kit_defect(project_root, kit_and_manifest):
     kit_root, manifest = kit_and_manifest
     victim = next(iter((kit_root / "data" / "train" / "undefined").iterdir()))
     victim.write_bytes(b"\xff\xd8not an image\xff\xd9")
+    # The kit's own index names the broken bytes (a kit shipped that way), so the decode check is the one that fires.
+    build_kit.write_files_index(kit_root, competition_id="intel-scene", kit_version="v1")
     with pytest.raises(importer.ImportRefused, match="do not decode"):
         _run(manifest)
+    assert not tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("train"), "initial")).exists()
+
+
+def test_a_kit_file_changed_after_the_download_is_refused_before_any_table(project_root, kit_and_manifest):
+    """Session 15 (plan B3): a file edited after the download verified it still has a valid structure
+    and may still decode; the import checks every file's size and sha256 against files.json first."""
+    kit_root, manifest = kit_and_manifest
+    victim = next(p for p in sorted((kit_root / "data" / "train").rglob("*.jpg")))
+    with victim.open("ab") as f:
+        f.write(b"\x00tamper")
+    ctx = FakeCtx()
+    with pytest.raises(importer.ImportRefused, match="differs from the files it shipped with"):
+        importer.run_import({}, ctx, manifest)
+    labels = [c["label"] for c in ctx.checks if not c["ok"]]
+    assert labels == ["every kit file matches files.json (size and sha256)"]
+    assert victim.relative_to(kit_root).as_posix() in next(c["detail"] for c in ctx.checks if not c["ok"])
     assert not tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("train"), "initial")).exists()
 
 
@@ -172,8 +190,9 @@ def test_failure_after_the_first_table_leaves_no_partial_tables(project_root, ki
 
 def test_cancel_after_the_first_table_removes_it(project_root, kit_and_manifest):
     kit_root, manifest = kit_and_manifest
-    # is_cancelled is polled: after validate, after decode, then once per split -> cancel on the 4th
-    ctx = FakeCtx(cancel_on_call=4)
+    # is_cancelled is polled: after validate, after the files.json check, after decode, then once per
+    # split -> cancel on the 5th
+    ctx = FakeCtx(cancel_on_call=5)
     result = importer.run_import({}, ctx, manifest)
     assert result["cancelled"] is True
     assert len(result["removed"]) == 1

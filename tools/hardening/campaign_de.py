@@ -49,7 +49,7 @@ def main() -> int:
 
     with h.host_client() as client:
         h.wait_ready(client, 900)
-        runs = runs_of(client)
+        runs = (tstate(client).get("runs") or [])
         by_status: dict[str, dict] = {}
         for r in runs:
             by_status.setdefault(str(r.get("status")), r)
@@ -65,11 +65,12 @@ def main() -> int:
                     continue
                 job = h.run_and_wait(client, "predict", {"train_job_id": r.get("id"), "device": ""}, timeout=1800, quiet=True)
                 answers[status] = {"status": job.get("status"), "error": str(job.get("error") or job.get("body") or "")[:160], "run": r.get("run_name")}
-            code, body = h.start(client, "train", {"epochs": "2", "run_name": "campaign d1 running"})
+            code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign d1 running"})
             jid = body.get("job_id") or body.get("id")
             h.wait_terminal(client, jid, timeout=900, quiet=True, until=lambda j: "Epoch 1/" in str((j.get("progress") or {}).get("label") or "") or j.get("status") != "running")
             pj = h.run_and_wait(client, "predict", {"train_job_id": jid, "device": ""}, timeout=600, quiet=True)
             answers["running"] = {"status": pj.get("status"), "error": str(pj.get("error") or pj.get("body") or "")[:160]}
+            h.cancel(client, jid)
             h.wait_terminal(client, jid, timeout=1800, quiet=True)
             ok = (answers.get("cancelled", {}).get("status") in ("completed", "no such run")
                   and answers.get("failed", {}).get("status") in ("failed", "refused", "no such run") and answers["running"]["status"] in ("failed", "refused"))
@@ -96,8 +97,8 @@ def main() -> int:
         # ── D3: submission CSV edited by hand ────────────────────────────────
         try:
             ss = client.get(f"{h.API}/submit/state").json()
-            pred = ss.get("predict") or ss.get("record") or {}
-            csv_path = Path(str((pred.get("facts") or {}).get("csv_path") or ss.get("csv_path") or ""))
+            pred = ss.get("predict") or {}
+            csv_path = Path(str(pred.get("csv_path") or ""))
             backup = scratch / "d3-submission.csv"
             shutil.copy2(csv_path, backup)
             text = csv_path.read_text(encoding="utf-8").splitlines()
@@ -123,9 +124,10 @@ def main() -> int:
                 shutil.copy2(token_file, backup)
             answers = {}
             r = client.post(f"{h.API}/kaggle/connect", json={"token": "not-a-token"})
-            answers["bad_format"] = {"http": r.status_code, "text": r.text[:160], "file_after": token_file.exists() and (not had or token_file.read_bytes() == backup.read_bytes())}
+            answers["bad_format"] = {"http": r.status_code, "ok": r.json().get("ok"), "kind": r.json().get("kind"), "file_unchanged": token_file.exists() and (not had or token_file.read_bytes() == backup.read_bytes())}
             r = client.post(f"{h.API}/kaggle/connect", json={"token": "KGAT_" + "x" * 40})
-            answers["random"] = {"http": r.status_code, "text": r.text[:160], "file_after": token_file.exists()}
+            answers["random"] = {"http": r.status_code, "ok": r.json().get("ok"), "kind": r.json().get("kind"), "restored_previous": r.json().get("restored_previous"),
+                                 "previous_kept": token_file.exists() and (not had or token_file.read_bytes() == backup.read_bytes())}
             if had:
                 token_file.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(backup, token_file)
@@ -133,7 +135,9 @@ def main() -> int:
             answers["restored"] = {"state": conn.get("state"), "username": conn.get("username")}
             for v in answers.values():
                 assert not TOKEN_SHAPE.search(json.dumps(v).encode()), "a token shape leaked into a response"
-            ok = answers["bad_format"]["http"] >= 400 and answers["random"]["http"] >= 400 and not answers["random"]["file_after"] and (not had or answers["restored"]["state"] == "ready")
+            ok = (answers["bad_format"]["ok"] is False and answers["bad_format"]["kind"] == "format" and answers["bad_format"]["file_unchanged"]
+                  and answers["random"]["ok"] is False and answers["random"]["kind"] == "rejected" and answers["random"]["previous_kept"]
+                  and (not had or answers["restored"]["state"] == "ready"))
             results.put("D4", "PASS" if ok else "FAIL", answers=answers)
         except Exception as exc:
             results.put("D4", "FAIL", exception=f"{type(exc).__name__}: {exc}")

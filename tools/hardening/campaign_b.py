@@ -15,6 +15,7 @@ import shutil
 import socket
 import sys
 import time
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -133,7 +134,8 @@ def main() -> int:
             code, body = h.start(client, "download_kit", {})
             jid = body.get("job_id") or body.get("id")
             mid = h.wait_terminal(client, jid, timeout=600, quiet=True,
-                                  until=lambda j: "01.zip" in str((j.get("progress") or {}).get("label") or "") or j.get("status") != "running")
+                                  until=lambda j: ("01.zip" in str((j.get("progress") or {}).get("label") or "") and j.get("status") == "running")
+                                  or j.get("status") in ("completed", "failed", "cancelled"))
             h.cancel(client, jid)
             first = h.wait_terminal(client, jid, timeout=120, quiet=True)
             parts = sorted(p.name for p in kit_version_dir.rglob("*.part")) if kit_version_dir.exists() else []
@@ -193,7 +195,11 @@ def main() -> int:
         h.apply_env({"KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL": f"http://127.0.0.1:{port}"})
         with h.host_client() as client:
             h.wait_ready(client, 600)
-            m5 = meta(client)
+            for _ in range(30):   # the background refresh must fail against the closed port first
+                m5 = meta(client)
+                if (m5.get("manifest_fallback") or {}).get("refresh_state") in ("done", "failed"):
+                    break
+                time.sleep(2)
             v = client.get(f"{h.API}/download/verify", params={"kit_dir": str(kit_copy)}).json()
             pre = client.get(f"{h.API}/import/preflight", params={"kit_dir": str(kit_copy)}).json()
             doc = client.get(f"{h.API}/status/doctor?kaggle=0").json()

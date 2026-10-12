@@ -199,6 +199,13 @@ def connect(raw: Any) -> dict[str, Any]:
     if os.environ.get("KAGGLE_API_TOKEN"):
         return {"ok": False, "kind": "env_override", "reason": REASONS["env_override"]}
     had_file = token_path().is_file()
+    # Session 15 (plan D4): a mistyped new token must not cost a working connection. The previous
+    # file's bytes are kept in memory for the length of this call and put back when Kaggle rejects
+    # the new one; they are never logged or returned.
+    previous: bytes | None = None
+    if had_file:
+        with contextlib.suppress(OSError):
+            previous = token_path().read_bytes()
     try:
         path = save_token(token)
     except OSError as exc:
@@ -207,10 +214,17 @@ def connect(raw: Any) -> dict[str, Any]:
         username = verify_connection()
     except TokenRejected:
         # A rejected token must not linger as a "credential": the card would stay not connected with
-        # a dead file in the way. (A previous token file, if any, was already replaced by the write.)
-        with contextlib.suppress(OSError):
-            path.unlink()
-        return {"ok": False, "kind": "rejected", "reason": REASONS["rejected"], "replaced_previous": had_file}
+        # a dead file in the way. A previous token goes back where it was.
+        restored = False
+        if previous is not None:
+            with contextlib.suppress(OSError):
+                path.write_bytes(previous)
+                restored = True
+        else:
+            with contextlib.suppress(OSError):
+                path.unlink()
+        return {"ok": False, "kind": "rejected", "reason": REASONS["rejected"] + (" Your previous token is still in place." if restored else ""),
+                "replaced_previous": had_file and not restored, "restored_previous": restored}
     except KaggleUnreachable:
         return {"ok": False, "kind": "unreachable", "reason": REASONS["unreachable"], "path": str(path)}
     except Exception as exc:
