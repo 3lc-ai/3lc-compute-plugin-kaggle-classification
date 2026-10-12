@@ -1,0 +1,85 @@
+{
+ "base": "https://competitions.dev.3lc.ai",
+ "manifest_url": "https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json",
+ "kit_base": "https://competitions.dev.3lc.ai/kaggle/intel-scene/starter-kit/v1/",
+ "shards": 5,
+ "F2": {
+  "name": "manifest+index",
+  "requests": 40,
+  "ok": 40,
+  "errors": 0,
+  "status_codes": [
+   "200"
+  ],
+  "bytes": 63400,
+  "wall_s": 0.1,
+  "throughput_MBps": 0.7,
+  "latency_s": {
+   "p50": 0.065,
+   "p90": 0.071,
+   "max": 0.081
+  },
+  "x_cache": [
+   "Hit from cloudfront"
+  ],
+  "cf_pops": [
+   "DFW59-P5"
+  ],
+  "errors_sample": []
+ },
+ "F3": {
+  "name": "catalog",
+  "requests": 20,
+  "ok": 20,
+  "errors": 0,
+  "status_codes": [
+   "200"
+  ],
+  "bytes": 42200,
+  "wall_s": 0.2,
+  "throughput_MBps": 0.3,
+  "latency_s": {
+   "p50": 0.163,
+   "p90": 0.165,
+   "max": 0.165
+  },
+  "x_cache": [
+   "HIT"
+  ],
+  "cf_pops": [
+   ""
+  ],
+  "errors_sample": []
+ },
+ "F1": {
+  "name": "50 concurrent kit downloads",
+  "requests": 250,
+  "ok": 250,
+  "errors": 0,
+  "status_codes": [
+   "200",
+   "206"
+  ],
+  "bytes": 5687052580,
+  "wall_s": 51.2,
+  "throughput_MBps": 111.2,
+  "latency_s": {
+   "p50": 6.179,
+   "p90": 24.315,
+   "max": 38.688
+  },
+  "x_cache": [
+   "Hit from cloudfront"
+  ],
+  "cf_pops": [
+   "DFW59-P5"
+  ],
+  "errors_sample": [],
+  "sha256_mismatches": [],
+  "range_requests": 5,
+  "per_download_s": {
+   "p50": 44.334,
+   "max": 51.146
+  }
+ }
+}

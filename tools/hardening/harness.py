@@ -116,6 +116,10 @@ def install(client, version: str, timeout: float = 1800) -> dict[str, Any]:
             card = next((c for c in (cards or []) if c.get("id") == PLUGIN_ID), None)
             if card:
                 source = next((v.get("source") for v in (card.get("versions") or []) if v.get("version") == version), None)
+                # The 1.1.0 host's card carries the newest entry's source at the top level and an empty
+                # `versions` list for a one-entry catalog (seen 2026-10-12).
+                if not source and card.get("version") == version and card.get("source"):
+                    source = card["source"]
         if not source:
             time.sleep(5)
     if not source:
