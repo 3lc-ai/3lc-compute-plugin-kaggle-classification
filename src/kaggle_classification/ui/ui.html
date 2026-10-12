@@ -3572,10 +3572,20 @@
         // pace seeds from this machine's history (or the benchmark) until the first epoch
         // boundary lands a measured avg_epoch_s.
         var terms = trRunEtaTerms(job);
-        var perEpoch = (typeof p.avg_epoch_s === 'number' && p.avg_epoch_s > 0)
-          ? p.avg_epoch_s : terms.perEpoch;
-        var remaining = (status === 'running' && perEpoch && total && job.created_at)
-          ? Math.max(0, (terms.setup || 0) + perEpoch * total + (terms.collect || 0) - (now - job.created_at)) : null;
+        var measured = typeof p.avg_epoch_s === 'number' && p.avg_epoch_s > 0;
+        var perEpoch = measured ? p.avg_epoch_s : terms.perEpoch;
+        // Session 14: after a CPU fallback the estimate restarts at the fallback stamp (the failed
+        // accelerator attempt is not training time) and takes the fallen-back class's history; once
+        // an epoch boundary lands a measured pace, remaining is pace × epochs left (+ the final pass),
+        // not an elapsed subtraction from a pre-run guess.
+        var fbAt = (facts.device_fallback_at && job.created_at && facts.device_fallback_at > job.created_at) ? facts.device_fallback_at : null;
+        var etaStart = fbAt || job.created_at;
+        var within0 = (p.batch_n && p.batch_i) ? Math.min(1, p.batch_i / p.batch_n) : 0;
+        var remaining = (status === 'running' && perEpoch && total && etaStart)
+          ? (measured
+              ? Math.max(0, perEpoch * Math.max(0, total - epoch - within0) + (terms.collect || 0))
+              : Math.max(0, (fbAt ? 0 : (terms.setup || 0)) + perEpoch * total + (terms.collect || 0) - (now - etaStart)))
+          : null;
         el('tr-run-eta').textContent =
           remaining === null ? ''
             : remaining >= 1 ? '≈ ' + fmtDur(remaining) + ' remaining'
@@ -3796,6 +3806,47 @@
 
       var trHadChecks = false;   // cascade only on live arrival
 
+      // ── Reconciliation with the job record (session 14) ─────────────────────────────────────
+      // The in-run view is driven by the host's job channel; a missed completion event (a dropped
+      // socket, a reload at the wrong moment) must not leave "Training…" on screen while the record
+      // and the Queue page say completed. The durable record is the truth: it is re-read every
+      // TR_RECONCILE_S seconds while a run is shown as running, on every Train-tab entry and on the
+      // reload path, and a terminal record ends the in-run view through the normal terminal path.
+      var TR_RECONCILE_S = 15;
+      var trReconcileTimer = null;
+      // Pure: the terminal record for `id` in a /train/state answer, else null (still running, or
+      // another job's record).
+      function trReconcileFromState(st, id) {
+        if (!st || !id) { return null; }
+        var cur = st.current && st.current.id === id ? st.current : null;
+        var rec = cur || ((st.runs || []).filter(function (r) { return r.id === id; })[0] || null);
+        if (!rec || !rec.status || rec.status === 'running' || rec.status === 'queued') { return null; }
+        return rec;
+      }
+      function trReconcile() {
+        if (kgDevMode || !trRunning || !trainJobId) { return Promise.resolve(false); }
+        var id = trainJobId;
+        return API.authFetch(PLUGIN_ROOT + '/train/state').then(function (r) { return r.json(); })
+          .then(function (st) {
+            var rec = trReconcileFromState(st, id);
+            if (!rec || !trRunning || trainJobId !== id) { return false; }
+            var job = kgJobRecord(id, 'train');
+            job.status = rec.status;
+            if (rec.error) { job.error = rec.error; }
+            trOnRecord(job, true);   // the terminal path re-reads the record and renders it
+            return true;
+          })
+          .catch(function () { return false; });
+      }
+      function trStartReconcile() {
+        trStopReconcile();
+        if (kgDevMode) { return; }
+        trReconcileTimer = setInterval(trReconcile, TR_RECONCILE_S * 1000);
+      }
+      function trStopReconcile() {
+        if (trReconcileTimer) { clearInterval(trReconcileTimer); trReconcileTimer = null; }
+      }
+
       // ExDark's pollTrain body, driven by the job channel instead of a timer. The live record
       // carries what the events filled; the terminal render reads the durable train record.
       function trOnRecord(job, terminal) {
@@ -3821,6 +3872,7 @@
           return;
         }
         kgClearTitleProgress();
+        trStopReconcile();
         trRunning = false;
         trCancelling = false;
         el('tr-cancel-btn').disabled = true;
@@ -4216,6 +4268,7 @@
 
       function trOnTabEnter() {
         if (kgDevMode) { return; }   // forced states own the gate
+        trReconcile();               // session 14: a run shown as running is checked against its record on entry
         configLoaded.then(function () {
           kgRenderProjectFact();
           trRenderValLocked();
@@ -4400,6 +4453,7 @@
             trRenderRunView(job);
             kgScrollTo(el('tr-progress'));
             kgTrack(job);
+            trStartReconcile();
           })
           .catch(function (e) {
             trRunning = false;
@@ -4488,11 +4542,11 @@
           ['Settings', esc(trHpLine(r.params) || (r.params_missing ? 'not recorded' : '–')) +
                        (r.params_source === 'run' ? ' <span style="color:var(--text-muted)">(from the Run’s record)</span>' : '')],
           ['Best', esc(best)],
-          ['Device', esc(r.device_label || r.device || r.device_class || '–')],
+          ['Device', esc(stDeviceCell(r).text), stDeviceCell(r).title],
           ['Elapsed', r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '–']
         ];
         var html = '<div class="kg-locked-rows" style="margin-top:6px">' + rows.map(function (row) {
-          return '<div class="kg-locked-row"><span class="lbl">' + esc(row[0]) + '</span><span class="val">' + row[1] + '</span></div>';
+          return '<div class="kg-locked-row"' + (row[2] ? ' title="' + esc(row[2]) + '"' : '') + '><span class="lbl">' + esc(row[0]) + '</span><span class="val">' + row[1] + '</span></div>';
         }).join('') + '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
           (link ? '<a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(link) +
@@ -4575,10 +4629,24 @@
                 trRenderRunsPanel();
                 // A record from another project (after Start over into a new one) opens on the form.
                 var cur = kgTrainState.current_in_project === false ? null : kgTrainState.current;
+                // Session 14: the durable record wins over a stale host listing. A record that already
+                // says completed / failed / cancelled for the job the host still lists renders terminal.
+                var settled = running ? trReconcileFromState(kgTrainState, running.id) : null;
+                if (settled && !trRunning) {
+                  trainJobId = running.id;
+                  trRenderTerminal(settled, false, true);
+                  if (settled.log && settled.log.length) {
+                    el('tr-log').textContent = settled.log.join('\n');
+                    el('tr-log-details').style.display = 'block';
+                  }
+                  renderPipeline();
+                  return;
+                }
                 if (running && !trRunning) {
                   trainJobId = running.id;
                   trHadChecks = false;
                   trRunning = true;
+                  trStartReconcile();
                   trCheckReady();
                   el('tr-cancel-btn').disabled = false;
                   el('tr-spinner').style.display = 'inline-block';
@@ -4841,6 +4909,21 @@
                               record: { project_name: id, val_locked: { url: valUrl }, tables: { val: { url: valUrl, rows: valRows } } } };
             trRenderValLocked();
             gateGreen();
+          } else if (mode === 'train-state3-reconciled') {
+            // Session 14: the in-run view was on screen when the completion event never arrived; the next
+            // reconcile reads a completed record for the same job and ends the view through the terminal path.
+            gateGreen();
+            trRunning = true;
+            var stuck = JOB('running', 10, 10);
+            trRenderRunView(stuck);
+            var settledRec = trReconcileFromState({ current: Object.assign(doneJob(), { id: stuck.id }), runs: [] }, stuck.id);
+            trRunning = false;
+            el('tr-cancel-btn').disabled = true;
+            el('tr-spinner').style.display = 'none';
+            el('tr-state').textContent = '';
+            trRenderTerminal(settledRec, false, false);
+            el('tr-log').textContent = LOG.concat(['Reconciled with the job record: completed (the completion event was missed).']).join('\n');
+            el('tr-log-details').style.display = 'block';
           } else if (mode === 'train-state3' || mode === 'train-state3-collecting' || mode === 'train-state3-cpu-retry') {
             gateGreen();
             trRunning = true;
@@ -6337,7 +6420,7 @@
                   '<td>' + esc(r.train_table_url ? kgTableRef(r.train_table_url) : '–') + '</td>' +
                   '<td>' + (typeof r.usable_rows === 'number' ? fmtCount(r.usable_rows) : '–') + '</td>' +
                   '<td>' + esc(best) + '</td>' +
-                  '<td>' + esc(r.device_label || r.device || r.device_class || '–') + '</td>' +
+                  '<td' + (stDeviceCell(r).title ? ' title="' + esc(stDeviceCell(r).title) + '"' : '') + '>' + esc(stDeviceCell(r).text) + '</td>' +
                   '<td>' + (r.elapsed_s ? esc(fmtDur(r.elapsed_s)) : '–') + '</td>' +
                   '<td' + (r.error ? ' title="' + esc(r.error) + '"' : '') + '>' + badge + '</td>' +
                   '<td><span class="kg-st-actions">' + actions + '</span></td></tr>';
@@ -6515,7 +6598,7 @@
           ['Compute service', health && health.version ? 'v' + health.version : 'unknown (health not readable)', ''],
           ['SDK · 3lc', (v.sdk || '?') + ' · ' + (v.tlc || '?'), ''],
           ['torch · torchvision', (v.torch || 'not installed') + ' · ' + (v.torchvision || 'not installed'), ''],
-          ['CUDA in the worker', cuda + (d.device_class ? ' · device class ' + d.device_class : ''), ''],
+          ['CUDA in the worker', stGpuText(d, cuda), stGpuDetail(d)],
           ['Manifest', (m.manifest_source || '?') +
                        (m.refresh_state === 'running' ? ' (checking the remote…)' : '') +
                        (m.refresh_state === 'failed' ? ' (remote fetch failed: ' + (m.refresh_error || 'unknown error') + ')' : '') +
@@ -6538,6 +6621,31 @@
       }
       // Session 13: are the imported tables' images on this machine? The Doctor samples rows from the train seed
       // and the locked val table; Train refuses with the same facts. A moved kit or a copied project shows here.
+      // Session 14: the GPU the worker sees against the kernels its torch build carries (doc.device.gpu).
+      // A card the build has no kernels for is named plainly: every run would land on CPU.
+      function stGpuMissingKernels(d) { var g = d && d.gpu; return !!(g && g.kernels_ok === false); }
+      function stGpuText(d, cuda) {
+        var g = (d && d.gpu) || null;
+        if (stGpuMissingKernels(d)) { return g.reason || ('GPU found but this torch build has no kernels for it; runs will use CPU.'); }
+        var text = cuda + (d.device_class ? ' · device class ' + d.device_class : '');
+        if (g && g.gpu_name) { text += ' · ' + g.gpu_name + (g.capability ? ' (compute capability ' + g.capability + ')' : ''); }
+        return text;
+      }
+      function stGpuDetail(d) {
+        var g = (d && d.gpu) || null;
+        if (!g || !g.gpu_name) { return ''; }
+        return g.gpu_name + ' · compute capability ' + (g.capability || '?') + ' · torch ' + (g.torch || '?') +
+               ' · kernels for ' + ((g.arch_list || []).join(', ') || 'no architecture');
+      }
+      // The Runs tables (Train's run card, Status): "cpu (fallback)" with the reason on hover and in the row
+      // detail, never the whole error in the cell (session 14).
+      function stDeviceCell(r) {
+        var full = String(r.device_label || r.device || r.device_class || '');
+        if (!full) { return { text: '–', title: '' }; }
+        var m = /^(\S+) \(fallback: (.*)\)$/.exec(full);
+        if (m) { return { text: m[1] + ' (fallback)', title: full }; }
+        return { text: full, title: '' };
+      }
       function stImagesMissing(doc) {
         var imgs = (doc && doc.import && doc.import.images) || {};
         return ['train', 'val'].some(function (s) { return imgs[s] && (imgs[s].state === 'missing' || imgs[s].state === 'absent'); });
@@ -6596,7 +6704,7 @@
         box.innerHTML = html;
         kgBindCopy(box);
         kgBindDiag(box, stBuildDiagnostics);
-        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc);
+        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc) || stGpuMissingKernels(doc.device);
         if (red) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
       }
 
@@ -6940,8 +7048,12 @@
         };
         var DOCTOR = {
           plugin: { version: kgPluginVersion || '1.0.0rc2', commit: '0123456789abcdef0123456789abcdef01234567' },
-          versions: { sdk: '0.3.3', tlc: '3.3.2', torch: '2.14.0+cu126', torchvision: '0.29.0+cu126', kaggle: '2.2.4', python: '3.12.13', platform: 'win32 · Windows-11' },
-          device: { probe: 'done', device_class: 'cuda', cuda_available: true, workers_default: 0 },
+          versions: { sdk: '0.3.3', tlc: '3.3.2', torch: '2.14.0+cu130', torchvision: '0.29.0+cu130', kaggle: '2.2.4', python: '3.12.13', platform: 'win32 · Windows-11' },
+          device: { probe: 'done', device_class: mode === 'status-empty' ? 'cpu' : 'cuda', cuda_available: mode !== 'status-empty', workers_default: 0,
+                    gpu: mode === 'status-empty'
+                      ? { gpu_name: 'NVIDIA GeForce RTX 5070 Ti', capability: '12.0', torch: '2.14.0+cu126', arch_list: ['sm_50', 'sm_60', 'sm_61', 'sm_70', 'sm_75', 'sm_80', 'sm_86', 'sm_90'], kernels_ok: false,
+                          reason: 'GPU found (NVIDIA GeForce RTX 5070 Ti, compute capability 12.0) but this torch build (2.14.0+cu126, kernels for sm_50, sm_60, sm_61, sm_70, sm_75, sm_80, sm_86, sm_90) has no kernels for it; runs will use CPU.' }
+                      : { gpu_name: 'NVIDIA GeForce RTX 5070 Ti', capability: '12.0', torch: '2.14.0+cu130', arch_list: ['sm_75', 'sm_80', 'sm_86', 'sm_90', 'sm_100', 'sm_120'], kernels_ok: true, reason: '' } },
           manifest: { manifest_source: 'remote', manifest_source_local: 'cache', refresh_state: 'done', manifest_fetched_at: new Date(Date.now() - 300000).toISOString(),
                       manifest_sha256: 'ec0c60cf45f03f8c67437f576daa4ddc', competition_id: id, kit_version: (m.kit || {}).version || 'v1',
                       manifest_document_url: 'https://competitions.dev.3lc.ai/kaggle/' + id + '/manifest.json' },

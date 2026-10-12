@@ -255,6 +255,7 @@ def test_fragment_is_the_exdark_train_tab():
     for state in ("train-state1", "train-state2", "train-state2-missing", "train-state2-rows", "train-state2-invalid",
                   "train-state2-undefined-weight", "train-state2-zero-rows", "train-state2-class-empty",
                   "train-state2-lineage", "train-state2-pinned", "train-state2-tree", "train-state3", "train-state3-collecting", "train-state3-cpu-retry",
+                  "train-state3-reconciled",
                   "train-state4", "train-state4-noproject", "train-state5", "train-state5-stale", "train-state6",
                   "train-state6-cancelled"):
         assert f"'{state}'" in html, state
