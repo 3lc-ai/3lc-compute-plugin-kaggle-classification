@@ -981,16 +981,55 @@ def _arch_covers(arch_list: list[str], major: int, minor: int) -> bool:
     return False
 
 
+def _nvidia_driver_version() -> str:
+    """The installed NVIDIA driver (``nvidia-smi``), ``""`` without one. Five seconds at most."""
+    import shutil
+    import subprocess
+
+    exe = shutil.which("nvidia-smi")
+    if not exe:
+        return ""
+    try:
+        proc = subprocess.run([exe, "--query-gpu=driver_version", "--format=csv,noheader"],
+                              capture_output=True, text=True, timeout=5, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    first = (proc.stdout or "").strip().splitlines()
+    return first[0].strip() if proc.returncode == 0 and first else ""
+
+
+# The driver series a CUDA build needs (NVIDIA's minimum driver per CUDA major): CUDA 13.x -> R580,
+# CUDA 12.x -> R525. Compared on the driver's major number.
+_DRIVER_MIN_BY_CUDA_MAJOR = {"13": 580, "12": 525}
+
+
+def _driver_min_for(cuda_version: str) -> int | None:
+    return _DRIVER_MIN_BY_CUDA_MAJOR.get(str(cuda_version).split(".")[0])
+
+
 def gpu_kernel_support() -> dict[str, Any]:
     """Session 14: does this torch build carry kernels for the GPU it sees? ``kernels_ok`` is None
     without CUDA, else the arch-list check; ``reason`` is the participant sentence when it fails
     (the cu126 build stops at sm_90, so an RTX 50-series card, sm_120, ran every job on CPU)."""
-    out: dict[str, Any] = {"gpu_name": None, "capability": None, "arch_list": [], "torch": "", "kernels_ok": None, "reason": ""}
+    out: dict[str, Any] = {"gpu_name": None, "capability": None, "arch_list": [], "torch": "", "kernels_ok": None, "reason": "",
+                           "driver": "", "driver_min": None, "driver_too_old": False}
     try:
         import torch
 
         out["torch"] = str(torch.__version__)
+        out["driver"] = _nvidia_driver_version()
+        out["driver_min"] = _driver_min_for(str(getattr(torch.version, "cuda", "") or ""))
+        if out["driver"] and out["driver_min"]:
+            try:
+                out["driver_too_old"] = int(out["driver"].split(".")[0]) < int(out["driver_min"])
+            except ValueError:
+                out["driver_too_old"] = False
         if not torch.cuda.is_available():
+            if out["driver_too_old"]:
+                out["reason"] = (
+                    f"NVIDIA driver {out['driver']} is older than the R{out['driver_min']} series this torch build "
+                    f"({out['torch']}, CUDA {torch.version.cuda}) needs; update the driver. Runs will use CPU."
+                )
             return out
         major, minor = torch.cuda.get_device_capability(0)
         out["gpu_name"] = str(torch.cuda.get_device_name(0))
@@ -1017,7 +1056,7 @@ def resolve_device_with_reason(raw: Any) -> tuple[str, str]:
     if s or device != "cpu":
         return device, ""
     support = gpu_kernel_support()
-    return device, (support["reason"] if support.get("kernels_ok") is False else "")
+    return device, (support["reason"] if (support.get("kernels_ok") is False or support.get("driver_too_old")) else "")
 
 
 def resolve_device(raw: Any) -> str:

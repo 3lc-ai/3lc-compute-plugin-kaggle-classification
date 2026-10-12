@@ -6623,19 +6623,22 @@
       // and the locked val table; Train refuses with the same facts. A moved kit or a copied project shows here.
       // Session 14: the GPU the worker sees against the kernels its torch build carries (doc.device.gpu).
       // A card the build has no kernels for is named plainly: every run would land on CPU.
-      function stGpuMissingKernels(d) { var g = d && d.gpu; return !!(g && g.kernels_ok === false); }
+      // (session 15) or an NVIDIA driver older than the series the build needs, named with its version.
+      function stGpuMissingKernels(d) { var g = d && d.gpu; return !!(g && (g.kernels_ok === false || g.driver_too_old)); }
       function stGpuText(d, cuda) {
         var g = (d && d.gpu) || null;
         if (stGpuMissingKernels(d)) { return g.reason || ('GPU found but this torch build has no kernels for it; runs will use CPU.'); }
         var text = cuda + (d.device_class ? ' · device class ' + d.device_class : '');
         if (g && g.gpu_name) { text += ' · ' + g.gpu_name + (g.capability ? ' (compute capability ' + g.capability + ')' : ''); }
+        if (g && g.driver) { text += ' · driver ' + g.driver; }
         return text;
       }
       function stGpuDetail(d) {
         var g = (d && d.gpu) || null;
-        if (!g || !g.gpu_name) { return ''; }
-        return g.gpu_name + ' · compute capability ' + (g.capability || '?') + ' · torch ' + (g.torch || '?') +
-               ' · kernels for ' + ((g.arch_list || []).join(', ') || 'no architecture');
+        if (!g || (!g.gpu_name && !g.driver)) { return ''; }
+        return (g.gpu_name || 'no CUDA device') + ' · compute capability ' + (g.capability || '?') + ' · torch ' + (g.torch || '?') +
+               ' · kernels for ' + ((g.arch_list || []).join(', ') || 'no architecture') +
+               (g.driver ? ' · NVIDIA driver ' + g.driver + (g.driver_min ? ' (this build needs R' + g.driver_min + ' or newer)' : '') : '');
       }
       // The Runs tables (Train's run card, Status): "cpu (fallback)" with the reason on hover and in the row
       // detail, never the whole error in the cell (session 14).

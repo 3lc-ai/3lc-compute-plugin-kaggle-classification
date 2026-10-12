@@ -244,6 +244,25 @@ def test_arch_list_coverage_follows_torch_s_own_rule():
     assert trainer._arch_covers([], 8, 6) is False
 
 
+def test_a_driver_older_than_the_build_needs_is_named_with_its_version(monkeypatch):
+    """Session 15: without CUDA but with an NVIDIA driver older than the series the build needs (CUDA 13
+    -> R580), the Doctor and the fallback reason name the installed driver and the needed one."""
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+    monkeypatch.setattr(trainer, "_nvidia_driver_version", lambda: "560.94")
+    monkeypatch.setattr(torch.version, "cuda", "13.0")
+    support = trainer.gpu_kernel_support()
+    assert support["driver"] == "560.94" and support["driver_min"] == 580 and support["driver_too_old"] is True
+    assert support["reason"].startswith("NVIDIA driver 560.94 is older than the R580 series") and "update the driver" in support["reason"]
+    assert trainer.resolve_device_with_reason("") == ("cpu", support["reason"])
+    monkeypatch.setattr(trainer, "_nvidia_driver_version", lambda: "616.64")
+    ok = trainer.gpu_kernel_support()
+    assert ok["driver_too_old"] is False and ok["reason"] == ""
+    monkeypatch.setattr(trainer, "_nvidia_driver_version", lambda: "")      # no NVIDIA driver at all: nothing to say
+    assert trainer.gpu_kernel_support()["driver_too_old"] is False
+    assert trainer._driver_min_for("12.6") == 525 and trainer._driver_min_for("") is None
+
+
 def test_auto_lands_on_cpu_with_the_reason_when_the_build_has_no_kernels_for_the_gpu(monkeypatch):
     """Session 14: with CUDA present but no kernels for the card, a blank Device field resolves to cpu and
     the reason names the GPU, its capability and the build; a typed device is never second-guessed."""

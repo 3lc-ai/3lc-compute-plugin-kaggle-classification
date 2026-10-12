@@ -19,6 +19,7 @@ Everything you install goes into one folder you create. Delete that folder after
 | Python 3.12 | yes, via uv | `uv python install 3.12` (any OS). The 3LC packages have no wheel for Python 3.14. |
 | Chrome or Edge | yes | the Hub is a web page at https://hub.3lc.ai; it talks to the two services on your machine |
 | A GPU | optional | an NVIDIA GPU makes the 2-epoch training about 1 minute instead of about 5. CPU is fine. |
+| NVIDIA driver | with a GPU | R580 series or newer (`nvidia-smi` shows it): the plugin's torch is a CUDA 13.0 build. An older driver sees no CUDA; the Doctor names the installed driver and the runs use CPU. |
 | Disk | about 6 GB | torch (≈ 2.5 GB download on the first plugin install), the two Python environments, the 113 MB starter kit |
 | OS | Windows 10/11, macOS, Linux | the start script exists for all three |
 
@@ -38,12 +39,11 @@ on macOS / Linux).
 mkdir C:\3lc-tester; cd C:\3lc-tester
 uv python install 3.12
 uv venv --python 3.12 .venv
-uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple "3lc-compute==1.1.0" "3lc==3.3.0"
-.\.venv\Scripts\3lc.exe login
+uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple "3lc-compute==1.1.0"
 ```
 
-`3lc login` asks for the API key (type or paste it; it is never shown). On Windows, 3LC stores the key
-under your real profile, so this login also covers any other 3LC use on the machine.
+(No login yet: the start script logs you in on its first run, inside the tester folder, because the
+services run with your home redirected there. The key is typed at the prompt, never shown.)
 
 **macOS / Linux (bash or zsh):**
 
@@ -51,10 +51,10 @@ under your real profile, so this login also covers any other 3LC use on the mach
 mkdir -p ~/3lc-tester && cd ~/3lc-tester
 uv python install 3.12
 uv venv --python 3.12 .venv
-uv pip install --python .venv/bin/python --index-url https://pypi.org/simple "3lc-compute==1.1.0" "3lc==3.3.0"
+uv pip install --python .venv/bin/python --index-url https://pypi.org/simple "3lc-compute==1.1.0"
 ```
 
-(No login yet: on macOS / Linux the start script logs you in on its first run, inside the tester
+(No login yet: the start script logs you in on its first run, inside the tester
 folder, because it redirects `HOME` there.)
 
 ## 3. Get the start script
@@ -314,7 +314,7 @@ bundle**.
 
 Windows: `powershell -ExecutionPolicy Bypass -File .\start_tester.ps1 -Stop`. macOS / Linux:
 `./start_tester.sh --stop`. Both report “Stopped: ports … are free.” Delete the tester folder when
-you are done; your 3LC login (Windows) is the only thing outside it.
+you are done; nothing of the test lives outside it (the 3LC login is inside `home\` too).
 
 ## 8. Feedback template
 

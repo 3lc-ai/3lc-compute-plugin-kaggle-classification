@@ -87,6 +87,17 @@ if ($busy.Count) {
     exit 1
 }
 New-Item -ItemType Directory -Force -Path $stateHome, (Join-Path $stateHome 'AppData\Local'), (Join-Path $stateHome 'AppData\Roaming'), $logDir | Out-Null
+# The home is redirected, and 3lc reads its API key from the redirected LOCALAPPDATA (3lc 3.3 and 3.4 on
+# Windows, verified 2026-10-12), so the login lives inside the tester folder: log in once, here, in this
+# console (the key is typed at the prompt, never shown). The same rule as the macOS / Linux script.
+$keyFile = Join-Path $stateHome 'AppData\Local\3LC\3LC\3lc_api_key'
+if (-not (Test-Path -LiteralPath $keyFile)) {
+    Say "First start: logging in to 3LC inside $stateHome (paste your API key from https://account.3lc.ai/api-key)."
+    $savedProfile = $env:USERPROFILE; $savedLocal = $env:LOCALAPPDATA; $savedRoaming = $env:APPDATA
+    $env:USERPROFILE = $stateHome; $env:LOCALAPPDATA = Join-Path $stateHome 'AppData\Local'; $env:APPDATA = Join-Path $stateHome 'AppData\Roaming'
+    try { & (Join-Path $venv 'Scripts\3lc.exe') login } finally { $env:USERPROFILE = $savedProfile; $env:LOCALAPPDATA = $savedLocal; $env:APPDATA = $savedRoaming }
+    if (-not (Test-Path -LiteralPath $keyFile)) { Say "3LC login did not write a key under $stateHome. Run the script again."; exit 1 }
+}
 if ($ProjectRoot) { New-Item -ItemType Directory -Force -Path $ProjectRoot | Out-Null }
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
