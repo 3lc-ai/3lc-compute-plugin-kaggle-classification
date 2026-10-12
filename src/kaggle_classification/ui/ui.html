@@ -2348,7 +2348,9 @@
         if (kgDevMode) { return; }
         var box = el('kg-reimport-confirm');
         var sess = kgSession || {};
-        var kit = (kgImportState && kgImportState.kit_dir) || sess.kit_dir || '';
+        // Session 13: the kit folder is the one on THIS machine (the field, else the verified download), never
+        // the record's path; an empty value lets the server pick the verified kit or the default destination.
+        var kit = kgCleanPath(el('kg-kit').value) || ((kgKitState && kgKitState.state === 'success') ? kgCleanPath(kgKitState.kit_dir || '') : '');
         var project = (kgImportState && kgImportState.project) || sess.project_name || '';
         var table = (kgImportState && kgImportState.table_name) || sess.table_name || '';
         box.innerHTML = '<div class="kg-callout info kg-confirm"><span class="spinner" aria-hidden="true"></span>' +
@@ -2556,7 +2558,11 @@
       function kgReflectRecord(state, runPreflight) {
         if (kgDevMode) { kgCheckReady(); return; }
         configLoaded.then(function () {
-          if (!el('kg-kit').value.trim() && state && state.kit_dir) { el('kg-kit').value = state.kit_dir; }
+          // Session 13: a stale record's path is not offered; the field takes the verified download instead.
+          var fill = (state && state.state === 'stale')
+            ? ((kgKitState && kgKitState.state === 'success') ? kgCleanPath(kgKitState.kit_dir || '') : '')
+            : ((state && state.kit_dir) || '');
+          if (!el('kg-kit').value.trim() && fill) { el('kg-kit').value = fill; }
           if (runPreflight && el('kg-kit').value.trim()) { kgRunPreflight(true); }
           kgCheckReady();
         });
@@ -2706,7 +2712,8 @@
         kitDir = kgCleanPath(kitDir || '');
         var k = kgKitState || {};
         var known = (k.state === 'success' || k.state === 'superseded') && kgCleanPath(k.kit_dir || '').toLowerCase() === kitDir.toLowerCase();
-        if (!kitDir || known) { box.innerHTML = ''; return; }
+        // Session 13: once the kit line above shows a verified download, this line and its button go away.
+        if (!kitDir || known || k.state === 'success') { box.innerHTML = ''; return; }
         box.innerHTML = '<div class="kg-kit-line">' + kgIcon('info', 'kgi-muted') +
           '<span class="kg-kit-text">The structure matches the manifest; the files themselves were not verified yet.</span>' +
           '<span class="kg-kit-actions"><button type="button" id="kg-kit-verify" class="btn btn-ghost btn-sm kgi-btn" ' +
@@ -6524,9 +6531,33 @@
           ['Free disk space', free, (h.disk && h.disk.measured_at) || ''],
           ['Python', (v.python || '?') + ' · ' + (v.platform || ''), ''],
           ['uv', uvText, uvDetail],
+          ['Table images', stImagesRow(doc).text, stImagesRow(doc).detail],
           ['Records', fmtCount(rec.project_runs) + ' runs in this project · ' + fmtCount(rec.ledger_predict) +
                       ' predictions · ' + fmtCount(rec.ledger_submit) + ' submissions', rec.ledger_path || '']
         ];
+      }
+      // Session 13: are the imported tables' images on this machine? The Doctor samples rows from the train seed
+      // and the locked val table; Train refuses with the same facts. A moved kit or a copied project shows here.
+      function stImagesMissing(doc) {
+        var imgs = (doc && doc.import && doc.import.images) || {};
+        return ['train', 'val'].some(function (s) { return imgs[s] && (imgs[s].state === 'missing' || imgs[s].state === 'absent'); });
+      }
+      function stImagesRow(doc) {
+        var imgs = (doc && doc.import && doc.import.images) || {};
+        var part = function (split) {
+          var t = imgs[split];
+          if (!t) { return split + ' unknown'; }
+          if (t.state === 'ok') { return split + ' ' + fmtCount(t.checked) + ' of ' + fmtCount(t.checked) + ' sampled images present'; }
+          if (t.state === 'missing') { return split + ' ' + fmtCount(t.missing) + ' of ' + fmtCount(t.checked) + ' sampled images missing'; }
+          if (t.state === 'absent') { return split + ' table missing on disk'; }
+          if (t.state === 'none') { return split + ' not imported'; }
+          return split + ' ' + (t.error || t.state || 'unknown');
+        };
+        var text = part('train') + ' · ' + part('val');
+        if (stImagesMissing(doc)) { text += ' · download the starter kit and re-import before training'; }
+        var examples = [];
+        ['train', 'val'].forEach(function (s) { (imgs[s] && imgs[s].examples || []).forEach(function (e) { examples.push(s + ': ' + e); }); });
+        return { text: text, detail: examples.join('\n') };
       }
       // The uv that created each venv (from its pyvenv.cfg). uv 0.11.7 and 0.11.8 write launchers that leak
       // PYTHONHOME into every child process: the plugin build then runs one Python on another's library.
@@ -6565,7 +6596,7 @@
         box.innerHTML = html;
         kgBindCopy(box);
         kgBindDiag(box, stBuildDiagnostics);
-        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error);
+        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc);
         if (red) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
       }
 
@@ -6918,6 +6949,10 @@
           kaggle: { state: mode === 'status-empty' ? 'no_credentials' : 'ready', username: 'participant', daily_limit: limit, submissions_used_today: 2 },
           plugin_home: { path: home, resolved_by: 'cwd', disk: { free_bytes: 184 * 1073741824, measured_at: 'C:\\' } },
           records: { runs: RUNS.length, project_runs: RUNS.length, ledger_predict: 5, ledger_submit: 4, ledger_path: home + '\\ledger.jsonl' },
+          import: { project_name: id, table_name: 'initial',
+                    images: { train: { state: 'ok', checked: 8, missing: 0, examples: [] },
+                              val: mode === 'status-empty' ? { state: 'missing', checked: 8, missing: 8, examples: [home + '\\data\\' + id + '\\v1\\starter_kit\\data\\val\\forest\\0001.jpg'] }
+                                                           : { state: 'ok', checked: 8, missing: 0, examples: [] } } },
           uv: { plugin_venv: { path: home + '\\..\\managed-plugins\\kaggle-classification\\.venv', uv: '0.13.0', home: 'C:\\uv\\python\\cpython-3.12.13', python: '3.12.13', leaks_pythonhome: false },
                 host_venv: { path: 'C:\\tester\\.venv', uv: mode === 'status-empty' ? '0.11.7' : '0.13.0', home: 'C:\\uv\\python\\cpython-3.12.13', python: '3.12', leaks_pythonhome: mode === 'status-empty' },
                 pythonhome_in_worker: null, leaky_versions: ['0.11.7', '0.11.8'] }
