@@ -1,0 +1,155 @@
+{
+ "items": {
+  "B6": {
+   "status": "PASS",
+   "at": "2026-10-12T15:39:22",
+   "answers": {
+    "wrong": {
+     "http": 200,
+     "all_ok": false,
+     "error": "No kit found at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\wrong-folder (files.json missing). Download the starter kit first.",
+     "kit_dir": null
+    },
+    "nested": {
+     "http": 200,
+     "all_ok": false,
+     "error": "No kit found at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1 (files.json missing",
+     "kit_dir": null
+    },
+    "trailing": {
+     "http": 200,
+     "all_ok": true,
+     "error": "",
+     "kit_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit"
+    },
+    "quoted": {
+     "http": 200,
+     "all_ok": true,
+     "error": "",
+     "kit_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit"
+    }
+   }
+  },
+  "B3": {
+   "status": "PASS",
+   "at": "2026-10-12T15:39:36",
+   "before_ok": true,
+   "after_ok": false,
+   "mismatch_count": 1,
+   "names_the_file": true,
+   "import_status": "failed",
+   "import_error": "The starter kit at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit differs from the files it shipped with (1 ch",
+   "restored_ok": true
+  },
+  "B7": {
+   "status": "PASS",
+   "at": "2026-10-12T15:40:07",
+   "names": [
+    {
+     "expected": "initial-6",
+     "status": "completed",
+     "table": "initial-6",
+     "elapsed_s": 6.0
+    },
+    {
+     "expected": "initial-7",
+     "status": "completed",
+     "table": "initial-7",
+     "elapsed_s": 12.0
+    },
+    {
+     "expected": "initial-8",
+     "status": "completed",
+     "table": "initial-8",
+     "elapsed_s": 10.0
+    }
+   ]
+  },
+  "B9": {
+   "status": "PASS",
+   "at": "2026-10-12T15:40:07",
+   "first": {
+    "http": 201,
+    "status": "refused",
+    "error": ""
+   },
+   "second": {
+    "http": 201,
+    "status": "refused",
+    "error": ""
+   },
+   "partial_tables": [],
+   "table_after": "initial-8"
+  },
+  "B1": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:41:23",
+   "cancelled_at": "Done",
+   "parts_after_cancel": [],
+   "second_status": "completed",
+   "resumed_lines": [],
+   "kit_state": "success"
+  },
+  "B2": {
+   "status": "SKIP",
+   "at": "2026-10-12T15:41:23",
+   "corrupted": null,
+   "lines": []
+  },
+  "B4": {
+   "status": "PASS",
+   "at": "2026-10-12T15:41:27",
+   "kit_state": "stale",
+   "preflight_error": "No starter kit on this machine yet. Download the starter kit first.",
+   "train_status": "failed",
+   "train_error": "The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-8 points at images that are not on this machine: 8 of 8 sampled rows are missing, e.",
+   "doctor_images": {
+    "train": "missing",
+    "val": "missing"
+   }
+  },
+  "B5": {
+   "status": "PASS",
+   "at": "2026-10-12T15:42:14",
+   "fallback": {
+    "active": true,
+    "source": "cache",
+    "local_source": "cache",
+    "reason": "Using the last downloaded competition manifest; the server couldn't be reached.",
+    "detail": "http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "warnings": [
+     "The competition index could not be reached; using the cached copy from 2026-10-12T20:41:30Z."
+    ],
+    "refresh_state": "done"
+   },
+   "verify_ok": true,
+   "verify_source": "manual",
+   "preflight_ok": true,
+   "doctor_fallback": {
+    "active": true,
+    "source": "cache",
+    "local_source": "cache",
+    "reason": "Using the last downloaded competition manifest; the server couldn't be reached.",
+    "detail": "http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "warnings": [
+     "The competition index could not be reached; using the cached copy from 2026-10-12T20:41:30Z."
+    ],
+    "refresh_state": "done"
+   },
+   "kit_state_source": "manual"
+  },
+  "B8": {
+   "status": "PASS",
+   "at": "2026-10-12T15:42:36",
+   "after_rename": "stale",
+   "missing": [
+    "train",
+    "val"
+   ],
+   "import_into_new": "completed",
+   "new_project": "intel-scene-fresh",
+   "after_restore": "success",
+   "note": "the import record now names the new project; the original folder is back on disk"
+  }
+ }
+}

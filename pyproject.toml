@@ -35,9 +35,11 @@ dependencies = [
 # from a catalog install). Named by runtime.provision_extra in plugin.toml.
 [project.optional-dependencies]
 kaggle-classification = [
-    # The SDK already brings 3lc[pandas]>=3.3.0; stated again because the Compute Service resolves
-    # 3LC >= 3.3.0 for this plugin (docs/PLAN.md) and the floor must be visible here, not inherited.
-    "3lc>=3.3,<4.0",
+    # The SDK already brings 3lc[pandas]>=3.3.0; stated here because the Compute Service resolves 3LC
+    # for this plugin's venv (docs/PLAN.md). Pinned EXACTLY since session 15 (2026-10-12) to the version
+    # the hardening campaign's matrix passed on, in the plugin venv against hosts on 3lc 3.3.0 and 3.4.1
+    # (docs/TEST_PLAN.md A8); the host's own 3lc stays whatever `uv pip install 3lc-compute` resolves.
+    "3lc==3.4.1",
     # The model is torchvision's resnet18 with the Intel kit's MLP head (docs/PLAN.md §A, part A of
     # the 2026-09-29 review); timm is no longer a runtime dependency. The versions are recorded on
     # every Run and read back by the provenance checks. Pinned EXACTLY to the parity-gate build

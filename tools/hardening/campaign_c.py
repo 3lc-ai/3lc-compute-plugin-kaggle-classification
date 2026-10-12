@@ -25,8 +25,17 @@ def tstate(client) -> dict:
     return client.get(f"{h.API}/train/state").json()
 
 
+def epoch_of(job: dict) -> int:
+    """The epoch number in the host's 'Epoch k/N' label, 0 before the first one."""
+    import re
+
+    m = re.search(r"Epoch (\d+)/", str((job.get("progress") or {}).get("label") or ""))
+    return int(m.group(1)) if m else 0
+
+
 def label_epoch(job: dict, n: int) -> bool:
-    return f"Epoch {n}/" in str((job.get("progress") or {}).get("label") or "") or job.get("status") not in ("running", "queued")
+    """True once the run is at epoch n or later (a 2 s poll can skip a label on a fast GPU), or terminal."""
+    return (job.get("status") == "running" and epoch_of(job) >= n) or job.get("status") in ("completed", "failed", "cancelled")
 
 
 def edited_revision(train_url: str, edits: dict[int, int], name: str) -> str:

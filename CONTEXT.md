@@ -2,6 +2,14 @@
 
 One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
+## Session 15 (2026-10-12, the hardening campaign; 1.0.0rc14)
+
+- **The plan is `docs/TEST_PLAN.md`** (sections A to H), the harness `tools/hardening/` (`harness.py` drives the plugin through the in-process host of a tester env the way the Hub does: catalog install, `/run`, the host's job list; `campaign_a/b/c/de/f/f5_soak.py` are the sections; `campaign_a2.py` builds a scratch tester env per matrix cell), the records `docs/campaign/*.json` (+ `.log`), the proof TESTING_PROOF.md run 14. Rule learnt: a plugin worker outlives the in-process host and holds the managed venv's `python.exe`, so the harness stops orphan workers before every host session, and two host sessions never run at once on this machine.
+- **Pre-items shipped:** TESTING.md step 2 has no host `3lc` pin (participants get what `uv pip install 3lc-compute` resolves, 3.4.1 today) and no real-profile login (the Windows start script logs in inside the redirected home on first start; 3lc 3.3 and 3.4 read the key there); the NVIDIA driver row (R580+); section 10, the macOS / CPU-only testers' checklist (plan G). The Doctor names a driver older than the build needs. **The plugin extra pins `3lc==3.4.1`** (the matrix passed on it against hosts on 3.3.0 and 3.4.1).
+- **Fixed from the campaign:** the import verifies every kit file against `files.json` before any table (B3); a rejected Kaggle token puts the previous one back (D4). **Host finding** (the fourth entry in `../3lc-hub-11/HUB_BUG_queue_card_compute_url.md`): an orphaned worker blocks the next Update / reinstall with "Access is denied" on Windows.
+- **Anti-cheat review** (plan H): `docs/PREDICT_MIRROR.md` §15, fourteen vectors; the organizers' step is the bundle's `ledger.jsonl` against Kaggle's submission list.
+- **Not runnable here, listed for the testers:** a second Windows account (A1 is a non-ASCII tester folder instead), OneDrive (A2), macOS (mps), Safari. F4 (Kaggle back-to-back submissions) waits for Rishikesh's go-ahead per submit.
+
 ## Session 14 (2026-10-12, the fresh-env hand test's three defects; on `develop`, no tag: rc14 ships with the hardening campaign)
 
 - **GPU facts of this PC:** NVIDIA GeForce RTX 5070 Ti, driver 616.64, compute capability 12.0 (sm_120), 16 GB. The rc13 plugin venv had torch 2.14.0+cu126 with kernels for sm_50 to sm_90 only: training fell back to CPU ("no kernel image is available for execution on the device"), Predict failed outright. **The torch index is `pytorch-cu130` from now on** (exact pins unchanged; cu130 carries sm_75 to sm_120, needs an R580+ driver; the catalog install honours the plugin's index over the host's `--torch-backend auto`). The Doctor's CUDA row compares the card's capability with the build's arch list and says "GPU found but this torch build has no kernels for it; runs will use CPU"; auto resolution lands on CPU up front in that case, recorded as a fallback.

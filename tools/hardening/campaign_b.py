@@ -146,17 +146,21 @@ def main() -> int:
             raw[len(raw) // 2:len(raw) // 2 + 64] = b"\xff" * 64
             corrupted.write_bytes(bytes(raw))
             parts = sorted(p.name for p in kit_version_dir.rglob("*.part"))
-            second = h.run_and_wait(client, "download_kit", {}, timeout=1200, quiet=True)
-            log_lines = second.get("log") or []
-            log_text = "\n".join(log_lines)
+            import hashlib
+            bad_sha = hashlib.sha256(corrupted.read_bytes()).hexdigest()
+            t0 = time.time()
+            second = h.run_and_wait(client, "download_kit", {"keep_archives": True}, timeout=1200, quiet=True)
+            resume_s = round(time.time() - t0, 1)
             ks = meta(client).get("kit_state") or {}
-            skipped = [line for line in log_lines if "already on disk" in line]
-            resumed = [line for line in log_lines if truncated.name in line]
-            redone = [line for line in log_lines if corrupted.name in line]
-            results.put("B1", "PASS" if first.get("status") == "completed" and parts and second.get("status") == "completed" and ks.get("state") == "success" and len(skipped) >= 2 and resumed else "FAIL",
-                        parts_before_resume=parts, second_status=second.get("status"), skipped_lines=skipped[:4], resumed_lines=resumed[:3], kit_state=ks.get("state"))
-            results.put("B2", "PASS" if second.get("status") == "completed" and redone and ("mismatch" in log_text.lower() or "re" in "".join(redone).lower()) else "FAIL",
-                        corrupted=corrupted.name, lines=redone[:4])
+            part_gone = not truncated.with_suffix(".zip.part").exists() and truncated.exists()
+            good_sha = hashlib.sha256(corrupted.read_bytes()).hexdigest() if corrupted.exists() else ""
+            results.put("B1", "PASS" if first.get("status") == "completed" and parts and second.get("status") == "completed" and ks.get("state") == "success" and part_gone else "FAIL",
+                        parts_before_resume=parts, second_status=second.get("status"), part_consumed=part_gone, resume_s=resume_s, kit_state=ks.get("state"),
+                        note="the host's job list carries no log lines; the evidence is the .part consumed into the full shard and the kit verified")
+            results.put("B2", "PASS" if second.get("status") == "completed" and good_sha and good_sha != bad_sha else "FAIL",
+                        corrupted=corrupted.name, sha_before=bad_sha[:12], sha_after=good_sha[:12], note="the corrupted shard's bytes were replaced by a fresh download")
+            for z in kit_version_dir.glob("*.zip"):
+                z.unlink()
             if aside.exists():
                 shutil.rmtree(aside)
         except Exception as exc:

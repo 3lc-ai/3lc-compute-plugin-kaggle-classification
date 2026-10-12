@@ -2,7 +2,7 @@
  "items": {
   "B6": {
    "status": "PASS",
-   "at": "2026-10-12T15:39:22",
+   "at": "2026-10-12T18:12:48",
    "answers": {
     "wrong": {
      "http": 200,
@@ -32,7 +32,7 @@
   },
   "B3": {
    "status": "PASS",
-   "at": "2026-10-12T15:39:36",
+   "at": "2026-10-12T18:13:02",
    "before_ok": true,
    "after_ok": false,
    "mismatch_count": 1,
@@ -43,31 +43,31 @@
   },
   "B7": {
    "status": "PASS",
-   "at": "2026-10-12T15:40:07",
+   "at": "2026-10-12T18:13:32",
    "names": [
     {
-     "expected": "initial-6",
+     "expected": "initial-12",
      "status": "completed",
-     "table": "initial-6",
+     "table": "initial-12",
      "elapsed_s": 6.0
     },
     {
-     "expected": "initial-7",
+     "expected": "initial-13",
      "status": "completed",
-     "table": "initial-7",
+     "table": "initial-13",
      "elapsed_s": 12.0
     },
     {
-     "expected": "initial-8",
+     "expected": "initial-14",
      "status": "completed",
-     "table": "initial-8",
+     "table": "initial-14",
      "elapsed_s": 10.0
     }
    ]
   },
   "B9": {
    "status": "PASS",
-   "at": "2026-10-12T15:40:07",
+   "at": "2026-10-12T18:13:32",
    "first": {
     "http": 201,
     "status": "refused",
@@ -79,30 +79,35 @@
     "error": ""
    },
    "partial_tables": [],
-   "table_after": "initial-8"
+   "table_after": "initial-14"
   },
   "B1": {
-   "status": "FAIL",
-   "at": "2026-10-12T15:41:23",
-   "cancelled_at": "Done",
-   "parts_after_cancel": [],
+   "status": "PASS",
+   "at": "2026-10-12T18:14:46",
+   "parts_before_resume": [
+    "intel-scene-v1-01.zip.part"
+   ],
    "second_status": "completed",
-   "resumed_lines": [],
-   "kit_state": "success"
+   "part_consumed": true,
+   "resume_s": 32.0,
+   "kit_state": "success",
+   "note": "the host's job list carries no log lines; the evidence is the .part consumed into the full shard and the kit verified"
   },
   "B2": {
-   "status": "SKIP",
-   "at": "2026-10-12T15:41:23",
-   "corrupted": null,
-   "lines": []
+   "status": "PASS",
+   "at": "2026-10-12T18:14:46",
+   "corrupted": "intel-scene-v1-02.zip",
+   "sha_before": "391bb137a055",
+   "sha_after": "908d7f91276a",
+   "note": "the corrupted shard's bytes were replaced by a fresh download"
   },
   "B4": {
    "status": "PASS",
-   "at": "2026-10-12T15:41:27",
+   "at": "2026-10-12T18:14:50",
    "kit_state": "stale",
    "preflight_error": "No starter kit on this machine yet. Download the starter kit first.",
    "train_status": "failed",
-   "train_error": "The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-8 points at images that are not on this machine: 8 of 8 sampled rows are missing, e.",
+   "train_error": "The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-14 points at images that are not on this machine: 8 of 8 sampled rows are missing, e",
    "doctor_images": {
     "train": "missing",
     "val": "missing"
@@ -110,15 +115,15 @@
   },
   "B5": {
    "status": "PASS",
-   "at": "2026-10-12T15:42:14",
+   "at": "2026-10-12T18:15:33",
    "fallback": {
     "active": true,
     "source": "cache",
     "local_source": "cache",
     "reason": "Using the last downloaded competition manifest; the server couldn't be reached.",
-    "detail": "http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "detail": "http://127.0.0.1:58239/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
     "warnings": [
-     "The competition index could not be reached; using the cached copy from 2026-10-12T20:41:30Z."
+     "The competition index could not be reached; using the cached copy from 2026-10-12T23:14:53Z."
     ],
     "refresh_state": "done"
    },
@@ -130,9 +135,9 @@
     "source": "cache",
     "local_source": "cache",
     "reason": "Using the last downloaded competition manifest; the server couldn't be reached.",
-    "detail": "http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "detail": "http://127.0.0.1:58239/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
     "warnings": [
-     "The competition index could not be reached; using the cached copy from 2026-10-12T20:41:30Z."
+     "The competition index could not be reached; using the cached copy from 2026-10-12T23:14:53Z."
     ],
     "refresh_state": "done"
    },
@@ -140,7 +145,7 @@
   },
   "B8": {
    "status": "PASS",
-   "at": "2026-10-12T15:42:36",
+   "at": "2026-10-12T18:16:05",
    "after_rename": "stale",
    "missing": [
     "train",
@@ -149,7 +154,9 @@
    "import_into_new": "completed",
    "new_project": "intel-scene-fresh",
    "after_restore": "success",
-   "note": "the import record now names the new project; the original folder is back on disk"
+   "record_project_after": "intel-scene",
+   "import_back": "completed",
+   "note": "the renamed project's tables were imported under a new name; the record was then put back on the original project"
   }
  }
 }

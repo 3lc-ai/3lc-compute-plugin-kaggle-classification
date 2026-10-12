@@ -1,0 +1,157 @@
+{
+ "items": {
+  "C7": {
+   "status": "PASS",
+   "at": "2026-10-12T16:10:05",
+   "exposed": {
+    "epochs": [
+     1.0,
+     50.0
+    ],
+    "batch_size": [
+     8.0,
+     128.0
+    ],
+    "lr": [
+     1e-05,
+     0.01
+    ],
+    "weight_decay": [
+     0.0,
+     0.1
+    ],
+    "seed": [
+     0.0,
+     2147483647.0
+    ],
+    "workers": [
+     0.0,
+     16.0
+    ]
+   },
+   "answers": {
+    "epochs below": {
+     "status": "failed",
+     "error": "epochs must be between 1 and 50 (got 0).\nworker stderr:\nINFO - 2026-10-12 16:09:37,715 - __main__ - worker - Plugin worker 'kaggle-classific"
+    },
+    "epochs above": {
+     "status": "failed",
+     "error": "epochs must be between 1 and 50 (got 51).\nworker stderr:\nINFO - 2026-10-12 16:09:38,080 - kaggle_classification.manifest - manifest - manife"
+    },
+    "batch_size below": {
+     "status": "failed",
+     "error": "batch_size must be between 8 and 128 (got 7).\nworker stderr:\nINFO - 2026-10-12 16:09:38,236 - kaggle_classification.manifest - manifest - ma"
+    },
+    "batch_size above": {
+     "status": "failed",
+     "error": "batch_size must be between 8 and 128 (got 129).\nworker stderr:\nINFO - 2026-10-12 16:09:41,308 - kaggle_classification.manifest - manifest - "
+    },
+    "lr below": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 1.0000000000000002e-06).\nworker stderr:\nINFO - 2026-10-12 16:09:41,668 - kaggle_classification.manife"
+    },
+    "lr above": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 0.1).\nworker stderr:\nINFO - 2026-10-12 16:09:43,663 - kaggle_classification.manifest - manifest - man"
+    },
+    "weight_decay below": {
+     "status": "failed",
+     "error": "weight_decay must be between 0 and 0.1 (got -0.01).\nworker stderr:\nINFO - 2026-10-12 16:09:45,702 - kaggle_classification.manifest - manifes"
+    },
+    "weight_decay above": {
+     "status": "failed",
+     "error": "weight_decay must be between 0 and 0.1 (got 1.0).\nworker stderr:\nINFO - 2026-10-12 16:09:47,711 - kaggle_classification.manifest - manifest "
+    },
+    "seed below": {
+     "status": "failed",
+     "error": "seed must be between 0 and 2147483647 (got -1).\nworker stderr:\nINFO - 2026-10-12 16:09:49,711 - kaggle_classification.manifest - manifest - "
+    },
+    "seed above": {
+     "status": "failed",
+     "error": "seed must be between 0 and 2147483647 (got 2147483648).\nworker stderr:\nINFO - 2026-10-12 16:09:51,737 - kaggle_classification.manifest - man"
+    },
+    "workers below": {
+     "status": "failed",
+     "error": "workers must be between 0 and 16 (got -1).\nworker stderr:\nINFO - 2026-10-12 16:09:53,732 - kaggle_classification.manifest - manifest - manif"
+    },
+    "workers above": {
+     "status": "failed",
+     "error": "workers must be between 0 and 16 (got 17).\nworker stderr:\nINFO - 2026-10-12 16:09:55,742 - kaggle_classification.manifest - manifest - manif"
+    }
+   }
+  },
+  "C1": {
+   "status": "PASS",
+   "at": "2026-10-12T16:10:51",
+   "batch": 128.0,
+   "job_status": "completed",
+   "device_label": "cuda (auto)",
+   "fallback": null,
+   "error": "",
+   "note": "an OOM is not reachable inside the bound on a 16 GB card; the fallback path is unit-tested and seen on rc13 (cu126)"
+  },
+  "C2": {
+   "status": "PASS",
+   "at": "2026-10-12T16:10:59",
+   "job_status": "cancelled",
+   "record_status": "cancelled",
+   "best_on_disk": true,
+   "best_epoch": 1
+  },
+  "C5": {
+   "status": "PASS",
+   "at": "2026-10-12T16:11:28",
+   "first": "completed",
+   "second": "completed",
+   "second_error": "",
+   "runs_named": [
+    "campaign c5 second",
+    "campaign c5 first",
+    "campaign c5 second",
+    "campaign c5 first",
+    "campaign c5 second"
+   ]
+  },
+  "C9": {
+   "status": "PASS",
+   "at": "2026-10-12T16:11:42",
+   "job_status": "completed",
+   "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0001",
+   "listed": true
+  },
+  "C8": {
+   "status": "PASS",
+   "at": "2026-10-12T16:11:48",
+   "one_epoch": "completed",
+   "fifty": "cancelled",
+   "eta_s_at_epoch2": 77,
+   "avg_epoch_s": 1.6,
+   "total": 50
+  },
+  "C6": {
+   "status": "PASS",
+   "at": "2026-10-12T16:12:13",
+   "revision": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/campaign-c6-edited",
+   "trained_on": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/campaign-c6-edited",
+   "job_status": "completed",
+   "checks": []
+  },
+  "C3": {
+   "status": "FAIL",
+   "at": "2026-10-12T16:13:52",
+   "job": "a01939fea7fa43d69e3e23a183adef71",
+   "workers_killed": 2,
+   "status_before_kill": "Done",
+   "record_status": "completed",
+   "error": "",
+   "host_running_jobs": 0,
+   "best_on_disk": true
+  },
+  "C4": {
+   "status": "FAIL",
+   "at": "2026-10-12T16:13:52",
+   "note": "unit: test_ui_train_reconcile; the reload path renders the record's state",
+   "record_status": "completed"
+  }
+ }
+}

@@ -67,7 +67,9 @@ def main() -> int:
                 answers[status] = {"status": job.get("status"), "error": str(job.get("error") or job.get("body") or "")[:160], "run": r.get("run_name")}
             code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign d1 running"})
             jid = body.get("job_id") or body.get("id")
-            h.wait_terminal(client, jid, timeout=900, quiet=True, until=lambda j: "Epoch 1/" in str((j.get("progress") or {}).get("label") or "") or j.get("status") != "running")
+            h.wait_terminal(client, jid, timeout=900, quiet=True,
+                            until=lambda j: (j.get("status") == "running" and "Epoch " in str((j.get("progress") or {}).get("label") or ""))
+                            or j.get("status") in ("completed", "failed", "cancelled"))
             picker = next((r for r in runs_of(client) if r.get("id") == jid), None) or {}
             answers["running"] = {"picker_usable": picker.get("usable"), "picker_reason": str(picker.get("reason") or picker.get("note") or "")[:120],
                                   "note": "the GPU queue serializes jobs: a predict posted now runs after the train; the picker and the job gate refuse a running run"}
