@@ -256,6 +256,8 @@ def test_doctor_reports_the_facts_without_the_network(seeded, manifest):
                               "ledger_path": str(ledger.ledger_path())}
     assert doc["plugin_home"]["resolved_by"] == "env" and isinstance(doc["plugin_home"]["disk"]["free_bytes"], int)
     assert set(doc["uv"]) == {"plugin_venv", "host_venv", "pythonhome_in_worker", "leaky_versions"}
+    # Session 13: the seeded record names tables that do not exist on disk, so both splits read absent.
+    assert {s: doc["import"]["images"][s]["state"] for s in ("train", "val")} == {"train": "absent", "val": "absent"}
     assert doc["uv"]["leaky_versions"] == ["0.11.7", "0.11.8"]
     assert "kaggle" not in doc
     json.dumps(doc)   # serializable as served

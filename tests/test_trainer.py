@@ -367,6 +367,34 @@ def test_zero_usable_rows_is_a_refusal_before_any_run_exists(imported, project_r
     assert trainer.train_state()["state"] == "empty"
 
 
+def test_images_missing_on_this_machine_are_a_refusal_before_any_run_exists(imported, project_root, tmp_path):
+    """Session 13: a copied project or a moved kit leaves the tables pointing at paths that no longer exist.
+    ``missing_images`` samples rows across the table; Train refuses naming the split, the count and an
+    example; the kit's own layout keeps ``foreign_rows`` quiet, so this is the check that catches it."""
+    import shutil
+
+    manifest, train_url, _ = imported
+    train_table = tlc.Table.from_url(tlc.Url(train_url))
+    assert trainer.missing_images(train_table) == {"checked": min(8, train_table.row_count), "missing": 0, "examples": []}
+    assert trainer.missing_images(train_table, sample=2)["checked"] == 2
+    kit_root = Path(importer.read_record()["kit_dir"])
+    shutil.move(str(kit_root / "data" / "val"), str(tmp_path / "val-moved-away"))
+    runs_dir = project_root / "intel-scene" / "runs"
+    runs_before = sorted(runs_dir.glob("*")) if runs_dir.is_dir() else []
+    with pytest.raises(trainer.TrainRefused, match="val table .* not on this machine: .* sampled rows are missing"):
+        trainer.run_training({"train_table_url": train_url, "use_latest": False, "device": "cpu"}, FakeCtx(), manifest)
+    runs_after = sorted(runs_dir.glob("*")) if runs_dir.is_dir() else []
+    assert runs_after == runs_before
+    val_url = importer.read_record()["val_locked"]["url"]
+    gone = trainer.missing_images(tlc.Table.from_url(tlc.Url(val_url)))
+    assert gone["missing"] == gone["checked"] > 0 and len(gone["examples"]) == min(3, gone["missing"])
+    # The Doctor reports the same facts from the record.
+    from kaggle_classification import status
+
+    images = status.table_images(importer.read_record())
+    assert images["train"]["state"] == "ok" and images["val"]["state"] == "missing"
+
+
 def test_run_training_end_to_end_on_cpu(imported, project_root):
     """Two epochs on the synthetic kit: checkpoints under the run, eight provenance checks, the
     per-sample metrics contract on train (undefined rows: no loss) and val, the durable record."""

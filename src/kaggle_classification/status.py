@@ -408,6 +408,34 @@ def venv_facts(cfg: Path) -> dict[str, Any] | None:
     return facts
 
 
+def table_images(record: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Session 13: are the imported tables' images on THIS machine? A sample of rows from the train seed
+    and the locked val table is resolved and checked (``trainer.missing_images``); a table that is gone
+    reads ``absent``, no import reads ``none``. A copied project or a moved kit points at paths that no
+    longer exist; Train refuses on the same facts, so the Doctor says it first."""
+    tables = record.get("tables") or {}
+    urls = {
+        "train": str((tables.get("train") or {}).get("url") or ""),
+        "val": str(((record.get("val_locked") or {}).get("url")) or (tables.get("val") or {}).get("url") or ""),
+    }
+    out: dict[str, dict[str, Any]] = {}
+    for split, url in urls.items():
+        if not url:
+            out[split] = {"state": "none", "url": ""}
+            continue
+        try:
+            if not importer._url_exists(url):
+                out[split] = {"state": "absent", "url": url}
+                continue
+            import tlc
+
+            gone = trainer.missing_images(tlc.Table.from_url(tlc.Url(url)))
+            out[split] = {"state": "missing" if gone["missing"] else "ok", "url": url, **gone}
+        except Exception as exc:
+            out[split] = {"state": "error", "url": url, "error": f"{type(exc).__name__}: {exc}"}
+    return out
+
+
 def uv_facts() -> dict[str, Any]:
     """The plugin venv (this interpreter's) and, in the tester layout, the host venv beside ``home\\``:
     ``<tester folder>\\.venv`` two levels above the compute home. Elsewhere the host venv is unknown."""
@@ -526,6 +554,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "project_name": record.get("project_name"), "table_name": record.get("table_name"),
             "completed_at": record.get("completed_at"), "kit_version": record.get("kit_version"),
             "lineage_root": record.get("lineage_root"), "val_locked": (record.get("val_locked") or {}).get("url"),
+            "images": table_images(record),
         },
         "records": {
             "runs": len(runs), "project_runs": len(trainer.runs_in_project(runs)),

@@ -431,6 +431,46 @@ def foreign_rows(table: Any, kit_dir: str, *, sample: int = 3) -> dict[str, Any]
     return {"count": count, "examples": examples, "train_dir": str(Path(kit_dir) / "data" / "train")}
 
 
+def missing_images(table: Any, *, sample: int = 8) -> dict[str, Any]:
+    """Session 13: are the images a table points at on THIS machine? ``sample`` rows spread over the
+    table (the first, the last and the ones between) are resolved the way ``foreign_rows`` resolves
+    them and checked for existence. ``{"checked", "missing", "examples"}``; a table with no rows
+    checks nothing. Train refuses and the Doctor reports on the same facts."""
+    import tlc
+
+    try:
+        n = int(table.row_count)
+    except Exception:
+        n = 0
+    if n <= 0:
+        return {"checked": 0, "missing": 0, "examples": []}
+    want = sorted({round(i * (n - 1) / max(sample - 1, 1)) for i in range(min(sample, n))})
+    last = want[-1]
+    wanted = set(want)
+    checked = missing = 0
+    examples: list[str] = []
+    for i, row in enumerate(table.table_rows):
+        if i > last:
+            break
+        if i not in wanted:
+            continue
+        raw = row.get("image") if hasattr(row, "get") else None
+        if raw is None:
+            continue
+        checked += 1
+        try:
+            url = tlc.Url(str(raw)).to_absolute(table.url)
+            present = bool(url.exists())
+            shown = url.to_str()
+        except Exception:
+            present, shown = False, str(raw)
+        if not present:
+            missing += 1
+            if len(examples) < 3:
+                examples.append(shown)
+    return {"checked": checked, "missing": missing, "examples": examples}
+
+
 def scan_rows(table: Any, manifest: Manifest) -> tuple[list[int], list[float]]:
     """``(labels, weights)`` read once from ``table.table_rows``: the row view, no image decoding."""
     labels: list[int] = []
@@ -1400,6 +1440,18 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
         )
         raise TrainRefused(msg)
     val_table = tlc.Table.from_url(tlc.Url(val_url))
+    # Session 13: the images the tables point at must be on THIS machine. A copied project or a moved kit
+    # keeps the old paths; the Doctor shows the same check, so the refusal names the same facts.
+    for split, table, url in (("train", train_table, resolved_url), ("val", val_table, val_url)):
+        gone = missing_images(table)
+        if gone["missing"]:
+            example = gone["examples"][0] if gone["examples"] else "?"
+            msg = (
+                f"The {split} table {url} points at images that are not on this machine: {gone['missing']} of "
+                f"{gone['checked']} sampled rows are missing, e.g. {example}. The kit the tables were imported from "
+                "is no longer at that path. Download the starter kit and re-import on the Import tab, then train."
+            )
+            raise TrainRefused(msg)
     log(f"train: {resolved_url} ({train_table.row_count} rows)")
     log(f"val (locked): {val_url} ({val_table.row_count} rows)")
 
