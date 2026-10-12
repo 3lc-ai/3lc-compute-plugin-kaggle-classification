@@ -1,0 +1,404 @@
+{
+ "items": {
+  "D1": {
+   "status": "FAIL",
+   "at": "2026-10-12T18:27:56",
+   "answers": {
+    "cancelled": {
+     "status": "completed",
+     "error": "",
+     "run": "campaign c8 fifty"
+    },
+    "stale": {
+     "status": "failed",
+     "error": "campaign c3 killed did not finish (interrupted). Pick a completed run.\nworker stderr:\nINFO - 2026-10-12 18:27:32,038 - __main__ - worker - Plugin worker 'kaggle",
+     "run": "campaign c3 killed"
+    },
+    "failed": {
+     "status": "no such run"
+    },
+    "running": {
+     "picker_usable": null,
+     "picker_reason": "",
+     "note": "the GPU queue serializes jobs: a predict posted now runs after the train; the picker and the job gate refuse a running run"
+    }
+   }
+  },
+  "D2": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:02",
+   "tampered": "failed",
+   "error": "The best checkpoint on disk no longer matches the run\u2019s record (sha256 differs). Re-train, or pick another run.\nworker stderr:\nINFO - 2026-10-12 18:27:32,415 - kaggle_classification.manifest - manifes",
+   "restored": "completed",
+   "device": null
+  },
+  "D3": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:02",
+   "state_before": "predicted",
+   "state_edited": "empty",
+   "state_restored": "predicted",
+   "edited_keys": [
+    "state",
+    "predict",
+    "note"
+   ],
+   "note": "the Submit job itself is not run (it would upload); unit: test_missing_or_changed_csv_is_empty_despite_the_record"
+  },
+  "D4": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:05",
+   "answers": {
+    "bad_format": {
+     "http": 200,
+     "ok": false,
+     "kind": "format",
+     "file_unchanged": true
+    },
+    "random": {
+     "http": 200,
+     "ok": false,
+     "kind": "rejected",
+     "restored_previous": true,
+     "previous_kept": true
+    },
+    "restored": {
+     "state": "ready",
+     "username": "rishikeshjadhav3lc"
+    }
+   }
+  },
+  "D7D8": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:07",
+   "state": "ready",
+   "daily_limit": 100,
+   "used": 1,
+   "note": "unit: not-joined (403) and the limit are simulated through the fake client; a cap of 100 is not reachable by hand"
+  },
+  "E1E2": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:10",
+   "preview": {
+    "checkpoints": {
+     "mode": "default",
+     "requested": [],
+     "default_runs": [
+      "eeef3a04c9744b58b1d81a328bd993e7"
+     ],
+     "included": [],
+     "skipped": [
+      {
+       "train_job_id": "eeef3a04c9744b58b1d81a328bd993e7",
+       "run_name": "intel-scene_run_20261012_140838",
+       "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/intel-scene_run_20261012_140838",
+       "sha256": "",
+       "bytes": null,
+       "public_score": 0.64444,
+       "ref": "57116805",
+       "verified_against": [
+        "the ledger"
+       ],
+       "reason": "best.pt is not on disk"
+      }
+     ],
+     "max": 2
+    },
+    "members": [
+     "README.txt",
+     "import_record.json",
+     "ledger.jsonl",
+     "manifest_provenance.json",
+     "plugin.json",
+     "predictions/04a224386b9d43e4b4259635484129e0.json",
+     "predictions/0a7f15845d00413fb617eb3198736cbe.json",
+     "predictions/0c83c8aef47f4b28ae241f5fbf1eb4cd.json",
+     "predictions/1d5d3c703e5943f888d0bbb8f9bfaffd.json",
+     "predictions/2f72544523f843b1b6346f6e9daadad4.json",
+     "predictions/6ebb05bf25b14d31a4aefa10b09fe4bb.json",
+     "predictions/6edcdeef4cdc42b2ba873fbcd39295f7.json",
+     "predictions/7b95558529af49d9aed95be0ad1739d9.json",
+     "predictions/837e9ebd72ab43db8bb7f765081b1a10.json",
+     "predictions/9c214390d7424a46875352533f5f28d4.json",
+     "predictions/a8af1cc339c449a5bd898a5671a929b6.json",
+     "predictions/bb4dbebafdc7435285db909ef629d9ce.json",
+     "predictions/c5236cfa910f476993bfda4b13cabc04.json",
+     "predictions/d2ed798561ff427bb1e335ef69bc4b97.json",
+     "predictions/f2ddf143ec34440fb4388dfbd347cdee.json",
+     "project/intel-scene/datasets/intel-scene_train/tables/campaign-c6-edited/object.3lc.json",
+     "project/intel-scene/datasets/intel-scene_train/tables/initial-14/object.3lc.json",
+     "project/intel-scene/datasets/intel-scene_train/tables/initial-14/row_cache.parquet",
+     "project/intel-scene/datasets/intel-scene_val/tables/initial-14/object.3lc.json",
+     "project/intel-scene/datasets/intel-scene_val/tables/initial-14/row_cache.parquet",
+     "project/intel-scene/files.json",
+     "project/intel-scene/runs/campaign c1 batch max_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c1 batch max_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c1 batch max_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c1 batch max_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c1 batch max_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c1 batch max_0003/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c1 batch max_0003/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c1 batch max_0003/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c1 batch max_0003/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c1 batch max_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c2 cancel_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c2 cancel_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c3 killed_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c3 killed_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c3 killed_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c3 killed_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c3 killed_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c3 killed_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c5 first_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c5 first_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0003/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c5 first_0003/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0003/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c5 first_0003/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 first_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c5 second_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c5 second_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0003/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c5 second_0003/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0003/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c5 second_0003/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c5 second_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c6 latest_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c6 latest_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0003/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c6 latest_0003/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0003/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c6 latest_0003/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c6 latest_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign c8 fifty_0001/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c8 fifty_0001/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c8 fifty_0001/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c8 fifty_0001/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c8 fifty_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c8 fifty_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003/metrics_0000/metrics_0000.parquet",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003/metrics_0000/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003/metrics_0001/metrics_0001.parquet",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003/metrics_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003/object.3lc.json",
+     "project/intel-scene/runs/campaign d1 running_0001/object.3lc.json",
+     "project/intel-scene/runs/campaign d1 running_0002/object.3lc.json",
+     "project/intel-scene/runs/campaign d1 running_0003/object.3lc.json",
+     "project/intel-scene/runs/probe status/object.3lc.json",
+     "runs/07fcbf8a97a340b69f247562a1c52e64.json",
+     "runs/08bc469cacec439197b052f1816ced59.json",
+     "runs/0e0a00c6d125404089e0758f26250f89.json",
+     "runs/1637fb721e774d35ad6b62a0932f8ff1.json",
+     "runs/20c1df6239a34b3caaf1bdfbe782fc33.json",
+     "runs/3e12cbe4829244b48e4a6ad8a96ae9e3.json",
+     "runs/4d1804ad41a74934a68f4a70c1a65c7a.json",
+     "runs/4fb06aebdc3045eaac27d851da54827b.json",
+     "runs/7a2a87ef95ba4366995c7ac3c988f58c.json",
+     "runs/7f2da49c1eaf4832a74070e6e1146025.json",
+     "runs/8b7d44af0927433eaa1c76c316aee7bf.json",
+     "runs/963f8b553b67471ab54a7f33dcef5e68.json",
+     "runs/bee0cd5a7b9f411daf946a598d5cb47c.json",
+     "runs/c0f5a76ac3304032b6ba215d63b0dfe1.json",
+     "runs/cc815c5567fb4bd893d64f749324651f.json",
+     "runs/d685678bbf214327a1963891eb239cf2.json",
+     "runs/df18ee9fa73043179bbb1e2ef931cee4.json",
+     "runs/f18832c1102c4fe1aa519e27d5d7fcb4.json",
+     "runs/f2242b753bb64befbc104779c3e3e2ac.json",
+     "runs/f44c07abb9694793a99989efae89acc9.json",
+     "submissions/9aae53bfe19f4f0698deabc5163aedd4.json",
+     "train_revisions.json"
+    ],
+    "runs": [
+     {
+      "id": "1637fb721e774d35ad6b62a0932f8ff1",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign d1 running_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign d1 running_0003",
+      "rel": "runs/campaign d1 running_0003"
+     },
+     {
+      "id": "7a2a87ef95ba4366995c7ac3c988f58c",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c3 killed_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c3 killed_0003",
+      "rel": "runs/campaign c3 killed_0003"
+     },
+     {
+      "id": "c0f5a76ac3304032b6ba215d63b0dfe1",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c6 latest_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c6 latest_0003",
+      "rel": "runs/campaign c6 latest_0003"
+     },
+     {
+      "id": "07fcbf8a97a340b69f247562a1c52e64",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c8 fifty_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c8 fifty_0002",
+      "rel": "runs/campaign c8 fifty_0002"
+     },
+     {
+      "id": "20c1df6239a34b3caaf1bdfbe782fc33",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003",
+      "rel": "runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0003"
+     },
+     {
+      "id": "f44c07abb9694793a99989efae89acc9",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c5 second_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c5 second_0003",
+      "rel": "runs/campaign c5 second_0003"
+     },
+     {
+      "id": "4d1804ad41a74934a68f4a70c1a65c7a",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c5 first_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c5 first_0003",
+      "rel": "runs/campaign c5 first_0003"
+     },
+     {
+      "id": "df18ee9fa73043179bbb1e2ef931cee4",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c2 cancel_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c2 cancel_0003",
+      "rel": "runs/campaign c2 cancel_0003"
+     },
+     {
+      "id": "f18832c1102c4fe1aa519e27d5d7fcb4",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c1 batch max_0003",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c1 batch max_0003",
+      "rel": "runs/campaign c1 batch max_0003"
+     },
+     {
+      "id": "4fb06aebdc3045eaac27d851da54827b",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/probe status",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\probe status",
+      "rel": "runs/probe status"
+     },
+     {
+      "id": "08bc469cacec439197b052f1816ced59",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign d1 running_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign d1 running_0002",
+      "rel": "runs/campaign d1 running_0002"
+     },
+     {
+      "id": "963f8b553b67471ab54a7f33dcef5e68",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c3 killed_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c3 killed_0002",
+      "rel": "runs/campaign c3 killed_0002"
+     },
+     {
+      "id": "0e0a00c6d125404089e0758f26250f89",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c6 latest_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c6 latest_0002",
+      "rel": "runs/campaign c6 latest_0002"
+     },
+     {
+      "id": "f2242b753bb64befbc104779c3e3e2ac",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c8 fifty_0001",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c8 fifty_0001",
+      "rel": "runs/campaign c8 fifty_0001"
+     },
+     {
+      "id": "3e12cbe4829244b48e4a6ad8a96ae9e3",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002",
+      "rel": "runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0002"
+     },
+     {
+      "id": "d685678bbf214327a1963891eb239cf2",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c5 second_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c5 second_0002",
+      "rel": "runs/campaign c5 second_0002"
+     },
+     {
+      "id": "8b7d44af0927433eaa1c76c316aee7bf",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c5 first_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c5 first_0002",
+      "rel": "runs/campaign c5 first_0002"
+     },
+     {
+      "id": "7f2da49c1eaf4832a74070e6e1146025",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c2 cancel_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c2 cancel_0002",
+      "rel": "runs/campaign c2 cancel_0002"
+     },
+     {
+      "id": "cc815c5567fb4bd893d64f749324651f",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c1 batch max_0002",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign c1 batch max_0002",
+      "rel": "runs/campaign c1 batch max_0002"
+     },
+     {
+      "id": "bee0cd5a7b9f411daf946a598d5cb47c",
+      "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign d1 running_0001",
+      "folder": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\projects\\intel-scene\\runs\\campaign d1 running_0001",
+      "rel": "runs/campaign d1 running_0001"
+     }
+    ]
+   },
+   "zip": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\bundles\\verification-bundle_intel-scene_20261012_232810Z.zip",
+   "under_plugin_home": true,
+   "members": 116,
+   "members_sample": [
+    "README.txt",
+    "plugin.json",
+    "manifest_provenance.json",
+    "import_record.json",
+    "train_revisions.json",
+    "runs/1637fb721e774d35ad6b62a0932f8ff1.json",
+    "runs/7a2a87ef95ba4366995c7ac3c988f58c.json",
+    "runs/c0f5a76ac3304032b6ba215d63b0dfe1.json"
+   ]
+  },
+  "E4": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:10",
+   "token_hits": []
+  },
+  "E3": {
+   "status": "PASS",
+   "at": "2026-10-12T18:28:11",
+   "plugin": "1.0.0rc14",
+   "kit": "success",
+   "images": {
+    "train": "ok",
+    "val": "ok"
+   },
+   "gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 5070 Ti",
+    "capability": "12.0",
+    "arch_list": [
+     "sm_75",
+     "sm_80",
+     "sm_86",
+     "sm_90",
+     "sm_100",
+     "sm_120"
+    ],
+    "torch": "2.14.0+cu130",
+    "kernels_ok": true,
+    "reason": "",
+    "driver": "616.64",
+    "driver_min": 580,
+    "driver_too_old": false
+   },
+   "kaggle": "ready",
+   "uv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+    "uv": "0.13.0",
+    "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+    "python": "3.12",
+    "leaks_pythonhome": false
+   }
+  }
+ }
+}

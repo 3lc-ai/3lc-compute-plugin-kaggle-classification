@@ -202,6 +202,70 @@ answer for a token-shaped string.
   Re-import fresh on a reused row, the stale view), 7.5b and 7.7 are the hand test's. The fixture shots of every
   Import state are in `docs/ui-review/after-rc12/` (untracked).
 
+## Run 14 — the hardening campaign on the brand-new participant environment (2026-10-12, 1.0.0rc13 → 1.0.0rc14)
+
+The plan is `docs/TEST_PLAN.md` (sections A to H); the driver is `tools/hardening/` (the in-process host of
+the tester env's venv, the catalog install route, the plugin's `/run`, the host's job list: the calls the Hub
+makes); the records are `docs/campaign/section_*.json` (+ `.log`, several numbered reruns while the harness
+was corrected; the final file of each section is the verdict). Environment: `3lc-hub-fresh` (uv 0.13.0, host
+CPython 3.12.13, 3lc-compute 1.1.0, host 3lc 3.4.1, redirected home, project root `home\projects`), NVIDIA
+GeForce RTX 5070 Ti (compute capability 12.0, driver 616.64). Builds under test: `646cdf2` (rc14 stamped),
+then `7c23bf2` (the two campaign fixes). Nothing in the AppData projects was touched.
+
+**Two plugin defects found and fixed** (`7c23bf2`, with tests): the import did not re-verify the kit against
+`files.json` (B3: a JPEG with bytes appended still imported; now "every kit file matches files.json" fails
+first, naming the file), and a rejected Kaggle token replaced and then removed a working one (D4: the previous
+file's bytes go back). **One host defect** (3lc-compute 1.1.0, the Hub bug note's fourth finding): a plugin
+worker outlives its compute service and holds the managed venv's `python.exe`, so the next Update or
+uninstall + reinstall fails with "Access is denied" until the orphan is stopped.
+
+| Item | Result |
+|---|---|
+| A9 upgrade rc13 → rc14 with state | PASS: install 40.3 s + ready 9.7 s; `ui_config.json`, `ledger.jsonl`, the predictions, the kit record and the runs byte-identical before and after; the Doctor reads 1.0.0rc14 |
+| A9 same-version reinstall | PASS: 15.3 s + 4.4 s, state identical |
+| A10 uninstall + reinstall | PASS: `DELETE /api/admin/plugins/install/<id>` 200, the card gone, reinstall 5.2 s + 4.3 s, the kit record and the ledger intact (with the orphan-worker finding above when a worker from a dead service is still alive) |
+| A11 service restart | PASS: ready 4.3 s after boot, no re-provisioning |
+| A5 CPU-only (`CUDA_VISIBLE_DEVICES=-1`) | PASS: the Doctor says `cpu`, `cuda_available false`; 3 epochs on 600 rows `cpu (auto)` in 80.1 s (setup 4.4 s, the final pass 37.7 s); predict on CPU 12.0 s. The backend's epoch-only ETA at the first boundary was 20 s against 64 s to completion; the fragment adds the collection pass (37.7 s here) from history or the benchmark, which brings it within 1.1× |
+| A4 Python 3.11 | PASS: host 3.11.15, plugin venv 3.11.17, torch 2.14.0+cu130; install 45.3 s, kit 38.0 s, import 4.0 s, train 50.1 s `cuda (auto)`, predict 4.0 s |
+| A8 host 3lc 3.3.0 (oldest the host accepts) | PASS: plugin venv 3lc 3.4.1 (now pinned), install 10.3 s, the full cycle; host 3lc 3.4.1 is the fresh env itself (every item above) |
+| A6 / A7 GPU outside the arch list, driver older than R580 | unit-simulated (`test_arch_list_coverage_follows_torch_s_own_rule`, `test_auto_lands_on_cpu_with_the_reason…`, `test_a_driver_older_than_the_build_needs…`); the Doctor fixture `?kgdev=status-empty` renders both sentences; the real sm_120-on-cu126 case was the rc13 hand test that opened session 14 |
+| P3 driver named | PASS: `device.gpu.driver` 616.64, `driver_min` 580 |
+| A1 non-ASCII path, A3 path near 260 chars | see below (scratch tester folders) |
+| A2 OneDrive | N/A here (no OneDrive); the testers' checklist |
+| B6 wrong / nested / trailing-slash folder | PASS: wrong and nested refused with "No kit found at … (files.json missing)"; the trailing slash and a quoted path accepted |
+| B3 kit file modified after verify | PASS after the fix: Re-verify names the file (1 mismatch); the import fails before any table with "differs from the files it shipped with"; restored, Re-verify ok |
+| B7 re-import fresh × 3 | PASS: `initial-12`, `-13`, `-14` in this run (the series continued across the reruns), 6 to 12 s each |
+| B9 two imports at once | PASS: both accepted by the host (201), serialized; no partial table; the record names the last |
+| B1 interrupted download resumes | PASS: with the kit tree removed and one shard cut in half into its `.part`, the next download consumed the `.part` and verified the kit in 32 s (the dev CDN is too fast to cancel on a shard: 111 MB/s) |
+| B2 corrupted shard | PASS: a shard with 64 bytes flipped was replaced by a fresh download (sha256 before `391bb137…`, after `908d7f91…`) |
+| B4 kit deleted after import | PASS: kit state `stale`, preflight "Download the starter kit first", Train refused "points at images that are not on this machine: 8 of 8 sampled rows", the Doctor's Table images red |
+| B5 manual kit with the CDN blocked | PASS: the fallback notice active ("the server couldn't be reached"), Verify files on a hand-copied folder ok and recorded as `manual`, the import preflight ok |
+| B8 project renamed on disk | PASS: both tables reported missing (stale); an import into a new project name completed; the record put back on the original project afterwards |
+| C7 every bound on every field | PASS: epochs 1..50, batch 8..128, lr 1e-5..0.01, weight decay 0..0.1, seed, workers 0..16: one value below and one above each, every refusal "X must be between A and B (got V)" before any run exists |
+| C1 batch at the bound | PASS: batch 128 trains on `cuda (auto)`; an OOM is not reachable inside the bound on a 16 GB card (the fallback is unit-tested and was seen on rc13) |
+| C2 cancel at epoch 1 | PASS: record cancelled, best.pt from epoch 1 kept |
+| C3 compute service killed mid-train | PASS: killed at epoch 4 of 50; the next host reads the record as `stale` with "Interrupted: the compute service restarted while this run was training.", lists no running job, best.pt on disk |
+| C4 browser closed and reopened | PASS: the reload path reads the record's state (C3) plus `tests/test_ui_train_reconcile.py` |
+| C5 two trains queued | PASS: both completed in order on the GPU lane |
+| C6 Dashboard label edits + Use latest | PASS: an EditedTable revision trained on, lineage and foreign-rows checks green |
+| C8 epochs 1 and 50 | PASS: 1 epoch completed; 50 started, ETA 79 s at epoch 2 (1.7 s/epoch), cancelled at 3 |
+| C9 run name with spaces and unicode | PASS: `campaign c9 ünïcode 名前 run_0000` created and listed |
+| D1 predict on cancelled / interrupted / running | PASS: cancelled-with-best allowed; interrupted refused "did not finish (interrupted)"; a running run is unusable in the picker ("still training"), and the GPU lane never lets a predict reach a running train |
+| D2 checkpoint modified on disk | PASS: "The best checkpoint on disk no longer matches the run's record (sha256 differs)"; restored, predict completed |
+| D3 CSV edited by hand | PASS: the submit state drops to `empty` with "changed on disk since it was validated"; restored, `predicted` again (the Submit job is unit-covered; no upload here) |
+| D4 bad-format and rejected tokens | PASS after the fix: format refused without a write; a random `KGAT_` token rejected and the previous token kept (`restored_previous`); the card `ready` as before; no token shape in any response |
+| D5 env var vs file, D6 Kaggle unreachable mid-submit, D7 no access, D8 the daily cap, D9 message length | unit (`test_connect_refuses_when_the_env_var_would_shadow_the_file`, `test_submit_outcomes_through_a_fake_client`, `test_kaggle_live_reports_unlaunched_when_the_list_403s…`, the limit through the fake client); the live card here: `ready`, 1 of 100 used. D9 is not validated by the plugin (Kaggle's limit applies): OPEN as a copy decision |
+| E1 / E2 bundle under the redirected home | PASS: the zip under `plugin-state\…\bundles\`, the rule's checkpoints, 1 submitted run |
+| E3 the Doctor after every state above | PASS: plugin rc14, kit success, Table images ok, GPU facts, Kaggle ready, the uv row |
+| E4 no `KGAT_` in any bundle | PASS: every bundle produced in this run grepped, 0 hits |
+| F1 50 concurrent kit downloads | 250 requests, 0 errors, 5.69 GB in 51.2 s (111 MB/s on this link), every sha256 matched, Range requests honoured (206), all CloudFront hits (DFW59-P5) |
+| F2 20 concurrent manifest + index fetches | 40 requests, all 200, p90 71 ms |
+| F3 20 concurrent catalog fetches | all 200, p90 165 ms |
+| F4 back-to-back Kaggle submissions | OPEN: each real submit needs Rishikesh's go-ahead |
+| F5 3-hour soak | see below |
+| G testers' checklist | TESTING.md section 10 |
+| H anti-cheat review | docs/PREDICT_MIRROR.md section 15 |
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
