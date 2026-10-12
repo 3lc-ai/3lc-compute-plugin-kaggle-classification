@@ -2,6 +2,13 @@
 
 One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
+## Session 13 (2026-10-12, the first PC session; on `develop`, no tag)
+
+- **The PC is `C:\Users\Owner`.** Every script that named `C:\Users\rishi` now resolves from `$env:LOCALAPPDATA` / `$env:USERPROFILE` or a `-ProjectsRoot` parameter (hub-11's untouched check and its v1 copy, queue_probe, parity_seed42, start_demo and its v1 copy, worker_test, soak_test, stop_demo; `tools/migrate/import.ps1` passes `-ProjectsRoot`). The untouched check: `intel-scene` UNTOUCHED; `intel-scene-demo` has 46 additions written on the laptop 2026-10-06 to 10-08 after its 2026-10-05 snapshot (seven runs and the table `forest5new`), not a migration change.
+- **The clean env runs as "Rishi Jadhav's workspace"** (the PC's real-profile key since 2026-09-16, copied into the redirected home); the Hub session must be in that workspace or the services answer `tenant_binding_rejected` (the Hub shows it as "mismatched auth modes"). 3lc 3.3.0 on this PC reads the key from the **redirected** `LOCALAPPDATA`, the opposite of hub-11's SETUP.md and TESTING.md line 45 (an open copy fix).
+- **The uv 0.11.7 PYTHONHOME leak** (astral-sh/uv issue 19080, PR 19199, fixed in uv 0.11.9): venv launchers written by uv 0.11.7 / 0.11.8 set `PYTHONHOME`; 3lc-compute's provisioning passes the inherited environment to uv (the worker supervisor strips it), so every plugin build on this PC failed with `module 'os' has no attribute '_walk_symlinks_as_files'` (the system 3.12.3 running 3.12.13's library). All three venvs were recreated with uv 0.13.0 (the old ones kept beside them as `.venv-uv0117-pythonhome-leak`, deletable); all 17 plugins provisioned; the proof script passed (Doctor clean, manifest remote). Ours for rc13: the Doctor's uv row, the tester scripts' refusal, import.ps1's global-uv check, TESTING.md's prerequisite; the host side is the third finding in `../3lc-hub-11/HUB_BUG_queue_card_compute_url.md`.
+- **Open after the move:** the migrated plugin state still carries laptop paths (`kit/intel-scene.json` `kit_dir`, `ui_config.json` `kit_dir` and the table `url`s), so Import and Doctor report the kit and the import as stale on the PC until a re-import or a path rewrite in `tools/migrate/` (a proposed task, not done).
+
 ## Session handoff (2026-10-09, migrating to PC)
 
 - **develop head:** `c2488311290f2af06c2cccc39db4e47359f8e31b` (pushed). Sessions 11 and 12 sit on top of rc12: the two Vercel skills, the collapsible checks on Train and Predict, the audit fixes and typography, the review-list decisions, `tools/migrate/`.

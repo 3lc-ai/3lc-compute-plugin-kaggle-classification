@@ -33,6 +33,14 @@ participants keep every control they had in rc10.
 
 ### Added
 - Vercel's `web-design-guidelines` and `writing-guidelines` agent skills under `.claude/skills/` (`skills-lock.json`).
+- **The uv row in the Doctor** (session 13, 2026-10-12): the uv that created the plugin venv and, in the tester
+  layout, the host venv beside `home\` (from each `pyvenv.cfg`), with a warning on uv 0.11.7 and 0.11.8, whose
+  launchers set PYTHONHOME for every child process so the plugin's own build runs one Python on another's library
+  (astral-sh/uv issue 19080, fixed in 0.11.9). `GET /status/doctor` carries it as `uv`.
+- **The tester kit refuses those two uv versions**: `start_tester.ps1` / `.sh` read the `uv =` line of the venv's
+  `pyvenv.cfg` and stop with the one-line reason; `tools/migrate/import.ps1` checks the global uv before it rebuilds
+  anything; TESTING.md asks for uv 0.11.9 or newer. The compute host's side of it (provisioning passes the
+  inherited environment to uv while the worker supervisor strips it) is in the Hub bug note.
 
 ## [1.0.0rc12] — 2026-10-09 (session 10: the Import tab back on the rc10 layout)
 

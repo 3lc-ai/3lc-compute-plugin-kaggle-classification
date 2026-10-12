@@ -36,6 +36,11 @@ environments, credential locations); it points here at the repo boundary.
   Doctor text, the bundle README), `plugin.toml`, `catalog.json`, TESTING.md and
   the tester scripts. A period, colon, comma or middle dot instead.
   `test_copy_rules.py` enforces it (rc12).
+- **uv 0.11.9 or newer for every venv** (session 13). uv 0.11.7 and 0.11.8 write
+  launchers that set `PYTHONHOME` for every child process, and 3lc-compute's
+  provisioning passes that environment to uv, so the plugin's own build fails
+  whenever the plugin venv lands on another 3.12. The tester scripts and
+  `import.ps1` refuse those two versions; the Doctor's uv row shows them.
 - **License lineage.** Apache-2.0 on every module (`SPDX-License-Identifier`
   header). Code adapted from `3lc-compute-plugin-kaggle` carries the
   relicensing header verbatim and is listed in `docs/STUDY.md` G-5; the word
