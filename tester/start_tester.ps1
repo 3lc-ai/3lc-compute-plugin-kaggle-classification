@@ -73,6 +73,13 @@ if ($Stop) {
 foreach ($exe in '3lc.exe', '3lc-compute.exe') {
     if (-not (Test-Path -LiteralPath (Join-Path $venv "Scripts\$exe"))) { Say "Missing $venv\Scripts\$exe - create the venv first (TESTING.md step 2)."; exit 1 }
 }
+# uv 0.11.7 and 0.11.8 write venv launchers that set PYTHONHOME for every child process, so the plugin's own build
+# runs one Python on another's library and fails (astral-sh/uv issue 19080, fixed in 0.11.9). The venv records
+# the uv that created it in pyvenv.cfg.
+$venvUv = ''
+$cfgLine = Get-Content -LiteralPath (Join-Path $venv 'pyvenv.cfg') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\s*uv\s*=' } | Select-Object -First 1
+if ($cfgLine -and $cfgLine -match '=\s*(\S+)') { $venvUv = $Matches[1] }
+if ($venvUv -in @('0.11.7', '0.11.8')) { Say "The venv was created by uv $venvUv, whose launchers leak PYTHONHOME into every child process (the plugin build fails): update uv (uv self update) and recreate the venv (TESTING.md step 2)."; exit 1 }
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Say "uv is not on PATH - the compute service needs it to build the plugin's environment (TESTING.md step 1)."; exit 1 }
 $busy = @(Get-NetTCPConnection -LocalPort $ObjectPort, $ComputePort -State Listen -ErrorAction SilentlyContinue)
 if ($busy.Count) {

@@ -94,6 +94,13 @@ Remove-Item -LiteralPath $unpack -Recurse -Force -ErrorAction SilentlyContinue
 
 # 4. Rebuild both venvs (the recipe of 3lc-hub-11\SETUP.md and TESTING.md step 2, with the laptop's pins).
 if (-not $SkipVenvs) {
+    # uv 0.11.7 and 0.11.8 write venv launchers that set PYTHONHOME for every child process; a host venv they
+    # create breaks the plugin's own build (astral-sh/uv issue 19080, fixed in 0.11.9). Refuse before building.
+    $uvVersion = ''
+    $uvLine = (& uv --version 2>$null | Select-Object -First 1)
+    if ($uvLine -and $uvLine -match '^uv\s+(\S+)') { $uvVersion = $Matches[1] }
+    if ($uvVersion -in @('0.11.7', '0.11.8')) { Say "uv $uvVersion creates venvs whose launchers leak PYTHONHOME into every child process (the plugin build fails): update uv (uv self update) and run the import again."; exit 1 }
+    Say "uv $uvVersion"
     $v = $manifest.versions.'3lc-hub-11'
     $pinCompute = if ($v.'3lc-compute') { $v.'3lc-compute' } else { '1.1.0' }
     $pin3lc = if ($v.'3lc') { $v.'3lc' } else { '3.3.0' }
@@ -114,9 +121,8 @@ if (-not $SkipVenvs) {
 # 5. The untouched check (hub-11's snapshots of intel-scene and intel-scene-demo).
 $check = Join-Path $TargetRoot '3lc-hub-11\check_intel_scene_untouched.ps1'
 if ((Test-Path -LiteralPath $check) -and -not $SkipVenvs) {
-    if ($ProjectsRoot -ne 'C:\Users\rishi\AppData\Local\3LC\3LC\projects') { Say "NOTE: check_intel_scene_untouched.ps1 names C:\Users\rishi\AppData\Local\3LC\3LC\projects; your projects root is $ProjectsRoot" }
-    Say "Running $check"
-    & powershell -ExecutionPolicy Bypass -File $check
+    Say "Running $check -ProjectsRoot $ProjectsRoot"
+    & powershell -ExecutionPolicy Bypass -File $check -ProjectsRoot $ProjectsRoot
     Say "untouched check exit code $LASTEXITCODE (0 = both projects untouched)"
 }
 

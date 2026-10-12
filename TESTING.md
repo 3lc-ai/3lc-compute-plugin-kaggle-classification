@@ -15,7 +15,7 @@ Everything you install goes into one folder you create. Delete that folder after
 | | Needed | Where |
 |---|---|---|
 | A 3LC account and its API key | yes | https://account.3lc.ai (Settings → API key). The services refuse to start without a login. |
-| `uv` | yes | https://docs.astral.sh/uv/getting-started/installation/, the compute service builds the plugin’s environment with it. |
+| `uv` 0.11.9 or newer | yes | https://docs.astral.sh/uv/getting-started/installation/, the compute service builds the plugin’s environment with it. `uv --version` to check, `uv self update` to update: uv 0.11.7 and 0.11.8 create environments whose launchers leak PYTHONHOME into every child process, and the plugin’s build then fails. |
 | Python 3.12 | yes, via uv | `uv python install 3.12` (any OS). The 3LC packages have no wheel for Python 3.14. |
 | Chrome or Edge | yes | the Hub is a web page at https://hub.3lc.ai; it talks to the two services on your machine |
 | A GPU | optional | an NVIDIA GPU makes the 2-epoch training about 1 minute instead of about 5. CPU is fine. |

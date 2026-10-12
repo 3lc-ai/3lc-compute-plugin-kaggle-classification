@@ -64,6 +64,13 @@ echo "start_tester $(date -Iseconds)" > "$ROOT/start_tester.last.log"
 for exe in 3lc 3lc-compute; do
   [ -x "$VENV/bin/$exe" ] || { say "Missing $VENV/bin/$exe - create the venv first (TESTING.md step 2)."; exit 1; }
 done
+# uv 0.11.7 and 0.11.8 write venv launchers that set PYTHONHOME for every child process, so the plugin's own build
+# runs one Python on another's library and fails (astral-sh/uv issue 19080, fixed in 0.11.9). The venv records
+# the uv that created it in pyvenv.cfg.
+venv_uv=$(sed -n 's/^[[:space:]]*uv[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p' "$VENV/pyvenv.cfg" 2>/dev/null | head -n 1)
+case "$venv_uv" in
+  0.11.7|0.11.8) say "The venv was created by uv $venv_uv, whose launchers leak PYTHONHOME into every child process (the plugin build fails): update uv (uv self update) and recreate the venv (TESTING.md step 2)."; exit 1 ;;
+esac
 command -v uv >/dev/null 2>&1 || { say "uv is not on PATH - the compute service needs it to build the plugin's environment (TESTING.md step 1)."; exit 1; }
 for port in "$OBJECT_PORT" "$COMPUTE_PORT"; do
   if listening "$port"; then say "Already listening on :$port. Stop it (--stop), or set OBJECT_PORT / COMPUTE_PORT."; exit 1; fi
