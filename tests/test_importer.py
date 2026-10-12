@@ -198,6 +198,28 @@ def test_import_state_goes_stale_when_a_table_disappears(project_root, kit_and_m
     assert state["state"] == "stale" and state["verified"] == {"train": True, "val": False}
 
 
+def test_a_reimport_uses_the_kit_on_this_machine_not_the_recorded_path(project_root, kit_and_manifest, tmp_path):
+    """Session 13: the session (and a stale record) can remember a kit path that no longer exists, as a
+    copied project does. With no kit named in the request, resolve_params takes the kit the download
+    state verifies here, else the default destination, else the session's path, the first that holds a
+    files.json. The recorded path wins only when it is the one that exists."""
+    from kaggle_classification import kit
+
+    kit_root, manifest = kit_and_manifest
+    assert importer.resolve_params({}, manifest)["kit_dir"] == str(kit_root)      # the session's path exists
+    session.publish_kit_dir(manifest, tmp_path / "laptop" / "starter_kit")        # the remembered path is gone
+    with pytest.raises(importer.ImportRefused, match="Download the starter kit first"):
+        importer.resolve_params({}, manifest)
+    # A verified download on this machine: the download state's kit_dir wins over the remembered one.
+    kit._write_record(manifest, {"kit_dir": str(kit_root), "kit_version": manifest.kit.version, "file_count": 1})
+    assert importer.resolve_params({}, manifest)["kit_dir"] == str(kit_root)
+    assert importer.current_kit_dir(manifest, {"kit_dir": str(tmp_path / "laptop" / "starter_kit")}) == str(kit_root)
+    # An explicit kit folder in the request is taken as given (and validated), never swapped.
+    assert importer.resolve_params({"kit_dir": str(kit_root)}, manifest)["kit_dir"] == str(kit_root)
+    with pytest.raises(importer.ImportRefused, match="No kit found"):
+        importer.resolve_params({"kit_dir": str(tmp_path / "laptop" / "starter_kit")}, manifest)
+
+
 def test_validate_kit_reports_wrong_class_dirs_and_version(kit_and_manifest):
     kit_root, manifest = kit_and_manifest
     extra = kit_root / "data" / "train" / "zebra"

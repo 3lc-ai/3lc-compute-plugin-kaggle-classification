@@ -313,7 +313,7 @@ def resolve_params(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     current = session.populated_session(manifest)
     project = str(data.get("project_name") or current.get("project_name") or manifest.default_project).strip()
     table_name = str(data.get("table_name") or current.get("table_name") or DEFAULT_TABLE_NAME).strip()
-    kit_dir = str(data.get("kit_dir") or current.get("kit_dir") or "").strip().strip('"')
+    kit_dir = str(data.get("kit_dir") or "").strip().strip('"') or current_kit_dir(manifest, current)
     mode = str(data.get("mode") or "import").strip().lower()
     if mode not in MODES:
         msg = f"mode must be one of {MODES}, got {mode!r}"
@@ -330,6 +330,30 @@ def resolve_params(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
         msg = f"No kit found at {kit_root} ({FILES_INDEX_NAME} missing). Download the starter kit first."
         raise ImportRefused(msg)
     return {"project_name": project, "table_name": table_name, "kit_dir": str(kit_root), "mode": mode}
+
+
+def current_kit_dir(manifest: Manifest, current: dict[str, Any]) -> str:
+    """The kit folder an import uses when the request names none (session 13): the kit the download
+    state verifies on THIS machine, then the default destination, then the session's recorded path,
+    the first that holds a ``files.json``. A stale record's path is never preferred over a kit that is
+    here: a re-import after a move or a fresh download must read the kit that exists, not the one the
+    record remembers. Empty when none of them holds a kit."""
+    from kaggle_classification import kit
+
+    candidates: list[str] = []
+    try:
+        state = kit.download_state(manifest)
+    except Exception:
+        state = {}
+    if state.get("state") in ("success", "superseded") and state.get("kit_dir"):
+        candidates.append(str(state["kit_dir"]))
+    candidates.append(str(kit.kit_root_of(kit.default_dest(manifest) / manifest.kit.version)))
+    candidates.append(str(current.get("kit_dir") or ""))
+    for candidate in candidates:
+        folder = candidate.strip().strip('"')
+        if folder and (Path(folder).expanduser() / FILES_INDEX_NAME).is_file():
+            return folder
+    return ""
 
 
 # ── Rows ───────────────────────────────────────────────────────────────────
