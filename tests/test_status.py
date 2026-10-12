@@ -255,8 +255,46 @@ def test_doctor_reports_the_facts_without_the_network(seeded, manifest):
     assert doc["records"] == {"runs": 4, "project_runs": 3, "ledger_predict": 4, "ledger_submit": 3,
                               "ledger_path": str(ledger.ledger_path())}
     assert doc["plugin_home"]["resolved_by"] == "env" and isinstance(doc["plugin_home"]["disk"]["free_bytes"], int)
+    assert set(doc["uv"]) == {"plugin_venv", "host_venv", "pythonhome_in_worker", "leaky_versions"}
+    assert doc["uv"]["leaky_versions"] == ["0.11.7", "0.11.8"]
     assert "kaggle" not in doc
     json.dumps(doc)   # serializable as served
+
+
+def test_venv_facts_name_the_uv_that_leaks_pythonhome(tmp_path):
+    """Session 13: uv 0.11.7 and 0.11.8 launchers set PYTHONHOME for every child process. The Doctor reads
+    the ``uv =`` line of a venv's pyvenv.cfg and flags those two; anything else, or no uv line, is clean."""
+    cfg = tmp_path / ".venv" / "pyvenv.cfg"
+    cfg.parent.mkdir()
+    cfg.write_text("home = C:\\py\\cpython-3.12\nimplementation = CPython\nuv = 0.11.7\nversion_info = 3.12.13\n")
+    facts = status.venv_facts(cfg)
+    assert facts == {"path": str(cfg.parent), "uv": "0.11.7", "home": "C:\\py\\cpython-3.12",
+                     "python": "3.12.13", "leaks_pythonhome": True}
+    cfg.write_text("home = /opt/py\nuv = 0.13.0\nversion = 3.12.13\n")
+    assert status.venv_facts(cfg)["leaks_pythonhome"] is False and status.venv_facts(cfg)["python"] == "3.12.13"
+    cfg.write_text("home = /opt/py\nversion = 3.12.13\n")   # a venv made by python -m venv: no uv line
+    assert status.venv_facts(cfg)["uv"] == "" and status.venv_facts(cfg)["leaks_pythonhome"] is False
+    assert status.venv_facts(tmp_path / "missing" / "pyvenv.cfg") is None
+
+
+def test_uv_facts_find_the_host_venv_in_the_tester_layout(tmp_path, monkeypatch):
+    """The worker's cwd is ``<home>/.3lc-compute/managed-plugins/kaggle-classification``; the tester layout keeps
+    the host venv two levels above the compute home. Outside that layout the host venv is unknown, not guessed."""
+    from kaggle_classification import storage
+
+    tester = tmp_path / "tester"
+    cwd = tester / "home" / ".3lc-compute" / storage.MANAGED_DIR_NAME / storage.PLUGIN_ID
+    cwd.mkdir(parents=True)
+    (tester / ".venv").mkdir()
+    (tester / ".venv" / "pyvenv.cfg").write_text("home = C:\\py\nuv = 0.11.8\nversion_info = 3.12\n")
+    monkeypatch.chdir(cwd)
+    monkeypatch.delenv("PYTHONHOME", raising=False)
+    facts = status.uv_facts()
+    assert facts["host_venv"]["uv"] == "0.11.8" and facts["host_venv"]["leaks_pythonhome"] is True
+    assert facts["plugin_venv"] is None or facts["plugin_venv"]["path"]
+    assert facts["pythonhome_in_worker"] is None
+    monkeypatch.chdir(tmp_path)
+    assert status.uv_facts()["host_venv"] is None
 
 
 # ── The verification bundle ───────────────────────────────────────────────────

@@ -6502,6 +6502,7 @@
           : k.state === 'superseded' ? k.kit_version + ' on disk, the manifest ships ' + k.current_version + kitWhen
           : k.state === 'stale' ? 'missing on disk' : k.state === 'empty' ? 'not downloaded' : (k.error || k.state || 'unknown');
         var fb = m.fallback || {};
+        var uvRow = stUvRow(doc.uv || {}), uvText = uvRow.text, uvDetail = uvRow.detail;
         return [
           ['Plugin', 'v' + (p.version || '?') + (p.commit ? ' · ' + String(p.commit).slice(0, 12) : ''), p.commit || ''],
           ['Compute service', health && health.version ? 'v' + health.version : 'unknown (health not readable)', ''],
@@ -6522,9 +6523,28 @@
            (h.migrated_from && h.migrated_from.source) ? h.path + ' (carried forward from ' + h.migrated_from.source + ' at ' + h.migrated_from.at + ')' : (h.path || '')],
           ['Free disk space', free, (h.disk && h.disk.measured_at) || ''],
           ['Python', (v.python || '?') + ' · ' + (v.platform || ''), ''],
+          ['uv', uvText, uvDetail],
           ['Records', fmtCount(rec.project_runs) + ' runs in this project · ' + fmtCount(rec.ledger_predict) +
                       ' predictions · ' + fmtCount(rec.ledger_submit) + ' submissions', rec.ledger_path || '']
         ];
+      }
+      // The uv that created each venv (from its pyvenv.cfg). uv 0.11.7 and 0.11.8 write launchers that leak
+      // PYTHONHOME into every child process: the plugin build then runs one Python on another's library.
+      function stUvRow(u) {
+        var pv = u.plugin_venv || null, hv = u.host_venv || null;
+        var leaky = (u.leaky_versions || ['0.11.7', '0.11.8']).join(' or ');
+        var part = function (label, f) {
+          if (!f) { return label + ' unknown'; }
+          return (f.uv || 'unknown uv') + ' built the ' + label + (f.leaks_pythonhome ? ' (leaks PYTHONHOME)' : '');
+        };
+        var text = part('plugin venv', pv) + ' · ' + (hv ? part('host venv', hv) : 'host venv not found');
+        var warn = (pv && pv.leaks_pythonhome) || (hv && hv.leaks_pythonhome);
+        if (warn) { text += ' · update uv (uv self update) and recreate the venv'; }
+        if (u.pythonhome_in_worker) { text += ' · PYTHONHOME is set in the worker: ' + u.pythonhome_in_worker; }
+        var detail = (pv ? 'plugin venv ' + pv.path + ' (uv ' + (pv.uv || '?') + ', Python ' + (pv.python || '?') + ', base ' + (pv.home || '?') + ')' : 'plugin venv unknown') +
+          (hv ? '\nhost venv ' + hv.path + ' (uv ' + (hv.uv || '?') + ', Python ' + (hv.python || '?') + ', base ' + (hv.home || '?') + ')' : '\nhost venv not found beside home\\') +
+          (warn ? '\nuv ' + leaky + ' launchers set PYTHONHOME for every child process (astral-sh/uv issue 19080, fixed in 0.11.9).' : '');
+        return { text: text, detail: detail };
       }
 
       function renderDoctorFrom(doc, health) {
@@ -6897,7 +6917,10 @@
           kit: { state: 'success', kit_version: (m.kit || {}).version || 'v1', file_count: 9601, kit_dir: home + '\\data\\' + id + '\\v1\\starter_kit' },
           kaggle: { state: mode === 'status-empty' ? 'no_credentials' : 'ready', username: 'participant', daily_limit: limit, submissions_used_today: 2 },
           plugin_home: { path: home, resolved_by: 'cwd', disk: { free_bytes: 184 * 1073741824, measured_at: 'C:\\' } },
-          records: { runs: RUNS.length, project_runs: RUNS.length, ledger_predict: 5, ledger_submit: 4, ledger_path: home + '\\ledger.jsonl' }
+          records: { runs: RUNS.length, project_runs: RUNS.length, ledger_predict: 5, ledger_submit: 4, ledger_path: home + '\\ledger.jsonl' },
+          uv: { plugin_venv: { path: home + '\\..\\managed-plugins\\kaggle-classification\\.venv', uv: '0.13.0', home: 'C:\\uv\\python\\cpython-3.12.13', python: '3.12.13', leaks_pythonhome: false },
+                host_venv: { path: 'C:\\tester\\.venv', uv: mode === 'status-empty' ? '0.11.7' : '0.13.0', home: 'C:\\uv\\python\\cpython-3.12.13', python: '3.12', leaks_pythonhome: mode === 'status-empty' },
+                pythonhome_in_worker: null, leaky_versions: ['0.11.7', '0.11.8'] }
         };
           return { RUNS: RUNS, RECORDS: RECORDS, LIVE_TRAIN: LIVE_TRAIN, KAGGLE_LIVE: KAGGLE_LIVE, KAGGLE_403: KAGGLE_403, DOCTOR: DOCTOR };
         }

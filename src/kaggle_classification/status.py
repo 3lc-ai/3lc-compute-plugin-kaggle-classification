@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import platform
 import re
 import shutil
@@ -378,6 +379,52 @@ def _dist_version(name: str) -> str:
         return ""
 
 
+# uv 0.11.7 and 0.11.8 write venv launchers that set PYTHONHOME in the launched process, which every
+# child interpreter inherits (astral-sh/uv issue 19080, fixed by PR 19199 in uv 0.11.9). A host venv
+# made by one of them breaks the plugin's own build whenever the plugin venv lands on another 3.12.
+UV_LEAKY_LAUNCHERS = ("0.11.7", "0.11.8")
+
+
+def venv_facts(cfg: Path) -> dict[str, Any] | None:
+    """The ``pyvenv.cfg`` facts the Doctor shows for a venv: the uv that created it, its base
+    interpreter, its Python, and whether that uv's launchers leak PYTHONHOME. ``None`` when absent."""
+    try:
+        text = cfg.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    facts: dict[str, Any] = {"path": str(cfg.parent), "uv": "", "home": "", "python": ""}
+    for line in text.splitlines():
+        key, sep, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if not sep:
+            continue
+        if key == "uv":
+            facts["uv"] = value
+        elif key == "home":
+            facts["home"] = value
+        elif key in ("version_info", "version"):
+            facts["python"] = value
+    facts["leaks_pythonhome"] = facts["uv"] in UV_LEAKY_LAUNCHERS
+    return facts
+
+
+def uv_facts() -> dict[str, Any]:
+    """The plugin venv (this interpreter's) and, in the tester layout, the host venv beside ``home\\``:
+    ``<tester folder>\\.venv`` two levels above the compute home. Elsewhere the host venv is unknown."""
+    plugin_venv = venv_facts(Path(sys.prefix) / "pyvenv.cfg")
+    host_venv = None
+    layout = storage.managed_layout(Path.cwd())
+    if layout is not None:
+        compute_home = layout[0].parents[1]          # <home>/.3lc-compute
+        host_venv = venv_facts(compute_home.parent.parent / ".venv" / "pyvenv.cfg")
+    return {
+        "plugin_venv": plugin_venv,
+        "host_venv": host_venv,
+        "pythonhome_in_worker": os.environ.get("PYTHONHOME"),
+        "leaky_versions": list(UV_LEAKY_LAUNCHERS),
+    }
+
+
 def plugin_commit() -> str:
     """The installed dist's git commit (``direct_url.json``), else the checkout's HEAD for a folder
     source, else ``unknown``."""
@@ -486,6 +533,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "ledger_path": str(ledger.ledger_path()),
         },
         "plugin_home": {**home, "disk": _free_space(Path(home["path"])), "migrated_from": storage.migration_record()},
+        "uv": uv_facts(),
         "time": time.time(),
     }
     if kaggle:
