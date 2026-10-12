@@ -461,6 +461,26 @@ curves have the same shape (a dip around epochs 3–5, the step at epoch 6 when 
 by epoch 8–10). Per-seed trajectories differ because the row order differs (§11 #1), as expected.
 Elapsed (job, first run includes the UMAP compile): kit 165 / 208 / 217 s, plugin 189 / 102 / 92 s.
 
+### Parity gate re-run on the cu130 build (session 14, 2026-10-12) — PASS
+
+`tools/parity_gate.py` (the plugin side above, re-runnable: a copy of the fresh environment's `initial`
+tables in a scratch project root, the same hyperparameters and seeds, auto device, plus one
+`predictor.run_predict` on the seed-42 checkpoint), on the PC: NVIDIA GeForce RTX 5070 Ti (compute
+capability 12.0, driver 616.64), CPython 3.12.13, **torch 2.14.0+cu130 / torchvision 0.29.0+cu130**
+(the index moved from cu126, whose kernels stop at sm_90; `gpu_kernel_support` reports `kernels_ok`
+True on this build), tlc 3.4.1. The kit side is the 2026-09-29 record above (unchanged).
+
+| Seed | Kit best val acc | Plugin best val acc (epoch) | Device | Elapsed |
+|---|---|---|---|---|
+| 42 | 68.75 % | 69.42 % (10) | cuda (auto) | 72.7 s (first run, UMAP compile) |
+| 43 | 71.83 % | 69.17 % (10) | cuda (auto) | 29.8 s |
+| 44 | 71.00 % | 69.75 % (9) | cuda (auto) | 30.8 s |
+| **mean ± std** | **70.53 ± 1.59** | **69.45 ± 0.29** | | |
+
+Difference of means −1.08 points against the threshold 3.59 (the larger std + 2): **PASS**. GPU predict on
+the seed-42 checkpoint: `cuda (auto)`, 1,800 rows, 10/10 checks, the val check 69.42 % = the recorded
+best, 3.6 s. Record: `.parity-gate/parity_gate.json` (untracked scratch).
+
 **Reference baseline:** the Epochs help now quotes the plugin's seed-42 run on `initial`: **69.5 % at
 epoch 8** of 10 on 600 labeled rows (`benchmark.REFERENCE`); the earlier 57.6 % figure came from the
 timm head on the randomly relabeled `manual-test` revision and is superseded.

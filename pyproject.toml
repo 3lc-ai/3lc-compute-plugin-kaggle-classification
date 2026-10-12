@@ -77,18 +77,23 @@ include = [
     "/NOTICE",
 ]
 
-# torch/torchvision index — MIRRORS THE TIMM PLUGIN EXACTLY (decision at Gate 0): the CUDA 12.6
-# index on Linux AND Windows, used only when the extra is selected during venv provisioning.
-# Windows needs the explicit index because default-PyPI torch on Windows is CPU-only. macOS
-# falls through to PyPI (no CUDA there).
+# torch/torchvision index — the shape of the timm and yolo plugins (the CUDA index on Linux AND
+# Windows, used only when the extra is selected during venv provisioning; Windows needs the explicit
+# index because default-PyPI torch on Windows is CPU-only; macOS falls through to PyPI, mps), on the
+# CUDA 13.0 index since session 14 (2026-10-12): the cu126 wheels carry kernels for sm_50 to sm_90
+# only, so an RTX 50-series GPU (compute capability 12.0, sm_120) ran every job on CPU after the
+# "no kernel image is available" fallback. cu130 ships sm_120 and keeps the exact pins; it needs an
+# NVIDIA driver of the R580 series or newer (older drivers see no CUDA and the Doctor says so).
+# The catalog install path honours this index over the host's `--torch-backend auto` (verified
+# 2026-10-12: the rc13 spec resolved +cu126 on a machine whose driver would have picked cu132).
 [[tool.uv.index]]
-name = "pytorch-cu126"
-url = "https://download.pytorch.org/whl/cu126"
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
-torchvision = { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
+torch = { index = "pytorch-cu130", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
+torchvision = { index = "pytorch-cu130", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }
 
 # Dev-only tooling (PEP 735). Never part of the wheel or the provision extra. hatchling is a TEST
 # input (tests/test_packaging.py builds the real wheel with `python -m hatchling build`);

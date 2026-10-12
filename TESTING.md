@@ -284,7 +284,7 @@ Open **4 Status**.
   refresh button; click it and the line resets.
 - Expand **Doctor** at the bottom: one row per fact, Plugin (v1.0.0rc13 and a commit), Compute
   service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
-  `+cu126` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
+  `+cu130` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
   kit v1, “cache” means the last fetched copy, the same document; if the server could not be reached, the
   row and a quiet line on the Import tab say which local copy is in use),
   Kit (v1 · 9,600 images + manifest · verified <date>), Kaggle (“not connected · connect on the Predict + Submit

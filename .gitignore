@@ -28,3 +28,6 @@ mapping.csv
 
 # The CDN mirror tools/make_cdn_tree.py produces (uploaded, never committed)
 cdn/
+
+# The parity gate scratch (tools/parity_gate.py): runs, records and a CSV
+.parity-gate/
