@@ -597,6 +597,34 @@ def trained(tmp_path, home, project_root):
     return manifest, kit_root, result
 
 
+def test_predict_falls_back_to_cpu_like_train_when_the_accelerator_fails(trained, monkeypatch):
+    """Session 14: an accelerator that fails at model load or at the probe forward retries on CPU with the
+    same facts a training run records: ``device_fallback_reason``, ``device_fallback_at`` and the
+    ``cpu (fallback: …)`` label. The failure here is the one a GPU without kernels raises."""
+    manifest, _kit_root, _ = trained
+    real_load = predictor.load_model
+    attempts: list[str] = []
+
+    def failing_load(weights, mf, device):
+        attempts.append(device)
+        if device != "cpu":
+            msg = "CUDA error: no kernel image is available for execution on the device"
+            raise RuntimeError(msg)
+        return real_load(weights, mf, device)
+
+    monkeypatch.setattr(predictor, "load_model", failing_load)
+    monkeypatch.setattr(trainer, "resolve_device_with_reason", lambda raw: ("cuda", ""))
+    ctx = FakeCtx()
+    ctx.job_id = "predict-fallback"
+    out = predictor.run_predict({"train_job_id": "train-e2e", "device": ""}, ctx, manifest)
+    assert attempts == ["cuda", "cpu"] and out["device"] == "cpu" and out["rows"] == 4
+    assert ctx.facts["device_label"].startswith("cpu (fallback: RuntimeError: CUDA error: no kernel image")
+    assert ctx.facts["device_fallback_reason"].startswith("RuntimeError: CUDA error") and ctx.facts["device_fallback_at"] > 0
+    assert ctx.facts["device_class"] == "cpu"
+    rec = predictor.read_predict_record()
+    assert rec["facts"]["device_fallback_reason"] == ctx.facts["device_fallback_reason"]
+
+
 def test_run_predict_end_to_end_on_cpu(trained):
     manifest, kit_root, train_result = trained
     ctx = FakeCtx()

@@ -229,6 +229,41 @@ def test_auto_never_resolves_to_cpu_while_cuda_is_available(monkeypatch):
     assert trainer.resolve_device("") == "cpu"
 
 
+def test_arch_list_coverage_follows_torch_s_own_rule():
+    """Session 14: an sm_XY kernel runs on hardware of the same major with minor >= Y; a compute_XY PTX
+    entry of an older or equal major JIT-compiles forward. The cu126 list stops at sm_90, so an RTX
+    50-series card (12.0) is uncovered; the cu130 list carries sm_120."""
+    cu126 = ["sm_50", "sm_60", "sm_61", "sm_70", "sm_75", "sm_80", "sm_86", "sm_90"]
+    cu130 = ["sm_75", "sm_80", "sm_86", "sm_90", "sm_100", "sm_120"]
+    assert trainer._arch_covers(cu126, 8, 6) is True        # RTX 30-series
+    assert trainer._arch_covers(cu126, 8, 9) is True        # RTX 40-series: sm_86 <= 8.9
+    assert trainer._arch_covers(cu126, 12, 0) is False      # RTX 50-series on cu126
+    assert trainer._arch_covers(cu130, 12, 0) is True
+    assert trainer._arch_covers(cu130, 6, 1) is False       # Pascal lost on cu130
+    assert trainer._arch_covers(["compute_90"], 12, 0) is True
+    assert trainer._arch_covers([], 8, 6) is False
+
+
+def test_auto_lands_on_cpu_with_the_reason_when_the_build_has_no_kernels_for_the_gpu(monkeypatch):
+    """Session 14: with CUDA present but no kernels for the card, a blank Device field resolves to cpu and
+    the reason names the GPU, its capability and the build; a typed device is never second-guessed."""
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda i=0: (12, 0))
+    monkeypatch.setattr(torch.cuda, "get_device_name", lambda i=0: "NVIDIA GeForce RTX 5070 Ti")
+    monkeypatch.setattr(torch.cuda, "get_arch_list", lambda: ["sm_50", "sm_90"])
+    support = trainer.gpu_kernel_support()
+    assert support["kernels_ok"] is False and support["capability"] == "12.0" and "RTX 5070 Ti" in support["reason"]
+    assert support["reason"].endswith("runs will use CPU.")
+    assert trainer.resolve_device("") == "cpu"
+    device, reason = trainer.resolve_device_with_reason("")
+    assert device == "cpu" and reason == support["reason"]
+    assert trainer.device_label(device, "", reason).startswith("cpu (fallback: GPU found (NVIDIA GeForce RTX 5070 Ti")
+    assert trainer.resolve_device_with_reason("cuda") == ("cuda", "")     # forced stays forced, no reason
+    monkeypatch.setattr(torch.cuda, "get_arch_list", lambda: ["sm_90", "sm_120"])
+    assert trainer.gpu_kernel_support()["kernels_ok"] is True
+    assert trainer.resolve_device_with_reason("") == ("cuda", "")
+
+
 @pytest.fixture
 def project_root(tmp_path, monkeypatch):
     root = tmp_path / "3lc-root"

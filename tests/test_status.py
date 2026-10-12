@@ -250,6 +250,7 @@ def test_doctor_reports_the_facts_without_the_network(seeded, manifest):
     assert doc["plugin"]["version"] and doc["plugin"]["commit"]
     assert set(doc["versions"]) >= {"sdk", "tlc", "torch", "torchvision", "kaggle", "python", "platform"}
     assert doc["device"]["device_class"] == "cpu" and doc["device"]["cuda_available"] is False
+    assert "gpu" in doc["device"]   # session 14: the worker's GPU against the build's kernels (None on this fake probe)
     assert doc["manifest"]["manifest_source"] in ("bundled", "cache") and doc["manifest"]["manifest_sha256"]
     assert doc["kit"]["state"] == "empty" and doc["import"]["project_name"] == PROJECT
     assert doc["records"] == {"runs": 4, "project_runs": 3, "ledger_predict": 4, "ledger_submit": 3,

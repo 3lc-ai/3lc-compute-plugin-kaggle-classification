@@ -770,7 +770,7 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
     workers = trainer.default_workers()
     _, val_tf = trainer.build_transforms(image_size)
     device_requested = str(params.get("device") or "")
-    device = trainer.resolve_device(device_requested)
+    device, auto_fallback_reason = trainer.resolve_device_with_reason(device_requested)
     reclaim_gpu_memory()
 
     last_flush = [0.0]
@@ -792,23 +792,41 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
 
     inputs_val_total = [0]
 
-    # ── Model (with the Train stage's CPU retry at load time) ───────────────
+    # ── Model + first batch, with the Train stage's CPU retry (session 14: the probe forward catches
+    # an accelerator that loads the weights but has no kernels for the model; the record and the log
+    # carry the same "fallback:" facts as a training run) ────────────────────
     model: Any = None
-    fallback_reason = ""
+    fallback_reason = auto_fallback_reason
+    if fallback_reason:
+        rec.record["facts"]["device_fallback_reason"] = fallback_reason
+        rec.record["facts"]["device_fallback_at"] = time.time()
+        set_field("device_fallback_reason", fallback_reason)
+        set_field("device_fallback_at", rec.record["facts"]["device_fallback_at"])
     while True:
         try:
             model = load_model(ck["weights"], manifest, device)
+            import torch
+
+            with torch.no_grad():
+                model(torch.zeros(1, 3, image_size, image_size, device=device))
             break
         except Exception as exc:
             if device != "cpu" and _is_device_error(exc):
                 fallback_reason = f"{type(exc).__name__}: {str(exc).splitlines()[0][:200]}"
                 log(f"Accelerator failed ({fallback_reason}). Retrying on CPU.")
+                rec.record["facts"]["device_fallback_reason"] = fallback_reason
+                rec.record["facts"]["device_fallback_at"] = time.time()
+                set_field("device_fallback_reason", fallback_reason)
+                set_field("device_fallback_at", rec.record["facts"]["device_fallback_at"])
+                model = None
+                reclaim_gpu_memory()
                 device = "cpu"
                 continue
             raise
     label = trainer.device_label(device, device_requested, fallback_reason)
-    rec.record["facts"].update({"device": device, "device_label": label})
+    rec.record["facts"].update({"device": device, "device_label": label, "device_class": trainer.device_class(device)})
     set_field("device", device)
+    set_field("device_class", trainer.device_class(device))
     set_field("device_label", label)
     log(f"Device: {label}")
     log(f"Model: {manifest.model.backbone} + {manifest.model.head}, {image_size}px (locked), batch {BATCH_SIZE}, "

@@ -547,6 +547,8 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "probe": probe.get("state", "idle"), "device_class": probe.get("device_class"),
             "cuda_available": (probe.get("device_class") == "cuda") if probe.get("state") == "done" else None,
             "workers_default": trainer.default_workers(),
+            # Session 14: the GPU the worker sees against the kernels its torch build carries.
+            "gpu": probe.get("gpu"),
         },
         "manifest": {**prov, "refresh": manifest_mod.refresh_status(), "cache": cache_info or None},
         "kit": kit_state,

@@ -960,8 +960,64 @@ def train_state() -> dict[str, Any]:
 
 # ── Device probe (off the request path) ─────────────────────────────────────
 
-_device_probe: dict[str, Any] = {"state": "idle", "device_class": None}
+_device_probe: dict[str, Any] = {"state": "idle", "device_class": None, "gpu": None}
 _probe_lock = threading.Lock()
+
+
+def _arch_covers(arch_list: list[str], major: int, minor: int) -> bool:
+    """Whether a torch build's arch list runs on a GPU of compute capability ``major.minor``: an
+    ``sm_XY`` kernel runs on hardware of the same major with minor >= Y (torch's own rule, the one
+    its "not compatible with the current PyTorch installation" warning applies); a ``compute_XY``
+    PTX entry of an older or equal major JIT-compiles forward."""
+    for arch in arch_list:
+        kind, _, code = str(arch).partition("_")
+        if not code.isdigit() or len(code) < 2:
+            continue
+        a_major, a_minor = int(code[:-1]), int(code[-1])
+        if kind == "sm" and a_major == major and a_minor <= minor:
+            return True
+        if kind == "compute" and a_major <= major:
+            return True
+    return False
+
+
+def gpu_kernel_support() -> dict[str, Any]:
+    """Session 14: does this torch build carry kernels for the GPU it sees? ``kernels_ok`` is None
+    without CUDA, else the arch-list check; ``reason`` is the participant sentence when it fails
+    (the cu126 build stops at sm_90, so an RTX 50-series card, sm_120, ran every job on CPU)."""
+    out: dict[str, Any] = {"gpu_name": None, "capability": None, "arch_list": [], "torch": "", "kernels_ok": None, "reason": ""}
+    try:
+        import torch
+
+        out["torch"] = str(torch.__version__)
+        if not torch.cuda.is_available():
+            return out
+        major, minor = torch.cuda.get_device_capability(0)
+        out["gpu_name"] = str(torch.cuda.get_device_name(0))
+        out["capability"] = f"{major}.{minor}"
+        out["arch_list"] = [str(a) for a in torch.cuda.get_arch_list()]
+        out["kernels_ok"] = _arch_covers(out["arch_list"], int(major), int(minor))
+        if not out["kernels_ok"]:
+            out["reason"] = (
+                f"GPU found ({out['gpu_name']}, compute capability {major}.{minor}) but this torch build "
+                f"({out['torch']}, kernels for {', '.join(out['arch_list']) or 'no architecture'}) has no kernels for it; "
+                "runs will use CPU."
+            )
+    except Exception as exc:
+        out["reason"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    return out
+
+
+def resolve_device_with_reason(raw: Any) -> tuple[str, str]:
+    """``resolve_device`` plus WHY auto landed on CPU although a GPU is present (session 14): the
+    kernel-support sentence, recorded as the run's fallback reason so the label reads
+    ``cpu (fallback: GPU found ... runs will use CPU.)``. Empty when nothing fell back."""
+    device = resolve_device(raw)
+    s = str(raw).strip() if raw is not None else ""
+    if s or device != "cpu":
+        return device, ""
+    support = gpu_kernel_support()
+    return device, (support["reason"] if support.get("kernels_ok") is False else "")
 
 
 def resolve_device(raw: Any) -> str:
@@ -982,7 +1038,9 @@ def resolve_device(raw: Any) -> str:
     import torch
 
     if torch.cuda.is_available():
-        return "cuda"
+        # Session 14: a GPU this torch build has no kernels for is not a working GPU; auto lands on
+        # CPU with the reason recorded (resolve_device_with_reason) instead of failing the first batch.
+        return "cuda" if gpu_kernel_support().get("kernels_ok") is not False else "cpu"
     try:
         if torch.backends.mps.is_available():
             return "mps"
@@ -1027,8 +1085,12 @@ def probe_device_async() -> dict[str, Any]:
             cls = device_class(resolve_device(""))
         except Exception:
             cls = "cpu"
+        try:
+            gpu = gpu_kernel_support()
+        except Exception:
+            gpu = None
         with _probe_lock:
-            _device_probe.update({"state": "done", "device_class": cls})
+            _device_probe.update({"state": "done", "device_class": cls, "gpu": gpu})
 
     threading.Thread(target=_run, name="kaggle-classification-device-probe", daemon=True).start()
     return dict(_device_probe)
@@ -1519,7 +1581,7 @@ def _train_and_collect(
     # optimizer → scheduler → the Run → the loop. Nothing between set_seed and the model draws RNG.
     set_seed(seed)
     device_requested = kw["device"]
-    device = resolve_device(device_requested)
+    device, auto_fallback_reason = resolve_device_with_reason(device_requested)
     st = _Loop(total=epochs)
 
     train_tf, val_tf = build_transforms(image_size)
@@ -1607,7 +1669,14 @@ def _train_and_collect(
         rec.touch()
 
     # ── Model + first batch, with the CPU retry (accelerator failures at model / first-batch time) ──
-    fallback_reason = ""
+    # Session 14: auto already landed on CPU when the GPU has no kernels in this build; that is a
+    # fallback too, recorded the same way (reason, stamp, label) without a failed first batch.
+    fallback_reason = auto_fallback_reason
+    if fallback_reason:
+        rec.record["facts"]["device_fallback_reason"] = fallback_reason
+        rec.record["facts"]["device_fallback_at"] = time.time()
+        set_field("device_fallback_reason", fallback_reason)
+        set_field("device_fallback_at", rec.record["facts"]["device_fallback_at"])
     attempt_device = device
     while True:
         try:
@@ -1625,7 +1694,9 @@ def _train_and_collect(
                 fallback_reason = f"{type(exc).__name__}: {str(exc).splitlines()[0][:200]}"
                 log(f"Accelerator failed ({fallback_reason}). Retrying on CPU from epoch 1.")
                 rec.record["facts"]["device_fallback_reason"] = fallback_reason
+                rec.record["facts"]["device_fallback_at"] = time.time()   # the ETA restarts from here
                 set_field("device_fallback_reason", fallback_reason)
+                set_field("device_fallback_at", rec.record["facts"]["device_fallback_at"])
                 try:
                     del model, optimizer
                     if torch.cuda.is_available():
