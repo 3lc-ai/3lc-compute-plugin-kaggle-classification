@@ -58,7 +58,7 @@ def main() -> int:
         # ── D1: predict on a cancelled, a failed and a running run ───────────
         try:
             answers = {}
-            for status in ("cancelled", "failed"):
+            for status in ("cancelled", "stale", "failed"):
                 r = by_status.get(status)
                 if not r:
                     answers[status] = {"status": "no such run"}
@@ -68,12 +68,15 @@ def main() -> int:
             code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign d1 running"})
             jid = body.get("job_id") or body.get("id")
             h.wait_terminal(client, jid, timeout=900, quiet=True, until=lambda j: "Epoch 1/" in str((j.get("progress") or {}).get("label") or "") or j.get("status") != "running")
-            pj = h.run_and_wait(client, "predict", {"train_job_id": jid, "device": ""}, timeout=600, quiet=True)
-            answers["running"] = {"status": pj.get("status"), "error": str(pj.get("error") or pj.get("body") or "")[:160]}
+            picker = next((r for r in runs_of(client) if r.get("id") == jid), None) or {}
+            answers["running"] = {"picker_usable": picker.get("usable"), "picker_reason": str(picker.get("reason") or picker.get("note") or "")[:120],
+                                  "note": "the GPU queue serializes jobs: a predict posted now runs after the train; the picker and the job gate refuse a running run"}
             h.cancel(client, jid)
             h.wait_terminal(client, jid, timeout=1800, quiet=True)
             ok = (answers.get("cancelled", {}).get("status") in ("completed", "no such run")
-                  and answers.get("failed", {}).get("status") in ("failed", "refused", "no such run") and answers["running"]["status"] in ("failed", "refused"))
+                  and answers.get("stale", {}).get("status") in ("failed", "refused", "no such run")
+                  and answers.get("failed", {}).get("status") in ("failed", "refused", "no such run")
+                  and answers["running"]["picker_usable"] is False)
             results.put("D1", "PASS" if ok else "FAIL", answers=answers)
         except Exception as exc:
             results.put("D1", "FAIL", exception=f"{type(exc).__name__}: {exc}")

@@ -1,0 +1,131 @@
+{
+ "items": {
+  "C7": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:25:53",
+   "exposed": {
+    "epochs": [
+     1.0,
+     50.0
+    ],
+    "batch_size": [
+     8.0,
+     128.0
+    ],
+    "lr": [
+     1e-05,
+     0.01
+    ],
+    "weight_decay": [
+     0.0,
+     0.1
+    ],
+    "seed": [
+     0.0,
+     2147483647.0
+    ],
+    "workers": [
+     0.0,
+     16.0
+    ]
+   },
+   "answers": {
+    "epochs below": {
+     "status": "failed",
+     "error": "epochs must be a whole number (got '0.1').\nworker stderr:\nINFO - 2026-10-12 15:24:17,180 - __main__ - worker - Plugin worker 'kaggle-classif"
+    },
+    "epochs above": {
+     "status": "failed",
+     "error": "epochs must be between 1 and 50 (got 500).\nworker stderr:\nINFO - 2026-10-12 15:24:17,545 - kaggle_classification.manifest - manifest - manif"
+    },
+    "batch_size below": {
+     "status": "failed",
+     "error": "batch_size must be a whole number (got '0.8').\nworker stderr:\nINFO - 2026-10-12 15:24:17,893 - kaggle_classification.manifest - manifest - m"
+    },
+    "batch_size above": {
+     "status": "failed",
+     "error": "batch_size must be between 8 and 128 (got 1280).\nworker stderr:\nINFO - 2026-10-12 15:24:20,848 - kaggle_classification.manifest - manifest -"
+    },
+    "lr below": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 1.0000000000000002e-06).\nworker stderr:\nINFO - 2026-10-12 15:24:21,176 - kaggle_classification.manife"
+    },
+    "lr above": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 0.1).\nworker stderr:\nINFO - 2026-10-12 15:24:23,213 - kaggle_classification.manifest - manifest - man"
+    },
+    "weight_decay below": {
+     "status": "completed",
+     "error": ""
+    },
+    "weight_decay above": {
+     "status": "failed",
+     "error": "weight_decay must be between 0 and 0.1 (got 1.0).\nworker stderr:\n  warn(\r\nWARNING 3lc: scan cycle completed without reading its whole scope "
+    },
+    "seed below": {
+     "status": "completed",
+     "error": ""
+    },
+    "seed above": {
+     "status": "failed",
+     "error": "seed must be between 0 and 2147483647 (got 21474836470).\nworker stderr:\n  warn(\r\nWARNING 3lc: scan cycle completed without reading its whole"
+    },
+    "workers below": {
+     "status": "completed",
+     "error": ""
+    },
+    "workers above": {
+     "status": "failed",
+     "error": "workers must be between 0 and 16 (got 160).\nworker stderr:\nC:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plu"
+    }
+   }
+  },
+  "C1": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:26:09",
+   "exception": "TypeError: Results.put() got multiple values for argument 'status'"
+  },
+  "C2": {
+   "status": "PASS",
+   "at": "2026-10-12T15:26:17",
+   "job_status": "cancelled",
+   "record_status": "cancelled",
+   "best_on_disk": true,
+   "best_epoch": 1
+  },
+  "C5": {
+   "status": "PASS",
+   "at": "2026-10-12T15:26:45",
+   "first": "completed",
+   "second": "completed",
+   "second_error": "",
+   "runs_named": []
+  },
+  "C8": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:26:59",
+   "exception": "TypeError: Results.put() got multiple values for argument 'status'"
+  },
+  "C6": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:27:27",
+   "exception": "TypeError: Results.put() got multiple values for argument 'status'"
+  },
+  "C3": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:27:55",
+   "job": "e9467cc66bdc4565b6f8744bf9487cea",
+   "workers_killed": 2,
+   "record_status": "completed",
+   "error": "",
+   "host_running_jobs": 0,
+   "best_on_disk": true
+  },
+  "C4": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:27:55",
+   "note": "unit: test_ui_train_reconcile; the reload path renders the record's state",
+   "record_status": "completed"
+  }
+ }
+}

@@ -1,0 +1,6 @@
+env root C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\A4-py3.11 (plugin state path length 189)
+$ uv venv --python 3.11 C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\A4-py3.11\.venv
+$ uv pip install --python C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\A4-py3.11\.venv\Scripts\python.exe --index-url https://pypi.org/simple 3lc-compute==1.1.0
+$ C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\campaign-scratch\envs\A4-py3.11\.venv\Scripts\python.exe -c import sys, importlib.metadata as m; print(sys.version.split()[0], m.version('3lc'), m.v
+host: 3.11.15 3.4.1 1.1.0
+[15:12:53] A4: PASS {"install": "succeeded", "install_s": 45.3, "ready_s": 4.0, "install_error": "", "doctor": {"version": "1.0.0rc14", "python": "3.11.17", "tlc": "3.4.1", "torch": "2.14.0+cu130", "gpu": null, "home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A4-py3.11\\home\\.

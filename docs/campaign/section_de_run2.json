@@ -1,0 +1,144 @@
+{
+ "items": {
+  "D1": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:28:56",
+   "answers": {
+    "cancelled": {
+     "status": "no such run"
+    },
+    "failed": {
+     "status": "no such run"
+    },
+    "running": {
+     "status": "completed",
+     "error": ""
+    }
+   }
+  },
+  "D2": {
+   "status": "PASS",
+   "at": "2026-10-12T15:29:05",
+   "tampered": "failed",
+   "error": "The best checkpoint on disk no longer matches the run\u2019s record (sha256 differs). Re-train, or pick another run.\nworker stderr:\nINFO - 2026-10-12 15:28:01,672 - kaggle_classification.manifest - manifes",
+   "restored": "completed",
+   "device": null
+  },
+  "D3": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:29:05",
+   "exception": "PermissionError: [Errno 13] Permission denied: '.'"
+  },
+  "D4": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:29:07",
+   "answers": {
+    "bad_format": {
+     "http": 200,
+     "text": "{\"ok\":false,\"kind\":\"format\",\"reason\":\"That doesn't look like a Kaggle access token: it should start with KGAT_ (kaggle.com > Settings > API > Create New Token).",
+     "file_after": true
+    },
+    "random": {
+     "http": 200,
+     "text": "{\"ok\":false,\"kind\":\"rejected\",\"reason\":\"Kaggle rejected the token (revoked, expired or mistyped); create a new one and try again.\",\"replaced_previous\":true}",
+     "file_after": false
+    },
+    "restored": {
+     "state": "ready",
+     "username": "rishikeshjadhav3lc"
+    }
+   }
+  },
+  "D7D8": {
+   "status": "PASS",
+   "at": "2026-10-12T15:29:08",
+   "state": "ready",
+   "daily_limit": 100,
+   "used": 1,
+   "note": "unit: not-joined (403) and the limit are simulated through the fake client; a cap of 100 is not reachable by hand"
+  },
+  "E1E2": {
+   "status": "PASS",
+   "at": "2026-10-12T15:29:09",
+   "preview": {
+    "checkpoints": {
+     "mode": "default",
+     "requested": [],
+     "default_runs": [],
+     "included": [],
+     "skipped": [],
+     "max": 2
+    },
+    "members": [
+     "README.txt",
+     "import_record.json",
+     "ledger.jsonl",
+     "manifest_provenance.json",
+     "plugin.json",
+     "project/intel-scene-fresh/datasets/intel-scene_train/tables/campaign-c6-edited/object.3lc.json",
+     "project/intel-scene-fresh/datasets/intel-scene_train/tables/initial-5/object.3lc.json",
+     "project/intel-scene-fresh/datasets/intel-scene_train/tables/initial-5/row_cache.parquet",
+     "project/intel-scene-fresh/datasets/intel-scene_val/tables/initial-5/object.3lc.json",
+     "project/intel-scene-fresh/datasets/intel-scene_val/tables/initial-5/row_cache.parquet",
+     "project/intel-scene-fresh/files.json",
+     "train_revisions.json"
+    ],
+    "runs": []
+   },
+   "zip": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\bundles\\verification-bundle_intel-scene_20261012_202909Z.zip",
+   "under_plugin_home": true,
+   "members": 12,
+   "members_sample": [
+    "README.txt",
+    "plugin.json",
+    "manifest_provenance.json",
+    "import_record.json",
+    "train_revisions.json",
+    "ledger.jsonl",
+    "project/intel-scene-fresh/files.json",
+    "project/intel-scene-fresh/datasets/intel-scene_train/tables/initial-5/object.3lc.json"
+   ]
+  },
+  "E4": {
+   "status": "PASS",
+   "at": "2026-10-12T15:29:09",
+   "token_hits": []
+  },
+  "E3": {
+   "status": "PASS",
+   "at": "2026-10-12T15:29:10",
+   "plugin": "1.0.0rc14",
+   "kit": "success",
+   "images": {
+    "train": "ok",
+    "val": "ok"
+   },
+   "gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 5070 Ti",
+    "capability": "12.0",
+    "arch_list": [
+     "sm_75",
+     "sm_80",
+     "sm_86",
+     "sm_90",
+     "sm_100",
+     "sm_120"
+    ],
+    "torch": "2.14.0+cu130",
+    "kernels_ok": true,
+    "reason": "",
+    "driver": "616.64",
+    "driver_min": 580,
+    "driver_too_old": false
+   },
+   "kaggle": "ready",
+   "uv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+    "uv": "0.13.0",
+    "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+    "python": "3.12",
+    "leaks_pythonhome": false
+   }
+  }
+ }
+}

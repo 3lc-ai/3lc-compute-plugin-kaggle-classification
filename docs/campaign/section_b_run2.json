@@ -1,0 +1,153 @@
+{
+ "items": {
+  "B6": {
+   "status": "PASS",
+   "at": "2026-10-12T15:21:57",
+   "answers": {
+    "wrong": {
+     "http": 200,
+     "all_ok": false,
+     "error": "No kit found at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\wrong-folder (files.json missing). Download the starter kit first.",
+     "kit_dir": null
+    },
+    "nested": {
+     "http": 200,
+     "all_ok": false,
+     "error": "No kit found at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1 (files.json missing",
+     "kit_dir": null
+    },
+    "trailing": {
+     "http": 200,
+     "all_ok": true,
+     "error": "",
+     "kit_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit"
+    },
+    "quoted": {
+     "http": 200,
+     "all_ok": true,
+     "error": "",
+     "kit_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit"
+    }
+   }
+  },
+  "B3": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:22:14",
+   "before_ok": true,
+   "after_ok": false,
+   "mismatch_count": 1,
+   "names_the_file": true,
+   "import_status": "completed",
+   "import_error": "",
+   "restored_ok": true
+  },
+  "B7": {
+   "status": "PASS",
+   "at": "2026-10-12T15:22:28",
+   "names": [
+    {
+     "expected": "initial-3",
+     "status": "completed",
+     "table": "initial-3",
+     "elapsed_s": 4.0
+    },
+    {
+     "expected": "initial-4",
+     "status": "completed",
+     "table": "initial-4",
+     "elapsed_s": 4.0
+    },
+    {
+     "expected": "initial-5",
+     "status": "completed",
+     "table": "initial-5",
+     "elapsed_s": 4.0
+    }
+   ]
+  },
+  "B9": {
+   "status": "PASS",
+   "at": "2026-10-12T15:22:28",
+   "first": {
+    "http": 201,
+    "status": "refused",
+    "error": ""
+   },
+   "second": {
+    "http": 201,
+    "status": "refused",
+    "error": ""
+   },
+   "partial_tables": [],
+   "table_after": "initial-5"
+  },
+  "B1": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:23:10",
+   "cancelled_at": "",
+   "parts_after_cancel": [],
+   "second_status": "completed",
+   "resumed_lines": [],
+   "kit_state": "success"
+  },
+  "B2": {
+   "status": "SKIP",
+   "at": "2026-10-12T15:23:10",
+   "corrupted": null,
+   "lines": []
+  },
+  "B4": {
+   "status": "PASS",
+   "at": "2026-10-12T15:23:14",
+   "kit_state": "stale",
+   "preflight_error": "No starter kit on this machine yet. Download the starter kit first.",
+   "train_status": "failed",
+   "train_error": "The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-5 points at images that are not on this machine: 8 of 8 sampled rows are missing, e.",
+   "doctor_images": {
+    "train": "missing",
+    "val": "missing"
+   }
+  },
+  "B5": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:23:54",
+   "fallback": {
+    "active": false,
+    "source": "cache",
+    "local_source": "cache",
+    "reason": "",
+    "detail": "",
+    "warnings": [],
+    "refresh_state": "running"
+   },
+   "verify_ok": true,
+   "verify_source": "manual",
+   "preflight_ok": true,
+   "doctor_fallback": {
+    "active": true,
+    "source": "cache",
+    "local_source": "cache",
+    "reason": "Using the last downloaded competition manifest; the server couldn't be reached.",
+    "detail": "http://127.0.0.1:60768/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "warnings": [
+     "The competition index could not be reached; using the cached copy from 2026-10-12T20:23:16Z."
+    ],
+    "refresh_state": "done"
+   },
+   "kit_state_source": "manual"
+  },
+  "B8": {
+   "status": "PASS",
+   "at": "2026-10-12T15:24:11",
+   "after_rename": "stale",
+   "missing": [
+    "train",
+    "val"
+   ],
+   "import_into_new": "completed",
+   "new_project": "intel-scene-fresh",
+   "after_restore": "success",
+   "note": "the import record now names the new project; the original folder is back on disk"
+  }
+ }
+}

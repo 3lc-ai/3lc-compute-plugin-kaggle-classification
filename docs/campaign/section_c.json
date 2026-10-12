@@ -1,0 +1,151 @@
+{
+ "items": {
+  "C7": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:43:55",
+   "exposed": {
+    "epochs": [
+     1.0,
+     50.0
+    ],
+    "batch_size": [
+     8.0,
+     128.0
+    ],
+    "lr": [
+     1e-05,
+     0.01
+    ],
+    "weight_decay": [
+     0.0,
+     0.1
+    ],
+    "seed": [
+     0.0,
+     2147483647.0
+    ],
+    "workers": [
+     0.0,
+     16.0
+    ]
+   },
+   "answers": {
+    "epochs below": {
+     "status": "failed",
+     "error": "epochs must be between 1 and 50 (got 0).\nworker stderr:\nINFO - 2026-10-12 15:42:41,610 - __main__ - worker - Plugin worker 'kaggle-classific"
+    },
+    "epochs above": {
+     "status": "failed",
+     "error": "epochs must be between 1 and 50 (got 51).\nworker stderr:\nINFO - 2026-10-12 15:42:41,968 - kaggle_classification.manifest - manifest - manife"
+    },
+    "batch_size below": {
+     "status": "failed",
+     "error": "batch_size must be between 8 and 128 (got 7).\nworker stderr:\nINFO - 2026-10-12 15:42:42,110 - kaggle_classification.manifest - manifest - ma"
+    },
+    "batch_size above": {
+     "status": "failed",
+     "error": "batch_size must be between 8 and 128 (got 129).\nworker stderr:\nINFO - 2026-10-12 15:42:45,257 - kaggle_classification.manifest - manifest - "
+    },
+    "lr below": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 1.0000000000000002e-06).\nworker stderr:\nINFO - 2026-10-12 15:42:45,599 - kaggle_classification.manife"
+    },
+    "lr above": {
+     "status": "failed",
+     "error": "lr must be between 1e-05 and 0.01 (got 0.1).\nworker stderr:\nINFO - 2026-10-12 15:42:47,632 - kaggle_classification.manifest - manifest - man"
+    },
+    "weight_decay below": {
+     "status": "completed",
+     "error": ""
+    },
+    "weight_decay above": {
+     "status": "failed",
+     "error": "weight_decay must be between 0 and 0.1 (got 1.0).\nworker stderr:\n  warn(\r\nWARNING 3lc: scan cycle completed without reading its whole scope "
+    },
+    "seed below": {
+     "status": "failed",
+     "error": "seed must be between 0 and 2147483647 (got -1).\nworker stderr:\nWARNING 3lc: scan cycle completed without reading its whole scope source=fs-p"
+    },
+    "seed above": {
+     "status": "failed",
+     "error": "seed must be between 0 and 2147483647 (got 2147483648).\nworker stderr:\nWARNING 3lc: scan cycle completed without reading its whole scope sou"
+    },
+    "workers below": {
+     "status": "failed",
+     "error": "workers must be between 0 and 16 (got -1).\nworker stderr:\nWARNING 3lc: scan cycle completed without reading its whole scope source=fs-projec"
+    },
+    "workers above": {
+     "status": "failed",
+     "error": "workers must be between 0 and 16 (got 17).\nworker stderr:\nINFO - 2026-10-12 15:43:45,985 - kaggle_classification.manifest - manifest - manif"
+    }
+   }
+  },
+  "C1": {
+   "status": "PASS",
+   "at": "2026-10-12T15:44:11",
+   "batch": 128.0,
+   "job_status": "completed",
+   "device_label": "cuda (auto)",
+   "fallback": null,
+   "error": "",
+   "note": "an OOM is not reachable inside the bound on a 16 GB card; the fallback path is unit-tested and seen on rc13 (cu126)"
+  },
+  "C2": {
+   "status": "PASS",
+   "at": "2026-10-12T15:44:19",
+   "job_status": "cancelled",
+   "record_status": "cancelled",
+   "best_on_disk": true,
+   "best_epoch": 1
+  },
+  "C5": {
+   "status": "PASS",
+   "at": "2026-10-12T15:44:47",
+   "first": "completed",
+   "second": "completed",
+   "second_error": "",
+   "runs_named": []
+  },
+  "C9": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:45:03",
+   "job_status": "completed",
+   "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/runs/campaign c9 \u00fcn\u00efcode \u540d\u524d run_0000",
+   "listed": false
+  },
+  "C8": {
+   "status": "FAIL",
+   "at": "2026-10-12T15:45:09",
+   "one_epoch": "completed",
+   "fifty": "cancelled",
+   "eta_s_at_epoch2": null,
+   "avg_epoch_s": null,
+   "total": null
+  },
+  "C6": {
+   "status": "PASS",
+   "at": "2026-10-12T15:45:35",
+   "revision": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene-fresh/datasets/intel-scene_train/tables/campaign-c6-edited",
+   "trained_on": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene-fresh/datasets/intel-scene_train/tables/campaign-c6-edited",
+   "job_status": "completed",
+   "checks": []
+  },
+  "C3": {
+   "status": "PASS",
+   "at": "2026-10-12T15:45:49",
+   "job": "154124e4ae464de8a5bfff6c1301f6f0",
+   "workers_killed": 2,
+   "status_before_kill": "Epoch 3/50",
+   "record_status": "stale",
+   "error": "Interrupted: the compute service restarted while this run was training.",
+   "host_running_jobs": 0,
+   "best_on_disk": true
+  },
+  "C4": {
+   "status": "PASS",
+   "at": "2026-10-12T15:45:49",
+   "note": "unit: test_ui_train_reconcile; the reload path renders the record's state",
+   "record_status": "stale"
+  }
+ }
+}

@@ -131,30 +131,32 @@ def main() -> int:
             if aside.exists():
                 shutil.rmtree(aside)
             shutil.move(str(kit_version_dir), str(aside))          # the kit is gone: a download is needed again
-            code, body = h.start(client, "download_kit", {})
-            jid = body.get("job_id") or body.get("id")
-            mid = h.wait_terminal(client, jid, timeout=600, quiet=True,
-                                  until=lambda j: ("01.zip" in str((j.get("progress") or {}).get("label") or "") and j.get("status") == "running")
-                                  or j.get("status") in ("completed", "failed", "cancelled"))
-            h.cancel(client, jid)
-            first = h.wait_terminal(client, jid, timeout=120, quiet=True)
-            parts = sorted(p.name for p in kit_version_dir.rglob("*.part")) if kit_version_dir.exists() else []
-            # B2: corrupt the partial so the resumed shard fails its sha256 once
-            corrupted = None
-            if parts:
-                part = next(kit_version_dir.rglob("*.part"))
-                with part.open("r+b") as f:
-                    f.seek(max(0, part.stat().st_size // 2))
-                    f.write(b"\xff" * 64)
-                corrupted = part.name
+            # The dev CDN delivers the whole kit in about a second (section F: 111 MB/s), too fast to cancel
+            # on a shard, so the interrupted state is built by hand from a download that kept its shards.
+            first = h.run_and_wait(client, "download_kit", {"keep_archives": True}, timeout=1200, quiet=True)
+            shards = sorted(p for p in kit_version_dir.glob("*.zip"))
+            shutil.rmtree(kit_dir, ignore_errors=True)                 # the extracted tree is gone again
+            truncated = shards[1]                                      # a shard cut in half becomes the .part the resume continues
+            half = truncated.stat().st_size // 2
+            data = truncated.read_bytes()[:half]
+            truncated.unlink()
+            truncated.with_suffix(".zip.part").write_bytes(data)
+            corrupted = shards[2]                                      # a full shard with 64 bytes flipped: sha256 mismatch, re-download
+            raw = bytearray(corrupted.read_bytes())
+            raw[len(raw) // 2:len(raw) // 2 + 64] = b"\xff" * 64
+            corrupted.write_bytes(bytes(raw))
+            parts = sorted(p.name for p in kit_version_dir.rglob("*.part"))
             second = h.run_and_wait(client, "download_kit", {}, timeout=1200, quiet=True)
-            log_text = "\n".join(second.get("log") or [])
+            log_lines = second.get("log") or []
+            log_text = "\n".join(log_lines)
             ks = meta(client).get("kit_state") or {}
-            results.put("B1", "PASS" if first.get("status") == "cancelled" and parts and second.get("status") == "completed" and ks.get("state") == "success" else "FAIL",
-                        cancelled_at=str((mid.get("progress") or {}).get("label") or "")[:80], parts_after_cancel=parts, second_status=second.get("status"),
-                        resumed_lines=[line for line in (second.get("log") or []) if "resum" in line.lower() or "already on disk" in line][:4], kit_state=ks.get("state"))
-            results.put("B2", "PASS" if corrupted and second.get("status") == "completed" and ("mismatch" in log_text.lower() or "retry" in log_text.lower() or "re-download" in log_text.lower()) else ("SKIP" if not corrupted else "FAIL"),
-                        corrupted=corrupted, lines=[line for line in (second.get("log") or []) if "mismatch" in line.lower() or "retry" in line.lower()][:4])
+            skipped = [line for line in log_lines if "already on disk" in line]
+            resumed = [line for line in log_lines if truncated.name in line]
+            redone = [line for line in log_lines if corrupted.name in line]
+            results.put("B1", "PASS" if first.get("status") == "completed" and parts and second.get("status") == "completed" and ks.get("state") == "success" and len(skipped) >= 2 and resumed else "FAIL",
+                        parts_before_resume=parts, second_status=second.get("status"), skipped_lines=skipped[:4], resumed_lines=resumed[:3], kit_state=ks.get("state"))
+            results.put("B2", "PASS" if second.get("status") == "completed" and redone and ("mismatch" in log_text.lower() or "re" in "".join(redone).lower()) else "FAIL",
+                        corrupted=corrupted.name, lines=redone[:4])
             if aside.exists():
                 shutil.rmtree(aside)
         except Exception as exc:
@@ -232,10 +234,13 @@ def main() -> int:
             job = h.run_and_wait(client, "import", {"project_name": project + "-fresh", "mode": "import"}, timeout=1800, quiet=True)
             st2 = meta(client).get("import_state") or {}
             shutil.move(str(renamed), str(pdir))
+            # Back on the original project: an import into it reuses its tables and the record names it again.
+            back = h.run_and_wait(client, "import", {"project_name": project, "mode": "import"}, timeout=1800, quiet=True)
             st3 = meta(client).get("import_state") or {}
             results.put("B8", "PASS" if st1.get("state") == "stale" and sorted(st1.get("missing") or []) == ["train", "val"] and job.get("status") == "completed" and st2.get("project") == project + "-fresh" else "FAIL",
                         after_rename=st1.get("state"), missing=st1.get("missing"), import_into_new=job.get("status"), new_project=st2.get("project"),
-                        after_restore=st3.get("state"), note="the import record now names the new project; the original folder is back on disk")
+                        after_restore=st3.get("state"), record_project_after=st3.get("project"), import_back=back.get("status"),
+                        note="the renamed project's tables were imported under a new name; the record was then put back on the original project")
     except Exception as exc:
         results.put("B8", "FAIL", exception=f"{type(exc).__name__}: {exc}")
     return 0

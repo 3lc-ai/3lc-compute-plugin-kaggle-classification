@@ -1,0 +1,291 @@
+{
+ "items": {
+  "A9": {
+   "status": "PASS",
+   "at": "2026-10-12T15:19:50",
+   "install": {
+    "state": "succeeded",
+    "error": "",
+    "install_s": 10.3,
+    "source": "3lc-compute-plugin-kaggle-classification[kaggle-classification] @ git+https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git@646cdf211725f5512f783fd25b708e3caba9ebd4",
+    "ready_s": 4.5,
+    "version": "1.0.0rc14"
+   },
+   "version": "1.0.0rc14",
+   "state_same": true,
+   "before": {
+    "exists": true,
+    "ui_config.json": 37097,
+    "ledger.jsonl": 9501,
+    "predictions": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "after": {
+    "exists": true,
+    "ui_config.json": 37097,
+    "ledger.jsonl": 9501,
+    "predictions": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "import_state": "success",
+   "kit_state": "success",
+   "doctor_gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 5070 Ti",
+    "capability": "12.0",
+    "arch_list": [
+     "sm_75",
+     "sm_80",
+     "sm_86",
+     "sm_90",
+     "sm_100",
+     "sm_120"
+    ],
+    "torch": "2.14.0+cu130",
+    "kernels_ok": true,
+    "reason": "",
+    "driver": "616.64",
+    "driver_min": 580,
+    "driver_too_old": false
+   },
+   "doctor_versions": {
+    "sdk": "0.3.3",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "torchvision": "0.29.0+cu130",
+    "kaggle": "2.2.4",
+    "python": "3.12.3",
+    "platform": "win32 \u00b7 Windows-11-10.0.26200-SP0"
+   },
+   "doctor_uv": {
+    "plugin_venv": {
+     "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv",
+     "uv": "0.13.0",
+     "home": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312",
+     "python": "3.12.3",
+     "leaks_pythonhome": false
+    },
+    "host_venv": {
+     "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+     "uv": "0.13.0",
+     "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+     "python": "3.12",
+     "leaks_pythonhome": false
+    },
+    "pythonhome_in_worker": null,
+    "leaky_versions": [
+     "0.11.7",
+     "0.11.8"
+    ]
+   },
+   "doctor_images": {
+    "train": {
+     "state": "ok",
+     "url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial",
+     "checked": 8,
+     "missing": 0,
+     "examples": []
+    },
+    "val": {
+     "state": "ok",
+     "url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_val/tables/initial",
+     "checked": 8,
+     "missing": 0,
+     "examples": []
+    }
+   }
+  },
+  "P3": {
+   "status": "PASS",
+   "at": "2026-10-12T15:19:50",
+   "gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 5070 Ti",
+    "capability": "12.0",
+    "arch_list": [
+     "sm_75",
+     "sm_80",
+     "sm_86",
+     "sm_90",
+     "sm_100",
+     "sm_120"
+    ],
+    "torch": "2.14.0+cu130",
+    "kernels_ok": true,
+    "reason": "",
+    "driver": "616.64",
+    "driver_min": 580,
+    "driver_too_old": false
+   }
+  },
+  "A10": {
+   "status": "PASS",
+   "at": "2026-10-12T15:20:04",
+   "delete_http": 200,
+   "card_after_delete": false,
+   "state_between": {
+    "exists": true,
+    "ui_config.json": 37097,
+    "ledger.jsonl": 9501,
+    "predictions": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ],
+    "kit_records": [
+     "intel-scene.json"
+    ],
+    "runs": [
+     "campaign a5 cpu",
+     "intel-scene_run_20261012_140838"
+    ]
+   },
+   "reinstall": {
+    "state": "succeeded",
+    "error": "",
+    "install_s": 5.2,
+    "source": "3lc-compute-plugin-kaggle-classification[kaggle-classification] @ git+https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git@646cdf211725f5512f783fd25b708e3caba9ebd4",
+    "ready_s": 4.5,
+    "version": "1.0.0rc14"
+   },
+   "import_state": "success",
+   "kit_state": "success"
+  },
+  "A11": {
+   "status": "PASS",
+   "at": "2026-10-12T15:20:09",
+   "ready_s": 4.3,
+   "boot_s": 4.9,
+   "provisioning": {
+    "plugin_id": "kaggle-classification",
+    "state": "ready",
+    "venv_python": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Scripts\\python.exe",
+    "managed_venv": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv",
+    "error": "",
+    "log_tail": ""
+   },
+   "version": "1.0.0rc14"
+  },
+  "A5": {
+   "status": "PASS",
+   "at": "2026-10-12T15:21:47",
+   "doctor_device": {
+    "probe": "done",
+    "device_class": "cpu",
+    "cuda_available": false,
+    "workers_default": 0,
+    "gpu": {
+     "gpu_name": null,
+     "capability": null,
+     "arch_list": [],
+     "torch": "2.14.0+cu130",
+     "kernels_ok": null,
+     "reason": "",
+     "driver": "616.64",
+     "driver_min": 580,
+     "driver_too_old": false
+    }
+   },
+   "train_status": "completed",
+   "train_s": 78.1,
+   "device_label": "cpu (auto)",
+   "eta_s_at_epoch1": 19,
+   "avg_epoch_s_at_epoch1": 9.5,
+   "actual_remaining_s": 64.1,
+   "eta_over_actual": 0.3,
+   "setup_s": 3.2,
+   "collect_s": 37.2,
+   "epoch_s_per_row": 0.0204,
+   "predict_status": "completed",
+   "predict_s": 12.0,
+   "predict_device": null,
+   "predict_checks": 0,
+   "predict_checks_total": 0
+  },
+  "A4": {
+   "status": "PASS",
+   "at": "2026-10-12T15:12:53",
+   "install": "succeeded",
+   "install_s": 45.3,
+   "ready_s": 4.0,
+   "install_error": "",
+   "doctor": {
+    "version": "1.0.0rc14",
+    "python": "3.11.17",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "gpu": null,
+    "home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A4-py3.11\\home\\.3lc-compute\\plugin-state\\kaggle-classification"
+   },
+   "download": "completed",
+   "download_s": 38.0,
+   "download_error": "",
+   "import": "completed",
+   "import_s": 4.0,
+   "import_error": "",
+   "train": "completed",
+   "train_s": 50.1,
+   "train_error": "",
+   "device_label": "cuda (auto)",
+   "predict": "completed",
+   "predict_s": 4.0,
+   "predict_error": "",
+   "host": "3.11.15 3.4.1 1.1.0",
+   "python_requested": "3.11",
+   "tlc_requested": null,
+   "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A4-py3.11",
+   "state_path_len": 189,
+   "elapsed_s": 153.3
+  },
+  "A8-3.3.0": {
+   "status": "PASS",
+   "at": "2026-10-12T15:15:08",
+   "install": "succeeded",
+   "install_s": 10.3,
+   "ready_s": 4.9,
+   "install_error": "",
+   "doctor": {
+    "version": "1.0.0rc14",
+    "python": "3.12.3",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "gpu": null,
+    "home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A8-tlc-3.3.0\\home\\.3lc-compute\\plugin-state\\kaggle-classification"
+   },
+   "download": "completed",
+   "download_s": 36.0,
+   "download_error": "",
+   "import": "completed",
+   "import_s": 6.0,
+   "import_error": "",
+   "train": "completed",
+   "train_s": 50.1,
+   "train_error": "",
+   "device_label": "cuda (auto)",
+   "predict": "completed",
+   "predict_s": 4.0,
+   "predict_error": "",
+   "host": "3.12.13 3.3.0 1.1.0",
+   "python_requested": "3.12",
+   "tlc_requested": "3.3.0",
+   "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\A8-tlc-3.3.0",
+   "state_path_len": 192,
+   "elapsed_s": 118.2
+  }
+ }
+}

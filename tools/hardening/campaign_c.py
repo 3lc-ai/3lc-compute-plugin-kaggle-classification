@@ -75,7 +75,7 @@ def main() -> int:
             answers = {}
             for key, (lo, hi) in exposed.items():
                 whole = float(lo).is_integer() and float(hi).is_integer() and key != "lr" and key != "weight_decay"
-                for tag, val in (("below", int(lo) - 1 if whole else lo / 10), ("above", int(hi) + 1 if whole else hi * 10)):
+                for tag, val in (("below", int(lo) - 1 if whole else (lo / 10 if lo else -0.01)), ("above", int(hi) + 1 if whole else hi * 10)):
                     job = h.run_and_wait(client, "train", {"epochs": "1", key: str(val), "run_name": f"campaign c7 {key} {tag}"}, timeout=300, quiet=True)
                     answers[f"{key} {tag}"] = {"status": job.get("status"), "error": str(job.get("error") or job.get("body") or "")[:140]}
             ok = bool(answers) and all(a["status"] in ("failed", "refused") and "between" in a["error"] for a in answers.values())
@@ -130,14 +130,14 @@ def main() -> int:
             job = h.run_and_wait(client, "train", {"epochs": "1", "run_name": name}, timeout=1800, quiet=True)
             cur = tstate(client).get("current") or {}
             run_url = str((cur.get("facts") or {}).get("run_url") or "")
-            runs = client.get(f"{h.API}/runs").json()
-            listed = any(name in json.dumps(r, ensure_ascii=False) for r in (runs if isinstance(runs, list) else runs.get("runs") or []))
+            runs = tstate(client).get("runs") or []
+            listed = any(name in json.dumps(r, ensure_ascii=False) for r in runs)
             results.put("C9", "PASS" if job.get("status") == "completed" and Path(run_url).is_dir() and listed else "FAIL",
                         job_status=job.get("status"), run_url=run_url, listed=listed)
             code, body = h.start(client, "train", {"epochs": "50", "run_name": "campaign c8 fifty"})
             jid = body.get("job_id") or body.get("id")
-            at2 = h.wait_terminal(client, jid, timeout=1800, quiet=True, until=lambda j: label_epoch(j, 3))
-            prog = at2.get("progress") or {}
+            h.wait_terminal(client, jid, timeout=1800, quiet=True, until=lambda j: label_epoch(j, 3))
+            prog = (tstate(client).get("current") or {}).get("progress") or {}
             h.cancel(client, jid)
             done = h.wait_terminal(client, jid, timeout=300, quiet=True)
             results.put("C8", "PASS" if job.get("status") == "completed" and done.get("status") == "cancelled" and prog.get("total_epochs") == 50 else "FAIL",

@@ -1,0 +1,442 @@
+INFO - 2026-10-12 15:39:17,537 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 15:39:17,539 - tlc_compute.shared.serial_queue - serial_queue - GPU queue started (single worker thread)
+INFO - 2026-10-12 15:39:17,539 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 15:39:17,539 - tlc_compute.shared.serial_queue - serial_queue - CPU queue started (single worker thread)
+INFO - 2026-10-12 15:39:17,539 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 15:39:17,541 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 15:39:17,542 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 15:39:17,542 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 15:39:17,543 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 15:39:17,544 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 15:39:17,562 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 15:39:17,571 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:17,572 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 59821 --id kaggle-classification
+INFO - 2026-10-12 15:39:17,798 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 15:39:17,799 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 15:39:18,305 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:18,305 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:59821
+INFO - 2026-10-12 15:39:18,604 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:18,666 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:18,666 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:18,667 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:18,667 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:18,816 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:18,816 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:39:21,805 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:21,807 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:21,823 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:21,822 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:21,823 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:21,823 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:21,933 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:21,933 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:21,944 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:21,944 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:21,946 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:21,946 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:22,054 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+[15:39:22] kit {'state': 'success', 'source': 'manual', 'dest_dir': 'C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1', 'kit_dir': 'C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit', 'kit_version': 'v1', 'current_version': 'v1', 'file_count': 9601, 'image_count': 9600, 'completed_at': 1791836641.8837066, 'verified_at': 1791836641.8837066, 'manifest_provenance': {'manifest_sha256': 'ec0c60cf45f03f8c67437f576daa4ddc36f0ef6e651a3235be4b25ec2c0bdfcb', 'manifest_source': 'cache', 'manifest_source_detail': 'C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\manifest-cache\\intel-scene.manifest.json', 'manifest_fetched_at': '2026-10-12T20:23:55Z', 'manifest_document_url': 'https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json', 'competition_id': 'intel-scene', 'kit_version': 'v1', 'schema_version': 1}, 'job_id': ''}; import success
+INFO - 2026-10-12 15:39:22,054 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:22,066 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:22,065 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:22,066 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cwrong-folder "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:22,066 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cwrong-folder "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:22,076 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:22,076 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:22,077 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1 "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:22,077 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1 "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:22,086 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:22,086 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:22,224 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit%5C "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:22,225 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit%5C "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:22,235 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:22,235 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:22,344 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight?kit_dir=%22C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit%22 "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:22,344 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight?kit_dir=%22C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit%22 "HTTP/1.1 200 OK"
+[15:39:22] B6: PASS {"answers": {"wrong": {"http": 200, "all_ok": false, "error": "No kit found at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\wrong-folder (files.json missing). Download the starter kit first.", "kit_dir": null}, "nested": {"http": 200, "all_ok": false, "error": "No kit 
+WARNING - 2026-10-12 15:39:22,358 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:22,357 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:25,793 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/download/verify "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:25,794 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/download/verify "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:25,841 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:25,840 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:29,202 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/download/verify "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:29,203 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/download/verify "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:29,204 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=5e53e7164899463fb5bd57b79715641c)
+[15:39:29] POST /run import {"mode": "reimport"} -> 201 {"job_id": "5e53e7164899463fb5bd57b79715641c", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:39:29,204 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:39:29,213 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:29,217 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/5e53e7164899463fb5bd57b79715641c/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:39:29,350 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:29,349 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:39:31,215 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:32,831 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:32,827 - __main__ - worker - run_job for job 5e53e7164899463fb5bd57b79715641c failed: The starter kit at C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\data\intel-scene\v1\starter_kit differs from the files it shipped with (1 changed, 0 missing; first: data/train/buildings/00a40f539e4d0a7c.jpg). Nothing was imported. Download the starter kit again (Re-verify on the Import tab names the files), then import.
+INFO - 2026-10-12 15:39:33,217 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:33,234 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:33,234 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:36,464 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/download/verify "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:36,465 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/download/verify "HTTP/1.1 200 OK"
+[15:39:36] B3: PASS {"before_ok": true, "after_ok": false, "mismatch_count": 1, "names_the_file": true, "import_status": "failed", "import_error": "The starter kit at C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit dif
+WARNING - 2026-10-12 15:39:36,479 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:36,479 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:36,614 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:36,614 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:36,616 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=f1709ee28cd54389a926355edc40179a)
+[15:39:36] POST /run import {"mode": "reimport"} -> 201 {"job_id": "f1709ee28cd54389a926355edc40179a", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:39:36,616 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:39:36,624 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:36,627 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/f1709ee28cd54389a926355edc40179a/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:39:36,754 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:36,754 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:39:38,627 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:40,629 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:42,630 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:42,662 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:42,661 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:42,664 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:42,664 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:42,902 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:42,903 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:42,929 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:42,928 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:43,948 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:43,949 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:43,950 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=b1f877cbf5754628abda5ddcc58fe7a8)
+[15:39:43] POST /run import {"mode": "reimport"} -> 201 {"job_id": "b1f877cbf5754628abda5ddcc58fe7a8", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:39:43,950 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:39:43,967 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:43,972 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/b1f877cbf5754628abda5ddcc58fe7a8/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:39:44,090 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:44,090 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:39:45,969 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:47,970 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:49,972 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:51,723 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Lib\site-packages\umap\umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+WARNING - 2026-10-12 15:39:51,723 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   warn(
+INFO - 2026-10-12 15:39:51,974 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:53,975 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:55,977 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:55,998 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:55,997 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:39:55,999 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:55,998 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:56,223 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:56,224 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:39:56,241 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:56,241 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:39:56,753 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:56,754 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:56,755 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=1117a471aa41495e826506367b4345e9)
+[15:39:56] POST /run import {"mode": "reimport"} -> 201 {"job_id": "1117a471aa41495e826506367b4345e9", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:39:56,755 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:39:56,765 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:39:56,766 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/1117a471aa41495e826506367b4345e9/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:39:56,899 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:39:56,898 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:39:58,767 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:00,769 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:02,771 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:04,772 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:06,775 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:40:06,795 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:06,794 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:40:06,795 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:06,795 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:40:07,015 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:07,017 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:40:07] B7: PASS {"names": [{"expected": "initial-6", "status": "completed", "table": "initial-6", "elapsed_s": 6.0}, {"expected": "initial-7", "status": "completed", "table": "initial-7", "elapsed_s": 12.0}, {"expected": "initial-8", "status": "completed", "table": "initial-8", "elapsed_s": 10.0}]}
+INFO - 2026-10-12 15:40:07,025 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=df8b9340e7494e3180b897bc62d7ca4f)
+[15:40:07] POST /run import {"mode": "reimport"} -> 201 {"job_id": "df8b9340e7494e3180b897bc62d7ca4f", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:40:07,025 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:40:07,037 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=4101fb7e5614494ebe5210b982aaafc2)
+[15:40:07] POST /run import {"mode": "reimport"} -> 201 {"job_id": "4101fb7e5614494ebe5210b982aaafc2", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:40:07,038 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:40:07,050 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/df8b9340e7494e3180b897bc62d7ca4f/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:40:07,052 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,052 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:40:07,053 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,053 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:40:07,267 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:07,268 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:40:07] B9: PASS {"first": {"http": 201, "status": "refused", "error": ""}, "second": {"http": 201, "status": "refused", "error": ""}, "partial_tables": [], "table_after": "initial-8"}
+INFO - 2026-10-12 15:40:07,281 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=1894a01b77a54843b5548c815f76dc00)
+[15:40:07] POST /run download_kit {} -> 201 {"job_id": "1894a01b77a54843b5548c815f76dc00", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:40:07,281 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:40:07,282 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:40:07,538 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,538 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 15:40:07,542 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,542 - __main__ - worker - run_job for job df8b9340e7494e3180b897bc62d7ca4f failed: No starter kit on this machine yet. Download the starter kit first.
+INFO - 2026-10-12 15:40:07,558 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/4101fb7e5614494ebe5210b982aaafc2/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:40:07,688 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,688 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 15:40:07,691 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,690 - __main__ - worker - run_job for job 4101fb7e5614494ebe5210b982aaafc2 failed: No starter kit on this machine yet. Download the starter kit first.
+INFO - 2026-10-12 15:40:07,706 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/1894a01b77a54843b5548c815f76dc00/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:40:07,815 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:07,815 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:40:09,285 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:11,285 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:13,288 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:15,290 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:17,292 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:19,294 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:21,295 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:23,296 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:25,298 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:27,300 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:29,301 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:31,303 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:33,305 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:35,305 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:37,308 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:39,309 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:41,311 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:43,313 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:45,314 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:47,317 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:49,319 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:49,320 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/jobs/1894a01b77a54843b5548c815f76dc00/cancel "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:40:49,321 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:49,342 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=1b907931c335409aafdf693a90829253)
+[15:40:49] POST /run download_kit {} -> 201 {"job_id": "1b907931c335409aafdf693a90829253", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:40:49,343 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:40:49,351 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:49,353 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/1b907931c335409aafdf693a90829253/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:40:49,488 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:40:49,488 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:40:51,352 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:53,353 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:55,355 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:57,357 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:40:59,359 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:01,361 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:03,362 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:05,363 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:07,364 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:09,367 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:11,367 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:13,369 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:15,371 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:17,372 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:19,375 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:21,377 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:23,377 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:23,398 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:23,398 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:23,399 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:23,399 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:23,622 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:23,623 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:41:23] B1: FAIL {"cancelled_at": "Done", "parts_after_cancel": [], "second_status": "completed", "resumed_lines": [], "kit_state": "success"}
+[15:41:23] B2: SKIP {"corrupted": null, "lines": []}
+WARNING - 2026-10-12 15:41:24,729 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:24,729 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:24,730 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:24,730 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:24,951 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:24,952 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:24,971 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:24,970 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:24,971 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:24,971 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:25,184 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:25,185 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:25,199 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:25,199 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:25,200 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/import/preflight "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:25,201 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight "HTTP/1.1 200 OK"
+[15:41:25] POST /run train {"epochs": "1", "run_name": "campaign b4"} -> 201 {"job_id": "30735c13ede045b482f65fa6a3258671", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:41:25,201 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=30735c13ede045b482f65fa6a3258671)
+INFO - 2026-10-12 15:41:25,202 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:41:25,209 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:25,212 - httpx - _client - HTTP Request: POST http://127.0.0.1:59821/jobs/30735c13ede045b482f65fa6a3258671/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:41:25,668 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:25,668 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 15:41:25,973 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:25,973 - __main__ - worker - run_job for job 30735c13ede045b482f65fa6a3258671 failed: The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-8 points at images that are not on this machine: 8 of 8 sampled rows are missing, e.g. C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/.3lc-compute/plugin-state/kaggle-classification/data/intel-scene/v1/starter_kit/data/train/buildings/00a40f539e4d0a7c.jpg. The kit the tables were imported from is no longer at that path. Download the starter kit and re-import on the Import tab, then train.
+INFO - 2026-10-12 15:41:27,211 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:27,238 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:27,238 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:27,251 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:27,251 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:27,527 - httpx - _client - HTTP Request: GET http://127.0.0.1:59821/status/doctor?kaggle=0 "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:27,528 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/status/doctor?kaggle=0 "HTTP/1.1 200 OK"
+[15:41:27] B4: PASS {"kit_state": "stale", "preflight_error": "No starter kit on this machine yet. Download the starter kit first.", "train_status": "failed", "train_error": "The train table C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/projects/intel-scene/datasets/intel-scene_train/tables/initial-8 points 
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'importer' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'exporter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'splitter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'merger' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'image-metrics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'table-statistics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'run-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'table-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:28,981 - tlc_compute.plugins.installer - installer - Persisted install 'kaggle-classification' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+WARNING 3lc: Scan URL {'url': Url('s3://3lc-public-examples-2-2/projects'), 'layout': 'project', 'static': True, 'object_type': 'configfile'} already in list, duplicated item will not be added.
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 15:41:29,011 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 15:41:29,013 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 15:41:29,015 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 15:41:29,016 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:29,017 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 65491 --id kaggle-classification
+INFO - 2026-10-12 15:41:29,228 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 15:41:29,229 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 15:41:29,792 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:29,792 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:65491
+INFO - 2026-10-12 15:41:30,045 - httpx - _client - HTTP Request: GET http://127.0.0.1:65491/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:30,104 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:30,104 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:30,105 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:30,105 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:30,255 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:30,255 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:41:37,388 - httpx - _client - HTTP Request: GET http://127.0.0.1:65491/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:37,389 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:37,405 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:37,405 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:37,406 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:37,406 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:37,622 - httpx - _client - HTTP Request: GET http://127.0.0.1:65491/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:37,622 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:41,542 - tlc_compute.plugins.installer - installer - Persisted install 'importer' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'exporter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'splitter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'merger' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'image-metrics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'table-statistics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'run-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'table-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:41:41,543 - tlc_compute.plugins.installer - installer - Persisted install 'kaggle-classification' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+WARNING 3lc: Scan URL {'url': Url('s3://3lc-public-examples-2-2/projects'), 'layout': 'project', 'static': True, 'object_type': 'configfile'} already in list, duplicated item will not be added.
+INFO - 2026-10-12 15:41:41,567 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 15:41:41,568 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 15:41:41,568 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 15:41:41,568 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 15:41:41,568 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 15:41:41,568 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 15:41:41,569 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 15:41:41,570 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 15:41:41,572 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:41,573 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 64584 --id kaggle-classification
+INFO - 2026-10-12 15:41:41,776 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 15:41:41,777 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 15:41:42,302 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:42,302 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:64584
+INFO - 2026-10-12 15:41:42,612 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:42,668 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:42,668 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:42,670 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:42,670 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:45,886 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:45,887 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:45,899 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:45,898 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:45,899 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:45,899 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:46,116 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:46,116 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:46,764 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:46,764 - kaggle_classification.manifest - manifest - manifest index unreachable: http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+WARNING - 2026-10-12 15:41:46,765 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:46,765 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:48,130 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:48,130 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:41:48,131 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:48,131 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:41:48,348 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:41:48,349 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:41:48,360 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:41:48,360 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:13,652 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/download/verify?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cmanual-kit%5Cstarter_kit "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:13,653 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/download/verify?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cmanual-kit%5Cstarter_kit "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:13,663 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:13,663 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:13,773 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cmanual-kit%5Cstarter_kit "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:13,773 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/import/preflight?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Ccampaign-scratch%5Cmanual-kit%5Cstarter_kit "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:13,792 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:13,792 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:13,794 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:13,793 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:14,056 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/status/doctor?kaggle=0 "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:14,057 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/status/doctor?kaggle=0 "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:14,072 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:14,072 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:14,073 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:14,073 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:14,316 - httpx - _client - HTTP Request: GET http://127.0.0.1:64584/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:14,318 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:42:14] B5: PASS {"fallback": {"active": true, "source": "cache", "local_source": "cache", "reason": "Using the last downloaded competition manifest; the server couldn't be reached.", "detail": "http://127.0.0.1:64581/kaggle/classification-index.json: <urlopen error [WinError 10061] No connection could be made becau
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'importer' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'exporter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'splitter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'merger' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'image-metrics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'table-statistics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'run-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'table-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:14,654 - tlc_compute.plugins.installer - installer - Persisted install 'kaggle-classification' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+WARNING 3lc: Scan URL {'url': Url('s3://3lc-public-examples-2-2/projects'), 'layout': 'project', 'static': True, 'object_type': 'configfile'} already in list, duplicated item will not be added.
+INFO - 2026-10-12 15:42:14,682 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 15:42:14,682 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 15:42:14,682 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 15:42:14,683 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 15:42:14,683 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 15:42:14,683 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 15:42:14,684 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 15:42:14,686 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 15:42:14,687 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:14,688 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 58260 --id kaggle-classification
+INFO - 2026-10-12 15:42:14,930 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 15:42:14,930 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 15:42:15,417 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:15,416 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:58260
+INFO - 2026-10-12 15:42:15,727 - httpx - _client - HTTP Request: GET http://127.0.0.1:58260/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:15,784 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:15,784 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:15,785 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:15,785 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:15,938 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:15,938 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:42:19,074 - httpx - _client - HTTP Request: GET http://127.0.0.1:58260/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:19,075 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:19,091 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:19,091 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:22,572 - httpx - _client - HTTP Request: GET http://127.0.0.1:58260/download/verify?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit "HTTP/1.1 200 OK"
+[15:42:22] recorded kit restored to the download: ok=True source=manual
+INFO - 2026-10-12 15:42:22,573 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/download/verify?kit_dir=C%3A%5CUsers%5COwner%5CDesktop%5C3LC+Hackathons%5C3lc-hub-fresh%5Chome%5C.3lc-compute%5Cplugin-state%5Ckaggle-classification%5Cdata%5Cintel-scene%5Cv1%5Cstarter_kit "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'importer' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'exporter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'splitter' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'merger' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'image-metrics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'table-statistics' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'run-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'table-insights' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+INFO - 2026-10-12 15:42:22,901 - tlc_compute.plugins.installer - installer - Persisted install 'kaggle-classification' skipped — an in-tree or folder-Source plugin already claims that id (local copy wins)
+WARNING 3lc: Scan URL {'url': Url('s3://3lc-public-examples-2-2/projects'), 'layout': 'project', 'static': True, 'object_type': 'configfile'} already in list, duplicated item will not be added.
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 15:42:22,926 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 15:42:22,928 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 15:42:22,930 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 15:42:22,930 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:22,931 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 53503 --id kaggle-classification
+INFO - 2026-10-12 15:42:23,143 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 15:42:23,143 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 15:42:23,665 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:23,665 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:53503
+INFO - 2026-10-12 15:42:23,953 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:24,009 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:24,008 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:24,010 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:24,010 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:24,175 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:24,175 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:42:27,208 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:27,209 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:27,225 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:27,225 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:27,226 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:27,226 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:27,437 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:27,438 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:27,451 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:27,451 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:27,452 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:27,452 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:27,458 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:27,458 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:42:27] POST /run import {"project_name": "intel-scene-fresh", "mode": "import"} -> 201 {"job_id": "f9544c5b4e6445a7a95f7f003d35f494", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 15:42:27,463 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=f9544c5b4e6445a7a95f7f003d35f494)
+INFO - 2026-10-12 15:42:27,463 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 15:42:27,472 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:27,473 - httpx - _client - HTTP Request: POST http://127.0.0.1:53503/jobs/f9544c5b4e6445a7a95f7f003d35f494/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 15:42:27,939 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:27,938 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 15:42:29,474 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:31,476 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:33,477 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:35,480 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:35,517 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:35,517 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:35,520 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:35,520 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:35,753 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:35,754 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 15:42:35,774 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:35,773 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 15:42:35,775 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 15:42:35,775 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 15:42:36,029 - httpx - _client - HTTP Request: GET http://127.0.0.1:53503/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 15:42:36,030 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+[15:42:36] B8: PASS {"after_rename": "stale", "missing": ["train", "val"], "import_into_new": "completed", "new_project": "intel-scene-fresh", "after_restore": "success", "note": "the import record now names the new project; the original folder is back on disk"}
