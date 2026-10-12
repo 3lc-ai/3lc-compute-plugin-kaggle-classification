@@ -431,7 +431,7 @@ either way.
 
 ### G-5. Relicensing record — modules adapted from `3lc-compute-plugin-kaggle` (signed off 2026-10-12)
 
-**Decision recorded 2026-10-12** (Rishikesh Jadhav; Gudbrand agreed with the approach; Paul is out of
+**Decision recorded 2026-10-12** (Rishikesh Jadhav; Gudbrand Tandberg agreed with the approach; Paul is out of
 office and will be informed, reversible if he objects): the adapted modules ship here under Apache-2.0
 with the origin header below, 3LC Inc. being the copyright holder. The record participants and
 downstream users see is the repo's `NOTICE` file (shipped in the wheel's `dist-info/licenses/` and in the sdist). Evidence, from a fresh clone of the

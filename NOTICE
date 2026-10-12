@@ -16,7 +16,7 @@ Each adapted file carries this header, verbatim:
     # Adapted from 3lc-compute-plugin-kaggle (Copyright 3LC AI), relicensed by the copyright holder
     # under Apache-2.0 for this project.
 
-Decision: recorded by Rishikesh Jadhav (3LC) on 2026-10-12. Gudbrand (3LC)
+Decision: recorded by Rishikesh Jadhav (3LC) on 2026-10-12. Gudbrand Tandberg (3LC)
 agreed with the approach. Paul is out of office and will be informed; the
 decision is reversible if he objects. The list of adapted files is kept in
 docs/STUDY.md section G-5 and is enforced by tests/test_packaging.py.

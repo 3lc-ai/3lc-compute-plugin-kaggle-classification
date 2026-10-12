@@ -3,6 +3,41 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [Unreleased] (session 14, 2026-10-12: the fresh-env hand test's three defects; for rc14 with the hardening campaign)
+
+### Fixed
+- **CUDA on current GPUs.** The torch index moves from `pytorch-cu126` to `pytorch-cu130` (same shape as the
+  timm and yolo plugins: explicit index, `torch` / `torchvision` sourced from it on `linux` and `win32`, PyPI
+  on macOS; exact pins 2.14.0 / 0.29.0 unchanged). The cu126 wheels carry kernels for sm_50 to sm_90 only,
+  so an RTX 5070 Ti (compute capability 12.0, sm_120) trained on CPU after a "no kernel image is available"
+  fallback and Predict failed outright; cu130 carries sm_75 to sm_120 and needs an R580 or newer driver. The
+  catalog install path honours the plugin's index over the host's `--torch-backend auto` (verified: the rc13
+  spec resolved +cu126 on a driver that would have picked cu132). The locked provenance string the Doctor
+  and TESTING.md show is now `+cu130`; the kit-parity gate (seeds 42 to 44) was re-run on the new build
+  (`tools/parity_gate.py`, result in docs/TRAIN_MIRROR.md §11).
+- **Predict's CPU fallback is Train's**: the retry now covers the probe forward after the weights load (a
+  GPU that loads the weights but has no kernels for the model fails there), and the record and the log carry
+  the same facts, `device_fallback_reason`, `device_fallback_at` and the `cpu (fallback: …)` label.
+- **Auto device lands on CPU up front when the build has no kernels for the GPU** (`trainer.gpu_kernel_support`,
+  `resolve_device_with_reason`): no failed first batch, the reason recorded as the run's fallback. The
+  **Doctor's CUDA row** says plainly "GPU found (…, compute capability …) but this torch build (…) has no
+  kernels for it; runs will use CPU." and opens red; the GPU name, capability and the build's arch list ride
+  in `device.gpu` and in the row's copy detail.
+- **The ETA re-estimates after a fallback**: the in-run remaining time restarts at the fallback stamp with
+  the fallen-back class's history and, once an epoch boundary lands a measured pace, is pace × epochs left
+  plus the final pass, not an elapsed subtraction from a pre-run guess.
+- **The Train tab reconciles with the job record**: every 15 s while a run is shown as running, on every
+  Train-tab entry and on the reload path, the durable record is re-read and a completed / failed / cancelled
+  record ends the in-run view through the normal terminal path, so a missed completion event cannot leave
+  "Training…" on screen. Fixture `?kgdev=train-state3-reconciled`; `tests/test_ui_train_reconcile.py`.
+- **The Runs tables show "cpu (fallback)"** with the full reason on hover and in the row detail (Train's run
+  card and the Status Runs table), not the whole error in the cell.
+
+### Changed
+- plugin.toml carries the hardware sentence ("GPU recommended; works on CPU (slower). The environment pulls a
+  CUDA stack, expect a multi-gigabyte download on first install.") as `hardware` and beside `requires_gpu`.
+  The final release version will be plain `1.0.0` (no suffix), matching the other plugins.
+
 ## [1.0.0rc13] — 2026-10-12 (sessions 11 to 13: the post-rc12 pass, the first PC session, the three fixes)
 
 The UI look is frozen at rc12: further UI changes are incremental only (no layout changes, no redesigns) and
