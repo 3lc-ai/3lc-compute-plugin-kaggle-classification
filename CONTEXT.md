@@ -4,6 +4,8 @@ One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
 ## Session 15 (2026-10-12, the hardening campaign; 1.0.0rc14)
 
+- **The rc14 tester round (Rishikesh, 2026-10-13):** the testers are Gudbrand Tandberg and Paul Endresen (3LC staff), added as hosts on the competition, so Connect and one Submit are part of their test; outside testers stop after Predict (TESTING.md 7.5b and section 9 unchanged; the quick start's first line says so).
+
 - **Release state:** `v1.0.0rc14` (branch `release/1.0.0rc14` = the tag + `catalog-test.json`; hosted test catalog `https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/catalog-test.json`). The memory gate was accepted on practical grounds (Rishikesh, 2026-10-13): after the leak hunt's two fixes the private 15-to-30 slope is 0.65 MB per cycle, indistinguishable from zero (95 % range -2.0 to +3.3), against 15 before. The final release is plain `1.0.0`.
 
 - **The plan is `docs/TEST_PLAN.md`** (sections A to H), the harness `tools/hardening/` (`harness.py` drives the plugin through the in-process host of a tester env the way the Hub does: catalog install, `/run`, the host's job list; `campaign_a/b/c/de/f/f5_soak.py` are the sections; `campaign_a2.py` builds a scratch tester env per matrix cell), the records `docs/campaign/*.json` (+ `.log`), the proof TESTING_PROOF.md run 14. Rule learnt: a plugin worker outlives the in-process host and holds the managed venv's `python.exe`, so the harness stops orphan workers before every host session, and two host sessions never run at once on this machine.
