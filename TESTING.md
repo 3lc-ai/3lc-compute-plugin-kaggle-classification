@@ -2,6 +2,8 @@
 
 ## Quick start for testers
 
+**3LC staff added as competition hosts: Connect and one Submit are part of the test. Everyone else: stop after Predict, as in 7.5b.**
+
 One screen to a working test. The numbered sections below explain every step and what to do when it
 does not match.
 
@@ -14,7 +16,7 @@ does not match.
 | | the first start asks for your 3LC API key once; two service windows open | the first start asks for your 3LC API key once |
 | **3. Connect** | https://hub.3lc.ai/gettingstarted/: object service `http://127.0.0.1:5015`, compute service `http://127.0.0.1:5020`, allow local network access | the same |
 | **4. Install the plugin** | Hub **Plugins > Available > Kaggle Classification > Install**; the first install takes a few minutes (a multi-gigabyte CUDA stack) | the same (no CUDA stack on macOS) |
-| **5. Run the loop** | **Import** (Download starter kit, then Import) **> Train** (2 epochs) **> Predict > Submit** (Connect Kaggle; whether to press Submit: section 7.5b) **> Status** | the same |
+| **5. Run the loop** | **Import** (Download starter kit, then Import) **> Train** (2 epochs) **> Predict > Submit** (Connect Kaggle, then one Submit if you are a host: see the note above) **> Status** | the same |
 | **Send back** | the verification bundle (Status tab > Export verification bundle) and a screenshot of anything odd | the same |
 | **Stop** | `powershell -ExecutionPolicy Bypass -File .\start_tester.ps1 -Stop` | `./start_tester.sh --stop` |
 
