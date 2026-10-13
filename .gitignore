@@ -35,3 +35,7 @@ cdn/
 # Soak logs are hundreds of MB (every httpx line of a 3-hour run); the excerpt beside each is committed
 docs/campaign/section_f5*.log
 !docs/campaign/section_f5*.excerpt.log
+
+# The evidence soak logs (every httpx line); the excerpt beside each is committed
+docs/campaign/soak_*.log
+!docs/campaign/soak_*.excerpt.log
