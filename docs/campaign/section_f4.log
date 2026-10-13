@@ -1,0 +1,139 @@
+INFO - 2026-10-12 21:42:55,900 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 21:42:55,903 - tlc_compute.shared.serial_queue - serial_queue - GPU queue started (single worker thread)
+INFO - 2026-10-12 21:42:55,903 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 21:42:55,904 - tlc_compute.shared.serial_queue - serial_queue - CPU queue started (single worker thread)
+INFO - 2026-10-12 21:42:55,904 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 21:42:55,906 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 21:42:55,908 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 21:42:55,908 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 21:42:55,940 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 21:42:55,941 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 21:42:55,960 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 21:42:55,961 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:42:55,971 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 57457 --id kaggle-classification
+INFO - 2026-10-12 21:42:56,205 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 21:42:56,206 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 21:42:58,589 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:42:58,588 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:57457
+INFO - 2026-10-12 21:42:59,114 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:42:59,219 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:42:59,219 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 21:42:59,221 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:42:59,221 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 21:42:59,573 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:42:59,572 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 21:43:04,872 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:04,889 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:04,901 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/submit/state "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:04,901 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/submit/state "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:43:04,914 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:43:04,913 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 21:43:07,314 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/kaggle/connection "HTTP/1.1 200 OK"
+[21:43:07] basis: prediction 26b917a7af17478eb785633d5fb9d992 of run soak 0563; connection {'state': 'ready', 'used': 0, 'limit': 100}
+INFO - 2026-10-12 21:43:07,315 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/kaggle/connection "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:07,316 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=d2b20efc840e4796bd9df9752ed804cf)
+[21:43:07] POST /run kaggle_submit {"predict_job_id": "26b917a7af17478eb785633d5fb9d992", "message": "campaign F4 1/5 21:43:07"} -> 201 {"job_id": "d2b20efc840e4796bd9df9752ed804cf", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 21:43:07,316 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,325 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=33194240e2614a5cb610de6b6ef3789c)
+[21:43:07] POST /run kaggle_submit {"predict_job_id": "26b917a7af17478eb785633d5fb9d992", "message": "campaign F4 2/5 21:43:07"} -> 201 {"job_id": "33194240e2614a5cb610de6b6ef3789c", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 21:43:07,325 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,326 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=bcfc733251be4c0ba950759aa4c7a3ef)
+[21:43:07] POST /run kaggle_submit {"predict_job_id": "26b917a7af17478eb785633d5fb9d992", "message": "campaign F4 3/5 21:43:07"} -> 201 {"job_id": "bcfc733251be4c0ba950759aa4c7a3ef", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 21:43:07,326 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,327 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=5175c76a87ac448bbe2e131d9028e0f1)
+[21:43:07] POST /run kaggle_submit {"predict_job_id": "26b917a7af17478eb785633d5fb9d992", "message": "campaign F4 4/5 21:43:07"} -> 201 {"job_id": "5175c76a87ac448bbe2e131d9028e0f1", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 21:43:07,327 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,328 - httpx - _client - HTTP Request: POST http://127.0.0.1:57457/jobs/d2b20efc840e4796bd9df9752ed804cf/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,328 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=55ec09063a3b4abdaca8f44591ca815b)
+[21:43:07] POST /run kaggle_submit {"predict_job_id": "26b917a7af17478eb785633d5fb9d992", "message": "campaign F4 5/5 21:43:07"} -> 201 {"job_id": "55ec09063a3b4abdaca8f44591ca815b", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 21:43:07,330 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 21:43:07,331 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:43:07,463 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:43:07,463 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 21:43:08,876 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   0%|          | 0.00/49.2k [00:00<?, ?B/s] 32%|###2      | 16.0k/49.2k [00:00<00:00, 81.5kB/s]100%|##########| 49.2k/49.2k [00:00<00:00, 87.8kB/s]
+INFO - 2026-10-12 21:43:09,333 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:11,334 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:13,335 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:15,337 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:17,339 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:19,341 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:21,342 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:23,344 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:25,346 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:27,347 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:29,348 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:29,509 - httpx - _client - HTTP Request: POST http://127.0.0.1:57457/jobs/33194240e2614a5cb610de6b6ef3789c/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 21:43:29,865 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:43:29,865 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 21:43:31,249 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   0%|          | 0.00/49.2k [00:00<?, ?B/s] 32%|###2      | 16.0k/49.2k [00:00<00:00, 97.9kB/s]100%|##########| 49.2k/49.2k [00:00<00:00, 93.5kB/s]
+INFO - 2026-10-12 21:43:31,351 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:31,352 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:33,352 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:35,353 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:37,356 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:39,357 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:41,359 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:43,360 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:45,363 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:47,364 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:49,366 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:51,368 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:51,832 - httpx - _client - HTTP Request: POST http://127.0.0.1:57457/jobs/bcfc733251be4c0ba950759aa4c7a3ef/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 21:43:51,997 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:43:51,996 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 21:43:53,369 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:53,369 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:43:53,425 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   0%|          | 0.00/49.2k [00:00<?, ?B/s] 32%|###2      | 16.0k/49.2k [00:00<00:00, 96.8kB/s]100%|##########| 49.2k/49.2k [00:00<00:00, 91.8kB/s]
+INFO - 2026-10-12 21:43:55,372 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:57,372 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:43:59,375 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:01,376 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:03,378 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:05,380 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:07,380 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:09,383 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:11,384 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:13,386 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:14,001 - httpx - _client - HTTP Request: POST http://127.0.0.1:57457/jobs/5175c76a87ac448bbe2e131d9028e0f1/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 21:44:14,279 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:44:14,279 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 21:44:15,387 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:15,388 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:44:15,717 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   0%|          | 0.00/49.2k [00:00<?, ?B/s] 32%|###2      | 16.0k/49.2k [00:00<00:00, 101kB/s]100%|##########| 49.2k/49.2k [00:00<00:00, 94.8kB/s]
+INFO - 2026-10-12 21:44:17,389 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:19,391 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:21,392 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:23,393 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:25,394 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:27,398 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:29,399 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:31,400 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:33,402 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:35,404 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:37,405 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:39,407 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:41,408 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:43,409 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:43,529 - httpx - _client - HTTP Request: POST http://127.0.0.1:57457/jobs/55ec09063a3b4abdaca8f44591ca815b/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 21:44:43,929 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:44:43,929 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+WARNING - 2026-10-12 21:44:45,378 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   0%|          | 0.00/49.2k [00:00<?, ?B/s] 32%|###2      | 16.0k/49.2k [00:00<00:00, 92.0kB/s]100%|##########| 49.2k/49.2k [00:00<00:00, 93.0kB/s]
+INFO - 2026-10-12 21:44:45,411 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:45,412 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:47,413 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:49,415 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:51,417 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:53,418 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:55,420 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:57,420 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:44:59,423 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:01,425 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:03,427 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:05,428 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:07,430 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:45:07,487 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:45:07,487 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 21:45:08,514 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/status/kaggle "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:08,515 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/status/kaggle "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 21:45:08,525 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 21:45:08,525 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+INFO - 2026-10-12 21:45:09,333 - httpx - _client - HTTP Request: GET http://127.0.0.1:57457/kaggle/connection "HTTP/1.1 200 OK"
+INFO - 2026-10-12 21:45:09,333 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/kaggle/connection "HTTP/1.1 200 OK"
+[21:45:09] F4: PASS {"count": 5, "wall_s": 122.0, "connection_before": {"state": "ready", "used": 0, "limit": 100}, "connection_after": {"state": "ready", "used": 5, "limit": 100}, "outcomes": [{"n": 1, "http": 201, "job_id": "d2b20efc840e4796bd9df9752ed804cf", "posted_at": 0.0, "status": "completed", "elapsed_s": 24.0

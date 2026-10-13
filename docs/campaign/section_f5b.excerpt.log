@@ -1,0 +1,91 @@
+[21:46:44] POST /run train {"epochs": "1", "run_name": "soak 0001"} -> 201 {"job_id": "d3d556c206bb4a29a72abe8bfdef6155", "status": "queued", "namespace": "/kaggle-classification"}
+[21:47:46] POST /run predict {"train_job_id": "d3d556c206bb4a29a72abe8bfdef6155", "device": ""} -> 201 {"job_id": "89fa05d688ac4027acfcd2bfde7f349e", "status": "queued", "namespace": "/kaggle-classification"}
+[21:47:50] {"n": 1, "at": "21:47:50", "train": "completed", "train_s": 62.1, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2383, "error": ""}
+[21:47:50] POST /run train {"epochs": "1", "run_name": "soak 0002"} -> 201 {"job_id": "5607eb3b11894e099e90ee2f470c0730", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:04] POST /run predict {"train_job_id": "5607eb3b11894e099e90ee2f470c0730", "device": ""} -> 201 {"job_id": "33da415010c34a4aae0d48a102a1203b", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:09] {"n": 2, "at": "21:48:09", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2416, "error": ""}
+[21:48:09] POST /run train {"epochs": "1", "run_name": "soak 0003"} -> 201 {"job_id": "011484ee56404974bc0b29a919aae30f", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:23] POST /run predict {"train_job_id": "011484ee56404974bc0b29a919aae30f", "device": ""} -> 201 {"job_id": "86b71bb9a56b4874aa8f319af237a7b6", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:27] {"n": 3, "at": "21:48:27", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2433, "error": ""}
+[21:48:27] POST /run train {"epochs": "1", "run_name": "soak 0004"} -> 201 {"job_id": "994b589c03ce48dbb536e1be988682ad", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:41] POST /run predict {"train_job_id": "994b589c03ce48dbb536e1be988682ad", "device": ""} -> 201 {"job_id": "f9073c22db184432bd1785c33c834257", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:45] {"n": 4, "at": "21:48:45", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2451, "error": ""}
+[21:48:45] POST /run train {"epochs": "1", "run_name": "soak 0005"} -> 201 {"job_id": "0a11363df6d44e73a269043f129c24e9", "status": "queued", "namespace": "/kaggle-classification"}
+[21:48:59] POST /run predict {"train_job_id": "0a11363df6d44e73a269043f129c24e9", "device": ""} -> 201 {"job_id": "4558a94b8dcc433db6c6fdd28d8306c0", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:04] {"n": 5, "at": "21:49:04", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2468, "error": ""}
+[21:49:04] POST /run train {"epochs": "1", "run_name": "soak 0006"} -> 201 {"job_id": "b9aecbe457244d0bb2f7dfbbecae0b8d", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:18] POST /run predict {"train_job_id": "b9aecbe457244d0bb2f7dfbbecae0b8d", "device": ""} -> 201 {"job_id": "72edd437b67f4e5da00a6af615dbc4d4", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:22] {"n": 6, "at": "21:49:22", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2483, "error": ""}
+[21:49:22] POST /run train {"epochs": "1", "run_name": "soak 0007"} -> 201 {"job_id": "846b7bda545249f99e26811cfc3e4a7d", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:36] POST /run predict {"train_job_id": "846b7bda545249f99e26811cfc3e4a7d", "device": ""} -> 201 {"job_id": "82a6bdc50e8445f8a0f006f4b616c39f", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:40] {"n": 7, "at": "21:49:40", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2498, "error": ""}
+[21:49:40] POST /run train {"epochs": "1", "run_name": "soak 0008"} -> 201 {"job_id": "695a1fa69b35408ba87fabb34eff907f", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:55] POST /run predict {"train_job_id": "695a1fa69b35408ba87fabb34eff907f", "device": ""} -> 201 {"job_id": "74a3ddfbfea64067a96f4e047bbbed18", "status": "queued", "namespace": "/kaggle-classification"}
+[21:49:59] {"n": 8, "at": "21:49:59", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2510, "error": ""}
+[21:49:59] POST /run train {"epochs": "1", "run_name": "soak 0009"} -> 201 {"job_id": "f823b2753a6e4098aa3f3b66a109f36b", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:13] POST /run predict {"train_job_id": "f823b2753a6e4098aa3f3b66a109f36b", "device": ""} -> 201 {"job_id": "bb91c535328d4af8a5eeba4a0329d85a", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:17] {"n": 9, "at": "21:50:17", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2524, "error": ""}
+[21:50:17] POST /run train {"epochs": "1", "run_name": "soak 0010"} -> 201 {"job_id": "22e3a84c4d834d6badbb6a9d013039d5", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:31] POST /run predict {"train_job_id": "22e3a84c4d834d6badbb6a9d013039d5", "device": ""} -> 201 {"job_id": "4772b8c7490d40a0ba72b49dada63662", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:36] {"n": 10, "at": "21:50:36", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2539, "error": ""}
+[21:50:36] POST /run train {"epochs": "1", "run_name": "soak 0011"} -> 201 {"job_id": "f516a11f852b404cbf5b555731537fe9", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:50] POST /run predict {"train_job_id": "f516a11f852b404cbf5b555731537fe9", "device": ""} -> 201 {"job_id": "c91dc6d6757d42c19dfef16fbb88d7e7", "status": "queued", "namespace": "/kaggle-classification"}
+[21:50:54] {"n": 11, "at": "21:50:54", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2557, "error": ""}
+[21:50:54] POST /run train {"epochs": "1", "run_name": "soak 0012"} -> 201 {"job_id": "508e4bad51f2458ab94e2d1beb0c7952", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:08] POST /run predict {"train_job_id": "508e4bad51f2458ab94e2d1beb0c7952", "device": ""} -> 201 {"job_id": "e5f3c9cc009948d3809eab1704369145", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:12] {"n": 12, "at": "21:51:12", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2572, "error": ""}
+[21:51:12] POST /run train {"epochs": "1", "run_name": "soak 0013"} -> 201 {"job_id": "1f3d6b0bd9bc429eaf803dc872c6094b", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:26] POST /run predict {"train_job_id": "1f3d6b0bd9bc429eaf803dc872c6094b", "device": ""} -> 201 {"job_id": "ede4dd9ff2f942f0a38f7d0a2b3e60af", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:31] {"n": 13, "at": "21:51:31", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2584, "error": ""}
+[21:51:31] POST /run train {"epochs": "1", "run_name": "soak 0014"} -> 201 {"job_id": "0e803bf0320b467ba6cc653b84c612a8", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:45] POST /run predict {"train_job_id": "0e803bf0320b467ba6cc653b84c612a8", "device": ""} -> 201 {"job_id": "2037d18d37e746b1aa3d6ebbafac724f", "status": "queued", "namespace": "/kaggle-classification"}
+[21:51:49] {"n": 14, "at": "21:51:49", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2601, "error": ""}
+[21:51:49] POST /run train {"epochs": "1", "run_name": "soak 0015"} -> 201 {"job_id": "4f93aa615d03429087c2b3d5734060b1", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:03] POST /run predict {"train_job_id": "4f93aa615d03429087c2b3d5734060b1", "device": ""} -> 201 {"job_id": "11473833656b4047989a278f3dce6a3d", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:08] {"n": 15, "at": "21:52:08", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2613, "error": ""}
+[21:52:08] POST /run train {"epochs": "1", "run_name": "soak 0016"} -> 201 {"job_id": "2e20b20bd7194be7870e50bef25fb861", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:22] POST /run predict {"train_job_id": "2e20b20bd7194be7870e50bef25fb861", "device": ""} -> 201 {"job_id": "0c4ea864537344048e76455495a86408", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:26] {"n": 16, "at": "21:52:26", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2627, "error": ""}
+[21:52:26] POST /run train {"epochs": "1", "run_name": "soak 0017"} -> 201 {"job_id": "e906d474cb72436cb7ea799360fa3133", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:40] POST /run predict {"train_job_id": "e906d474cb72436cb7ea799360fa3133", "device": ""} -> 201 {"job_id": "3475428b8cf84feb9f92fed14893f154", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:44] {"n": 17, "at": "21:52:44", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2642, "error": ""}
+[21:52:44] POST /run train {"epochs": "1", "run_name": "soak 0018"} -> 201 {"job_id": "5ab01a55281e48a19cb314fe3e330875", "status": "queued", "namespace": "/kaggle-classification"}
+[21:52:58] POST /run predict {"train_job_id": "5ab01a55281e48a19cb314fe3e330875", "device": ""} -> 201 {"job_id": "38f92acdd0eb45fb976a75550319e780", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:03] {"n": 18, "at": "21:53:03", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2657, "error": ""}
+[21:53:03] POST /run train {"epochs": "1", "run_name": "soak 0019"} -> 201 {"job_id": "8147db3839c84723be3b1c896559e26c", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:17] POST /run predict {"train_job_id": "8147db3839c84723be3b1c896559e26c", "device": ""} -> 201 {"job_id": "1010784c780740688e898c7f29b8d0cd", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:21] {"n": 19, "at": "21:53:21", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2673, "error": ""}
+[21:53:21] POST /run train {"epochs": "1", "run_name": "soak 0020"} -> 201 {"job_id": "d3071d2d672446e294b8a26b3c069b60", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:35] POST /run predict {"train_job_id": "d3071d2d672446e294b8a26b3c069b60", "device": ""} -> 201 {"job_id": "52938bc2a2af4c02a6527053e37cc963", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:39] {"n": 20, "at": "21:53:39", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2687, "error": ""}
+[21:53:39] POST /run train {"epochs": "1", "run_name": "soak 0021"} -> 201 {"job_id": "c96fa181a2f745b2ac4e5ff091e48e30", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:53] POST /run predict {"train_job_id": "c96fa181a2f745b2ac4e5ff091e48e30", "device": ""} -> 201 {"job_id": "96967fb097024d6da699135a2fb0b954", "status": "queued", "namespace": "/kaggle-classification"}
+[21:53:58] {"n": 21, "at": "21:53:58", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2699, "error": ""}
+[21:53:58] POST /run train {"epochs": "1", "run_name": "soak 0022"} -> 201 {"job_id": "524d7c6596c54050be017e4d49381aa7", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:12] POST /run predict {"train_job_id": "524d7c6596c54050be017e4d49381aa7", "device": ""} -> 201 {"job_id": "0286382ab8fc4fd98f204680c74e7fbf", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:16] {"n": 22, "at": "21:54:16", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2715, "error": ""}
+[21:54:16] POST /run train {"epochs": "1", "run_name": "soak 0023"} -> 201 {"job_id": "2d83102abdbf43908058eea54c7d7549", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:30] POST /run predict {"train_job_id": "2d83102abdbf43908058eea54c7d7549", "device": ""} -> 201 {"job_id": "46cf703920414ae7a09cd6bea57cbd79", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:35] {"n": 23, "at": "21:54:35", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2729, "error": ""}
+[21:54:35] POST /run train {"epochs": "1", "run_name": "soak 0024"} -> 201 {"job_id": "abf383c8ac8b4e18ba212284e3f6a834", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:49] POST /run predict {"train_job_id": "abf383c8ac8b4e18ba212284e3f6a834", "device": ""} -> 201 {"job_id": "d6ed36053ce1415eac9393548a639d08", "status": "queued", "namespace": "/kaggle-classification"}
+[21:54:53] {"n": 24, "at": "21:54:53", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2743, "error": ""}
+[21:54:53] POST /run train {"epochs": "1", "run_name": "soak 0025"} -> 201 {"job_id": "744663827a8140c8b9c2c09c024631cf", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:07] POST /run predict {"train_job_id": "744663827a8140c8b9c2c09c024631cf", "device": ""} -> 201 {"job_id": "7f32a7a192c041b9a53f09f633534205", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:11] {"n": 25, "at": "21:55:11", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2757, "error": ""}
+[21:55:11] POST /run train {"epochs": "1", "run_name": "soak 0026"} -> 201 {"job_id": "bbfb7d0c4dbf4df3b18b83b613ca3b2a", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:25] POST /run predict {"train_job_id": "bbfb7d0c4dbf4df3b18b83b613ca3b2a", "device": ""} -> 201 {"job_id": "fe51e77386d1474db5f7075d715c1206", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:30] {"n": 26, "at": "21:55:30", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2770, "error": ""}
+[21:55:30] POST /run train {"epochs": "1", "run_name": "soak 0027"} -> 201 {"job_id": "996a4d7467c3484f87f2bc4710a5debd", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:44] POST /run predict {"train_job_id": "996a4d7467c3484f87f2bc4710a5debd", "device": ""} -> 201 {"job_id": "4b1babec55a740239090d63e9ad90478", "status": "queued", "namespace": "/kaggle-classification"}
+[21:55:48] {"n": 27, "at": "21:55:48", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2784, "error": ""}
+[21:55:48] POST /run train {"epochs": "1", "run_name": "soak 0028"} -> 201 {"job_id": "0ca9100e352541ce8833b6639675c4d9", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:02] POST /run predict {"train_job_id": "0ca9100e352541ce8833b6639675c4d9", "device": ""} -> 201 {"job_id": "10b1c84dbf1b45958bce5272e26d02f9", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:07] {"n": 28, "at": "21:56:07", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2800, "error": ""}
+[21:56:07] POST /run train {"epochs": "1", "run_name": "soak 0029"} -> 201 {"job_id": "bf3e2acc60bf4504ac0ec72d80275421", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:21] POST /run predict {"train_job_id": "bf3e2acc60bf4504ac0ec72d80275421", "device": ""} -> 201 {"job_id": "fb92854096f4443f915fb451c079fe02", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:25] {"n": 29, "at": "21:56:25", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2815, "error": ""}
+[21:56:25] POST /run train {"epochs": "1", "run_name": "soak 0030"} -> 201 {"job_id": "eaafb93cdde9419c862351dc5eb4e813", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:39] POST /run predict {"train_job_id": "eaafb93cdde9419c862351dc5eb4e813", "device": ""} -> 201 {"job_id": "4a2efc7444a3477b87b219a149077526", "status": "queued", "namespace": "/kaggle-classification"}
+[21:56:43] {"n": 30, "at": "21:56:43", "train": "completed", "train_s": 14.0, "predict": "completed", "predict_s": 4.0, "max_working_set_mb": 2828, "error": ""}
+[21:56:43] SOAK {"cycles": 30, "elapsed_h": 0.17, "working_set_mb_first": 2383, "working_set_mb_last": 2828, "working_set_mb_max": 2828, "train_s_median": 14.0, "predict_s_median": 4.0, "failures": [], "slope_ws_mb_per_cycle": 14.55, "slope_private_mb_per_cycle": 16.31}

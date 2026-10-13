@@ -33,6 +33,17 @@ def worker_memory_mb() -> list[dict]:
     return rows
 
 
+def lsq(cycles: list[dict], key: str) -> float | None:
+    """Least-squares slope of the largest worker's key over cycles 2..N (cycle 1 carries the warm-up)."""
+    pts = [(c["n"], max((w[key] for w in c["workers"]), default=0)) for c in cycles[1:] if c["workers"]]
+    if len(pts) < 2:
+        return None
+    mx = sum(x for x, _ in pts) / len(pts)
+    my = sum(y for _, y in pts) / len(pts)
+    den = sum((x - mx) ** 2 for x, _ in pts)
+    return round(sum((x - mx) * (y - my) for x, y in pts) / den, 2) if den else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
@@ -40,10 +51,11 @@ def main() -> int:
     ap.add_argument("--hours", type=float, default=3.0)
     ap.add_argument("--cycles", type=int, default=10_000)
     ap.add_argument("--epochs", default="1")
+    ap.add_argument("--out", default="section_f5.json", help="the record under docs/campaign/")
     args = ap.parse_args()
     h.setup_stdio()
     root, repo = Path(args.root), Path(args.repo)
-    out_path = repo / "docs" / "campaign" / "section_f5.json"
+    out_path = repo / "docs" / "campaign" / args.out
     catalog = sorted(root.glob("catalog-campaign-*.json"))[-1]
     h.apply_env(h.env_for(root, catalog=str(catalog)))
     record: dict = {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "hours": args.hours, "cycles": []}
@@ -75,7 +87,8 @@ def main() -> int:
                          "working_set_mb_first": ws[0] if ws else None, "working_set_mb_last": ws[-1] if ws else None, "working_set_mb_max": max(ws) if ws else None,
                          "train_s_median": sorted(c["train_s"] for c in cycles)[len(cycles) // 2] if cycles else None,
                          "predict_s_median": sorted(c["predict_s"] for c in cycles)[len(cycles) // 2] if cycles else None,
-                         "failures": [c["n"] for c in cycles if c["train"] != "completed" or c["predict"] != "completed"]}
+                         "failures": [c["n"] for c in cycles if c["train"] != "completed" or c["predict"] != "completed"],
+                         "slope_ws_mb_per_cycle": lsq(cycles, "working_set_mb"), "slope_private_mb_per_cycle": lsq(cycles, "private_mb")}
     out_path.write_text(json.dumps(record, indent=1), encoding="utf-8")
     h.log(f"SOAK {json.dumps(record['summary'])}")
     return 0

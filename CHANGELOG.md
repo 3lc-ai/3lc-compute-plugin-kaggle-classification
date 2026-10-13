@@ -51,7 +51,9 @@ anti-cheat review (docs/PREDICT_MIRROR.md section 15). The plugin extra pins `3l
   showed the plugin worker growing about 15 MB per cycle (working set 2.4 GB after the first cycle, 3.9 GB
   after the hundredth; no failures). Every job kind now ends with `trainer.release_memory`: Python's garbage,
   CUDA's cache and tlc's in-process object cache (`ObjectRegistry.drop_cache`, which otherwise keeps every
-  table, run and metrics table a job opened). The re-measured slope is in TESTING_PROOF.md run 14.
+  table, run and metrics table a job opened). **It does not fix the growth**: the 30-cycle gate soak on
+  `41fba65` still measured 14.6 MB per cycle (working set) and 16.3 MB per cycle (private bytes). The leak is
+  OPEN and blocks the rc14 tag (TESTING_PROOF.md run 14, F5b).
 - **The Windows start script logs in inside the redirected home** on the first start (campaign pre-item P4):
   3lc 3.3 and 3.4 read the API key from the redirected `LOCALAPPDATA`, so TESTING.md's `3lc login` from the
   real profile left the services in an "API key not found" restart loop. The script now runs the login in its

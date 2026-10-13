@@ -1,0 +1,123 @@
+{
+ "items": {
+  "F4": {
+   "status": "PASS",
+   "at": "2026-10-12T21:45:09",
+   "count": 5,
+   "wall_s": 122.0,
+   "connection_before": {
+    "state": "ready",
+    "used": 0,
+    "limit": 100
+   },
+   "connection_after": {
+    "state": "ready",
+    "used": 5,
+    "limit": 100
+   },
+   "outcomes": [
+    {
+     "n": 1,
+     "http": 201,
+     "job_id": "d2b20efc840e4796bd9df9752ed804cf",
+     "posted_at": 0.0,
+     "status": "completed",
+     "elapsed_s": 24.0,
+     "error": "",
+     "finished_at": 24.0,
+     "kaggle": {
+      "status": "submitted",
+      "ref": "57127990",
+      "reason": null,
+      "read_back_status": "COMPLETE",
+      "read_back_public_score": 0.36333,
+      "read_back_error_description": "",
+      "submitted_at": 1791859409.4916685
+     },
+     "message": "campaign F4 1/5 21:43:07"
+    },
+    {
+     "n": 2,
+     "http": 201,
+     "job_id": "33194240e2614a5cb610de6b6ef3789c",
+     "posted_at": 0.0,
+     "status": "completed",
+     "elapsed_s": 22.0,
+     "error": "",
+     "finished_at": 46.1,
+     "kaggle": {
+      "status": "submitted",
+      "ref": "57128006",
+      "reason": null,
+      "read_back_status": "COMPLETE",
+      "read_back_public_score": 0.36333,
+      "read_back_error_description": "",
+      "submitted_at": 1791859431.814921
+     },
+     "message": "campaign F4 2/5 21:43:07"
+    },
+    {
+     "n": 3,
+     "http": 201,
+     "job_id": "bcfc733251be4c0ba950759aa4c7a3ef",
+     "posted_at": 0.01,
+     "status": "completed",
+     "elapsed_s": 22.0,
+     "error": "",
+     "finished_at": 68.1,
+     "kaggle": {
+      "status": "submitted",
+      "ref": "57128020",
+      "reason": null,
+      "read_back_status": "COMPLETE",
+      "read_back_public_score": 0.36333,
+      "read_back_error_description": "",
+      "submitted_at": 1791859453.9837563
+     },
+     "message": "campaign F4 3/5 21:43:07"
+    },
+    {
+     "n": 4,
+     "http": 201,
+     "job_id": "5175c76a87ac448bbe2e131d9028e0f1",
+     "posted_at": 0.01,
+     "status": "completed",
+     "elapsed_s": 30.0,
+     "error": "",
+     "finished_at": 98.1,
+     "kaggle": {
+      "status": "submitted",
+      "ref": "57128027",
+      "reason": null,
+      "read_back_status": "COMPLETE",
+      "read_back_public_score": 0.36333,
+      "read_back_error_description": "",
+      "submitted_at": 1791859483.5133517
+     },
+     "message": "campaign F4 4/5 21:43:07"
+    },
+    {
+     "n": 5,
+     "http": 201,
+     "job_id": "55ec09063a3b4abdaca8f44591ca815b",
+     "posted_at": 0.01,
+     "status": "completed",
+     "elapsed_s": 22.0,
+     "error": "",
+     "finished_at": 120.1,
+     "kaggle": {
+      "status": "submitted",
+      "ref": "57128038",
+      "reason": null,
+      "read_back_status": "COMPLETE",
+      "read_back_public_score": 0.36333,
+      "read_back_error_description": "",
+      "submitted_at": 1791859505.9976134
+     },
+     "message": "campaign F4 5/5 21:43:07"
+    }
+   ],
+   "kaggle_side": []
+  }
+ }
+}

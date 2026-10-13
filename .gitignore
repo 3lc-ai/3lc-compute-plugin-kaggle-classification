@@ -31,3 +31,7 @@ cdn/
 
 # The parity gate scratch (tools/parity_gate.py): runs, records and a CSV
 .parity-gate/
+
+# Soak logs are hundreds of MB (every httpx line of a 3-hour run); the excerpt beside each is committed
+docs/campaign/section_f5*.log
+!docs/campaign/section_f5*.excerpt.log

@@ -100,6 +100,7 @@ Status values: PASS, FAIL (finding number), FIXED (finding number), OPEN, N/A.
 | F3 | Catalog fetch under load | host script (20 concurrent raw.githubusercontent fetches) | all 200 | |
 | F4 | Back-to-back submissions (Kaggle rate limiting) | hand, each on Rishikesh's go-ahead | the outcome text per submission | OPEN (needs go-ahead) |
 | F5 | A 3-hour soak of train -> predict cycles with memory tracked | host script (cycles of 1-epoch train + predict, RSS of the worker sampled per cycle) | no growth beyond the first cycle's plateau | |
+| F5b | **The release gate** (Rishikesh, 2026-10-12): a 30-cycle verification soak on the build with the between-jobs memory release (`41fba65`) | host script, same as F5 | the worker's working-set slope is at most **2 MB per cycle** (least-squares over cycles 2 to 30; cycle 1 carries the warm-up: the CUDA context, the UMAP compile); above that, no tag: report instead | |
 
 ## G. Platform coverage for the testers (not runnable here)
 
