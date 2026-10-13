@@ -1,0 +1,6 @@
+{
+ "kind": "train",
+ "cpu": true,
+ "cycles": [],
+ "error": "probe route answered 500: {\"status_code\":500,\"detail\":\"Internal Server Error\"}"
+}

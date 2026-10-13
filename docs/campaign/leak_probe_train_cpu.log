@@ -1,0 +1,81 @@
+INFO - 2026-10-12 22:58:10,384 - tlc_compute.app - app - Public-examples alias resolution enabled for s3://3lc-public-examples-2-2/projects
+INFO - 2026-10-12 22:58:10,386 - tlc_compute.shared.serial_queue - serial_queue - GPU queue started (single worker thread)
+INFO - 2026-10-12 22:58:10,386 - tlc_compute.app - app - Shared GPU queue initialized
+INFO - 2026-10-12 22:58:10,386 - tlc_compute.shared.serial_queue - serial_queue - CPU queue started (single worker thread)
+INFO - 2026-10-12 22:58:10,386 - tlc_compute.app - app - Shared CPU queue initialized
+INFO - 2026-10-12 22:58:10,388 - tlc_compute.app - app - Worker supervisor initialized (socket dir: C:\Users\Owner\AppData\Local\Temp\3lc-compute\plugin-sockets)
+INFO - 2026-10-12 22:58:10,389 - tlc_compute.app - app - Job manager initialized
+INFO - 2026-10-12 22:58:10,389 - tlc_compute.plugins.supervisor - supervisor - Idle-worker reaper started (idle_ttl=300s, every 60s)
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Provisioning manager initialized (9 venv plugins seeded)
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Install manager initialized
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /importer for plugin importer
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /exporter for plugin exporter
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /splitter for plugin splitter
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /merger for plugin merger
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /image-metrics for plugin image-metrics
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /table-statistics for plugin table-statistics
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /run-insights for plugin run-insights
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /table-insights for plugin table-insights
+INFO - 2026-10-12 22:58:10,391 - tlc_compute.app - app - Registered SocketIO namespace /kaggle-classification for plugin kaggle-classification
+INFO - 2026-10-12 22:58:10,410 - httpx - _client - HTTP Request: GET http://testserver.local/api/admin/plugins/install/kaggle-classification/status "HTTP/1.1 404 Not Found"
+INFO - 2026-10-12 22:58:10,412 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:10,421 - tlc_compute.plugins.supervisor - supervisor - Spawning worker for plugin 'kaggle-classification': C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Scripts\python.exe -m tlc_plugin_sdk.worker --entry kaggle_classification:KaggleClassificationPlugin --host 127.0.0.1 --port 59702 --id kaggle-classification
+INFO - 2026-10-12 22:58:10,673 - tlc_compute.plugins.defaults - defaults - Plugin catalog cache warmed from 2 source(s): 13 entr(ies)
+INFO - 2026-10-12 22:58:10,674 - tlc_compute.plugins.defaults - defaults - Boot plugin seeding: nothing to do
+WARNING - 2026-10-12 22:58:11,153 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 22:58:11,153 - __main__ - worker - Plugin worker 'kaggle-classification' serving on 127.0.0.1:59702
+INFO - 2026-10-12 22:58:11,456 - httpx - _client - HTTP Request: GET http://127.0.0.1:59702/health "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 22:58:11,522 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 22:58:11,522 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 22:58:11,524 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 22:58:11,524 - kaggle_classification.manifest - manifest - manifest: cache source (C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\plugin-state\kaggle-classification\manifest-cache\intel-scene.manifest.json), kit v1
+WARNING - 2026-10-12 22:58:11,950 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 22:58:11,950 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 22:58:14,658 - httpx - _client - HTTP Request: GET http://127.0.0.1:59702/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:14,659 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/config "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:14,662 - tlc_compute.shared.serial_queue - serial_queue - GPU queue: submitted kaggle-classification job 'Kaggle Classification' (id=e6cd8348925140db95e090d47f085063)
+[22:58:14] POST /run train {"epochs": "1", "run_name": "probe warmup"} -> 201 {"job_id": "e6cd8348925140db95e090d47f085063", "status": "queued", "namespace": "/kaggle-classification"}
+INFO - 2026-10-12 22:58:14,662 - httpx - _client - HTTP Request: POST http://testserver.local/api/plugins/kaggle-classification/run "HTTP/1.1 201 Created"
+INFO - 2026-10-12 22:58:14,670 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:14,671 - httpx - _client - HTTP Request: POST http://127.0.0.1:59702/jobs/e6cd8348925140db95e090d47f085063/run "HTTP/1.1 201 Created"
+WARNING - 2026-10-12 22:58:14,799 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] INFO - 2026-10-12 22:58:14,799 - kaggle_classification.manifest - manifest - manifest: remote https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json (kit v1, sha256 ec0c60cf45f0)
+INFO - 2026-10-12 22:58:16,672 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:18,674 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:20,676 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:22,678 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:24,680 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:26,682 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:28,683 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:30,685 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:32,687 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:34,688 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:36,690 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:38,691 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:40,693 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:42,695 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:44,696 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:46,698 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:48,699 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:50,702 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:52,702 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:54,704 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:56,706 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:58:58,708 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:00,709 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 22:59:01,013 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Lib\site-packages\umap\umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+WARNING - 2026-10-12 22:59:01,013 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   warn(
+INFO - 2026-10-12 22:59:02,711 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:04,713 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:06,715 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:08,717 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:10,718 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:12,720 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:14,722 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:16,723 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:18,726 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:20,727 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:22,730 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:24,732 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:26,734 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+INFO - 2026-10-12 22:59:28,734 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/jobs "HTTP/1.1 200 OK"
+WARNING - 2026-10-12 22:59:29,545 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification] C:\Users\Owner\Desktop\3LC Hackathons\3lc-hub-fresh\home\.3lc-compute\managed-plugins\kaggle-classification\1.0.0rc14\.venv\Lib\site-packages\kaggle_classification\leak_probe.py:89: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+WARNING - 2026-10-12 22:59:29,545 - tlc_compute.plugins.supervisor - supervisor - [worker kaggle-classification]   facts["live_modules"] = sum(1 for o in gc.get_objects() if isinstance(o, torch.nn.Module))
+INFO - 2026-10-12 22:59:29,588 - httpx - _client - HTTP Request: GET http://127.0.0.1:59702/debug/leak_probe?reset=1 "HTTP/1.1 500 Internal Server Error"
+INFO - 2026-10-12 22:59:29,589 - httpx - _client - HTTP Request: GET http://testserver.local/api/plugins/kaggle-classification/debug/leak_probe?reset=1 "HTTP/1.1 500 Internal Server Error"
+[22:59:29] probe route answered 500: {"status_code":500,"detail":"Internal Server Error"}

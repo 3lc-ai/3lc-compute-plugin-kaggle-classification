@@ -47,13 +47,17 @@ anti-cheat review (docs/PREDICT_MIRROR.md section 15). The plugin extra pins `3l
   from `nvidia-smi`, the minimum series for the build's CUDA major (R580 for CUDA 13), and the sentence
   "NVIDIA driver X is older than the R580 series this torch build needs; update the driver. Runs will use
   CPU." Auto device resolution records it as the fallback reason.
-- **A between-jobs memory release in the worker** (campaign F5): the 3-hour soak of train + predict cycles
-  showed the plugin worker growing about 15 MB per cycle (working set 2.4 GB after the first cycle, 3.9 GB
-  after the hundredth; no failures). Every job kind now ends with `trainer.release_memory`: Python's garbage,
-  CUDA's cache and tlc's in-process object cache (`ObjectRegistry.drop_cache`, which otherwise keeps every
-  table, run and metrics table a job opened). **It does not fix the growth**: the 30-cycle gate soak on
-  `41fba65` still measured 14.6 MB per cycle (working set) and 16.3 MB per cycle (private bytes). The leak is
-  OPEN and blocks the rc14 tag (TESTING_PROOF.md run 14, F5b).
+- **The worker's memory leak** (campaign F5, the leak hunt): the 3-hour soak showed the plugin worker growing
+  about 15 MB per train + predict cycle, all of it native (Python's heap grew 0.09 MB per cycle). Two causes,
+  each reproduced in isolation (`tools/hardening/umap_leak_repro.py`, `predict_leak_repro.py`):
+  (1) UMAP's transform on a newly fitted reducer queries pynndescent, which compiles a fresh search closure
+  per index; LLVM never frees JIT code (about 10 MB and 5 LLVM modules per training run). A fitted UMAP now
+  transforms through its exact-neighbour branch in chunks under 256 MB of distances, with the metric passed
+  by name so sklearn computes it vectorized; umap-learn is pinned to 0.5.12, where this was verified.
+  (2) The SDK worker starts a new thread per job, and torch's CPU work leaves per-thread state (about 7.6 MB
+  per job); every job now runs on the worker's one long-lived job thread. The between-jobs release
+  (`trainer.release_memory`: gc, the CUDA cache, tlc's object cache) stays; on its own it did not move the
+  slope. The gate result is in TESTING_PROOF.md run 14, F5b.
 - **The submission message length is checked before anything is uploaded** (campaign D9): the Submit job
   refuses a message longer than `submission.message_max_chars` ("The submission message is N characters
   long; the limit is M. Shorten it and submit again (nothing was sent to Kaggle).") Kaggle documents no

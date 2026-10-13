@@ -1,0 +1,3400 @@
+{
+ "kind": "train",
+ "cpu": false,
+ "cycles": [
+  {
+   "n": 1,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2391,
+     "private_mb": 4253
+    },
+    {
+     "pid": 33796,
+     "working_set_mb": 96,
+     "private_mb": 77
+    }
+   ],
+   "probe": {
+    "call": 2,
+    "at": 1791864163.497307,
+    "since_s": 24.3,
+    "process": {
+     "working_set_mb": 2390,
+     "private_mb": 4499
+    },
+    "tracemalloc_mb": 1.1,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 758617,
+    "top_by_size": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:164",
+      "size_kb": 382.2,
+      "count": 3521
+     },
+     {
+      "where": "<frozen abc>:123",
+      "size_kb": 136.5,
+      "count": 1443
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:118",
+      "size_kb": 72.4,
+      "count": 901
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\proactor_events.py:191",
+      "size_kb": 64.1,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:123",
+      "size_kb": 55.4,
+      "count": 295
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py:404",
+      "size_kb": 34.0,
+      "count": 671
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\linecache.py:137",
+      "size_kb": 16.4,
+      "count": 165
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_tables\\table_indexing_table.py:104",
+      "size_kb": 16.3,
+      "count": 262
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 13.8,
+      "count": 272
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\traceback.py:523",
+      "size_kb": 13.4,
+      "count": 49
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 13.3,
+      "count": 310
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\re\\_compiler.py:761",
+      "size_kb": 10.4,
+      "count": 12
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "size_kb": 9.9,
+      "count": 59
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:92",
+      "size_kb": 8.8,
+      "count": 128
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:160",
+      "size_kb": 8.2,
+      "count": 41
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "<unknown>:0",
+      "size_kb": 6.7,
+      "count": 33
+     },
+     {
+      "where": "<frozen posixpath>:404",
+      "size_kb": 6.6,
+      "count": 43
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:400",
+      "size_kb": 6.4,
+      "count": 26
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_tables\\table_indexing_table.py:115",
+      "size_kb": 5.9,
+      "count": 76
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:164",
+      "count": 3521,
+      "size_kb": 382.2
+     },
+     {
+      "where": "<frozen abc>:123",
+      "count": 1443,
+      "size_kb": 136.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:118",
+      "count": 901,
+      "size_kb": 72.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py:404",
+      "count": 671,
+      "size_kb": 34.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 310,
+      "size_kb": 13.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:123",
+      "count": 295,
+      "size_kb": 55.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 272,
+      "size_kb": 13.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_tables\\table_indexing_table.py:104",
+      "count": 262,
+      "size_kb": 16.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\linecache.py:137",
+      "count": 165,
+      "size_kb": 16.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:92",
+      "count": 128,
+      "size_kb": 8.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:111",
+      "count": 101,
+      "size_kb": 5.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_tables\\table_indexing_table.py:115",
+      "count": 76,
+      "size_kb": 5.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_tables\\table_indexing_table.py:108",
+      "count": 76,
+      "size_kb": 3.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 68,
+      "size_kb": 3.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\codegen.py:49",
+      "count": 65,
+      "size_kb": 2.8
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "count": 59,
+      "size_kb": 9.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:124",
+      "count": 59,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\traceback.py:523",
+      "count": 49,
+      "size_kb": 13.4
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 120732,
+      "delta": 11682
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34283,
+      "delta": 491
+     },
+     {
+      "type": "builtins.builtin_function_or_method",
+      "now": 29646,
+      "delta": 429
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22154,
+      "delta": 158
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98287,
+      "delta": 156
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15217,
+      "delta": 139
+     },
+     {
+      "type": "builtins.list",
+      "now": 32744,
+      "delta": 36
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 7874,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5785,
+      "delta": 17
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2142,
+      "delta": 15
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3249,
+      "delta": 14
+     },
+     {
+      "type": "builtins.set",
+      "now": 9949,
+      "delta": 13
+     },
+     {
+      "type": "re.Pattern",
+      "now": 381,
+      "delta": 11
+     },
+     {
+      "type": "builtins.function",
+      "now": 112730,
+      "delta": 7
+     },
+     {
+      "type": "collections.deque",
+      "now": 82,
+      "delta": 6
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 662,
+      "delta": 6
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 662,
+      "delta": 6
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 75,
+      "delta": 5
+     },
+     {
+      "type": "sentry_sdk.scope.Scope",
+      "now": 26,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 660,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 660,
+      "delta": 5
+     },
+     {
+      "type": "builtins.method",
+      "now": 2747,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 643,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 406,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 428,
+      "delta": 4
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 30,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2742,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2742,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 2,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2413,
+     "private_mb": 4282
+    },
+    {
+     "pid": 50096,
+     "working_set_mb": 96,
+     "private_mb": 77
+    }
+   ],
+   "probe": {
+    "call": 3,
+    "at": 1791864188.180602,
+    "since_s": 24.7,
+    "process": {
+     "working_set_mb": 2412,
+     "private_mb": 4528
+    },
+    "tracemalloc_mb": 1.1,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 760087,
+    "top_by_size": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "<unknown>:0",
+      "size_kb": 6.2,
+      "count": 22
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 5.6,
+      "count": 110
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 5.4,
+      "count": 126
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "size_kb": 3.7,
+      "count": 56
+     },
+     {
+      "where": "<string>:1",
+      "size_kb": 2.2,
+      "count": 30
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "size_kb": 1.9,
+      "count": 81
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typeinfer.py:1230",
+      "size_kb": 1.8,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "size_kb": 1.6,
+      "count": 25
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "size_kb": 1.5,
+      "count": 27
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:271",
+      "size_kb": 1.5,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "size_kb": 1.4,
+      "count": 12
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "size_kb": 1.4,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "size_kb": 1.4,
+      "count": 20
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\typed\\typedlist.py:369",
+      "size_kb": 1.2,
+      "count": 25
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "size_kb": 1.1,
+      "count": 18
+     },
+     {
+      "where": "<frozen abc>:106",
+      "size_kb": 1.1,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "size_kb": 1.1,
+      "count": 9
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "size_kb": 1.0,
+      "count": 12
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1232",
+      "size_kb": 0.9,
+      "count": 3
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 126,
+      "size_kb": 5.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 110,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 35,
+      "size_kb": 7.1
+     },
+     {
+      "where": "<string>:1",
+      "count": 30,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 27,
+      "size_kb": 1.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "count": 25,
+      "size_kb": 1.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\typed\\typedlist.py:369",
+      "count": 25,
+      "size_kb": 1.2
+     },
+     {
+      "where": "<unknown>:0",
+      "count": 22,
+      "size_kb": 6.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "count": 20,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "count": 18,
+      "size_kb": 1.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "count": 16,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:511",
+      "count": 15,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "count": 14,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typing\\templates.py:185",
+      "count": 13,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "count": 12,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "count": 12,
+      "size_kb": 1.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2135",
+      "count": 11,
+      "size_kb": 0.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\copyreg.py:99",
+      "count": 10,
+      "size_kb": 0.8
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 121836,
+      "delta": 1104
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98368,
+      "delta": 81
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22220,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15274,
+      "delta": 57
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 7901,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5802,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3263,
+      "delta": 14
+     },
+     {
+      "type": "builtins.list",
+      "now": 32756,
+      "delta": 12
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2152,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 665,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 665,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 647,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 410,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 432,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 432,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 666,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 666,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34286,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9952,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 78,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10480,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3387,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 523,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 312,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 383,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 32,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2743,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2743,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 3,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2426,
+     "private_mb": 4295
+    },
+    {
+     "pid": 57596,
+     "working_set_mb": 96,
+     "private_mb": 77
+    }
+   ],
+   "probe": {
+    "call": 4,
+    "at": 1791864212.8161387,
+    "since_s": 24.6,
+    "process": {
+     "working_set_mb": 2425,
+     "private_mb": 4541
+    },
+    "tracemalloc_mb": 1.2,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 761474,
+    "top_by_size": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 5.6,
+      "count": 110
+     },
+     {
+      "where": "<unknown>:0",
+      "size_kb": 5.6,
+      "count": 15
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 5.4,
+      "count": 126
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "size_kb": 3.7,
+      "count": 56
+     },
+     {
+      "where": "<string>:1",
+      "size_kb": 2.2,
+      "count": 30
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "size_kb": 1.9,
+      "count": 81
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "size_kb": 1.8,
+      "count": 15
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typeinfer.py:1230",
+      "size_kb": 1.8,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "size_kb": 1.6,
+      "count": 25
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "size_kb": 1.5,
+      "count": 27
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:271",
+      "size_kb": 1.5,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "size_kb": 1.4,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "size_kb": 1.2,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "size_kb": 1.1,
+      "count": 17
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "size_kb": 1.1,
+      "count": 9
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "size_kb": 1.0,
+      "count": 12
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1232",
+      "size_kb": 0.9,
+      "count": 3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "size_kb": 0.9,
+      "count": 14
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\itanium_mangler.py:174",
+      "size_kb": 0.9,
+      "count": 4
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 126,
+      "size_kb": 5.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 110,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 35,
+      "size_kb": 7.1
+     },
+     {
+      "where": "<string>:1",
+      "count": 30,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 27,
+      "size_kb": 1.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "count": 25,
+      "size_kb": 1.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "count": 17,
+      "size_kb": 1.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "count": 16,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "count": 16,
+      "size_kb": 1.2
+     },
+     {
+      "where": "<unknown>:0",
+      "count": 15,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "count": 15,
+      "size_kb": 1.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:511",
+      "count": 15,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "count": 14,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typing\\templates.py:185",
+      "count": 13,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1897",
+      "count": 13,
+      "size_kb": 0.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:351",
+      "count": 13,
+      "size_kb": 0.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "count": 12,
+      "size_kb": 1.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2135",
+      "count": 11,
+      "size_kb": 0.6
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 122857,
+      "delta": 1021
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98449,
+      "delta": 81
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22286,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15331,
+      "delta": 57
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 7928,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5819,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3277,
+      "delta": 14
+     },
+     {
+      "type": "builtins.list",
+      "now": 32768,
+      "delta": 12
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2162,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 670,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 670,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 651,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 414,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 436,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 436,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 670,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 670,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34289,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9955,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 81,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10483,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3389,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 525,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 314,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 385,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 34,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2744,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2744,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 4,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2442,
+     "private_mb": 4326
+    },
+    {
+     "pid": 8204,
+     "working_set_mb": 96,
+     "private_mb": 76
+    }
+   ],
+   "probe": {
+    "call": 5,
+    "at": 1791864237.717758,
+    "since_s": 24.9,
+    "process": {
+     "working_set_mb": 2442,
+     "private_mb": 4572
+    },
+    "tracemalloc_mb": 1.5,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 764877,
+    "top_by_size": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:407",
+      "size_kb": 43.8,
+      "count": 527
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:125",
+      "size_kb": 25.2,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "size_kb": 14.8,
+      "count": 329
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "size_kb": 13.2,
+      "count": 72
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:111",
+      "size_kb": 12.9,
+      "count": 259
+     },
+     {
+      "where": "<frozen abc>:106",
+      "size_kb": 9.0,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\_lru_cache.py:38",
+      "size_kb": 9.0,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:1121",
+      "size_kb": 7.7,
+      "count": 38
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.0,
+      "count": 34
+     },
+     {
+      "where": "<unknown>:0",
+      "size_kb": 6.1,
+      "count": 20
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 5.6,
+      "count": 110
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 5.4,
+      "count": 126
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:124",
+      "size_kb": 4.9,
+      "count": 75
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "size_kb": 4.7,
+      "count": 40
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:398",
+      "size_kb": 4.5,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:403",
+      "size_kb": 4.2,
+      "count": 52
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:581",
+      "size_kb": 4.1,
+      "count": 59
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "size_kb": 3.7,
+      "count": 56
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:157",
+      "size_kb": 3.6,
+      "count": 31
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:406",
+      "size_kb": 2.8,
+      "count": 1
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:407",
+      "count": 527,
+      "size_kb": 43.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "count": 329,
+      "size_kb": 14.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:111",
+      "count": 259,
+      "size_kb": 12.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 126,
+      "size_kb": 5.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 110,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:124",
+      "count": 75,
+      "size_kb": 4.9
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "count": 72,
+      "size_kb": 13.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:581",
+      "count": 59,
+      "size_kb": 4.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:403",
+      "count": 52,
+      "size_kb": 4.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:184",
+      "count": 52,
+      "size_kb": 2.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:138",
+      "count": 47,
+      "size_kb": 1.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:389",
+      "count": 45,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1904",
+      "count": 40,
+      "size_kb": 4.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:1121",
+      "count": 38,
+      "size_kb": 7.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 34,
+      "size_kb": 7.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:157",
+      "count": 31,
+      "size_kb": 3.6
+     },
+     {
+      "where": "<string>:1",
+      "count": 30,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 27,
+      "size_kb": 1.5
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 125841,
+      "delta": 2984
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98538,
+      "delta": 89
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22352,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15388,
+      "delta": 57
+     },
+     {
+      "type": "builtins.list",
+      "now": 32818,
+      "delta": 50
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 7955,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5836,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3291,
+      "delta": 14
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2172,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 675,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 675,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 655,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 418,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 440,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 440,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 674,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 674,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34292,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9958,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 84,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10486,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3391,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 527,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 316,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 387,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 36,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2745,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2745,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 5,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2467,
+     "private_mb": 4343
+    },
+    {
+     "pid": 28796,
+     "working_set_mb": 96,
+     "private_mb": 76
+    }
+   ],
+   "probe": {
+    "call": 6,
+    "at": 1791864263.298552,
+    "since_s": 25.6,
+    "process": {
+     "working_set_mb": 2466,
+     "private_mb": 4589
+    },
+    "tracemalloc_mb": 5.7,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 821149,
+    "top_by_size": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:407",
+      "size_kb": 1243.8,
+      "count": 17533
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "size_kb": 652.8,
+      "count": 14533
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:635",
+      "size_kb": 549.5,
+      "count": 4689
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\PIL\\Image.py:690",
+      "size_kb": 412.5,
+      "count": 3520
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "size_kb": 172.6,
+      "count": 897
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:148",
+      "size_kb": 148.1,
+      "count": 1264
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:406",
+      "size_kb": 118.2,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:403",
+      "size_kb": 95.1,
+      "count": 720
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:389",
+      "size_kb": 94.5,
+      "count": 1875
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:111",
+      "size_kb": 85.8,
+      "count": 1729
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:124",
+      "size_kb": 65.9,
+      "count": 981
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torch\\_jit_internal.py:637",
+      "size_kb": 63.5,
+      "count": 542
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:398",
+      "size_kb": 54.4,
+      "count": 672
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:581",
+      "size_kb": 53.8,
+      "count": 819
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py:105",
+      "size_kb": 48.8,
+      "count": 416
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:157",
+      "size_kb": 36.4,
+      "count": 311
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:184",
+      "size_kb": 31.6,
+      "count": 708
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torchvision\\transforms\\_functional_pil.py:300",
+      "size_kb": 25.3,
+      "count": 216
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\json\\decoder.py:353",
+      "size_kb": 22.4,
+      "count": 191
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:401",
+      "size_kb": 20.9,
+      "count": 105
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:407",
+      "count": 17533,
+      "size_kb": 1243.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "count": 14533,
+      "size_kb": 652.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:635",
+      "count": 4689,
+      "size_kb": 549.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\PIL\\Image.py:690",
+      "count": 3520,
+      "size_kb": 412.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:389",
+      "count": 1875,
+      "size_kb": 94.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:111",
+      "count": 1729,
+      "size_kb": 85.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:148",
+      "count": 1264,
+      "size_kb": 148.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:124",
+      "count": 981,
+      "size_kb": 65.9
+     },
+     {
+      "where": "<frozen ntpath>:147",
+      "count": 897,
+      "size_kb": 172.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\utils.py:581",
+      "count": 819,
+      "size_kb": 53.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:403",
+      "count": 720,
+      "size_kb": 95.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:184",
+      "count": 708,
+      "size_kb": 31.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:398",
+      "count": 672,
+      "size_kb": 54.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:138",
+      "count": 632,
+      "size_kb": 19.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torch\\_jit_internal.py:637",
+      "count": 542,
+      "size_kb": 63.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py:105",
+      "count": 416,
+      "size_kb": 48.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\utils.py:157",
+      "count": 311,
+      "size_kb": 36.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torchvision\\transforms\\_functional_pil.py:300",
+      "count": 216,
+      "size_kb": 25.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\json\\decoder.py:353",
+      "count": 191,
+      "size_kb": 22.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\ir\\values.py:786",
+      "count": 159,
+      "size_kb": 18.6
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 181359,
+      "delta": 55518
+     },
+     {
+      "type": "builtins.list",
+      "now": 33208,
+      "delta": 390
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98624,
+      "delta": 86
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22418,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15445,
+      "delta": 57
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 7982,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5853,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3305,
+      "delta": 14
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2182,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 680,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 680,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 659,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 422,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 444,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 444,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 678,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 678,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34295,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9961,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 87,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10489,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3393,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 529,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 318,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 389,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 38,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2746,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2746,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 6,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2483,
+     "private_mb": 4367
+    },
+    {
+     "pid": 20884,
+     "working_set_mb": 96,
+     "private_mb": 76
+    }
+   ],
+   "probe": {
+    "call": 7,
+    "at": 1791864288.8715527,
+    "since_s": 25.6,
+    "process": {
+     "working_set_mb": 2482,
+     "private_mb": 4613
+    },
+    "tracemalloc_mb": 5.6,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 821284,
+    "top_by_size": [
+     {
+      "where": "<unknown>:0",
+      "size_kb": 8.4,
+      "count": 18
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 5.6,
+      "count": 110
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 5.4,
+      "count": 126
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:148",
+      "size_kb": 4.1,
+      "count": 35
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "size_kb": 3.7,
+      "count": 56
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2135",
+      "size_kb": 2.6,
+      "count": 28
+     },
+     {
+      "where": "<string>:1",
+      "size_kb": 2.2,
+      "count": 30
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "size_kb": 1.9,
+      "count": 81
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "size_kb": 1.9,
+      "count": 42
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:407",
+      "size_kb": 1.7,
+      "count": -103
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typeinfer.py:1230",
+      "size_kb": 1.6,
+      "count": 3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "size_kb": 1.6,
+      "count": 25
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:178",
+      "size_kb": 1.5,
+      "count": 13
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:271",
+      "size_kb": 1.5,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "size_kb": 1.4,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "size_kb": 1.3,
+      "count": 18
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "size_kb": 1.1,
+      "count": 18
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "size_kb": 1.1,
+      "count": 9
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "size_kb": 1.0,
+      "count": 12
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 126,
+      "size_kb": 5.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 110,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\profiler\\transaction_profiler.py:603",
+      "count": 42,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 35,
+      "size_kb": 7.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:148",
+      "count": 35,
+      "size_kb": 4.1
+     },
+     {
+      "where": "<string>:1",
+      "count": 30,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2135",
+      "count": 28,
+      "size_kb": 2.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "count": 25,
+      "size_kb": 1.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\typed\\typedlist.py:369",
+      "count": 20,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 20,
+      "size_kb": 0.7
+     },
+     {
+      "where": "<unknown>:0",
+      "count": 18,
+      "size_kb": 8.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "count": 18,
+      "size_kb": 1.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "count": 18,
+      "size_kb": 1.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "count": 16,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:511",
+      "count": 15,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "count": 14,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:178",
+      "count": 13,
+      "size_kb": 1.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typing\\templates.py:185",
+      "count": 13,
+      "size_kb": 0.8
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.dict",
+      "now": 98697,
+      "delta": 73
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22484,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15502,
+      "delta": 57
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 8009,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5870,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3319,
+      "delta": 14
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2192,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 685,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 685,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 663,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 426,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 448,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 448,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 682,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 682,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34298,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9964,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 90,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10492,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3395,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 531,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 320,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 391,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.funcdesc.PythonFunctionDescriptor",
+      "now": 356,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.ir.Del",
+      "now": 10644,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 40,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2747,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2747,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 7,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2494,
+     "private_mb": 4390
+    },
+    {
+     "pid": 53448,
+     "working_set_mb": 96,
+     "private_mb": 76
+    }
+   ],
+   "probe": {
+    "call": 8,
+    "at": 1791864313.8817563,
+    "since_s": 25.0,
+    "process": {
+     "working_set_mb": 2494,
+     "private_mb": 4636
+    },
+    "tracemalloc_mb": 1.6,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 768340,
+    "top_by_size": [
+     {
+      "where": "<unknown>:0",
+      "size_kb": 8.4,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "size_kb": 5.6,
+      "count": 110
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "size_kb": 5.4,
+      "count": 126
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "size_kb": 3.7,
+      "count": 56
+     },
+     {
+      "where": "<string>:1",
+      "size_kb": 2.2,
+      "count": 30
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "size_kb": 1.9,
+      "count": 81
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typeinfer.py:1230",
+      "size_kb": 1.8,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "size_kb": 1.6,
+      "count": 25
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:271",
+      "size_kb": 1.5,
+      "count": 1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "size_kb": 1.4,
+      "count": 16
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "size_kb": 1.2,
+      "count": 17
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "size_kb": 1.1,
+      "count": 18
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "size_kb": 1.1,
+      "count": 9
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "size_kb": 1.0,
+      "count": 12
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "size_kb": 0.9,
+      "count": 22
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1232",
+      "size_kb": 0.9,
+      "count": 3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "size_kb": 0.9,
+      "count": 14
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\itanium_mangler.py:174",
+      "size_kb": 0.9,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\copyreg.py:99",
+      "size_kb": 0.8,
+      "count": 10
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:1178",
+      "count": 126,
+      "size_kb": 5.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:202",
+      "count": 110,
+      "size_kb": 5.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:28",
+      "count": 81,
+      "size_kb": 1.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\compiler_machinery.py:337",
+      "count": 56,
+      "size_kb": 3.7
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 35,
+      "size_kb": 7.1
+     },
+     {
+      "where": "<string>:1",
+      "count": 30,
+      "size_kb": 2.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:250",
+      "count": 25,
+      "size_kb": 1.6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\byteflow.py:2128",
+      "count": 22,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "count": 18,
+      "size_kb": 1.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "count": 17,
+      "size_kb": 1.2
+     },
+     {
+      "where": "<unknown>:0",
+      "count": 16,
+      "size_kb": 8.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:433",
+      "count": 16,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:511",
+      "count": 15,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:394",
+      "count": 14,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\typing\\templates.py:185",
+      "count": 13,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "count": 12,
+      "size_kb": 1.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\copyreg.py:99",
+      "count": 10,
+      "size_kb": 0.8
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\dis.py:677",
+      "count": 10,
+      "size_kb": 0.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "count": 9,
+      "size_kb": 1.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir.py:405",
+      "count": 9,
+      "size_kb": 0.4
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.dict",
+      "now": 98773,
+      "delta": 76
+     },
+     {
+      "type": "numba.core.ir.Var",
+      "now": 22550,
+      "delta": 66
+     },
+     {
+      "type": "numba.core.ir.Loc",
+      "now": 15559,
+      "delta": 57
+     },
+     {
+      "type": "numba.core.compiler_machinery.pass_timings",
+      "now": 8036,
+      "delta": 27
+     },
+     {
+      "type": "numba.core.ir.Expr",
+      "now": 5887,
+      "delta": 17
+     },
+     {
+      "type": "numba.core.typing.templates.Signature",
+      "now": 3333,
+      "delta": 14
+     },
+     {
+      "type": "collections.defaultdict",
+      "now": 2202,
+      "delta": 10
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 690,
+      "delta": 5
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 690,
+      "delta": 5
+     },
+     {
+      "type": "numba.core.utils.UniqueDict",
+      "now": 667,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 430,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 452,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 452,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.Scope",
+      "now": 686,
+      "delta": 4
+     },
+     {
+      "type": "numba.core.ir.VarMap",
+      "now": 686,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34301,
+      "delta": 3
+     },
+     {
+      "type": "builtins.set",
+      "now": 9967,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 93,
+      "delta": 3
+     },
+     {
+      "type": "numba.core.ir.Assign",
+      "now": 10495,
+      "delta": 3
+     },
+     {
+      "type": "collections.OrderedDict",
+      "now": 3397,
+      "delta": 2
+     },
+     {
+      "type": "weakref.KeyedRef",
+      "now": 533,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.cpu.CPUContext",
+      "now": 322,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.environment.Environment",
+      "now": 393,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.funcdesc.PythonFunctionDescriptor",
+      "now": 358,
+      "delta": 2
+     },
+     {
+      "type": "numba.core.ir.Del",
+      "now": 10646,
+      "delta": 2
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 42,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2748,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2748,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  },
+  {
+   "n": 8,
+   "status": "completed",
+   "workers": [
+    {
+     "pid": 42672,
+     "working_set_mb": 5,
+     "private_mb": 1
+    },
+    {
+     "pid": 43764,
+     "working_set_mb": 2505,
+     "private_mb": 4410
+    },
+    {
+     "pid": 12004,
+     "working_set_mb": 96,
+     "private_mb": 77
+    }
+   ],
+   "probe": {
+    "call": 9,
+    "at": 1791864338.664454,
+    "since_s": 24.8,
+    "process": {
+     "working_set_mb": 2505,
+     "private_mb": 4656
+    },
+    "tracemalloc_mb": 1.7,
+    "logging": {
+     "root": 1,
+     "named_total": 47,
+     "named": {
+      "tlc": 2,
+      "litestar": 1,
+      "uvicorn": 1,
+      "uvicorn.access": 1,
+      "sentry_sdk.errors": 1,
+      "urllib3": 1,
+      "torch": 1,
+      "strobelight_function_profiler": 1,
+      "strobelight_compile_time_profiler": 1,
+      "torch.distributed": 1
+     },
+     "loggers": 375
+    },
+    "torch": {
+     "imported": true,
+     "_global_forward_hooks": 0,
+     "_global_forward_pre_hooks": 0,
+     "_global_backward_hooks": 0,
+     "_global_backward_pre_hooks": 0,
+     "_global_module_registration_hooks": 0,
+     "_global_parameter_registration_hooks": 0,
+     "_global_buffer_registration_hooks": 0,
+     "live_modules": 0,
+     "live_tensors": 0,
+     "cuda_allocated_mb": 64,
+     "cuda_reserved_mb": 64
+    },
+    "gc_objects": 768565,
+    "top_by_size": [
+     {
+      "where": "<unknown>:0",
+      "size_kb": 8.3,
+      "count": 14
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "size_kb": 7.1,
+      "count": 35
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\serialize.py:48",
+      "size_kb": 2.1,
+      "count": 0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "size_kb": 1.4,
+      "count": 20
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "size_kb": 1.1,
+      "count": 18
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "size_kb": 1.0,
+      "count": 12
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "size_kb": 0.9,
+      "count": 8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\module.py:20",
+      "size_kb": 0.5,
+      "count": 8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1897",
+      "size_kb": 0.5,
+      "count": 9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\context.py:10",
+      "size_kb": 0.4,
+      "count": 8
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torchvision\\transforms\\_functional_tensor.py:921",
+      "size_kb": 0.3,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\np\\ufunc\\array_exprs.py:382",
+      "size_kb": 0.3,
+      "count": 4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\codegen.py:800",
+      "size_kb": 0.3,
+      "count": 4
+     },
+     {
+      "where": "<frozen posixpath>:404",
+      "size_kb": 0.3,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlcurl\\url.py:333",
+      "size_kb": 0.3,
+      "count": 6
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:148",
+      "size_kb": 0.2,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\table.py:635",
+      "size_kb": 0.2,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\ir\\values.py:786",
+      "size_kb": 0.2,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\sentry_sdk\\scope.py:1097",
+      "size_kb": 0.2,
+      "count": 2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\kaggle_classification\\leak_probe.py:183",
+      "size_kb": 0.2,
+      "count": 2
+     }
+    ],
+    "top_by_count": [
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\common.py:10",
+      "count": 35,
+      "size_kb": 7.1
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:206",
+      "count": 20,
+      "size_kb": 1.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\log_table.py:219",
+      "count": 18,
+      "size_kb": 1.1
+     },
+     {
+      "where": "<unknown>:0",
+      "count": 14,
+      "size_kb": 8.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\ctypes\\__init__.py:518",
+      "count": 12,
+      "size_kb": 1.0
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\interpreter.py:1897",
+      "count": 9,
+      "size_kb": 0.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\ffi.py:212",
+      "count": 8,
+      "size_kb": 0.9
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\module.py:20",
+      "count": 8,
+      "size_kb": 0.5
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\llvmlite\\binding\\context.py:10",
+      "count": 8,
+      "size_kb": 0.4
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlcurl\\url.py:333",
+      "count": 6,
+      "size_kb": 0.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torchvision\\transforms\\_functional_tensor.py:921",
+      "count": 4,
+      "size_kb": 0.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\np\\ufunc\\array_exprs.py:382",
+      "count": 4,
+      "size_kb": 0.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\codegen.py:800",
+      "count": 4,
+      "size_kb": 0.3
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\torch\\optim\\adam.py:683",
+      "count": 4,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\email\\utils.py:162",
+      "count": 4,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\numba\\core\\ir_utils.py:1527",
+      "count": 4,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\tlc\\_core\\objects\\tables\\system_tables\\indexing_table.py:751",
+      "count": 3,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py:404",
+      "count": 3,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\litestar\\_asgi\\routing_trie\\traversal.py:166",
+      "count": 3,
+      "size_kb": 0.2
+     },
+     {
+      "where": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0rc14\\.venv\\Lib\\site-packages\\PIL\\Image.py:547",
+      "count": 3,
+      "size_kb": 0.2
+     }
+    ],
+    "gc_types_grown": [
+     {
+      "type": "builtins.tuple",
+      "now": 128449,
+      "delta": 190
+     },
+     {
+      "type": "builtins.dict",
+      "now": 98777,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.module.ModuleRef",
+      "now": 694,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ProxyType",
+      "now": 434,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMModule",
+      "now": 694,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.context.GlobalContextRef",
+      "now": 456,
+      "delta": 4
+     },
+     {
+      "type": "llvmlite.binding.ffi.LP_LLVMContext",
+      "now": 456,
+      "delta": 4
+     },
+     {
+      "type": "weakref.ReferenceType",
+      "now": 34304,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl.url.Url",
+      "now": 96,
+      "delta": 3
+     },
+     {
+      "type": "tlcurl._utils.lru_cache.LruEntry",
+      "now": 10,
+      "delta": 1
+     },
+     {
+      "type": "tlc._core.objects.tables.system_tables.indexing_table._PendingItem",
+      "now": 11,
+      "delta": 1
+     },
+     {
+      "type": "numba.core.types.functions.Dispatcher",
+      "now": 554,
+      "delta": 1
+     },
+     {
+      "type": "numba.core.types.functions._PickleableWeakRef",
+      "now": 554,
+      "delta": 1
+     },
+     {
+      "type": "numba.core.datamodel.models.OpaqueModel",
+      "now": 245,
+      "delta": 1
+     }
+    ],
+    "containers_grown": [
+     {
+      "name": "numba.core.serialize._unpickled_memo",
+      "now": 44,
+      "delta": 2
+     },
+     {
+      "name": "numba.core.types.abstract._typecache",
+      "now": 2749,
+      "delta": 1
+     }
+    ],
+    "containers_largest": {
+     "numba.core.types.abstract._typecache": 2749,
+     "sklearn.externals.array_api_compat.numpy.__all__": 501,
+     "numba.core.bytecode._inline_cache_entries": 256,
+     "tlc.constants.__all__": 196,
+     "numba._helperlib.c_helpers": 171,
+     "numba.cpython.unicode.c_helpers": 171,
+     "tlc_plugin_sdk.contract.__builtins__": 158,
+     "tlc_plugin_sdk.job_context.__builtins__": 158,
+     "tlc_plugin_sdk.__builtins__": 158,
+     "tlc_plugin_sdk.shared.__builtins__": 158,
+     "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+     "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+     "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+     "kaggle_classification.__builtins__": 158,
+     "kaggle_classification.routes.__builtins__": 158
+    }
+   }
+  }
+ ],
+ "baseline": {
+  "call": 1,
+  "at": 1791864139.246595,
+  "since_s": null,
+  "process": {
+   "working_set_mb": 2357,
+   "private_mb": 4200
+  },
+  "tracemalloc_mb": 0.0,
+  "logging": {
+   "root": 1,
+   "named_total": 47,
+   "named": {
+    "tlc": 2,
+    "litestar": 1,
+    "uvicorn": 1,
+    "uvicorn.access": 1,
+    "sentry_sdk.errors": 1,
+    "urllib3": 1,
+    "torch": 1,
+    "strobelight_function_profiler": 1,
+    "strobelight_compile_time_profiler": 1,
+    "torch.distributed": 1
+   },
+   "loggers": 375
+  },
+  "torch": {
+   "imported": true,
+   "_global_forward_hooks": 0,
+   "_global_forward_pre_hooks": 0,
+   "_global_backward_hooks": 0,
+   "_global_backward_pre_hooks": 0,
+   "_global_module_registration_hooks": 0,
+   "_global_parameter_registration_hooks": 0,
+   "_global_buffer_registration_hooks": 0,
+   "live_modules": 0,
+   "live_tensors": 0,
+   "cuda_allocated_mb": 64,
+   "cuda_reserved_mb": 64
+  },
+  "gc_objects": 745316,
+  "containers_largest": {
+   "numba.core.types.abstract._typecache": 2741,
+   "sklearn.externals.array_api_compat.numpy.__all__": 501,
+   "numba.core.bytecode._inline_cache_entries": 256,
+   "tlc.constants.__all__": 196,
+   "numba._helperlib.c_helpers": 171,
+   "numba.cpython.unicode.c_helpers": 171,
+   "tlc_plugin_sdk.contract.__builtins__": 158,
+   "tlc_plugin_sdk.job_context.__builtins__": 158,
+   "tlc_plugin_sdk.__builtins__": 158,
+   "tlc_plugin_sdk.shared.__builtins__": 158,
+   "tlc_plugin_sdk.shared.job_tracker.__builtins__": 158,
+   "tlc_plugin_sdk.shared.ui_inject.__builtins__": 158,
+   "tlc_plugin_sdk.asgi_app.__builtins__": 158,
+   "kaggle_classification.__builtins__": 158,
+   "kaggle_classification.routes.__builtins__": 158
+  }
+ },
+ "summary": {
+  "cycles": 8,
+  "private_mb_per_cycle_probe": 22.43,
+  "tracemalloc_mb_per_cycle": 0.09,
+  "slope_ws_mb_per_cycle": 16.65
+ }
+}
