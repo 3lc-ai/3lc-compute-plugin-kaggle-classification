@@ -57,10 +57,10 @@ def main() -> int:
         shutil.rmtree(env_root, ignore_errors=True)
     (env_root / "home" / "AppData" / "Local" / "3LC" / "3LC").mkdir(parents=True)
     (env_root / "home" / "AppData" / "Roaming").mkdir(parents=True)
-    (env_root / "home" / "projects").mkdir(parents=True)
+    h.projects_dir(env_root).mkdir(parents=True)
     key_src = root / "home" / "AppData" / "Local" / "3LC" / "3LC" / "3lc_api_key"
     shutil.copyfile(key_src, env_root / "home" / "AppData" / "Local" / "3LC" / "3LC" / "3lc_api_key")
-    state_path_len = len(str(env_root / "home" / ".3lc-compute" / "plugin-state" / h.PLUGIN_ID / "data" / "intel-scene" / "v1" / "starter_kit" / "data" / "train" / "buildings"))
+    state_path_len = len(str(h.plugin_state_dir(env_root) / "data" / "intel-scene" / "v1" / "starter_kit" / "data" / "train" / "buildings"))
     print(f"env root {env_root} (plugin state path length {state_path_len})", flush=True)
 
     venv = env_root / ".venv"

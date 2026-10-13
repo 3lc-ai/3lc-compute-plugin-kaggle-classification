@@ -6,8 +6,11 @@ route, the host's job list), under the tester layout's redirected home. Imported
 scripts in this folder; run from the tester env's venv python with the services STOPPED.
 
 Environment (the start script's, set by `env_for(root)`): USERPROFILE / LOCALAPPDATA / APPDATA / HOME
--> <root>/home, TLC_PROJECT_ROOT_URL -> <root>/home/projects, TLC_COMPUTE_PORT, the manifest tier, and
-TLC_COMPUTE_PLUGIN_CATALOG_URLS = the default catalog + a local catalog listing the build under test.
+-> <root>/home, TLC_COMPUTE_PORT, the manifest tier, and TLC_COMPUTE_PLUGIN_CATALOG_URLS = the default
+catalog + a local catalog listing the build under test. The plugin's state (KAGGLE_CLASSIFICATION_HOME)
+and the 3LC project root (TLC_PROJECT_ROOT_URL) are the campaign's own, under <root>/campaign-scratch:
+a campaign's runs, predictions and submissions never land in the env's records (a hand test on the
+same env must see only its own).
 """
 from __future__ import annotations
 
@@ -24,6 +27,7 @@ API = f"/api/plugins/{PLUGIN_ID}"
 DEFAULT_CATALOG = "https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json"
 REPO_GIT = "https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git"
 MANIFEST_BASE = "https://competitions.dev.3lc.ai"
+CAMPAIGN_DIR = "campaign-scratch"
 
 
 def log(msg: str) -> None:
@@ -37,7 +41,8 @@ def env_for(root: Path, *, port: int = 5020, catalog: str | None = None, extra: 
     home = root / "home"
     env = {
         "USERPROFILE": str(home), "LOCALAPPDATA": str(home / "AppData" / "Local"), "APPDATA": str(home / "AppData" / "Roaming"),
-        "HOME": str(home), "TLC_PROJECT_ROOT_URL": str(home / "projects"), "TLC_COMPUTE_PORT": str(port),
+        "HOME": str(home), "TLC_PROJECT_ROOT_URL": str(projects_dir(root)), "TLC_COMPUTE_PORT": str(port),
+        "KAGGLE_CLASSIFICATION_HOME": str(plugin_state_dir(root)),
         "KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL": MANIFEST_BASE,
         "TLC_COMPUTE_PLUGIN_CATALOG_URLS": DEFAULT_CATALOG + ("," + catalog if catalog else ""),
     }
@@ -261,7 +266,13 @@ class Results:
 
 
 def plugin_state_dir(root: Path) -> Path:
-    return root / "home" / ".3lc-compute" / "plugin-state" / PLUGIN_ID
+    """The campaign's own plugin state (KAGGLE_CLASSIFICATION_HOME), never the env's."""
+    return root / CAMPAIGN_DIR / "plugin-state" / PLUGIN_ID
+
+
+def projects_dir(root: Path) -> Path:
+    """The campaign's own 3LC project root (TLC_PROJECT_ROOT_URL), never the env's."""
+    return root / CAMPAIGN_DIR / "projects"
 
 
 def setup_stdio() -> None:

@@ -29,7 +29,9 @@ def main() -> int:
     from kaggle_classification import leak_probe
     from kaggle_classification import trainer as trainer_mod
 
-    state = Path(args.root) / "home" / ".3lc-compute" / "plugin-state" / "kaggle-classification"
+    import harness as h  # this folder (the campaign's own plugin state, harness.plugin_state_dir)
+
+    state = h.plugin_state_dir(Path(args.root))
     record = json.loads((state / "ui_config.json").read_text(encoding="utf-8"))["import_state"]
     val_url = record["val_locked"]["url"]
     kit_dir = Path(record["kit_dir"])

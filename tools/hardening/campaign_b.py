@@ -115,7 +115,7 @@ def main() -> int:
             j1 = h.wait_terminal(client, b1.get("job_id") or b1.get("id"), timeout=1800, quiet=True) if c1 in (200, 202) else {"status": "refused"}
             j2 = h.wait_terminal(client, b2.get("job_id") or b2.get("id"), timeout=1800, quiet=True) if c2 in (200, 202) else {"status": "refused"}
             st = meta(client).get("import_state") or {}
-            tables_dir = root / "home" / "projects" / st.get("project", "intel-scene") / "datasets" / "intel-scene_train" / "tables"
+            tables_dir = h.projects_dir(root) / st.get("project", "intel-scene") / "datasets" / "intel-scene_train" / "tables"
             partial = [p.name for p in tables_dir.iterdir() if p.is_dir() and not (p / "object.3lc.json").exists()] if tables_dir.is_dir() else []
             ok = {j1.get("status"), j2.get("status")} <= {"completed", "failed", "refused"} and not partial and st.get("state") == "success"
             results.put("B9", "PASS" if ok else "FAIL", first={"http": c1, "status": j1.get("status"), "error": str(j1.get("error") or b1.get("error") or "")[:160]},
@@ -229,7 +229,7 @@ def main() -> int:
             h.wait_ready(client, 600)
             st0 = meta(client).get("import_state") or {}
             project = st0.get("project") or "intel-scene"
-            pdir = root / "home" / "projects" / project
+            pdir = h.projects_dir(root) / project
             renamed = pdir.with_name(project + "-renamed")
             if renamed.exists():
                 shutil.rmtree(renamed)

@@ -32,7 +32,8 @@ def snapshot(root: Path) -> dict:
         out[name] = p.stat().st_size if p.exists() else None
     out["predictions"] = sorted(p.name for p in (state / "predictions").glob("*")) if (state / "predictions").is_dir() else []
     out["kit_records"] = sorted(p.name for p in (state / "kit").glob("*")) if (state / "kit").is_dir() else []
-    out["runs"] = sorted(p.name for p in (root / "home" / "projects" / "intel-scene" / "runs").glob("*")) if (root / "home" / "projects" / "intel-scene" / "runs").is_dir() else []
+    runs_dir = h.projects_dir(root) / "intel-scene" / "runs"
+    out["runs"] = sorted(p.name for p in runs_dir.glob("*")) if runs_dir.is_dir() else []
     return out
 
 
