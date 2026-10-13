@@ -2160,11 +2160,19 @@ def _transform(reducer: Any, emb: Any, n_comp: int) -> Any:
     if getattr(reducer, "_small_data", None) is False and getattr(reducer, "_raw_data", None) is not None:
         n_train = int(reducer._raw_data.shape[0])
         chunk = max(1, min(len(emb), _EXACT_TRANSFORM_BYTES // max(n_train * 8, 1)))
+        # The branch hands sklearn UMAP's numba distance as a Python callable (one call per pair: 7.9 M calls
+        # and about 44 s on 1,200 x 6,600 rows); with a metric sklearn knows by name, the flag that selects
+        # the name (it selects nothing else in transform, umap-learn 0.5.12) makes it one vectorized call.
+        by_name = isinstance(getattr(reducer, "metric", None), str) and reducer.metric in ("euclidean", "cosine", "manhattan")
+        sparse_before = getattr(reducer, "_sparse_data", False)
         reducer._small_data = True
+        if by_name and not sparse_before:
+            reducer._sparse_data = True
         try:
             parts = [np.asarray(reducer.transform(emb[i:i + chunk]), dtype=np.float32) for i in range(0, len(emb), chunk)]
         finally:
             reducer._small_data = False
+            reducer._sparse_data = sparse_before
         out = np.concatenate(parts, axis=0) if parts else np.zeros((0, n_comp), dtype=np.float32)
     else:
         out = reducer.transform(emb)
