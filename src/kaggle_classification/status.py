@@ -81,6 +81,7 @@ BUNDLE_README = (
 
 CHECKPOINT_MODES = ("default", "none", "all", "selected")
 CHECKPOINT_MAX = 2            # best.pt files a participant's export carries (the default and the checklist)
+CHECKPOINT_MISSING_WARNING = "Organizers can't verify this submission without its checkpoint."
 BUNDLE_KEEP_S = 3600.0        # exported zips under <plugin home>/bundles/ older than this are removed
 
 # A member of the bundle that matches one of these is refused (the export aborts, never a partial zip).
@@ -255,6 +256,7 @@ def prediction_history(manifest: Manifest, *, live: bool = False) -> list[dict[s
             "val_recorded": score.get("recorded") if isinstance(score, dict) else None,
             "checks_ok": bool(checks) and all(_check_ok(c) for c in checks),
             "checkpoint_sha256": (e.get("checkpoint") or {}).get("sha256_recorded") or "",
+            "checkpoint_path": (e.get("checkpoint") or {}).get("path") or "",
             "submission": None,
             "public_score": None,
             "delta": None,
@@ -499,6 +501,38 @@ def _free_space(path: Path) -> dict[str, Any]:
         return {"free_bytes": None, "total_bytes": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
+def _run_root(run_url: Any) -> str:
+    """The project root a run URL sits under (``<root>/<project>/runs/<name>``), empty when it has no
+    ``runs`` segment."""
+    parts = str(run_url or "").replace("\\", "/").rstrip("/").split("/")
+    for i in range(len(parts) - 2, 1, -1):
+        if parts[i] == "runs":
+            return "/".join(parts[: i - 1])
+    return ""
+
+
+def project_roots(runs: list[Any]) -> dict[str, Any]:
+    """The Doctor's project-root row: the current root against the roots the run records and the ledger
+    point at. A run recorded under another root (a service started with a different project root) is
+    named with both paths: the Hub lists only the current root's runs."""
+    try:
+        current = importer.project_root_url()
+    except Exception as exc:
+        return {"current": "", "others": [], "warning": "", "error": f"{type(exc).__name__}: {exc}"}
+    urls = [r.get("run_url") for r in runs if isinstance(r, dict)]
+    urls += [e.get("run_url") for e in ledger.read() if e.get("kind") in ("predict", "submit")]
+    counts: dict[str, dict[str, Any]] = {}
+    for u in urls:
+        root = _run_root(u)
+        if root and _norm(root) != _norm(current):
+            counts.setdefault(_norm(root), {"root": root, "records": 0})["records"] += 1
+    others = sorted(counts.values(), key=lambda o: -o["records"])
+    warning = (f"Runs are recorded under {', '.join(o['root'] for o in others)}, but the current project root "
+               f"is {current}: the Hub shows only the runs under the current root."
+               if others else "")
+    return {"current": current, "others": others, "warning": warning}
+
+
 def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
     """The Doctor panel's facts (torch-free: versions from metadata, the device from the worker's probe).
     ``kaggle=False`` skips the network (the bundle's ``plugin.json`` and tests)."""
@@ -564,6 +598,7 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
             "ledger_path": str(ledger.ledger_path()),
         },
         "plugin_home": {**home, "disk": _free_space(Path(home["path"])), "migrated_from": storage.migration_record()},
+        "project_root": project_roots(runs),
         "uv": uv_facts(),
         "time": time.time(),
     }
@@ -777,7 +812,7 @@ def eligible_checkpoint_runs(manifest: Manifest) -> list[dict[str, Any]]:
         e = by_run.setdefault(key, {
             "train_job_id": str(row.get("train_job_id") or ""), "run_name": row.get("run_name") or "",
             "run_folder": row.get("run_folder") or "", "run_url": row.get("run_url"), "public_score": None,
-            "submitted_at": None, "ref": "", "ledger_sha256": "", "submissions": 0,
+            "submitted_at": None, "ref": "", "ledger_sha256": "", "ledger_path": "", "submissions": 0,
         })
         e["submissions"] += 1
         ts = sub.get("ts") or row.get("ts")
@@ -785,18 +820,32 @@ def eligible_checkpoint_runs(manifest: Manifest) -> list[dict[str, Any]]:
             e["submitted_at"] = float(ts)
             e["ref"] = str(sub.get("ref") or "")
             e["ledger_sha256"] = str(row.get("checkpoint_sha256") or e["ledger_sha256"])
+            e["ledger_path"] = str(row.get("checkpoint_path") or e["ledger_path"])
         if not e["ledger_sha256"] and row.get("checkpoint_sha256"):
             e["ledger_sha256"] = str(row["checkpoint_sha256"])
+        if not e["ledger_path"] and row.get("checkpoint_path"):
+            e["ledger_path"] = str(row["checkpoint_path"])
         score = row.get("public_score")
         if isinstance(score, float) and (e["public_score"] is None or score > e["public_score"]):
             e["public_score"] = score
     for e in by_run.values():
         rec = runs_by_id.get(e["train_job_id"]) or {}
-        e["weights"] = str(rec.get("weights") or "")
+        e["weights"] = _submitted_weights(str(rec.get("weights") or ""), e["ledger_path"], e["run_url"])
         e["record_sha256"] = str(rec.get("best_checkpoint_sha256") or "")
         p = Path(e["weights"]) if e["weights"] else None
         e["checkpoint_bytes"] = p.stat().st_size if p is not None and p.is_file() else None
     return sorted(by_run.values(), key=lambda e: -(e["submitted_at"] or 0))
+
+
+def _submitted_weights(record_path: str, ledger_path: str, run_url: Any) -> str:
+    """A submitted run's best.pt, resolved from the paths recorded for that run, never from the current
+    project root: the run record's, else the predict entry's ``checkpoint.path`` (the record may be gone
+    or the root changed since), else ``<run folder>/model/best.pt``; the first one on disk wins, the
+    first one named when none is. The caller verifies the file against the recorded sha256."""
+    folder = _local_dir(run_url)
+    candidates = [c for c in (record_path, ledger_path,
+                              str(folder / "model" / trainer.CHECKPOINT_BEST) if folder is not None else "") if c]
+    return next((c for c in candidates if Path(c).is_file()), candidates[0] if candidates else "")
 
 
 def default_checkpoint_runs(eligible: list[dict[str, Any]]) -> list[str]:
@@ -941,7 +990,10 @@ def bundle_plan(manifest: Manifest, *, checkpoints: str = "default", runs: Any =
         rec = next((r for r in run_records if str(r["summary"].get("id")) == run_id), None)
         summary = (rec or {}).get("summary") or {}
         weights = (e or {}).get("weights") or str(summary.get("weights") or "")
-        on_run = str(((rec or {}).get("run_parameters_on_disk") or {}).get("best_checkpoint_sha256") or "")
+        # A submitted run whose record is gone (the run list's limit, before submitted runs were kept) is
+        # still checked against its Run on disk.
+        on_disk = (rec or {}).get("run_parameters_on_disk") if rec else trainer._run_parameters_on_disk(str((e or {}).get("run_url") or ""))
+        on_run = str((on_disk or {}).get("best_checkpoint_sha256") or "")
         expectations = {"the run record": str(summary.get("best_checkpoint_sha256") or ""), "the Run": on_run}
         if e is not None:
             expectations = {"the ledger": e.get("ledger_sha256") or "", **expectations}
@@ -972,6 +1024,7 @@ def bundle_plan(manifest: Manifest, *, checkpoints: str = "default", runs: Any =
         "public_score": e["public_score"], "submitted_at": e["submitted_at"], "ref": e["ref"],
         "submissions": e["submissions"], "checkpoint_bytes": e["checkpoint_bytes"],
         "available": bool(e["weights"]) and e["checkpoint_bytes"] is not None,
+        "warning": "" if bool(e["weights"]) and e["checkpoint_bytes"] is not None else CHECKPOINT_MISSING_WARNING,
         "default": e["train_job_id"] in default_ids, "selected": e["train_job_id"] in chosen,
         "skipped_reason": next((s.get("reason") for s in skipped if s.get("train_job_id") == e["train_job_id"]), ""),
     } for e in eligible]

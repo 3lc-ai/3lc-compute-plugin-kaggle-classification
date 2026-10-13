@@ -57,7 +57,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from kaggle_classification import benchmark, importer, session
+from kaggle_classification import benchmark, importer, ledger, session
 
 if TYPE_CHECKING:
     from kaggle_classification.manifest import Manifest
@@ -100,7 +100,7 @@ SLEEP_GAP_S = 120.0         # a heartbeat gap longer than this is logged as a pr
 STALE_HEARTBEAT_S = 900.0   # a same-pid running record older than this is treated as dead
 BATCH_FLUSH_S = 1.0         # ExDark: batch progress lands at most ~1/s
 LOG_KEEP = 300              # log lines kept in the durable record
-RUNS_KEEP = 20              # finished runs kept for the ETA history and the run list
+RUNS_KEEP = 20              # unsubmitted finished runs kept for the ETA history and the run list
 LINEAGE_MAX_STEPS = 200
 
 _DEVICE_ERROR_RE = re.compile(r"cuda|cudnn|mps|out of memory|device", re.IGNORECASE)
@@ -679,8 +679,23 @@ class _Recorder:
             state["current"] = self.record
             runs = [r for r in (state.get("runs") or []) if isinstance(r, dict) and r.get("id") != self.record["id"]]
             runs.insert(0, run_summary(self.record))
-            state["runs"] = runs[:RUNS_KEEP]
+            state["runs"] = keep_runs(runs)
             _write_state(state)
+
+
+def keep_runs(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The run list trimmed to ``RUNS_KEEP`` unsubmitted runs, newest first; a run with a submit entry in
+    the ledger is never dropped, whatever its age (the bundle needs its record and checkpoint)."""
+    submitted = {importer._norm(e["run_url"]) for e in ledger.read("submit") if e.get("run_url")}
+    kept: list[dict[str, Any]] = []
+    unsubmitted = 0
+    for r in runs:
+        if importer._norm(r.get("run_url") or "") in submitted:
+            kept.append(r)
+        elif unsubmitted < RUNS_KEEP:
+            kept.append(r)
+            unsubmitted += 1
+    return kept
 
 
 def run_summary(record: dict[str, Any]) -> dict[str, Any]:
@@ -764,7 +779,7 @@ def _mark_if_orphaned(record: dict[str, Any]) -> dict[str, Any]:
     state["current"] = record
     runs = [r for r in (state.get("runs") or []) if isinstance(r, dict) and r.get("id") != record["id"]]
     runs.insert(0, run_summary(record))
-    state["runs"] = runs[:RUNS_KEEP]
+    state["runs"] = keep_runs(runs)
     _write_state(state)
     return record
 

@@ -6576,6 +6576,7 @@
       function stDoctorRows(doc, health) {
         var v = doc.versions || {}, d = doc.device || {}, m = doc.manifest || {}, k = doc.kit || {};
         var kg = doc.kaggle || {}, h = doc.plugin_home || {}, p = doc.plugin || {}, rec = doc.records || {};
+        var pr = doc.project_root || {};
         var cuda = d.cuda_available === true ? 'available' : d.cuda_available === false ? 'not available' : 'probing…';
         var free = (h.disk && typeof h.disk.free_bytes === 'number') ? (h.disk.free_bytes / 1073741824).toFixed(1) + ' GB free' : 'unknown';
         var kagText = kg.state === 'ready'
@@ -6611,6 +6612,7 @@
           ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : '') +
                           (h.migrated_from && h.migrated_from.source ? ' · carried forward from the previous version' : ''),
            (h.migrated_from && h.migrated_from.source) ? h.path + ' (carried forward from ' + h.migrated_from.source + ' at ' + h.migrated_from.at + ')' : (h.path || '')],
+          ['Project root', pr.warning || midTrunc(kgCleanPath(pr.current || pr.error || 'unknown'), 48), pr.warning || pr.current || ''],
           ['Free disk space', free, (h.disk && h.disk.measured_at) || ''],
           ['Python', (v.python || '?') + ' · ' + (v.platform || ''), ''],
           ['uv', uvText, uvDetail],
@@ -6707,7 +6709,8 @@
         box.innerHTML = html;
         kgBindCopy(box);
         kgBindDiag(box, stBuildDiagnostics);
-        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc) || stGpuMissingKernels(doc.device);
+        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc) || stGpuMissingKernels(doc.device) ||
+          !!(doc.project_root && doc.project_root.warning);
         if (red) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
       }
 
@@ -6830,6 +6833,11 @@
         } else {
           html += '<div class="kg-bundle-head">No submitted run yet: the bundle carries no checkpoint until a submission exists.</div>';
         }
+        // A submitted run without its best.pt: the served warning, red, before Export.
+        runs.filter(function (r) { return r.warning; }).forEach(function (r) {
+          html += '<div class="kg-callout err">' + kgIcon('x-circle') + '<span>' +
+            esc((r.run_name || r.run_folder) + (r.ref ? ' (#' + r.ref + ')' : '') + ': checkpoint missing. ' + r.warning) + '</span></div>';
+        });
         var c = pv.counts || {};
         var sizeText = 'Bundle: ' + fmtCount(c.members || 0) + ' members · about ' + stFmtMB(pv.bytes) +
           ' (' + fmtCount(c.tables || 0) + ' tables, ' + fmtCount(c.runs || 0) + ' runs, ' +

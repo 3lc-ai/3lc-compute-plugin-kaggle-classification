@@ -868,3 +868,17 @@ def test_every_job_runs_on_the_one_long_lived_job_thread(monkeypatch):
     with pytest.raises(JobFailed, match="refused verbatim"):
         plugin.run_job("fail")
     assert len(set(seen)) == 1 and seen[0].startswith("kaggle-classification-job")
+
+
+def test_submitted_runs_are_never_dropped_by_the_run_limit(store):
+    """RUNS_KEEP bounds the unsubmitted runs only: of 25 runs where the three oldest were submitted, the
+    20 newest and the three submitted ones are kept, in their order."""
+    from kaggle_classification import ledger
+
+    runs = [{"id": f"r{i:02d}", "run_url": f"C:/p/projects/intel-scene/runs/run {i:02d}"} for i in range(25, 0, -1)]
+    for i in (1, 2, 3):
+        ledger.append({"kind": "submit", "run_url": rf"C:\p\projects\intel-scene\runs\run {i:02d}"})
+    kept = trainer.keep_runs(runs)
+    assert [r["id"] for r in kept] == [f"r{i:02d}" for i in range(25, 5, -1)] + ["r03", "r02", "r01"]
+    assert len(kept) == trainer.RUNS_KEEP + 3
+    assert [r["id"] for r in trainer.keep_runs(runs[:5])] == [r["id"] for r in runs[:5]]

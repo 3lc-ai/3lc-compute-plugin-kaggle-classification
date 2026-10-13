@@ -653,3 +653,82 @@ def test_both_rule_picks_verified_give_two_checkpoints_in_the_preview_and_the_ex
     assert pv2["counts"]["checkpoints"] == 2
     names2, _ = _members(status.verification_bundle(manifest, checkpoints="selected", runs="t2,t3")[0])
     assert {n for n in names2 if n.endswith(".pt")} == {n for n in names if n.endswith(".pt")}
+
+
+# ── A submitted run's checkpoint resolved from its recorded paths (the 2026-10-13 hand-test finding) ──
+
+
+def _drop_run_records(store, *ids: str) -> None:
+    state = trainer.read_state()
+    state["runs"] = [r for r in state["runs"] if r["id"] not in ids]
+    store.save({"train_state": state})
+
+
+def test_a_submitted_run_whose_record_is_gone_still_ships_its_checkpoint(on_disk, store, manifest):
+    """The run list keeps a limited number of records; a submitted run whose record was dropped is found
+    through the predict entry's ``checkpoint.path`` and verified against the ledger and the Run on disk."""
+    _drop_run_records(store, "t2")
+    rows = {r["train_job_id"]: r for r in status.bundle_preview(manifest)["eligible_runs"]}
+    assert rows["t2"]["available"] and rows["t2"]["warning"] == ""
+    assert rows["t2"]["checkpoint_bytes"] == len(b"weights-of-run_b")
+    names, index = _members(status.verification_bundle(manifest)[0])
+    assert f"project/{PROJECT}/runs/run_b/model/best.pt" in names
+    included = {i["train_job_id"]: i for i in index["checkpoints"]["included"]}
+    assert included["t2"]["verified_against"] == ["the ledger", "the Run"]
+
+
+def test_the_checkpoint_resolves_from_the_run_not_the_current_project_root(on_disk, store, manifest, monkeypatch, tmp_path):
+    """Services restarted with another project root: the runs recorded under the old root still resolve."""
+    from kaggle_classification import importer
+
+    monkeypatch.setattr(importer, "project_root_url", lambda: (tmp_path / "another" / "projects").as_posix())
+    _drop_run_records(store, "t1", "t2")
+    rows = {r["train_job_id"]: r for r in status.bundle_preview(manifest)["eligible_runs"]}
+    assert rows["t1"]["available"] and rows["t2"]["available"]
+
+
+def test_the_run_folder_is_the_last_fallback_and_a_mismatched_file_is_skipped(on_disk, store, manifest):
+    """No record and a predict entry without a path: ``<run>/model/best.pt``; the ledger's sha256 still
+    decides (run_c's ledger sha256 differs from its file, so it stays out with the reason)."""
+    lines = [json.loads(x) for x in ledger.ledger_path().read_text(encoding="utf-8").splitlines() if x.strip()]
+    for e in lines:
+        if e.get("kind") == "predict":
+            e["checkpoint"]["path"] = ""
+    ledger.ledger_path().write_text("".join(json.dumps(e) + "\n" for e in lines), encoding="utf-8")
+    _drop_run_records(store, "t2", "t3")
+    pv = status.bundle_preview(manifest)
+    rows = {r["train_job_id"]: r for r in pv["eligible_runs"]}
+    assert rows["t2"]["available"] and rows["t3"]["available"]
+    assert [i["train_job_id"] for i in pv["checkpoints"]["included"]] == ["t2"]
+    assert [s["train_job_id"] for s in pv["checkpoints"]["skipped"]] == ["t3"]
+    assert "the ledger" in pv["checkpoints"]["skipped"][0]["reason"]
+
+
+def test_a_submitted_run_without_its_checkpoint_carries_the_red_warning(on_disk, manifest):
+    Path(on_disk["runs"]["run_a"][1]).unlink()
+    rows = {r["train_job_id"]: r for r in status.bundle_preview(manifest)["eligible_runs"]}
+    assert not rows["t1"]["available"]
+    assert rows["t1"]["warning"] == status.CHECKPOINT_MISSING_WARNING
+    assert status.CHECKPOINT_MISSING_WARNING == "Organizers can't verify this submission without its checkpoint."
+    assert rows["t2"]["warning"] == "" and rows["t3"]["warning"] == ""
+
+
+def test_doctor_names_runs_recorded_under_another_project_root(on_disk, manifest, monkeypatch, tmp_path):
+    from kaggle_classification import importer
+
+    doc = status.doctor(manifest, kaggle=False)
+    root = (tmp_path / "3lc" / "projects").as_posix()
+    assert doc["project_root"] == {"current": root, "others": [], "warning": ""}
+    other = (tmp_path / "AppData" / "Local" / "3LC" / "3LC" / "projects").as_posix()
+    monkeypatch.setattr(importer, "project_root_url", lambda: other)
+    pr = status.doctor(manifest, kaggle=False)["project_root"]
+    assert pr["current"] == other and [o["root"] for o in pr["others"]] == [root]
+    assert pr["others"][0]["records"] > 0
+    assert root in pr["warning"] and other in pr["warning"]
+
+
+def test_run_root_reads_the_root_before_project_and_runs():
+    assert status._run_root("C:/a b/projects/intel-scene/runs/r1") == "C:/a b/projects"
+    assert status._run_root(r"C:\a\projects\intel-scene\runs\r1" + "\\") == "C:/a/projects"
+    assert status._run_root("C:/a/projects/intel-scene/tables/t") == ""
+    assert status._run_root(None) == ""
