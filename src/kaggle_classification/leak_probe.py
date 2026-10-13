@@ -86,8 +86,16 @@ def _torch_facts() -> dict[str, Any]:
         v = getattr(mod, attr, None)
         if v is not None:
             facts[attr] = len(v)
-    facts["live_modules"] = sum(1 for o in gc.get_objects() if isinstance(o, torch.nn.Module))
-    facts["live_tensors"] = sum(1 for o in gc.get_objects() if torch.is_tensor(o))
+    mods = tens = 0
+    for o in gc.get_objects():
+        try:
+            if isinstance(o, torch.nn.Module):
+                mods += 1
+            elif isinstance(o, torch.Tensor):
+                tens += 1
+        except Exception:
+            continue
+    facts["live_modules"], facts["live_tensors"] = mods, tens
     if torch.cuda.is_available():
         facts["cuda_allocated_mb"] = int(torch.cuda.memory_allocated() / 1048576)
         facts["cuda_reserved_mb"] = int(torch.cuda.memory_reserved() / 1048576)
@@ -133,6 +141,16 @@ def _size(val: Any) -> int | None:
     return None
 
 
+def _safe(fn: Any) -> Any:
+    """One section's facts, or its error: a probe that raises would hide every other section."""
+    try:
+        return fn()
+    except Exception as exc:
+        import traceback
+
+        return {"error": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()[-1200:]}
+
+
 def probe(reset: bool = False) -> dict[str, Any]:
     import tracemalloc
 
@@ -140,12 +158,19 @@ def probe(reset: bool = False) -> dict[str, Any]:
     if not tracemalloc.is_tracing():
         tracemalloc.start(1)
     snap = tracemalloc.take_snapshot().filter_traces((tracemalloc.Filter(False, tracemalloc.__file__),))
-    types = Counter(type(o).__qualname__ for o in gc.get_objects())
-    containers = _containers()
+    types: Counter = Counter()
+    for o in gc.get_objects():
+        try:
+            types[type(o).__module__ + "." + type(o).__qualname__] += 1
+        except Exception:
+            continue
+    containers = _safe(_containers) or {}
+    if "error" in containers:
+        containers = {}
     out: dict[str, Any] = {
         "call": _state["calls"] + 1, "at": time.time(), "since_s": round(time.time() - _state["at"], 1) if _state["at"] else None,
         "process": _process_memory(), "tracemalloc_mb": round(sum(s.size for s in snap.statistics("filename")) / 1048576, 1),
-        "logging": _logging_handlers(), "torch": _torch_facts(), "gc_objects": sum(types.values()),
+        "logging": _safe(_logging_handlers), "torch": _safe(_torch_facts), "gc_objects": sum(types.values()),
     }
     prev = _state["snapshot"]
     if prev is not None and not reset:

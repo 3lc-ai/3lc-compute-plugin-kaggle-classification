@@ -403,7 +403,12 @@ def get_route_handlers() -> list[Any]:
 
         if not leak_probe.enabled():
             return Response({"error": "not enabled"}, status_code=404)
-        return Response(leak_probe.probe(reset=reset == "1"), status_code=200)
+        try:
+            return Response(leak_probe.probe(reset=reset == "1"), status_code=200)
+        except Exception as exc:
+            import traceback
+
+            return Response({"error": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()[-2000:]}, status_code=200)
 
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
