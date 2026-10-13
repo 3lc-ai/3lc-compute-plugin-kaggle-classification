@@ -39,3 +39,7 @@ docs/campaign/section_f5*.log
 # The evidence soak logs (every httpx line); the excerpt beside each is committed
 docs/campaign/soak_*.log
 !docs/campaign/soak_*.excerpt.log
+
+# Other-agent mirrors the skills installer writes (.agents/skills = .claude/skills, AGENTS.md = CLAUDE.md renamed)
+.agents/
+AGENTS.md
