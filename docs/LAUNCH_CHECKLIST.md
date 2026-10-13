@@ -27,3 +27,8 @@ with its date in TESTING_PROOF.md.
       joined" card, and Submit is refused before any upload.
 - [ ] **The manifest tier.** The production manifest base URL (docs/PROMOTION.md) serves the index and
       the manifest; the Doctor's Manifest row reads `remote` with the production URL.
+- [ ] **The kit fallback on prod.** The served manifest is the regenerated 1.0.0 one: its `kit_fallback_url`
+      is the Drive folder link (the check in docs/PROMOTION.md §5:
+      `(Invoke-RestMethod https://competitions.3lc.ai/kaggle/intel-scene/manifest.json).kit_fallback_url` prints
+      `https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing`), and the Doctor's
+      Kit fallback row shows the same link.

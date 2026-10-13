@@ -89,6 +89,21 @@ prod:
 uv run python tools/verify_cdn.py https://competitions.3lc.ai
 ```
 
+**The manifest to promote is the regenerated 1.0.0 one** (`cdn/kaggle/intel-scene/manifest.json` from
+`tools/make_cdn_tree.py` at the 1.0.0 cut, uploaded to dev first), which carries the `kit_fallback_*` fields:
+`kit_fallback_url` (the Google Drive folder), `kit_fallback_file` (`intel-scene-v1-starter_kit.zip`),
+`kit_fallback_sha256` (`ae4e5937fb5e11c5773790677921f6cfcea1e725c20e1b7fe48e4b843d9b5015`) and
+`kit_fallback_bytes` (112,270,148). The `ec0c60…` document in the table below predates them and must not reach
+prod. After the copy and the invalidation, check what prod serves:
+
+```powershell
+(Invoke-RestMethod https://competitions.3lc.ai/kaggle/intel-scene/manifest.json).kit_fallback_url
+```
+
+It must print `https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing`.
+Anything else (empty, or an error) means the old manifest is still served: re-copy the 1.0.0 manifest and
+invalidate again. The same check is in docs/LAUNCH_CHECKLIST.md.
+
 Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regenerated 2026-09-29):
 
 | Key | Bytes | sha256 |
