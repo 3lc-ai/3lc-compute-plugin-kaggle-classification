@@ -3,6 +3,26 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [Unreleased] (into 1.0.0: the rc14 hand test's bundle finding)
+
+### Fixed
+- **The bundle finds a submitted run's checkpoint from the run's recorded paths.** The run list kept the 20
+  newest records, so a submitted run could lose its record and the bundle reported "checkpoint missing"
+  although best.pt was on disk. The checkpoint now resolves from the run record, else the predict entry's
+  `checkpoint.path`, else `<run folder>/model/best.pt`, never from the current project root, and is
+  verified against the ledger and the Run on disk.
+- **Submitted runs are never dropped from the run list**; the 20-record limit applies to unsubmitted runs.
+
+### Added
+- **The bundle's red warning**: a submitted run without its checkpoint says "Organizers can't verify this
+  submission without its checkpoint." before Export.
+- **The Doctor's Project root row**: the current 3LC project root; runs recorded under another root are
+  named with both paths.
+- **The tester scripts always set the project root**: `projects` in the tester folder unless
+  `-ProjectRoot` / `PROJECT_ROOT` overrides it; the quick start says where tables and runs go.
+- **The hardening harness uses its own plugin state and project root** (`<env>/campaign-scratch/`), never the
+  env's.
+
 ## [1.0.0rc14] — 2026-10-12 (sessions 14 and 15: the fresh-env hand test's three defects, the hardening campaign)
 
 The campaign (docs/TEST_PLAN.md, TESTING_PROOF.md run 14, `tools/hardening/`): sections A to E green on the
