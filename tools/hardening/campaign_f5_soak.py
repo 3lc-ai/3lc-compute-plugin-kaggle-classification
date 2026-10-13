@@ -21,9 +21,12 @@ import harness as h  # noqa: E402
 
 
 def worker_memory_mb() -> list[dict]:
-    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*tlc_plugin_sdk.worker*' } | "
-          "ForEach-Object { $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue; if ($p) { "
-          "'{0} {1} {2}' -f $_.ProcessId, [math]::Round($p.WorkingSet64 / 1MB), [math]::Round($p.PrivateMemorySize64 / 1MB) } }")
+    pids = h.scoped_worker_pids()   # this environment's workers only (another env may be running services)
+    if not pids:
+        return []
+    ps = ("Get-Process -Id " + ",".join(str(p) for p in pids) + " -ErrorAction SilentlyContinue | ForEach-Object { $_ } | "
+          "ForEach-Object { $p = $_; if ($p) { "
+          "'{0} {1} {2}' -f $p.Id, [math]::Round($p.WorkingSet64 / 1MB), [math]::Round($p.PrivateMemorySize64 / 1MB) } }")
     out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=False, capture_output=True, text=True)
     rows = []
     for line in out.stdout.splitlines():
@@ -52,14 +55,15 @@ def main() -> int:
     ap.add_argument("--cycles", type=int, default=10_000)
     ap.add_argument("--epochs", default="1")
     ap.add_argument("--out", default="section_f5.json", help="the record under docs/campaign/")
+    ap.add_argument("--catalog", default=None, help="a catalog URL (default: the env's newest catalog-campaign-*.json)")
     ap.add_argument("--mode", choices=["both", "train", "predict"], default="both",
                     help="both: train + predict per cycle; train: train-only; predict: one train, then predict-only cycles")
     args = ap.parse_args()
     h.setup_stdio()
     root, repo = Path(args.root), Path(args.repo)
     out_path = repo / "docs" / "campaign" / args.out
-    catalog = sorted(root.glob("catalog-campaign-*.json"))[-1]
-    h.apply_env(h.env_for(root, catalog=str(catalog)))
+    catalog = args.catalog or str(sorted(root.glob("catalog-campaign-*.json"))[-1])
+    h.apply_env(h.env_for(root, catalog=catalog))
     record: dict = {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "hours": args.hours, "cycles": []}
     deadline = time.time() + args.hours * 3600
     with h.host_client() as client:

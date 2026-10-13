@@ -33,10 +33,11 @@ def main() -> int:
     ap.add_argument("--root", required=True, help="the tester folder (holds the key and the campaign catalog)")
     ap.add_argument("--repo", required=True)
     ap.add_argument("--version", required=True)
-    ap.add_argument("--item", required=True, choices=["A1", "A3", "A4", "A8"])
+    ap.add_argument("--item", required=True, choices=["A1", "A3", "A4", "A8", "SOAK"])
     ap.add_argument("--python", default="3.12")
     ap.add_argument("--tlc", default=None, help="the host 3lc pin (A8); default: what 3lc-compute resolves")
     ap.add_argument("--results", default=None)
+    ap.add_argument("--catalog", default=None, help="a catalog URL (default: the tester folder's newest catalog-campaign-*.json)")
     args = ap.parse_args()
     root, repo = Path(args.root), Path(args.repo)
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
@@ -44,7 +45,7 @@ def main() -> int:
     import harness as h
 
     results = h.Results(Path(args.results or (repo / "docs" / "campaign" / "section_a.json")))
-    tag = {"A1": "tést år ünïcode", "A3": "l" * 120, "A4": f"py{args.python}", "A8": f"tlc-{args.tlc or 'default'}"}[args.item]
+    tag = {"A1": "tést år ünïcode", "A3": "l" * 120, "A4": f"py{args.python}", "A8": f"tlc-{args.tlc or 'default'}", "SOAK": f"{args.version}"}[args.item]
     base = root / "campaign-scratch" / "envs"
     if args.item == "A3":
         # a tester folder whose plugin state path lands near 260 characters
@@ -77,7 +78,7 @@ def main() -> int:
     print("host:", versions, flush=True)
 
     # The smoke pass runs inside the scratch venv (it needs that venv's tlc_compute): a child script.
-    catalog = sorted(root.glob("catalog-campaign-*.json"))[-1]
+    catalog = args.catalog or str(sorted(root.glob("catalog-campaign-*.json"))[-1])
     child = env_root / "smoke.py"
     child.write_text(SMOKE, encoding="utf-8")
     env = {**os.environ, **h.env_for(env_root, catalog=str(catalog)), "UV_CACHE_DIR": str(root / "home" / "AppData" / "Local" / "uv" / "cache"),

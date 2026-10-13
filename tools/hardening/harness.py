@@ -217,19 +217,30 @@ def run_and_wait(client, kind: str, params: dict[str, Any] | None = None, **kw) 
     return job
 
 
-def kill_workers(scope: str | None = None) -> int:
-    """Stop the plugin worker processes of ONE tester environment (the compute-service-killed scenarios, the
-    orphan sweep): a worker's command line names its state root under that environment's home, so a
-    worker of another environment (the fresh env's running services) is left alone. scope defaults to
-    the home this process was pointed at (USERPROFILE, set by apply_env)."""
+def scoped_worker_pids(scope: str | None = None) -> list[int]:
+    """The plugin worker processes of ONE tester environment. The venv launcher's command line names the
+    managed venv under that environment's home; on Windows the launcher starts the base interpreter as a
+    child whose command line does not, and that child is the process that holds the memory. So: the
+    launchers whose command line contains scope, plus every worker process whose parent is one of them.
+    scope defaults to the home this process was pointed at (USERPROFILE, set by apply_env)."""
     scope = (scope or os.environ.get("USERPROFILE") or "").replace("'", "''")
     if not scope:
-        return 0
-    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*tlc_plugin_sdk.worker*' -and "
-          f"$_.CommandLine.IndexOf('{scope}', [StringComparison]::OrdinalIgnoreCase) -ge 0 }} | "
-          "ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }")
+        return []
+    ps = ("$w = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*tlc_plugin_sdk.worker*' }); "
+          f"$own = @($w | Where-Object {{ $_.CommandLine.IndexOf('{scope}', [StringComparison]::OrdinalIgnoreCase) -ge 0 }} | ForEach-Object {{ $_.ProcessId }}); "
+          "$w | Where-Object { $own -contains $_.ProcessId -or $own -contains $_.ParentProcessId } | ForEach-Object { $_.ProcessId }")
     out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=False, capture_output=True, text=True)
-    return len([line for line in out.stdout.splitlines() if line.strip().isdigit()])
+    return [int(line) for line in out.stdout.split() if line.strip().isdigit()]
+
+
+def kill_workers(scope: str | None = None) -> int:
+    """Stop the plugin workers of ONE tester environment (the killed-service scenarios, the orphan sweep);
+    another environment's workers (the fresh env's running services) are left alone."""
+    pids = scoped_worker_pids(scope)
+    for pid in pids:
+        subprocess.run(["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue"],
+                       check=False, capture_output=True)
+    return len(pids)
 
 
 # ── Records ───────────────────────────────────────────────────────────────────
