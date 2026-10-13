@@ -264,6 +264,17 @@ class Ui:
 
 
 @dataclass(frozen=True)
+class KitFallback:
+    """Where a participant downloads the whole kit by hand when the CDN download cannot complete
+    (the manifest's optional ``kit_fallback_*`` fields): a folder link and the zip's name, sha256, size."""
+
+    url: str
+    file: str
+    sha256: str = ""
+    bytes: int | None = None
+
+
+@dataclass(frozen=True)
 class Manifest:
     """One validated competition manifest plus where it came from."""
 
@@ -276,6 +287,8 @@ class Manifest:
     training: Training
     submission: Submission
     ui: Ui
+    # The manual download route the Import tab offers when a download or a verification fails (optional).
+    kit_fallback: KitFallback | None = None
     # Provenance: "bundled" | "cache" | "remote" (tests use "test"), a human-readable detail
     # (path or URL), the sha256 of the document bytes, and when a remote copy was fetched.
     source: str = "bundled"
@@ -486,6 +499,7 @@ def parse_manifest(
         "training",
         "submission",
         "ui",
+        *KIT_FALLBACK_FIELDS,
     }
     _warn_unknown(data, top_known, "manifest", warnings)
 
@@ -772,6 +786,7 @@ def parse_manifest(
         training=training,
         submission=submission,
         ui=ui,
+        kit_fallback=_kit_fallback(data),
         source=source,
         source_detail=source_detail,
         sha256=sha256,
@@ -779,6 +794,39 @@ def parse_manifest(
         document_url=doc_url,
         warnings=tuple(warnings),
     )
+
+
+KIT_FALLBACK_FIELDS = ("kit_fallback_url", "kit_fallback_file", "kit_fallback_sha256", "kit_fallback_bytes")
+
+
+def _kit_fallback(data: dict[str, Any]) -> KitFallback | None:
+    """The optional ``kit_fallback_*`` fields: none set is no fallback; a URL needs the zip's file name
+    (the Import message names it); the sha256 and size are optional and validated when present."""
+    present = [k for k in KIT_FALLBACK_FIELDS if data.get(k) not in (None, "")]
+    if not present:
+        return None
+    if "kit_fallback_url" not in present:
+        msg = f"{present[0]}: set without kit_fallback_url"
+        raise ManifestError(msg)
+    url = _str(data["kit_fallback_url"], "kit_fallback_url")
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" or not parts.hostname or _MARKUP_RE.search(url) or " " in url:
+        msg = f"kit_fallback_url: expected an https URL, got {url!r}"
+        raise ManifestError(msg)
+    name = _str(_require(data, "kit_fallback_file", "manifest"), "kit_fallback_file")
+    if not _SHARD_NAME_RE.match(name) or ".." in name:
+        msg = f"kit_fallback_file: must be a plain file name, got {name!r}"
+        raise ManifestError(msg)
+    sha = ""
+    if data.get("kit_fallback_sha256") not in (None, ""):
+        sha = _str(data["kit_fallback_sha256"], "kit_fallback_sha256").lower()
+        if not _SHA256_RE.match(sha):
+            msg = "kit_fallback_sha256: expected 64 hex characters"
+            raise ManifestError(msg)
+    size = None
+    if data.get("kit_fallback_bytes") not in (None, ""):
+        size = _int(data["kit_fallback_bytes"], "kit_fallback_bytes", minimum=1)
+    return KitFallback(url=url, file=name, sha256=sha, bytes=size)
 
 
 def parse_index(data: Any, index_url_: str) -> list[dict[str, Any]]:

@@ -469,7 +469,7 @@
 
       <!-- rc12: the rc10 form, always visible (the Imported view renders around it, never instead of it) -->
       <form id="kg-import-form" onsubmit="return false;">
-        <!-- rc11 (item 14), kept: the manual route from Kaggle's Data page when a download or a verification fails -->
+        <!-- rc11 (item 14), kept: the manual route (the manifest's kit_fallback, else the Discussion) when a download or a verification fails -->
         <div id="kg-kaggle-fallback"></div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div>
@@ -927,7 +927,7 @@
       // no fetches, no job side effects. Values: state1, state1-bundled, state2, state2-existing,
       // state2-mismatch, state2-error, state3, state4, state5, state6, state6-found, state6-stale,
       // state6-superseded, dl-empty, dl-running, dl-verify, dl-verify-fail, dl-success, dl-fail,
-      // dl-fail-checks, dl-fail-kaggle, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
+      // dl-fail-checks, dl-fail-kaggle, dl-fail-fallback, dl-fail-no-fallback, dl-cancelled, dl-revisit, dl-superseded; Train: train-state1, train-state2,
       // train-state2-missing, train-state2-rows, train-state2-invalid, train-state2-undefined-weight,
       // train-state2-zero-rows, train-state2-class-empty, train-state2-lineage, train-state2-foreign,
       // train-state2-val-edited, train-state3,
@@ -1695,21 +1695,35 @@
         var pad = function (n) { return (n < 10 ? '0' : '') + n; };
         return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
       }
-      function kgKaggleDataUrl() {
+      function kgKaggleDiscussionUrl() {
         var slug = kgManifest && kgManifest.competition ? kgManifest.competition.slug : '';
-        return slug ? 'https://www.kaggle.com/competitions/' + slug + '/data' : '';
+        return slug ? 'https://www.kaggle.com/competitions/' + slug + '/discussion' : '';
       }
-      // rc11 (item 14): the manual route when the download cannot be completed. Points at Kaggle's Data page
-      // above the kit field; the pasted folder goes through the full preflight and file checks.
+      function kgIsDriveUrl(url) {
+        try { return new URL(url).hostname.toLowerCase() === 'drive.google.com'; } catch (e) { return false; }
+      }
+      // rc11 (item 14), 1.0.0: the manual route when the download cannot be completed and running it again
+      // will not help. With the manifest's kit_fallback: the folder holding the whole kit as one zip; without
+      // one: the organizers in the competition Discussion. The reason stays as a muted line; the pasted folder
+      // goes through the full preflight and file checks.
       function kgShowKaggleFallback(reason) {
         var box = el('kg-kaggle-fallback');
         if (!box) { return; }
-        var url = kgKaggleDataUrl();
+        var fb = (kgManifest && kgManifest.kit_fallback) || null;
+        var body, url, label;
+        if (fb && fb.url) {
+          body = 'Open this folder, download ' + fb.file + ', unzip it, and paste the path of the starter_kit folder here.' +
+            (kgIsDriveUrl(fb.url) ? ' If Google Drive says it can’t scan the file for viruses, click Download anyway.' : '');
+          url = fb.url; label = 'Open the folder';
+        } else {
+          body = 'Ask the organizers for the starter kit in the competition Discussion on Kaggle.';
+          url = kgKaggleDiscussionUrl(); label = 'Open the Discussion on Kaggle';
+        }
         box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
-          '<span><strong>Couldn’t download the starter kit.</strong> ' + (reason ? esc(reason) + ' ' : '') +
-          'Download it from the competition’s Data page on Kaggle, unzip it, and paste the folder path below.' +
+          '<span><strong>Couldn’t download the starter kit.</strong> ' + esc(body) +
+          (reason ? '<div class="kg-fallback-reason" style="margin-top:4px;font-size:12px;color:var(--text-muted)">' + esc(reason) + '</div>' : '') +
           (url ? '<div style="margin-top:8px"><a class="btn btn-secondary btn-sm kgi-btn" target="_blank" rel="noopener" href="' + esc(url) +
-            '"><span>Open the Data page on Kaggle</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>' : '') +
+            '"><span>' + esc(label) + '</span>' + kgIcon('external-link', 'kgi-12') + '</a></div>' : '') +
           '</span></div>';
       }
       function kgClearKaggleFallback() {
@@ -2791,7 +2805,7 @@
       }
 
       // rc11 (item 14): a resume is offered first; when it cannot help (a failed check, a wrong hash, a kit
-      // defect) or the network failed twice in this session, the manual route from Kaggle's Data page opens.
+      // defect) or the network failed twice in this session, the manual route opens (kgShowKaggleFallback).
       var dlFailCount = 0;
       function dlRenderFail(job, animate) {
         var failed = (job.checks || []).filter(function (c) { return !c.ok; });
@@ -6577,6 +6591,7 @@
         var v = doc.versions || {}, d = doc.device || {}, m = doc.manifest || {}, k = doc.kit || {};
         var kg = doc.kaggle || {}, h = doc.plugin_home || {}, p = doc.plugin || {}, rec = doc.records || {};
         var pr = doc.project_root || {};
+        var kfb = doc.kit_fallback || null;
         var cuda = d.cuda_available === true ? 'available' : d.cuda_available === false ? 'not available' : 'probing…';
         var free = (h.disk && typeof h.disk.free_bytes === 'number') ? (h.disk.free_bytes / 1073741824).toFixed(1) + ' GB free' : 'unknown';
         var kagText = kg.state === 'ready'
@@ -6608,6 +6623,9 @@
                        (m.manifest_fetched_at ? ' · fetched ' + stAgoIso(m.manifest_fetched_at) : '') +
                        (fb.active ? ' · ' + (fb.reason || 'the server could not be reached') : ''), fb.detail || m.manifest_document_url || ''],
           ['Kit', kitText, k.kit_dir || ''],
+          ['Kit fallback', kfb && kfb.url ? kfb.url : 'none in the manifest · a failed download points at the competition Discussion',
+           kfb && kfb.url ? kfb.file + (typeof kfb.bytes === 'number' ? ' · ' + fmtCount(kfb.bytes) + ' bytes' : '') +
+             (kfb.sha256 ? ' · sha256 ' + kfb.sha256 : '') + ' · ' + kfb.url : ''],
           ['Kaggle', kagText, kg.token_path || ''],
           ['Plugin home', midTrunc(kgCleanPath(h.path || ''), 48) + (h.resolved_by ? ' · resolved by ' + h.resolved_by : '') +
                           (h.migrated_from && h.migrated_from.source ? ' · carried forward from the previous version' : ''),
@@ -7366,10 +7384,21 @@
             kgKitState = KIT(now - 5); form(devDlKit, pfGreen);
             dlRenderSuccess({ result: { file_count: fileCount, image_count: imageCount } }, false);
             el('kg-dl-log').textContent = DLLOG.join('\n'); el('kg-dl-log-details').style.display = 'block';
-          } else if (mode === 'dl-fail' || mode === 'dl-fail-kaggle' || mode === 'dl-fail-checks') {
+          } else if (mode === 'dl-fail' || mode === 'dl-fail-kaggle' || mode === 'dl-fail-checks' ||
+                     mode === 'dl-fail-fallback' || mode === 'dl-fail-no-fallback') {
             dlShowSection(true); if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = devDest; }
             form('', null);
-            if (mode === 'dl-fail-kaggle') { dlFailCount = 1; }
+            if (mode === 'dl-fail-kaggle' || mode === 'dl-fail-fallback' || mode === 'dl-fail-no-fallback') { dlFailCount = 1; }
+            // The manual route's two states: the manifest's kit_fallback (the served one, else a demo link named
+            // from the served competition and kit version) and none (the competition Discussion).
+            if (mode === 'dl-fail-fallback') {
+              var cm = kgManifest || {};
+              kgManifest = Object.assign({}, cm, { kit_fallback: cm.kit_fallback || {
+                url: 'https://drive.google.com/drive/folders/demo-fixture',
+                file: ((cm.competition || {}).id || 'competition') + '-' + ((cm.kit || {}).version || 'v1') + '-starter_kit.zip' } });
+            } else if (mode === 'dl-fail-no-fallback') {
+              kgManifest = Object.assign({}, kgManifest || {}, { kit_fallback: null });
+            }
             dlRenderFail(mode === 'dl-fail-checks'
               ? { error: s3.name + ' failed verification after three downloads. The copy on the content network may be damaged.',
                   checks: [{ label: 'shard sha256 matches the manifest', ok: false,

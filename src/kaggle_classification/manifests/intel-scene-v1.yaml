@@ -34,6 +34,13 @@ kit:
     - {name: intel-scene-v1-03.zip, sha256: ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039, bytes: 24511747}
     - {name: intel-scene-v1-04.zip, sha256: 4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2, bytes: 14208813}
 
+# The manual route when the CDN download cannot complete: a folder holding the whole kit as one zip
+# (a single top-level starter_kit/ folder with files.json); the Import tab links it and names the file.
+kit_fallback_url: https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing
+kit_fallback_file: intel-scene-v1-starter_kit.zip
+kit_fallback_sha256: ae4e5937fb5e11c5773790677921f6cfcea1e725c20e1b7fe48e4b843d9b5015
+kit_fallback_bytes: 112270148
+
 splits:
   train:
     labeled_per_class: 100

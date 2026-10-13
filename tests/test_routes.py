@@ -149,7 +149,7 @@ def test_fragment_is_the_exdark_import_tab():
         "function kgRenderImportFromState", "function kgConfirmReimport", "function kgReloadConfig", "function kgRenderManifestNote",
         "function kgShowKaggleFallback", "function kgRenderKitManual", "function kgHeroInit", "function kgDisplayPath",
         "Found existing tables", "Re-import…", "Your existing tables and label edits are kept.",
-        "Starter kit ready", "images + manifest", "Re-verify", "/competitions/' + slug + '/data", "Open the Data page on Kaggle",
+        "Starter kit ready", "images + manifest", "Re-verify", "/competitions/' + slug + '/discussion", "Open the Discussion on Kaggle", "Open the folder",
         "is missing on disk", "checks passed", "if (kgImporting) { return; }",
     ):
         assert needle in html, needle
@@ -183,8 +183,8 @@ def test_fragment_is_the_exdark_import_tab():
     assert "function kgDevForce(mode)" in html and "function kgDevDisableActions()" in html
     for state in ("state1", "state1-bundled", "state2", "state2-existing", "state2-mismatch", "state2-error", "state3",
                   "state4", "state5", "state6", "state6-found", "state6-stale", "state6-superseded", "dl-empty", "dl-running",
-                  "dl-verify", "dl-verify-fail", "dl-success", "dl-fail", "dl-fail-checks", "dl-fail-kaggle", "dl-cancelled",
-                  "dl-revisit", "dl-superseded"):
+                  "dl-verify", "dl-verify-fail", "dl-success", "dl-fail", "dl-fail-checks", "dl-fail-kaggle", "dl-fail-fallback",
+                  "dl-fail-no-fallback", "dl-cancelled", "dl-revisit", "dl-superseded"):
         assert f"mode === '{state}'" in html, state
     # Fix c: a stale result never sits next to a new amber/red preflight.
     assert "function kgClearStaleResult()" in html and "if (transitioned && (kind === 'mismatch' || kind === 'error')) { kgClearStaleResult(); }" in html

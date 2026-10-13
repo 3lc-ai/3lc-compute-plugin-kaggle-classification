@@ -16,6 +16,7 @@ kaggle client are imported inside functions.
 
 from __future__ import annotations
 
+import dataclasses
 import io
 import json
 import os
@@ -586,6 +587,8 @@ def doctor(manifest: Manifest, *, kaggle: bool = True) -> dict[str, Any]:
         },
         "manifest": {**prov, "refresh": manifest_mod.refresh_status(), "cache": cache_info or None},
         "kit": kit_state,
+        # The manual download route the Import tab offers when the kit download cannot complete.
+        "kit_fallback": dataclasses.asdict(manifest.kit_fallback) if manifest.kit_fallback else None,
         "import": {
             "project_name": record.get("project_name"), "table_name": record.get("table_name"),
             "completed_at": record.get("completed_at"), "kit_version": record.get("kit_version"),

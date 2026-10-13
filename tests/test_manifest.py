@@ -179,3 +179,53 @@ def test_no_competition_literal_outside_the_manifest():
             if needle in text:
                 offenders.append(f"{path.name}: {needle}")
     assert not offenders, offenders
+
+
+# ── The kit fallback (1.0.0): a folder holding the whole kit as one zip ──────
+
+
+def test_the_bundled_manifest_carries_the_kit_fallback(manifest):
+    fb = manifest.kit_fallback
+    assert fb is not None and fb.url.startswith("https://drive.google.com/")
+    assert fb.file == f"{manifest.competition.id}-{manifest.kit.version}-starter_kit.zip"
+    assert len(fb.sha256) == 64 and fb.bytes and fb.bytes > 0
+    assert manifest.to_dict()["kit_fallback"] == {"url": fb.url, "file": fb.file, "sha256": fb.sha256, "bytes": fb.bytes}
+    assert not [w for w in manifest.warnings if "kit_fallback" in w]
+
+
+def test_the_kit_fallback_is_optional():
+    data = _data()
+    for k in m.KIT_FALLBACK_FIELDS:
+        data.pop(k, None)
+    parsed = m.parse_manifest(data)
+    assert parsed.kit_fallback is None and parsed.to_dict()["kit_fallback"] is None
+    data["kit_fallback_url"] = "https://example.org/kit"
+    data["kit_fallback_file"] = "kit.zip"
+    fb = m.parse_manifest(data).kit_fallback
+    assert (fb.url, fb.file, fb.sha256, fb.bytes) == ("https://example.org/kit", "kit.zip", "", None)
+
+
+@pytest.mark.parametrize(("field", "value", "match"), [
+    ("kit_fallback_url", "http://drive.google.com/x", "https URL"),
+    ("kit_fallback_url", "https://x.org/<b>", "https URL"),
+    ("kit_fallback_file", "../kit.zip", "plain file name"),
+    ("kit_fallback_file", None, "kit_fallback_file: missing"),
+    ("kit_fallback_sha256", "abc", "64 hex"),
+    ("kit_fallback_bytes", "112", "integer"),
+    ("kit_fallback_bytes", 0, ">= 1"),
+])
+def test_a_bad_kit_fallback_is_refused(field, value, match):
+    data = _data()
+    if value is None:
+        data.pop(field)
+    else:
+        data[field] = value
+    with pytest.raises(m.ManifestError, match=match):
+        m.parse_manifest(data)
+
+
+def test_kit_fallback_details_without_a_url_are_refused():
+    data = _data()
+    data.pop("kit_fallback_url")
+    with pytest.raises(m.ManifestError, match="set without kit_fallback_url"):
+        m.parse_manifest(data)

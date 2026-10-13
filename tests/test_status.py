@@ -732,3 +732,12 @@ def test_run_root_reads_the_root_before_project_and_runs():
     assert status._run_root(r"C:\a\projects\intel-scene\runs\r1" + "\\") == "C:/a/projects"
     assert status._run_root("C:/a/projects/intel-scene/tables/t") == ""
     assert status._run_root(None) == ""
+
+
+
+def test_doctor_serves_the_kit_fallback(seeded, manifest):
+    import dataclasses
+
+    doc = status.doctor(manifest, kaggle=False)
+    assert doc["kit_fallback"] == dataclasses.asdict(manifest.kit_fallback)
+    assert status.doctor(dataclasses.replace(manifest, kit_fallback=None), kaggle=False)["kit_fallback"] is None
