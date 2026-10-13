@@ -246,6 +246,9 @@ class Submission:
     columns: tuple[str, ...]
     metric: str
     daily_limit: int
+    # Session 15: the longest submission message the plugin sends. Kaggle documents no limit and its client
+    # declares none, so the default is a conservative one; a manifest may set the competition's own.
+    message_max_chars: int = 255
 
 
 @dataclass(frozen=True)
@@ -725,7 +728,7 @@ def parse_manifest(
 
     # submission
     raw_sub = _require(data, "submission", "manifest")
-    _warn_unknown(raw_sub, {"columns", "metric", "daily_limit"}, "submission", warnings)
+    _warn_unknown(raw_sub, {"columns", "metric", "daily_limit", "message_max_chars"}, "submission", warnings)
     raw_cols = _require(raw_sub, "columns", "submission")
     if not isinstance(raw_cols, list) or not raw_cols:
         msg = "submission.columns: expected a non-empty list"
@@ -734,6 +737,8 @@ def parse_manifest(
         columns=tuple(_str(c, f"submission.columns[{i}]") for i, c in enumerate(raw_cols)),
         metric=_str(_require(raw_sub, "metric", "submission"), "submission.metric"),
         daily_limit=_int(_require(raw_sub, "daily_limit", "submission"), "submission.daily_limit", minimum=1),
+        message_max_chars=_int(raw_sub["message_max_chars"], "submission.message_max_chars", minimum=1)
+        if "message_max_chars" in raw_sub else Submission.message_max_chars,
     )
 
     # ui, display strings renderable, help links https only

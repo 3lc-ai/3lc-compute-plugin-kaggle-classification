@@ -565,6 +565,36 @@ def test_run_kaggle_submit_records_the_outcome_and_the_ledger(store, tmp_path, m
         predictor.run_kaggle_submit({"predict_job_id": "nope"}, FakeCtx(), manifest)
 
 
+def test_a_too_long_submission_message_is_refused_before_anything_is_uploaded(store, tmp_path, manifest, monkeypatch):
+    """Session 15 (plan D9): the message is checked against ``submission.message_max_chars`` (characters, so a
+    unicode message counts as a person reads it) before the upload; at the limit it goes through."""
+    _predict_record(tmp_path)
+    calls = []
+    monkeypatch.setattr(kaggle_client, "submit", lambda *a: calls.append(a) or {"status": "submitted", "ref": "9", "kaggle": {}})
+    limit = manifest.submission.message_max_chars
+    assert limit == 255   # the default when the manifest names none
+    with pytest.raises(predictor.PredictRefused, match=f"is {limit + 1:,} characters long; the limit is {limit:,}.*nothing was sent"):
+        predictor.run_kaggle_submit({"predict_job_id": "p1", "message": "é" * (limit + 1)}, FakeCtx(), manifest)
+    assert calls == [] and ledger.find("submit", job_id="local") is None
+    ctx = FakeCtx()
+    ctx.job_id = "s-limit"
+    predictor.run_kaggle_submit({"predict_job_id": "p1", "message": "名" * limit}, ctx, manifest)
+    assert len(calls) == 1 and calls[0][1] == "名" * limit
+
+
+def test_a_manifest_may_set_its_own_message_limit():
+    from helpers import small_manifest_data
+
+    from kaggle_classification import manifest as manifest_mod
+
+    data = small_manifest_data("v1")
+    data["submission"]["message_max_chars"] = 40
+    assert manifest_mod.parse_manifest(data, source="test", source_detail="synthetic").submission.message_max_chars == 40
+    data["submission"]["message_max_chars"] = 0
+    with pytest.raises(manifest_mod.ManifestError, match="message_max_chars"):
+        manifest_mod.parse_manifest(data, source="test", source_detail="synthetic")
+
+
 # ── Heavy: end to end on the synthetic kit ───────────────────────────────────
 
 tlc = pytest.importorskip("tlc")

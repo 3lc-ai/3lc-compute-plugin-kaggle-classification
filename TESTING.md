@@ -388,6 +388,11 @@ the Train tab your previous runs, the Status tab your history, and the Doctor’
 ends with “carried forward from the previous version”. Nothing is re-downloaded. If any of that is
 missing, send the Doctor rows and the newest `logs\compute-*.log`.
 
+**If Update (or a reinstall) fails with “Access is denied”** on Windows: restart the compute service
+(`start_tester.ps1 -Stop`, then start it again) and press Update again. A plugin process left over
+from an earlier service run still holds the plugin’s environment open; the restart ends it. This is
+a known issue in the compute service, reported to the 3LC team.
+
 ## 9. Known limits of this candidate
 
 - The competition is unlaunched: no Kaggle submit, no leaderboard, no submission list; the Status tab

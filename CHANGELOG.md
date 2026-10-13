@@ -54,6 +54,18 @@ anti-cheat review (docs/PREDICT_MIRROR.md section 15). The plugin extra pins `3l
   table, run and metrics table a job opened). **It does not fix the growth**: the 30-cycle gate soak on
   `41fba65` still measured 14.6 MB per cycle (working set) and 16.3 MB per cycle (private bytes). The leak is
   OPEN and blocks the rc14 tag (TESTING_PROOF.md run 14, F5b).
+- **The submission message length is checked before anything is uploaded** (campaign D9): the Submit job
+  refuses a message longer than `submission.message_max_chars` ("The submission message is N characters
+  long; the limit is M. Shorten it and submit again (nothing was sent to Kaggle).") Kaggle documents no
+  limit and its client (kaggle 2.2.4, kagglesdk 0.1.37) declares none, so the default is a conservative
+  255 characters; a competition manifest may set its own.
+- **TESTING.md troubleshooting for "Access is denied" on Update or reinstall**: restart the compute service
+  and update again (the host keeps an old plugin process; reported to the 3LC team).
+- **docs/LAUNCH_CHECKLIST.md**: the checks that can only run once the competition is live, led by the Kaggle
+  submission list check (organizer verification).
+- **A memory diagnostic route** (`GET /debug/leak_probe`, `leak_probe.py`): off unless the compute service
+  runs with `KAGGLE_CLASSIFICATION_LEAK_PROBE=1`; reports the worker's memory, tracemalloc diffs, gc counts,
+  logging handlers, torch hooks and the tlc packages' module-level caches between jobs.
 - **The Windows start script logs in inside the redirected home** on the first start (campaign pre-item P4):
   3lc 3.3 and 3.4 read the API key from the redirected `LOCALAPPDATA`, so TESTING.md's `3lc login` from the
   real profile left the services in an "API key not found" restart loop. The script now runs the login in its

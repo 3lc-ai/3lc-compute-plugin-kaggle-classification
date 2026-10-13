@@ -70,7 +70,23 @@ def test_route_handlers_build_when_litestar_is_present():
         "/runs", "/predict/preflight", "/submit/state", "/kaggle/connection", "/kaggle/connect",
         "/submissions/{job_id:str}/download",
         "/status/history", "/status/kaggle", "/status/doctor", "/status/bundle", "/status/bundle/preview",
+        "/debug/leak_probe",   # session 15: answers 404 unless KAGGLE_CLASSIFICATION_LEAK_PROBE=1
     }
+
+
+def test_the_leak_probe_is_off_unless_the_service_enables_it(monkeypatch):
+    """Session 15: the diagnostic route answers 404 by default; with the variable set it reports the worker's
+    memory facts and, from the second call on, what grew."""
+    from kaggle_classification import leak_probe
+
+    monkeypatch.delenv(leak_probe.ENV, raising=False)
+    assert leak_probe.enabled() is False
+    monkeypatch.setenv(leak_probe.ENV, "1")
+    assert leak_probe.enabled() is True
+    first = leak_probe.probe(reset=True)
+    second = leak_probe.probe()
+    assert "top_by_size" not in first and {"top_by_size", "top_by_count", "gc_types_grown", "containers_grown"} <= set(second)
+    assert second["call"] == first["call"] + 1 and "root" in second["logging"]
 
 
 def test_route_handler_annotations_resolve_like_litestar_does():

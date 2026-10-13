@@ -395,9 +395,19 @@ def get_route_handlers() -> list[Any]:
         except Exception as exc:
             return {"error": f"{type(exc).__name__}: {exc}"}
 
+    @get("/debug/leak_probe", sync_to_thread=True)
+    def debug_leak_probe(reset: str = "0") -> Response[dict[str, Any]]:
+        """Session 15, the leak hunt: the worker's memory facts and their change since the previous call
+        (leak_probe.py). Answers only when the service runs with KAGGLE_CLASSIFICATION_LEAK_PROBE=1."""
+        from kaggle_classification import leak_probe
+
+        if not leak_probe.enabled():
+            return Response({"error": "not enabled"}, status_code=404)
+        return Response(leak_probe.probe(reset=reset == "1"), status_code=200)
+
     return [
         get_config, save_config, get_manifest, select_manifest, import_preflight, import_state, download_verify,
         train_preflight, train_state, tables_list, tables_defaults,
         list_runs, predict_preflight, submit_state, kaggle_connection, kaggle_connect, download_submission,
-        status_history, status_kaggle, status_doctor, status_bundle, status_bundle_preview,
+        status_history, status_kaggle, status_doctor, status_bundle, status_bundle_preview, debug_leak_probe,
     ]

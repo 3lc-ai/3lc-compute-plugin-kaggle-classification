@@ -1001,6 +1001,12 @@ def run_kaggle_submit(params: dict[str, Any], ctx: Any, manifest: Manifest) -> d
         raise PredictRefused(msg)
     run_name = str(facts.get("run_name") or "run")
     message = str(params.get("message") or "").strip() or f"{run_name} via 3LC plugin"
+    limit = int(getattr(manifest.submission, "message_max_chars", 255) or 255)
+    if len(message) > limit:
+        # Session 15 (plan D9): refused before anything is uploaded, so no submission is spent on it.
+        msg = (f"The submission message is {len(message):,} characters long; the limit is {limit:,}. "
+               "Shorten it and submit again (nothing was sent to Kaggle).")
+        raise PredictRefused(msg)
     slug = manifest.competition.slug
     daily_limit = int(manifest.submission.daily_limit)
 

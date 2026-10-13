@@ -52,6 +52,8 @@ def main() -> int:
     ap.add_argument("--cycles", type=int, default=10_000)
     ap.add_argument("--epochs", default="1")
     ap.add_argument("--out", default="section_f5.json", help="the record under docs/campaign/")
+    ap.add_argument("--mode", choices=["both", "train", "predict"], default="both",
+                    help="both: train + predict per cycle; train: train-only; predict: one train, then predict-only cycles")
     args = ap.parse_args()
     h.setup_stdio()
     root, repo = Path(args.root), Path(args.repo)
@@ -63,13 +65,25 @@ def main() -> int:
     with h.host_client() as client:
         h.wait_ready(client, 900)
         record["memory_before"] = worker_memory_mb()
+        record["mode"] = args.mode
+        basis = None
+        if args.mode == "predict":   # one training run, then predict-only cycles on its checkpoint
+            basis = h.run_and_wait(client, "train", {"epochs": args.epochs, "run_name": "soak basis"}, timeout=3600, quiet=True)
+            record["basis_train"] = {"id": basis.get("id"), "status": basis.get("status")}
+            record["memory_after_basis"] = worker_memory_mb()
         n = 0
         while time.time() < deadline and n < args.cycles:
             n += 1
             t0 = time.time()
-            tr = h.run_and_wait(client, "train", {"epochs": args.epochs, "run_name": f"soak {n:04d}"}, timeout=3600, quiet=True)
+            if args.mode in ("both", "train"):
+                tr = h.run_and_wait(client, "train", {"epochs": args.epochs, "run_name": f"soak {n:04d}"}, timeout=3600, quiet=True)
+            else:
+                tr = {"status": "completed", "id": (basis or {}).get("id")}
             t1 = time.time()
-            pr = h.run_and_wait(client, "predict", {"train_job_id": tr.get("id"), "device": ""}, timeout=3600, quiet=True) if tr.get("id") else {"status": "skipped"}
+            if args.mode in ("both", "predict"):
+                pr = h.run_and_wait(client, "predict", {"train_job_id": tr.get("id"), "device": ""}, timeout=3600, quiet=True) if tr.get("id") else {"status": "skipped"}
+            else:
+                pr = {"status": "completed"}
             t2 = time.time()
             mem = worker_memory_mb()
             cyc = {"n": n, "at": time.strftime("%H:%M:%S"), "train": tr.get("status"), "train_s": round(t1 - t0, 1), "predict": pr.get("status"),
