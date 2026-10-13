@@ -20,6 +20,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   named with both paths.
 - **The tester scripts always set the project root**: `projects` in the tester folder unless
   `-ProjectRoot` / `PROJECT_ROOT` overrides it; the quick start says where tables and runs go.
+- **The kit fallback**: the manifest's optional `kit_fallback_url`, `kit_fallback_file`, `kit_fallback_sha256` and
+  `kit_fallback_bytes` (the bundled intel-scene manifest: a Google Drive folder holding
+  `intel-scene-v1-starter_kit.zip`, a single `starter_kit/` folder with `files.json`). When a download or a
+  verification fails and running it again will not help, the Import tab links that folder and names the zip (with
+  the virus-scan note for Google Drive links only), the failure reason as a muted line; without a fallback it points
+  at the competition Discussion instead of Kaggle's Data page. The Doctor shows the link (fixtures
+  `?kgdev=dl-fail-fallback`, `dl-fail-no-fallback`). The dev CDN's manifest is regenerated and uploaded with 1.0.0.
 - **The hardening harness uses its own plugin state and project root** (`<env>/campaign-scratch/`), never the
   env's.
 
