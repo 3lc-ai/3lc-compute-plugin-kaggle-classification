@@ -817,3 +817,54 @@ def test_a_relocated_kit_root_is_not_foreign_but_val_rows_still_are(imported, tm
     merged = _join(manifest, [train_url, val_url], "merged-after-move", with_lineage=True)
     pf2 = trainer.preflight({"train_url": merged}, manifest)
     assert pf2["base"]["foreign_rows"] == manifest.splits.val.per_class * manifest.num_classes
+
+
+def test_a_fitted_umap_transforms_through_the_exact_branch_in_chunks(monkeypatch):
+    """Session 15 (the leak hunt): the approximate query compiled a fresh search closure per reducer (native
+    memory LLVM never frees); the exact branch compiles nothing per instance. ``_transform`` switches a fitted
+    UMAP to it for the call only, in chunks bounded by _EXACT_TRANSFORM_BYTES, and restores the flag."""
+    import numpy as np
+
+    class FakeUMAP:
+        def __init__(self, n_train: int) -> None:
+            self._small_data = False
+            self._raw_data = np.zeros((n_train, 4), dtype=np.float32)
+            self.calls: list[tuple[int, bool]] = []
+
+        def transform(self, x):
+            self.calls.append((len(x), self._small_data))
+            return np.ones((len(x), 3), dtype=np.float32)
+
+    monkeypatch.setattr(trainer, "_EXACT_TRANSFORM_BYTES", 100 * 8 * 30)   # 30 rows per chunk at 100 train rows
+    red = FakeUMAP(100)
+    out = trainer._transform(red, np.zeros((70, 4), dtype=np.float32), 3)
+    assert out.shape == (70, 3) and out.dtype == np.float32
+    assert red.calls == [(30, True), (30, True), (10, True)] and red._small_data is False
+    small = FakeUMAP(100)
+    small._small_data = True                                              # already exact (small data): untouched
+    trainer._transform(small, np.zeros((5, 4), dtype=np.float32), 3)
+    assert small.calls == [(5, True)] and small._small_data is True
+
+
+def test_every_job_runs_on_the_one_long_lived_job_thread(monkeypatch):
+    """Session 15: torch's CPU work leaves per-thread state, and the SDK starts a new thread per job, so the
+    plugin hands every job to one long-lived job thread; ctx.fail's JobFailed still reaches the caller."""
+    import threading
+
+    import kaggle_classification as kc
+    from tlc_plugin_sdk.job_context import JobFailed
+
+    seen: list[str] = []
+
+    def fake(self, ctx):
+        seen.append(threading.current_thread().name)
+        if ctx == "fail":
+            raise JobFailed("refused verbatim")
+
+    monkeypatch.setattr(kc.KaggleClassificationPlugin, "_run_job", fake)
+    plugin = kc.KaggleClassificationPlugin.__new__(kc.KaggleClassificationPlugin)
+    for _ in range(3):
+        threading.Thread(target=plugin.run_job, args=("ok",)).run()
+    with pytest.raises(JobFailed, match="refused verbatim"):
+        plugin.run_job("fail")
+    assert len(set(seen)) == 1 and seen[0].startswith("kaggle-classification-job")

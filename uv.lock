@@ -109,7 +109,7 @@ requires-dist = [
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'", specifier = "==2.14.0" },
     { name = "torchvision", marker = "(sys_platform == 'linux' and extra == 'kaggle-classification') or (sys_platform == 'win32' and extra == 'kaggle-classification')", specifier = "==0.29.0", index = "https://download.pytorch.org/whl/cu130" },
     { name = "torchvision", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'kaggle-classification'", specifier = "==0.29.0" },
-    { name = "umap-learn", marker = "extra == 'kaggle-classification'" },
+    { name = "umap-learn", marker = "extra == 'kaggle-classification'", specifier = "==0.5.12" },
 ]
 provides-extras = ["kaggle-classification"]
 

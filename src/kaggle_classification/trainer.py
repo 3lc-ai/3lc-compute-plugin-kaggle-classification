@@ -2145,10 +2145,29 @@ def _fit_reducer(train_emb: Any, n_comp: int, method: str, fallback: str, log: A
     return fallback if fallback else "pca", reducer
 
 
+# Session 15 (the leak hunt): UMAP's transform on a newly fitted reducer above 4,096 training rows goes
+# through pynndescent's query, which compiles a fresh search closure for every index; LLVM never frees JIT
+# code, so the worker grew about 10 MB per training run (5 new LLVM modules each time). The exact-neighbour
+# branch UMAP already uses for small data compiles nothing per instance, so a fitted UMAP transforms through
+# it, in chunks that keep the distance matrix under _EXACT_TRANSFORM_BYTES. Verified on umap-learn 0.5.12
+# (pinned); an UMAP without the attribute falls back to its stock transform.
+_EXACT_TRANSFORM_BYTES = 256 * 1024 * 1024
+
+
 def _transform(reducer: Any, emb: Any, n_comp: int) -> Any:
     import numpy as np
 
-    out = reducer.transform(emb)
+    if getattr(reducer, "_small_data", None) is False and getattr(reducer, "_raw_data", None) is not None:
+        n_train = int(reducer._raw_data.shape[0])
+        chunk = max(1, min(len(emb), _EXACT_TRANSFORM_BYTES // max(n_train * 8, 1)))
+        reducer._small_data = True
+        try:
+            parts = [np.asarray(reducer.transform(emb[i:i + chunk]), dtype=np.float32) for i in range(0, len(emb), chunk)]
+        finally:
+            reducer._small_data = False
+        out = np.concatenate(parts, axis=0) if parts else np.zeros((0, n_comp), dtype=np.float32)
+    else:
+        out = reducer.transform(emb)
     return np.asarray(out, dtype=np.float32).reshape(len(emb), n_comp)
 
 

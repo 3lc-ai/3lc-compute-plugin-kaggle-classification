@@ -91,6 +91,19 @@ def job_label(kind: str, params: dict[str, Any], manifest: Any) -> str:
     return f"{label} · {project}" if project else label
 
 
+_JOB_THREAD: Any = None
+
+
+def _job_thread() -> Any:
+    """The worker's one long-lived job thread (a single-worker executor), created on the first job."""
+    global _JOB_THREAD
+    if _JOB_THREAD is None:
+        from concurrent.futures import ThreadPoolExecutor
+
+        _JOB_THREAD = ThreadPoolExecutor(max_workers=1, thread_name_prefix="kaggle-classification-job")
+    return _JOB_THREAD
+
+
 class _JobCtxAdapter:
     """Duck-typed job context the stage modules program against, over the SDK ``JobContext``.
 
@@ -171,7 +184,17 @@ class KaggleClassificationPlugin(ComputePlugin):
         ``ctx.params`` carries ``{"kind": "download_kit" | "import" | "train" | "predict" |
         "kaggle_submit", ...job params}``. Every kind's refusals go out verbatim through
         ``ctx.fail``; an unknown kind fails the same way.
+
+        Session 15 (the leak hunt): the SDK worker calls this on a NEW thread per job, and torch's CPU
+        work leaves per-thread state that a finished thread never gives back (about 7.6 MB per job on
+        Windows, measured in isolation; flat on one reused thread). Every job therefore runs on the
+        worker's one long-lived job thread; this thread waits for it, and the job's ``ctx.fail``
+        (``JobFailed``) and exceptions reach the SDK unchanged. The host runs this plugin's jobs one at
+        a time (a GPU plugin), so one job thread loses no concurrency.
         """
+        _job_thread().submit(self._run_job, ctx).result()
+
+    def _run_job(self, ctx: JobContext) -> None:
         from kaggle_classification import kit, manifest, storage
 
         # The worker's state root is the plugin's home from here on (storage.py rule 3).
