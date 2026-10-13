@@ -1,0 +1,2231 @@
+{
+ "started_at": "2026-10-13T00:29:40",
+ "hours": 3.0,
+ "cycles": [
+  {
+   "n": 1,
+   "at": "00:30:42",
+   "train": "completed",
+   "train_s": 44.0,
+   "predict": "completed",
+   "predict_s": 6.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2361,
+     "private_mb": 4434
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2361,
+   "error": ""
+  },
+  {
+   "n": 2,
+   "at": "00:31:03",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2374,
+     "private_mb": 4459
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2374,
+   "error": ""
+  },
+  {
+   "n": 3,
+   "at": "00:31:24",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2351,
+     "private_mb": 4445
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2351,
+   "error": ""
+  },
+  {
+   "n": 4,
+   "at": "00:31:45",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2357,
+     "private_mb": 4460
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2357,
+   "error": ""
+  },
+  {
+   "n": 5,
+   "at": "00:32:06",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2361,
+     "private_mb": 4486
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2361,
+   "error": ""
+  },
+  {
+   "n": 6,
+   "at": "00:32:26",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2365,
+     "private_mb": 4499
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2365,
+   "error": ""
+  },
+  {
+   "n": 7,
+   "at": "00:32:47",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2368,
+     "private_mb": 4495
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2368,
+   "error": ""
+  },
+  {
+   "n": 8,
+   "at": "00:33:08",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2366,
+     "private_mb": 4477
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2366,
+   "error": ""
+  },
+  {
+   "n": 9,
+   "at": "00:33:29",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2398,
+     "private_mb": 4526
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2398,
+   "error": ""
+  },
+  {
+   "n": 10,
+   "at": "00:33:50",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2394,
+     "private_mb": 4517
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2394,
+   "error": ""
+  },
+  {
+   "n": 11,
+   "at": "00:34:11",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2395,
+     "private_mb": 4507
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2395,
+   "error": ""
+  },
+  {
+   "n": 12,
+   "at": "00:34:31",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2394,
+     "private_mb": 4491
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2394,
+   "error": ""
+  },
+  {
+   "n": 13,
+   "at": "00:34:52",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2369,
+     "private_mb": 4501
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2369,
+   "error": ""
+  },
+  {
+   "n": 14,
+   "at": "00:35:13",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2400,
+     "private_mb": 4541
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2400,
+   "error": ""
+  },
+  {
+   "n": 15,
+   "at": "00:35:34",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2370,
+     "private_mb": 4507
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2370,
+   "error": ""
+  },
+  {
+   "n": 16,
+   "at": "00:35:55",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2400,
+     "private_mb": 4523
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2400,
+   "error": ""
+  },
+  {
+   "n": 17,
+   "at": "00:36:15",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2370,
+     "private_mb": 4491
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2370,
+   "error": ""
+  },
+  {
+   "n": 18,
+   "at": "00:36:36",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2371,
+     "private_mb": 4508
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2371,
+   "error": ""
+  },
+  {
+   "n": 19,
+   "at": "00:36:57",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2392,
+     "private_mb": 4521
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2392,
+   "error": ""
+  },
+  {
+   "n": 20,
+   "at": "00:37:18",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2397,
+     "private_mb": 4539
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2397,
+   "error": ""
+  },
+  {
+   "n": 21,
+   "at": "00:37:39",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2371,
+     "private_mb": 4510
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2371,
+   "error": ""
+  },
+  {
+   "n": 22,
+   "at": "00:38:00",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2373,
+     "private_mb": 4488
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2373,
+   "error": ""
+  },
+  {
+   "n": 23,
+   "at": "00:38:20",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2372,
+     "private_mb": 4505
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2372,
+   "error": ""
+  },
+  {
+   "n": 24,
+   "at": "00:38:41",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2402,
+     "private_mb": 4545
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2402,
+   "error": ""
+  },
+  {
+   "n": 25,
+   "at": "00:39:02",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2374,
+     "private_mb": 4497
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2374,
+   "error": ""
+  },
+  {
+   "n": 26,
+   "at": "00:39:23",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2371,
+     "private_mb": 4502
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2371,
+   "error": ""
+  },
+  {
+   "n": 27,
+   "at": "00:39:44",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2403,
+     "private_mb": 4516
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2403,
+   "error": ""
+  },
+  {
+   "n": 28,
+   "at": "00:40:04",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2372,
+     "private_mb": 4504
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2372,
+   "error": ""
+  },
+  {
+   "n": 29,
+   "at": "00:40:25",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2399,
+     "private_mb": 4515
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2399,
+   "error": ""
+  },
+  {
+   "n": 30,
+   "at": "00:40:46",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2373,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2373,
+   "error": ""
+  },
+  {
+   "n": 31,
+   "at": "00:41:07",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2403,
+     "private_mb": 4498
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2403,
+   "error": ""
+  },
+  {
+   "n": 32,
+   "at": "00:41:28",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2372,
+     "private_mb": 4502
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2372,
+   "error": ""
+  },
+  {
+   "n": 33,
+   "at": "00:41:49",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2372,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2372,
+   "error": ""
+  },
+  {
+   "n": 34,
+   "at": "00:42:09",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2371,
+     "private_mb": 4490
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2371,
+   "error": ""
+  },
+  {
+   "n": 35,
+   "at": "00:42:30",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2399,
+     "private_mb": 4539
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2399,
+   "error": ""
+  },
+  {
+   "n": 36,
+   "at": "00:42:51",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2404,
+     "private_mb": 4535
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2404,
+   "error": ""
+  },
+  {
+   "n": 37,
+   "at": "00:43:12",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2400,
+     "private_mb": 4523
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2400,
+   "error": ""
+  },
+  {
+   "n": 38,
+   "at": "00:43:33",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2432,
+     "private_mb": 4556
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2432,
+   "error": ""
+  },
+  {
+   "n": 39,
+   "at": "00:43:54",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2374,
+     "private_mb": 4503
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2374,
+   "error": ""
+  },
+  {
+   "n": 40,
+   "at": "00:44:14",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2375,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2375,
+   "error": ""
+  },
+  {
+   "n": 41,
+   "at": "00:44:35",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2375,
+     "private_mb": 4509
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2375,
+   "error": ""
+  },
+  {
+   "n": 42,
+   "at": "00:44:56",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4506
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 43,
+   "at": "00:45:17",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2374,
+     "private_mb": 4509
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2374,
+   "error": ""
+  },
+  {
+   "n": 44,
+   "at": "00:45:38",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2401,
+     "private_mb": 4527
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2401,
+   "error": ""
+  },
+  {
+   "n": 45,
+   "at": "00:45:58",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2375,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2375,
+   "error": ""
+  },
+  {
+   "n": 46,
+   "at": "00:46:19",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4506
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 47,
+   "at": "00:46:40",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2376,
+     "private_mb": 4501
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2376,
+   "error": ""
+  },
+  {
+   "n": 48,
+   "at": "00:47:01",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2375,
+     "private_mb": 4506
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2375,
+   "error": ""
+  },
+  {
+   "n": 49,
+   "at": "00:47:22",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2376,
+     "private_mb": 4504
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2376,
+   "error": ""
+  },
+  {
+   "n": 50,
+   "at": "00:47:43",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2402,
+     "private_mb": 4544
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2402,
+   "error": ""
+  },
+  {
+   "n": 51,
+   "at": "00:48:03",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2376,
+     "private_mb": 4519
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2376,
+   "error": ""
+  },
+  {
+   "n": 52,
+   "at": "00:48:24",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2378,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2378,
+   "error": ""
+  },
+  {
+   "n": 53,
+   "at": "00:48:45",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4502
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 54,
+   "at": "00:49:06",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2403,
+     "private_mb": 4527
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2403,
+   "error": ""
+  },
+  {
+   "n": 55,
+   "at": "00:49:27",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2402,
+     "private_mb": 4547
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2402,
+   "error": ""
+  },
+  {
+   "n": 56,
+   "at": "00:49:48",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2375,
+     "private_mb": 4504
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2375,
+   "error": ""
+  },
+  {
+   "n": 57,
+   "at": "00:50:08",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4514
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 58,
+   "at": "00:50:29",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4504
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 59,
+   "at": "00:50:50",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4516
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 60,
+   "at": "00:51:11",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2376,
+     "private_mb": 4515
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2376,
+   "error": ""
+  },
+  {
+   "n": 61,
+   "at": "00:51:32",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4509
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 62,
+   "at": "00:51:52",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4510
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 63,
+   "at": "00:52:13",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2409,
+     "private_mb": 4529
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2409,
+   "error": ""
+  },
+  {
+   "n": 64,
+   "at": "00:52:34",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2378,
+     "private_mb": 4514
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2378,
+   "error": ""
+  },
+  {
+   "n": 65,
+   "at": "00:52:55",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4504
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 66,
+   "at": "00:53:16",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2377,
+     "private_mb": 4498
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2377,
+   "error": ""
+  },
+  {
+   "n": 67,
+   "at": "00:53:37",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2405,
+     "private_mb": 4545
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2405,
+   "error": ""
+  },
+  {
+   "n": 68,
+   "at": "00:53:57",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2378,
+     "private_mb": 4520
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2378,
+   "error": ""
+  },
+  {
+   "n": 69,
+   "at": "00:54:18",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2380,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2380,
+   "error": ""
+  },
+  {
+   "n": 70,
+   "at": "00:54:39",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2380,
+     "private_mb": 4509
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2380,
+   "error": ""
+  },
+  {
+   "n": 71,
+   "at": "00:55:00",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2383,
+     "private_mb": 4514
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2383,
+   "error": ""
+  },
+  {
+   "n": 72,
+   "at": "00:55:21",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2413,
+     "private_mb": 4553
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2413,
+   "error": ""
+  },
+  {
+   "n": 73,
+   "at": "00:55:41",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2410,
+     "private_mb": 4542
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2410,
+   "error": ""
+  },
+  {
+   "n": 74,
+   "at": "00:56:02",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2381,
+     "private_mb": 4509
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2381,
+   "error": ""
+  },
+  {
+   "n": 75,
+   "at": "00:56:23",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2384,
+     "private_mb": 4513
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2384,
+   "error": ""
+  },
+  {
+   "n": 76,
+   "at": "00:56:44",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2382,
+     "private_mb": 4515
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2382,
+   "error": ""
+  },
+  {
+   "n": 77,
+   "at": "00:57:05",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2383,
+     "private_mb": 4501
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2383,
+   "error": ""
+  },
+  {
+   "n": 78,
+   "at": "00:57:26",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2381,
+     "private_mb": 4524
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2381,
+   "error": ""
+  },
+  {
+   "n": 79,
+   "at": "00:57:46",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2383,
+     "private_mb": 4522
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2383,
+   "error": ""
+  },
+  {
+   "n": 80,
+   "at": "00:58:07",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2410,
+     "private_mb": 4544
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2410,
+   "error": ""
+  },
+  {
+   "n": 81,
+   "at": "00:58:28",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2411,
+     "private_mb": 4558
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2411,
+   "error": ""
+  },
+  {
+   "n": 82,
+   "at": "00:58:49",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2382,
+     "private_mb": 4520
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2382,
+   "error": ""
+  },
+  {
+   "n": 83,
+   "at": "00:59:10",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2383,
+     "private_mb": 4512
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2383,
+   "error": ""
+  },
+  {
+   "n": 84,
+   "at": "00:59:30",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2411,
+     "private_mb": 4536
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2411,
+   "error": ""
+  },
+  {
+   "n": 85,
+   "at": "00:59:51",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2386,
+     "private_mb": 4524
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2386,
+   "error": ""
+  },
+  {
+   "n": 86,
+   "at": "01:00:12",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2411,
+     "private_mb": 4540
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2411,
+   "error": ""
+  },
+  {
+   "n": 87,
+   "at": "01:00:33",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2387,
+     "private_mb": 4525
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2387,
+   "error": ""
+  },
+  {
+   "n": 88,
+   "at": "01:00:54",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2387,
+     "private_mb": 4516
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2387,
+   "error": ""
+  },
+  {
+   "n": 89,
+   "at": "01:01:14",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2386,
+     "private_mb": 4527
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2386,
+   "error": ""
+  },
+  {
+   "n": 90,
+   "at": "01:01:35",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2412,
+     "private_mb": 4558
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2412,
+   "error": ""
+  },
+  {
+   "n": 91,
+   "at": "01:01:56",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2390,
+     "private_mb": 4522
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2390,
+   "error": ""
+  },
+  {
+   "n": 92,
+   "at": "01:02:17",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 2387,
+     "private_mb": 4527
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 2387,
+   "error": ""
+  },
+  {
+   "n": 93,
+   "at": "01:02:38",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1169,
+     "private_mb": 4520
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1169,
+   "error": ""
+  },
+  {
+   "n": 94,
+   "at": "01:02:59",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1194,
+     "private_mb": 4547
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1194,
+   "error": ""
+  },
+  {
+   "n": 95,
+   "at": "01:03:19",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1169,
+     "private_mb": 4516
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1169,
+   "error": ""
+  },
+  {
+   "n": 96,
+   "at": "01:03:40",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1167,
+     "private_mb": 4520
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1167,
+   "error": ""
+  },
+  {
+   "n": 97,
+   "at": "01:04:01",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1169,
+     "private_mb": 4508
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1169,
+   "error": ""
+  },
+  {
+   "n": 98,
+   "at": "01:04:22",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1169,
+     "private_mb": 4524
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1169,
+   "error": ""
+  },
+  {
+   "n": 99,
+   "at": "01:04:43",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1195,
+     "private_mb": 4552
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1195,
+   "error": ""
+  },
+  {
+   "n": 100,
+   "at": "01:05:03",
+   "train": "completed",
+   "train_s": 16.0,
+   "predict": "completed",
+   "predict_s": 4.0,
+   "workers": [
+    {
+     "pid": 47092,
+     "working_set_mb": 1168,
+     "private_mb": 4521
+    },
+    {
+     "pid": 48388,
+     "working_set_mb": 5,
+     "private_mb": 1
+    }
+   ],
+   "max_working_set_mb": 1168,
+   "error": ""
+  }
+ ],
+ "memory_before": [
+  {
+   "pid": 47092,
+   "working_set_mb": 111,
+   "private_mb": 563
+  },
+  {
+   "pid": 48388,
+   "working_set_mb": 5,
+   "private_mb": 1
+  }
+ ],
+ "mode": "both",
+ "summary": {
+  "cycles": 100,
+  "elapsed_h": 0.59,
+  "working_set_mb_first": 2361,
+  "working_set_mb_last": 1168,
+  "working_set_mb_max": 2432,
+  "train_s_median": 16.0,
+  "predict_s_median": 4.0,
+  "failures": [],
+  "slope_ws_mb_per_cycle": -5.31,
+  "slope_private_mb_per_cycle": 0.35
+ }
+}

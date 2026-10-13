@@ -1,0 +1,39 @@
+{
+ "items": {
+  "SOAK": {
+   "status": "PASS",
+   "at": "2026-10-13T00:29:40",
+   "install": "succeeded",
+   "install_s": 15.3,
+   "ready_s": 4.6,
+   "install_error": "",
+   "doctor": {
+    "version": "1.0.0rc14",
+    "python": "3.12.3",
+    "tlc": "3.4.1",
+    "torch": "2.14.0+cu130",
+    "gpu": null,
+    "home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\SOAK-1.0.0rc14\\home\\.3lc-compute\\plugin-state\\kaggle-classification"
+   },
+   "download": "completed",
+   "download_s": 38.0,
+   "download_error": "",
+   "import": "completed",
+   "import_s": 8.0,
+   "import_error": "",
+   "train": "completed",
+   "train_s": 48.1,
+   "train_error": "",
+   "device_label": "cuda (auto)",
+   "predict": "completed",
+   "predict_s": 8.0,
+   "predict_error": "",
+   "host": "3.12.13 3.4.1 1.1.0",
+   "python_requested": "3.12",
+   "tlc_requested": null,
+   "env_root": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\campaign-scratch\\envs\\SOAK-1.0.0rc14",
+   "state_path_len": 194,
+   "elapsed_s": 129.4
+  }
+ }
+}
