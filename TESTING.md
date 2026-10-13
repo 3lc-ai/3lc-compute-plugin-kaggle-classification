@@ -1,5 +1,25 @@
 # TESTING.md: try the Kaggle Classification plugin (release candidate 1.0.0rc14)
 
+## Quick start for testers
+
+One screen to a working test. The numbered sections below explain every step and what to do when it
+does not match.
+
+| | Windows (PowerShell) | macOS (Terminal) |
+|---|---|---|
+| **You need** | uv 0.11.9 or newer (`uv --version`; `uv self update`), Python 3.12 (step 1 installs it), for a GPU an NVIDIA driver R580 or newer (`nvidia-smi`) | uv 0.11.9 or newer, Python 3.12 (step 1 installs it); no GPU driver needed |
+| | a 3LC account whose API key is from the **same workspace** you sign in to on hub.3lc.ai, and a Kaggle account | the same |
+| **1. Install** | `mkdir C:\3lc-tester; cd C:\3lc-tester; uv python install 3.12; uv venv --python 3.12 .venv; uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple "3lc-compute==1.1.0"` | `mkdir -p ~/3lc-tester && cd ~/3lc-tester && uv python install 3.12 && uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python --index-url https://pypi.org/simple "3lc-compute==1.1.0"` |
+| **2. Download and run the tester script** | `iwr -UseBasicParsing https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.ps1 -OutFile start_tester.ps1; powershell -ExecutionPolicy Bypass -File .\start_tester.ps1` | `curl -fsSLO https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.sh && chmod +x start_tester.sh && ./start_tester.sh` |
+| | the first start asks for your 3LC API key once; two service windows open | the first start asks for your 3LC API key once |
+| **3. Connect** | https://hub.3lc.ai/gettingstarted/: object service `http://127.0.0.1:5015`, compute service `http://127.0.0.1:5020`, allow local network access | the same |
+| **4. Install the plugin** | Hub **Plugins > Available > Kaggle Classification > Install**; the first install takes a few minutes (a multi-gigabyte CUDA stack) | the same (no CUDA stack on macOS) |
+| **5. Run the loop** | **Import** (Download starter kit, then Import) **> Train** (2 epochs) **> Predict > Submit** (Connect Kaggle; whether to press Submit: section 7.5b) **> Status** | the same |
+| **Send back** | the verification bundle (Status tab > Export verification bundle) and a screenshot of anything odd | the same |
+| **Stop** | `powershell -ExecutionPolicy Bypass -File .\start_tester.ps1 -Stop` | `./start_tester.sh --stop` |
+
+## About this test
+
 You are testing a 3LC Hub plugin that runs an image-classification Kaggle hackathon end to end:
 download a starter kit, import it as 3LC tables, label a few images in the Dashboard, train the
 fixed baseline for two epochs, predict on the test images, and look at the Status tab. The
@@ -7,8 +27,8 @@ competition itself is **not launched yet**, so there is nothing to submit to Kag
 leaderboard; the plugin says so where it matters. Plan on 30–45 minutes the first time, most of it
 waiting for downloads.
 
-Everything you install goes into one folder you create. Delete that folder afterwards and only your
-3LC login remains.
+Everything you install goes into one folder you create, the 3LC login included. Delete that folder
+afterwards and nothing of the test remains.
 
 ## 1. Prerequisites
 
