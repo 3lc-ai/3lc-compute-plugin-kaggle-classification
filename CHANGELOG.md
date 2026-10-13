@@ -47,6 +47,11 @@ anti-cheat review (docs/PREDICT_MIRROR.md section 15). The plugin extra pins `3l
   from `nvidia-smi`, the minimum series for the build's CUDA major (R580 for CUDA 13), and the sentence
   "NVIDIA driver X is older than the R580 series this torch build needs; update the driver. Runs will use
   CPU." Auto device resolution records it as the fallback reason.
+- **A between-jobs memory release in the worker** (campaign F5): the 3-hour soak of train + predict cycles
+  showed the plugin worker growing about 15 MB per cycle (working set 2.4 GB after the first cycle, 3.9 GB
+  after the hundredth; no failures). Every job kind now ends with `trainer.release_memory`: Python's garbage,
+  CUDA's cache and tlc's in-process object cache (`ObjectRegistry.drop_cache`, which otherwise keeps every
+  table, run and metrics table a job opened). The re-measured slope is in TESTING_PROOF.md run 14.
 - **The Windows start script logs in inside the redirected home** on the first start (campaign pre-item P4):
   3lc 3.3 and 3.4 read the API key from the redirected `LOCALAPPDATA`, so TESTING.md's `3lc login` from the
   real profile left the services in an "API key not found" restart loop. The script now runs the login in its

@@ -1987,13 +1987,23 @@ def _train_and_collect(
     return result
 
 
-def _release(model: Any, optimizer: Any) -> None:
-    import gc
-
+def drop_tlc_cache() -> None:
+    """Session 15 (the campaign's F5 soak): tlc keeps every file-backed object a job opened (tables, runs,
+    metrics tables) in its in-process registry, so a worker grew about 15 MB per train + predict cycle
+    (2.4 GB to 3.9 GB over 100 cycles). Between jobs the cache is dropped; the next job reloads what it
+    needs from disk. ``api://`` objects stay. A tlc without the hook is left alone."""
     try:
-        del model, optimizer
+        from tlc._core.object_registry import ObjectRegistry
+
+        ObjectRegistry.drop_cache()
     except Exception:
         pass
+
+
+def release_memory() -> None:
+    """The end-of-job release every job kind shares: Python's garbage, CUDA's cache, tlc's object cache."""
+    import gc
+
     gc.collect()
     try:
         import torch
@@ -2002,6 +2012,16 @@ def _release(model: Any, optimizer: Any) -> None:
             torch.cuda.empty_cache()
     except Exception:
         pass
+    drop_tlc_cache()
+    gc.collect()
+
+
+def _release(model: Any, optimizer: Any) -> None:
+    try:
+        del model, optimizer
+    except Exception:
+        pass
+    release_memory()
 
 
 def _collect(

@@ -606,16 +606,9 @@ def csv_path_for(job_id: str) -> str:
 
 
 def reclaim_gpu_memory() -> None:
-    import gc
-
-    gc.collect()
-    try:
-        import torch
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-    except Exception:
-        pass
+    """Python's garbage, CUDA's cache and (session 15) tlc's file-backed object cache: the same release
+    a training run makes at its end (``trainer.release_memory``), so a worker does not grow per job."""
+    trainer.release_memory()
 
 
 def load_model(weights: str, manifest: Manifest, device: str) -> Any:

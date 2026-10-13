@@ -1009,6 +1009,10 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         "log": log_lines,
     }
     write_record(record)
+    # Session 15: the tables this job opened stay in tlc's in-process cache otherwise (the F5 soak finding).
+    from kaggle_classification import trainer
+
+    trainer.release_memory()
     if actual_name != table_name:
         current = session.populated_session(manifest)
         current["table_name"] = actual_name
