@@ -14,8 +14,8 @@
 # Parameters (all optional):
 #   -ObjectPort 5015      the 3LC object service port (the Getting Started page's default)
 #   -ComputePort 5020     the compute service port (the Getting Started page's default)
-#   -ProjectRoot <dir>    keep the plugin's tables and runs in their own 3LC project root (TLC_PROJECT_ROOT_URL
-#                         for both services) instead of your default one
+#   -ProjectRoot <dir>    the 3LC project root for both services (TLC_PROJECT_ROOT_URL); default .\projects in
+#                         this folder, the same on every start so the plugin's runs stay in one place
 #   -ManifestBase <url>   the competition manifest tier; default https://competitions.dev.3lc.ai (the test tier)
 #   -TestCatalog <url>    the plugin catalog listing the release candidate (default: the 1.0.0rc14 test catalog)
 #   -Stop                 stop the services, their windows and this folder's plugin workers, then exit
@@ -37,6 +37,7 @@ $venv = Join-Path $root '.venv'
 $stateHome = Join-Path $root 'home'
 $logDir = Join-Path $root 'logs'
 $pidFile = Join-Path $root 'start_tester.pids'
+if (-not $ProjectRoot) { $ProjectRoot = Join-Path $root 'projects' }
 $log = Join-Path $root 'start_tester.last.log'
 $defaultCatalog = 'https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json'
 
@@ -98,7 +99,7 @@ if (-not (Test-Path -LiteralPath $keyFile)) {
     try { & (Join-Path $venv 'Scripts\3lc.exe') login } finally { $env:USERPROFILE = $savedProfile; $env:LOCALAPPDATA = $savedLocal; $env:APPDATA = $savedRoaming }
     if (-not (Test-Path -LiteralPath $keyFile)) { Say "3LC login did not write a key under $stateHome. Run the script again."; exit 1 }
 }
-if ($ProjectRoot) { New-Item -ItemType Directory -Force -Path $ProjectRoot | Out-Null }
+New-Item -ItemType Directory -Force -Path $ProjectRoot | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
 # The service, run in a loop: output to the window AND the log; an exit is reported and restarted after 5 s.
@@ -120,7 +121,7 @@ while (`$true) {
 "@
 }
 
-$projectLine = if ($ProjectRoot) { "`$env:TLC_PROJECT_ROOT_URL = '$ProjectRoot'" } else { "" }
+$projectLine = "`$env:TLC_PROJECT_ROOT_URL = '$ProjectRoot'"
 $uvCacheLine = if ($env:UV_CACHE_DIR) { "`$env:UV_CACHE_DIR = '$($env:UV_CACHE_DIR)'" } else { "" }
 $envBlock = @"
 `$env:USERPROFILE = '$stateHome'
@@ -184,5 +185,6 @@ if (-not ($status.object -and $status.compute)) {
     Say 'Not ready after 300 s: check the two service windows (or logs\) for errors. A missing 3LC login is the usual cause: run .\.venv\Scripts\3lc.exe login once.'
     exit 1
 }
+Say "3LC project root: $ProjectRoot"
 Say "Ready: open https://hub.3lc.ai/gettingstarted/ and connect the object service on 127.0.0.1:$ObjectPort and the compute service on 127.0.0.1:$ComputePort"
 Say "Plugin state and logs live under $root (home\, logs\). Stop with: start_tester.ps1 -Stop"

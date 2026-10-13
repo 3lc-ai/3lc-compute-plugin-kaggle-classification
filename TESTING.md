@@ -13,7 +13,7 @@ does not match.
 | | a 3LC account whose API key is from the **same workspace** you sign in to on hub.3lc.ai, and a Kaggle account | the same |
 | **1. Install** | `mkdir C:\3lc-tester; cd C:\3lc-tester; uv python install 3.12; uv venv --python 3.12 .venv; uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple "3lc-compute==1.1.0"` | `mkdir -p ~/3lc-tester && cd ~/3lc-tester && uv python install 3.12 && uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python --index-url https://pypi.org/simple "3lc-compute==1.1.0"` |
 | **2. Download and run the tester script** | `iwr -UseBasicParsing https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.ps1 -OutFile start_tester.ps1; powershell -ExecutionPolicy Bypass -File .\start_tester.ps1` | `curl -fsSLO https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.sh && chmod +x start_tester.sh && ./start_tester.sh` |
-| | the first start asks for your 3LC API key once; two service windows open | the first start asks for your 3LC API key once |
+| | the first start asks for your 3LC API key once; two service windows open; every start keeps the tables and runs in `C:\3lc-tester\projects` | the first start asks for your 3LC API key once; every start keeps the tables and runs in `~/3lc-tester/projects` |
 | **3. Connect** | https://hub.3lc.ai/gettingstarted/: object service `http://127.0.0.1:5015`, compute service `http://127.0.0.1:5020`, allow local network access | the same |
 | **4. Install the plugin** | Hub **Plugins > Available > Kaggle Classification > Install**; the first install takes a few minutes (a multi-gigabyte CUDA stack) | the same (no CUDA stack on macOS) |
 | **5. Run the loop** | **Import** (Download starter kit, then Import) **> Train** (2 epochs) **> Predict > Submit** (Connect Kaggle, then one Submit if you are a host: see the note above) **> Status** | the same |
@@ -105,9 +105,11 @@ and use them in step 5, and know that on non-default ports the project page will
 the default port and ignores the URL saved on Getting Started); the global **Queue** page and every
 plugin tab still work.
 
-Optional: `-ProjectRoot C:\3lc-tester\projects` (Windows) or `PROJECT_ROOT=~/3lc-tester/projects`
-(macOS / Linux) keeps the plugin’s tables and runs in their own 3LC project root instead of your
-default one; useful when you already use 3LC on this machine. Optional: an existing `UV_CACHE_DIR` in
+The 3LC project root is always `projects` in the tester folder (`C:\3lc-tester\projects`,
+`~/3lc-tester/projects`), so the plugin’s tables and runs stay in one place from start to start and
+apart from any other 3LC work on this machine; the script prints the root it uses. `-ProjectRoot
+<dir>` (Windows) or `PROJECT_ROOT=<dir>` (macOS / Linux) overrides it, and then every later start
+must pass the same value: the plugin’s Doctor names runs recorded under a different root. Optional: an existing `UV_CACHE_DIR` in
 your environment is reused (saves the torch download if you have it cached).
 
 ## 4. Start the services

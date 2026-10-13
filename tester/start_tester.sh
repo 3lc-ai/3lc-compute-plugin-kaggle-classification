@@ -15,7 +15,8 @@
 # Environment overrides (all optional):
 #   OBJECT_PORT=5015       the 3LC object service port (the Getting Started page's default)
 #   COMPUTE_PORT=5020      the compute service port (the Getting Started page's default)
-#   PROJECT_ROOT=<dir>     keep the plugin's tables and runs in their own 3LC project root
+#   PROJECT_ROOT=<dir>     the 3LC project root for both services; default ./projects in this folder,
+#                          the same on every start so the plugin's runs stay in one place
 #   MANIFEST_BASE=<url>    the competition manifest tier; default https://competitions.dev.3lc.ai
 #   TEST_CATALOG=<url>     the plugin catalog listing the release candidate (default: the 1.0.0rc14 test catalog)
 #   UV_CACHE_DIR=<dir>     reuse an existing uv cache (otherwise a fresh one under ./home)
@@ -28,7 +29,7 @@ LOG_DIR="$ROOT/logs"
 PID_FILE="$ROOT/start_tester.pids"
 OBJECT_PORT="${OBJECT_PORT:-5015}"
 COMPUTE_PORT="${COMPUTE_PORT:-5020}"
-PROJECT_ROOT="${PROJECT_ROOT:-}"
+PROJECT_ROOT="${PROJECT_ROOT:-$ROOT/projects}"
 MANIFEST_BASE="${MANIFEST_BASE:-https://competitions.dev.3lc.ai}"
 TEST_CATALOG="${TEST_CATALOG:-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/catalog-test.json}"
 DEFAULT_CATALOG="https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json"
@@ -76,13 +77,13 @@ for port in "$OBJECT_PORT" "$COMPUTE_PORT"; do
   if listening "$port"; then say "Already listening on :$port. Stop it (--stop), or set OBJECT_PORT / COMPUTE_PORT."; exit 1; fi
 done
 mkdir -p "$STATE_HOME" "$LOG_DIR"
-[ -n "$PROJECT_ROOT" ] && mkdir -p "$PROJECT_ROOT"
+mkdir -p "$PROJECT_ROOT"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 
 export HOME="$STATE_HOME"
 export XDG_CONFIG_HOME="$STATE_HOME/.config"
 export XDG_CACHE_HOME="$STATE_HOME/.cache"
-[ -n "$PROJECT_ROOT" ] && export TLC_PROJECT_ROOT_URL="$PROJECT_ROOT"
+export TLC_PROJECT_ROOT_URL="$PROJECT_ROOT"
 
 # HOME is redirected, so the 3LC login lives inside the tester folder: log in once (interactive).
 if [ ! -f "$STATE_HOME/.3lc-login-done" ]; then
@@ -126,5 +127,6 @@ if [ "$ok_object" != 1 ] || [ "$ok_compute" != 1 ]; then
   say "Not ready after 300 s: check logs/ for errors (a missing 3LC login is the usual cause)."
   exit 1
 fi
+say "3LC project root: $PROJECT_ROOT"
 say "Ready: open https://hub.3lc.ai/gettingstarted/ and connect the object service on 127.0.0.1:$OBJECT_PORT and the compute service on 127.0.0.1:$COMPUTE_PORT"
 say "Plugin state and logs live under $ROOT (home/, logs/). Stop with: ./start_tester.sh --stop"
