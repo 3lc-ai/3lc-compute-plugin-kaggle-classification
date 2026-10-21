@@ -87,6 +87,7 @@ SEED_BOUNDS_FALLBACK: tuple[int, int] = (0, 2**31 - 1)
 WORKERS_BOUNDS: tuple[int, int] = (0, 16)
 WORKERS_MAX_AUTO = 4
 BOUND_MESSAGE = "{key} must be between {lo} and {hi} (got {val})."
+RUN_NAME_FORBIDDEN = "<>/\\|,.:\"'?*"   # tlc's own rule for Run names (tlc.Run, 3.4.1)
 # The bounded manifest fields, in form order; ``seed`` and ``workers`` join them at validation.
 MANIFEST_FIELDS = ("epochs", "batch_size", "lr", "weight_decay")
 INT_FIELDS = frozenset({"epochs", "batch_size", "seed", "workers"})
@@ -274,6 +275,14 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
         if not value or "/" in value or "\\" in value or value in (".", ".."):
             msg = f"The {label} must be a plain name (no slashes), got {value!r}. Remove the slashes, then start again."
             raise TrainRefused(msg)
+    # tlc refuses these in a Run name (the 1.0.0 release check, 2026-10-21: "release check 1.0.0" failed deep in
+    # the job with tlc's ValueError); refuse them here, before anything starts, with the fix in the sentence.
+    bad = sorted(set(run_name) & set(RUN_NAME_FORBIDDEN))
+    if bad:
+        shown = " ".join(bad)
+        msg = (f"The run name can't contain {shown} (3LC run names allow none of {RUN_NAME_FORBIDDEN}), got "
+               f"{run_name!r}. Remove them, then start again.")
+        raise TrainRefused(msg)
     use_latest = params.get("use_latest", True)
     if isinstance(use_latest, str):
         use_latest = use_latest.strip().lower() not in ("false", "0", "no", "")
