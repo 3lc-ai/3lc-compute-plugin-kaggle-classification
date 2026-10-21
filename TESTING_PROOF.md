@@ -276,7 +276,7 @@ uninstall + reinstall fails with "Access is denied" until the orphan is stopped.
 | G testers' checklist | TESTING.md section 10 |
 | H anti-cheat review | docs/PREDICT_MIRROR.md section 15 |
 
-## Run 15 — the 1.0.0 release check on `3lc-hub-fresh` rebuilt from scratch (2026-10-21, 11:09 → 11:16)
+## Run 15 — the 1.0.0 release check on `3lc-hub-fresh` rebuilt from scratch — COMPLETE, PASS (2026-10-21, 11:09 → 11:16, the Dashboard and Submit steps by Rishikesh the same day)
 
 The environment: the rc14 `3lc-hub-fresh` renamed aside (`3lc-hub-fresh-rc14-20261021`, kept), a new folder
 built as TESTING.md step 2 says (uv 0.13.0, CPython 3.12.3, 3lc-compute 1.1.0 with 3lc 3.4.1 and SDK 0.3.3),
@@ -296,7 +296,8 @@ the 3LC API key file byte-copied from the old home. The steps ran through the ho
 | Doctor | PASS, every row: Plugin v1.0.0 · f4ce7cb; Compute service; SDK 0.3.3 · 3lc 3.4.1; torch 2.14.0+cu130 · torchvision 0.29.0+cu130; CUDA: RTX 5070 Ti, compute capability 12.0, sm_120 kernels, driver 617.42 (R580 needed); Manifest `remote` sha256 `383cab9a…` intel-scene kit v1; Kit v1 success 9,600 images; **Kit fallback: the Drive folder link**; Kaggle not checked; Plugin home `compute-home`; Project root one root, no warning; Free disk space; Python 3.12.3; uv ok; Table images train ok · val ok; Records 2 runs · 1 prediction · 0 submissions |
 | Verification bundle, checkpoints=all | PASS: 45.8 MB, 20 members, `project/intel-scene/runs/release-check-1-0-0/model/best.pt` included and verified against the run record and the Run (sha256 `af5b4eda…`), `ledger.jsonl` and `plugin.json` present; the failed run's record included |
 | The services with the start script | PASS: object :5015 and compute :5020 answer (403 / 404 without the Hub token), project root `<folder>\projects`, the plugin registered at boot |
-| The imported table in the Dashboard (images through the alias) | **Not checked here**: the Dashboard needs the Hub login, which this session cannot do. Rishikesh: connect the services on https://hub.3lc.ai/gettingstarted/, open `intel-scene_train/initial` in the Dashboard and confirm the images render |
+| The imported table in the Dashboard (images through the alias) | PASS (Rishikesh, 2026-10-21, through the Hub on the running services): `intel-scene_train/initial` opens and the images render from the aliased rows, in the Dashboard and in the Hub's dataset overview |
+| Submit (a competition host) | PASS (Rishikesh): one submission from the 1.0.0 prediction, Kaggle ref 57489771, public score 0.50666; the Status tab correct (the submission in History with its score, the Runs table, Kaggle live) |
 
 ## What run 7 adds (session 6)
 

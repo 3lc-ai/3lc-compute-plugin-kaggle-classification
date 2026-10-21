@@ -114,6 +114,7 @@ and update them in the same commit series. Keep them terse.
 | docs/PLAN.md | Locked decisions, the labeling-loop contract, component contracts, session map, open TBCs |
 | docs/STUDY.md | What the reference plugins do and what we reuse / adapt / write new; the Gate 0 findings; G-5 relicensing list |
 | RELEASING.md | Tag → catalog flow, the version census, kit staging rules |
+| docs/HANDOVER.md | **1.0.0 handed to Gudbrand (2026-10-21):** what 1.0.0 is, what was tested, the known limitations, the promotion steps with the fallback-link check, the launch checklist, the open 1.0.1 item |
 | CHANGELOG.md | What each version shipped |
 | docs/EXDARK_MIRROR.md | **The UI rule (2026-09-28): the plugin mirrors the ExDark plugin.** Every shell and Import element, marked verbatim / adapted (allowed difference) / needs decision; the four allowed differences; the safety tests that replaced the innerHTML ban |
 | docs/PREDICT_MIRROR.md | **Session 4:** the Predict + Submit tab mirrored control for control; the checkpoint gate (three-way sha256 + green provenance), the test-inputs gate, the val check, the submission format vs the metric, the ledger entries, the Kaggle client; decisions D1–D12; the gates |

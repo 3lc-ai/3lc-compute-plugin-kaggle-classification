@@ -104,7 +104,7 @@ It must print `https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGE
 Anything else (empty, or an error) means the old manifest is still served: re-copy the 1.0.0 manifest and
 invalidate again. The same check is in docs/LAUNCH_CHECKLIST.md.
 
-Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regenerated 2026-09-29):
+Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regenerated 2026-10-21 at the 1.0.0 cut; the index and the shards are byte-identical to the 2026-09-28 upload, only the manifest changed):
 
 | Key | Bytes | sha256 |
 |---|---|---|
@@ -113,7 +113,7 @@ Keys, sizes and sha256s of the current build (kit v1 of 2026-09-22; `cdn/` regen
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-02.zip` | 53,237,641 | `908d7f91276a905b0d78960726c37a58d79d47878b000e83fdc04473ef1d3721` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-03.zip` | 24,511,747 | `ba5c15cf7ef839ff745d37d36462d697cf4a9a6f9633f746958ab362c4003039` |
 | `kaggle/intel-scene/starter-kit/v1/intel-scene-v1-04.zip` | 14,208,813 | `4e5ee9903863d10352b95a104c65891a254d3faa282e7bf0385a148b6068b0c2` |
-| `kaggle/intel-scene/manifest.json` | 2,967 | `ec0c60cf45f03f8c67437f576daa4ddc36f0ef6e651a3235be4b25ec2c0bdfcb` (2026-10-01: `competition.slug` = `3lc-scene-classification-challenge`; the previous document, 2,989 B `8ffcdccc…a55a`, carried the TBC slug) |
+| `kaggle/intel-scene/manifest.json` | 3,258 | `383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e` (**the 1.0.0 document**, on dev since 2026-10-21, verified: `kit_fallback_url` present; it replaced the 2,967 B `ec0c60cf…` document of 2026-10-01, which carried the slug but no fallback fields, and before that the 2,989 B `8ffcdccc…a55a` with the TBC slug) |
 | `kaggle/classification-index.json` | 203 | `e0e9c4bce89460607277fa7a57eead1d65c39be38a1d53d151a5eb63073f262d` |
 
 The manifest above is the **session 3 build** (`cdn/` regenerated 2026-09-29 after the review, from
