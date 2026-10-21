@@ -3,7 +3,7 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] (into 1.0.0: the rc14 hand test's bundle finding)
+## [1.0.0] — 2026-10-21 (sessions 15 to 16: the rc14 hand test's bundle finding, Gudbrand's round, the error-visibility audit)
 
 ### Fixed
 - **Imported tables carry a URL alias for the kit's data folder.** Rows read

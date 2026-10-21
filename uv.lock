@@ -72,7 +72,7 @@ pandas = [
 
 [[package]]
 name = "3lc-compute-plugin-kaggle-classification"
-version = "1.0.0rc14"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "3lc-compute-plugin-sdk" },
