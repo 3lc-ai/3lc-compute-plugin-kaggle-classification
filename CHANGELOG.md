@@ -3,6 +3,13 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [Unreleased] (into 1.0.1)
+
+### Fixed
+- **A run name with a dot (or any of `< > / \ | , . : " ' ? *`) is refused before the run starts**, with the
+  characters named and the fix in the sentence. Found by the 1.0.0 release check: tlc refuses such Run names,
+  and the refusal came out of the worker as a raw error after the tables were opened.
+
 ## [1.0.0] — 2026-10-21 (sessions 15 to 16: the rc14 hand test's bundle finding, Gudbrand's round, the error-visibility audit)
 
 ### Fixed

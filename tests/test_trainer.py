@@ -74,6 +74,8 @@ def test_build_train_kwargs_merges_defaults_and_locks_the_contract(home, manifes
         ({"epochs": "abc"}, "Invalid value for epochs"),
         ({"optimizer": "sgd"}, "optimizer is locked for this competition"),
         ({"run_name": "a/b"}, "run name must be a plain name"),
+        ({"run_name": "release check 1.0.0"}, "run name can't contain ."),
+        ({"run_name": "what?"}, "Remove them, then start again."),
         ({"use_latest": "false", "epochs": "1"}, None),
     ],
 )
