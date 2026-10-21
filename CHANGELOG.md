@@ -18,6 +18,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **The first open says what it is doing.** After the compute service reaps an idle plugin worker (five
   minutes), the next open spends a few seconds starting it; the tabs now show "Starting the plugin. The
   first open takes about 10 seconds." from the first settings load instead of a blank card.
+- **No job ends silently (the error-visibility audit).** Every job kind keeps one durable note (running,
+  completed, cancelled, failed, or interrupted when its worker died), so a download or an import that failed
+  after the page was closed, a refusal before a run's own record existed, or a worker killed mid-job is told
+  on the next visit with its reason, a next step and Copy diagnostics; such train, predict and submit refusals
+  also leave a failed record for the Status tables. The Predict + Submit tab reconciles with its record like
+  Train does (a missed completion event no longer leaves "Predicting..." on screen).
+- **Every failure says what to do next.** The reason an exception gives (disk full, access denied, a missing
+  file, CUDA out of memory, a GPU without kernels, a network timeout) is followed by its next step; messages
+  that lacked one got it (table and run names with slashes, a locked field, an unwritable download folder,
+  a refused bundle export, Kaggle's own errors, and more).
+- **The Doctor's findings come to you.** When the Doctor has a red row (kit missing, table images gone, a GPU
+  this build has no kernels for, two project roots, a manifest error), the Import tab says so at first open:
+  "Something needs attention before you start: <rows>. Open Status."
+- **Every wait says how long it usually takes**: the environment setup (several minutes, about 3 GB once), the
+  kit download (its size, about a minute), the import (about 10 seconds), the first epoch (about 15 seconds on
+  a GPU, a few minutes on CPU) and the analysis pass (about a minute), inference (about 10 seconds on a GPU)
+  and the Kaggle submission (3 to 25 seconds).
 - **The settings load no longer waits on the 3LC index.** Each of its two "latest revision" lookups waits
   at most one second (five before), so a slow or remote project root cannot push the first load past the
   Hub's fetch timeout.

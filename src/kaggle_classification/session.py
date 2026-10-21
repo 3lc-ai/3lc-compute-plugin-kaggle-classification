@@ -27,6 +27,7 @@ import logging
 import os
 import re
 import threading
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -226,6 +227,71 @@ def save(update: dict[str, Any]) -> dict[str, Any]:
                 data[tab] = values
         _write(data)
         return data
+
+
+# ── The last job per kind (session 16, the error-visibility audit) ────────────────────────────
+# One note per job kind, written by the plugin's job entry (``_run_job``): ``running`` at start (with the
+# worker pid and a heartbeat the progress calls refresh), ``completed`` / ``cancelled`` / ``failed`` at the
+# end, whatever the stage itself recorded. It is the only durable record a download or an import leaves,
+# and the record of a job that ended before the stage's own record existed (a refusal, an exception while
+# opening the tables, a worker killed or reaped), so a tab revisited after a failure still says what
+# happened. Read through :func:`last_jobs`, which applies the pid rule.
+JOB_NOTES_KEY = "last_jobs"
+JOB_HEARTBEAT_S = 10.0
+STALE_JOB_S = 900.0
+JOB_LABELS = {
+    "download_kit": "the kit download", "import": "the import", "train": "training", "predict": "inference",
+    "kaggle_submit": "the submission",
+}
+_touched: dict[str, float] = {}
+
+
+def note_job(kind: str, /, **fields: Any) -> dict[str, Any]:
+    """Merge ``fields`` into the note of ``kind`` and return it."""
+    with _lock:
+        data = load()
+        _migrate(data)
+        notes = dict(data.get(JOB_NOTES_KEY) or {})
+        note = dict(notes.get(kind) or {})
+        note.update(fields)
+        notes[kind] = note
+        data[JOB_NOTES_KEY] = notes
+        _write(data)
+        return note
+
+
+def touch_job(kind: str, job_id: str) -> None:
+    """The running note's heartbeat, at most every ``JOB_HEARTBEAT_S``; never another job's note."""
+    now = time.time()
+    if now - _touched.get(kind, 0.0) < JOB_HEARTBEAT_S:
+        return
+    _touched[kind] = now
+    with _lock:
+        data = load()
+        note = (data.get(JOB_NOTES_KEY) or {}).get(kind)
+        if isinstance(note, dict) and note.get("id") == job_id and note.get("status") == "running":
+            note["heartbeat"] = now
+            _write(data)
+
+
+def last_jobs() -> dict[str, dict[str, Any]]:
+    """Every kind's note with the pid rule applied: a ``running`` note owned by another worker process,
+    or one without a heartbeat for ``STALE_JOB_S``, died with its worker and reads back as
+    ``interrupted`` with the sentence the tab shows (the Train record's rule, ``trainer._mark_if_orphaned``)."""
+    out: dict[str, dict[str, Any]] = {}
+    for kind, note in (load().get(JOB_NOTES_KEY) or {}).items():
+        if not isinstance(note, dict):
+            continue
+        note = dict(note)
+        if note.get("status") == "running":
+            hb = float(note.get("heartbeat") or note.get("started_at") or 0)
+            if note.get("pid") != os.getpid() or time.time() - hb > STALE_JOB_S:
+                note["status"] = "interrupted"
+                note["error"] = (f"Interrupted: the compute service restarted while {JOB_LABELS.get(kind, 'the job')} "
+                                 "was running. Start it again.")
+                note["finished_at"] = note.get("finished_at") or time.time()
+        out[kind] = note
+    return out
 
 
 def publish_kit_dir(manifest: Manifest, kit_dir: Path | str) -> None:

@@ -119,7 +119,7 @@ def resolve_params(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
     raw = str(data.get("dest_dir") or "").strip().strip('"')
     dest = Path(raw).expanduser() if raw else default_dest(manifest)
     if not dest.is_absolute():
-        msg = f"Destination must be an absolute path, got: {dest}"
+        msg = f"Destination must be an absolute path, got: {dest}. Use a full path (starting with a drive letter or /)."
         raise ValueError(msg)
     version_dir = dest / manifest.kit.version
     try:
@@ -128,7 +128,8 @@ def resolve_params(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
         probe.write_bytes(b"")
         probe.unlink()
     except OSError as exc:
-        msg = f"Destination is not writable: {dest} ({exc})"
+        msg = (f"Destination is not writable: {dest} ({exc}). Choose a folder you can write to, then run the "
+               "download again.")
         raise ValueError(msg) from exc
     return {"dest_dir": str(dest), "keep_archives": bool(data.get("keep_archives"))}
 
@@ -230,7 +231,8 @@ def load_files_index(kit_root: Path) -> dict[str, Any]:
         )
         raise RuntimeError(msg)
     if not isinstance(index.get("files"), list):
-        msg = f"{FILES_INDEX_NAME}: 'files' must be a list"
+        msg = (f"{FILES_INDEX_NAME}: 'files' must be a list. The starter kit is misconfigured on the server. "
+               "Report this to the organizers.")
         raise RuntimeError(msg)
     return index
 
@@ -546,7 +548,8 @@ def run_download(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
             for info in zf.infolist():
                 n = info.filename.replace("\\", "/")
                 if n.startswith("/") or ".." in n.split("/") or not n.startswith(KIT_DIR_NAME + "/"):
-                    msg = f"Unsafe or misplaced path in {entry.name}: {info.filename}"
+                    msg = (f"Unsafe or misplaced path in {entry.name}: {info.filename}. The starter kit is "
+                           "misconfigured on the server. Report this to the organizers.")
                     raise RuntimeError(msg)
             zf.extractall(version_dir)
     check(f"all {len(kit.shards)} shards extracted", True, str(kit_root))

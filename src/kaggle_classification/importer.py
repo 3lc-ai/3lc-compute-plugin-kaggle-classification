@@ -298,7 +298,8 @@ def fresh_table_name(manifest: Manifest, project: str, table_name: str) -> str:
     for name in candidates:
         if not any(_url_exists(table_url(project, manifest.dataset_name(s), name)) for s in REGISTERED_SPLITS):
             return name
-    msg = f"No free table name under {table_name!r} in project {project!r} (tried {_MAX_FRESH_SUFFIX} suffixes)."
+    msg = (f"No free table name under {table_name!r} in project {project!r} (tried {_MAX_FRESH_SUFFIX} suffixes). "
+           "Choose another table name, then import again.")
     raise ImportRefused(msg)
 
 
@@ -320,7 +321,8 @@ def resolve_params(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
         raise ImportRefused(msg)
     for label, value in (("project name", project), ("table name", table_name)):
         if not value or "/" in value or "\\" in value or value in (".", ".."):
-            msg = f"The {label} must be a plain name (no slashes), got {value!r}."
+            msg = (f"The {label} must be a plain name (no slashes), got {value!r}. Remove the slashes, "
+                   "then import again.")
             raise ImportRefused(msg)
     if not kit_dir:
         msg = "No starter kit on this machine yet. Download the starter kit first."
@@ -1040,7 +1042,9 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         t0 = time.time()
         for split in REGISTERED_SPLITS:
             if not add_checks(verify_table(urls[split], split, manifest, undefined_rows[split])):
-                msg = f"The {split} table did not verify after writing (see the checks). It was removed."
+                msg = (f"The {split} table did not verify after writing (see the checks). It was removed. "
+                       "Import again; if it fails the same way, copy the diagnostics and post them in the "
+                       "competition Discussion.")
                 raise RuntimeError(msg)
         timings["verify_s"] = round(time.time() - t0, 2)
     except _Cancelled:

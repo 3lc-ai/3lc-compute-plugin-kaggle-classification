@@ -218,12 +218,12 @@ def _coerce(key: str, raw: Any, default: Any) -> Any:
         if key in INT_FIELDS:
             f = float(raw)
             if f != int(f):
-                msg = f"{key} must be a whole number (got {raw!r})."
+                msg = f"{key} must be a whole number (got {raw!r}). Correct the field, then start again."
                 raise TrainRefused(msg)
             return int(f)
         return float(raw)
     except (TypeError, ValueError) as exc:
-        msg = f"Invalid value for {key}: {raw!r} (expected a number)."
+        msg = f"Invalid value for {key}: {raw!r} (expected a number). Correct the field, then start again."
         raise TrainRefused(msg) from exc
 
 
@@ -252,7 +252,8 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
     # for these and never posts them, so a value here is a stale or tampered client.
     for key in EDITABLE_FIELDS:
         if key not in editable and key in params:
-            msg = f"{key} is locked for this competition ({defaults.get(key)!r}) and cannot be sent."
+            msg = (f"{key} is locked for this competition ({defaults.get(key)!r}) and cannot be sent. Hard-refresh "
+                   "the page (the browser is holding a stale plugin page), then start again.")
             raise TrainRefused(msg)
     kwargs: dict[str, Any] = {}
     for key in (*MANIFEST_FIELDS, "seed", "workers"):
@@ -263,7 +264,7 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
         value = str(params.get(key) or defaults.get(key)).strip().lower()
         allowed = manifest.training.options.get(key, (str(defaults.get(key)),))
         if value not in allowed or value not in table:
-            msg = f"{key} must be one of {', '.join(allowed)} (got {value!r})."
+            msg = f"{key} must be one of {', '.join(allowed)} (got {value!r}). Pick one of them, then start again."
             raise TrainRefused(msg)
         kwargs[key] = value
     device = str(params.get("device") or "").strip()
@@ -271,7 +272,7 @@ def build_train_kwargs(params: dict[str, Any], manifest: Manifest) -> dict[str, 
     project = str(params.get("project_name") or session.populated_session(manifest)["project_name"]).strip()
     for label, value in (("run name", run_name), ("project name", project)):
         if not value or "/" in value or "\\" in value or value in (".", ".."):
-            msg = f"The {label} must be a plain name (no slashes), got {value!r}."
+            msg = f"The {label} must be a plain name (no slashes), got {value!r}. Remove the slashes, then start again."
             raise TrainRefused(msg)
     use_latest = params.get("use_latest", True)
     if isinstance(use_latest, str):
@@ -681,6 +682,24 @@ class _Recorder:
             runs.insert(0, run_summary(self.record))
             state["runs"] = keep_runs(runs)
             _write_state(state)
+
+
+def record_refusal(job_id: str, params: dict[str, Any], error: str) -> bool:
+    """Session 16 (the error-visibility audit): a failure before the run's own record existed (a refusal
+    such as a missing table or no usable rows, an exception while opening the tables) still leaves a
+    failed record, so the Train tab's revisit and the Status table say what happened. Nothing is written
+    when this job already has a record (the stage recorded it) or another run is live (the busy refusal
+    must not clobber it). True when a record was written."""
+    state = read_state()
+    cur = state.get("current") if isinstance(state.get("current"), dict) else None
+    if cur and (cur.get("id") == job_id or cur.get("status") == "running"):
+        return False
+    epochs = str(params.get("epochs") or "").strip()
+    kw = {**params, "epochs": int(epochs) if epochs.isdigit() else 0}
+    record = _new_record(job_id, kw)
+    record["facts"].update({"run_name": str(params.get("run_name") or ""), "project_name": current_project() or ""})
+    _Recorder(record).finish("failed", error=error)
+    return True
 
 
 def keep_runs(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1572,7 +1591,8 @@ def run_training(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[s
     expected_names = [label_map[k] for k in sorted(label_map, key=int)] if label_map else []
     names = _table_label_names(train_table)
     if expected_names and names != expected_names:
-        msg = f"The train table's label map ({', '.join(names)}) is not the imported one ({', '.join(expected_names)})."
+        msg = (f"The train table's label map ({', '.join(names)}) is not the imported one "
+               f"({', '.join(expected_names)}). Pick a revision of the imported train table.")
         raise TrainRefused(msg)
     # Part B3: a table operation can pull val or test rows into a revision that still descends from the
     # seed by lineage; every row's image must live under the kit's train folder.

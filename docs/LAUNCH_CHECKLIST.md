@@ -6,6 +6,12 @@ everything that reads it is unexercised until the day the competition opens. Run
 tester environment with the release build installed from the hosted catalog, and record each result
 with its date in TESTING_PROOF.md.
 
+## Timeline (Rishikesh, 2026-10-21)
+
+The hackathon is in the second week of November 2026. Targets: `1.0.0` cut by 2026-10-24, handed to
+Gudbrand with docs/PROMOTION.md on 2026-10-27, prod verified (this checklist's pre-launch rows and the
+Doctor on the production manifest) by 2026-10-31. The on-the-day rows below run when the competition opens.
+
 ## On the day the competition opens
 
 - [ ] **Kaggle submission list check (organizer verification).** The anti-cheat review's vector 9

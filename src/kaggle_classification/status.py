@@ -631,7 +631,8 @@ def _norm(url: Any) -> str:
 def scan_for_secrets(name: str, text: str) -> None:
     for label, pattern in SECRET_PATTERNS:
         if pattern.search(text):
-            msg = f"The export was refused: member {name!r} matches the {label} pattern. Nothing was exported."
+            msg = (f"The export was refused: member {name!r} matches the {label} pattern. Nothing was exported. "
+                   "Remove that file from the run folder (it looks like a credential), then export again.")
             raise BundleRefused(msg)
 
 
@@ -974,11 +975,13 @@ def bundle_plan(manifest: Manifest, *, checkpoints: str = "default", runs: Any =
         chosen = list(default_ids)
     elif mode == "selected":
         if len(requested) > CHECKPOINT_MAX:
-            msg = f"At most {CHECKPOINT_MAX} runs' checkpoints can be included (got {len(requested)})."
+            msg = (f"At most {CHECKPOINT_MAX} runs' checkpoints can be included (got {len(requested)}). Untick runs, "
+                   "then export again.")
             raise ValueError(msg)
         unknown = [r for r in requested if r not in by_id]
         if unknown:
-            msg = f"Not a submitted run of this project: {', '.join(unknown)}."
+            msg = (f"Not a submitted run of this project: {', '.join(unknown)}. Pick runs from the checklist, "
+                   "then export again.")
             raise ValueError(msg)
         chosen = list(dict.fromkeys(requested))
     elif mode == "all":

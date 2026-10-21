@@ -71,6 +71,7 @@ def config_payload() -> dict[str, Any]:
     payload = manifest_payload()
     current = manifest.resolve(network=False).manifest
     out = session.load()
+    out.pop(session.JOB_NOTES_KEY, None)   # served under _meta with the pid rule applied, never raw
     out["session"] = session.populated_session(current)
     out["_meta"] = {
         "version": kaggle_classification.__version__,
@@ -98,6 +99,10 @@ def config_payload() -> dict[str, Any]:
         "train_state": _train_state_safe(),
         # The Predict + Submit tab's revisit record (the stepper's "submit done" reads it).
         "predict_state": _predict_state_safe(),
+        # Session 16: the last job of every kind (running / completed / cancelled / failed / interrupted), the
+        # record a revisited tab shows a failure from when the stage left none (a download, an import, a
+        # refusal before the job's own record, a worker that died).
+        "last_jobs": session.last_jobs(),
     }
     return out
 

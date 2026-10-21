@@ -433,6 +433,7 @@
             Saves to <code id="kg-dl-dest" style="word-break: break-all;"></code>
             on the service machine. An interrupted download keeps its finished
             parts and resumes.</p>
+          <p class="form-help" id="kg-dl-expect" style="margin: 0 0 10px;"></p>
           </div>
           <div id="kg-dl-blurb-topup" hidden>
           <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.55;">
@@ -508,6 +509,7 @@
           <span class="spinner" id="kg-import-spinner" style="display: none;"></span>
           <span id="kg-import-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
+        <div class="form-help" style="margin-top: 6px;">Checks every image and registers the two tables: about 10 seconds.</div>
       </form>
       <!-- The outcome (progress, checks, table rows, log) follows the form (rc11): the Imported view and a
            running / failed job share it -->
@@ -704,6 +706,7 @@
           <span class="spinner" id="tr-spinner" style="display: none;"></span>
           <span id="tr-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
+        <div class="form-help" style="margin-top: 6px;">The first epoch takes about 15 seconds on a GPU, a few minutes on CPU; the ETA appears after it. The analysis pass at the end adds about a minute.</div>
       </form>
 
       <div id="tr-progress" style="margin-top: 12px;"></div>
@@ -802,6 +805,7 @@
             <span class="spinner" id="ps-spinner" style="display: none;"></span>
             <span id="ps-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
+          <div class="form-help" style="margin-top: 6px;">Checks the run on the val split, then predicts every test image: about 10 seconds on a GPU, one to two minutes on CPU.</div>
         </form>
         <div id="ps-progress" style="margin-top: 12px;"></div>
         <div id="ps-results"></div>
@@ -836,6 +840,7 @@
             <span class="spinner" id="ps-submit-spinner" style="display: none;"></span>
             <span id="ps-submit-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
+          <div class="form-help" style="margin-top: 6px;">Uploads the CSV and reads Kaggle's verdict back: usually 3 to 25 seconds.</div>
         </div>
         <div id="ps-banner" style="margin-top: 12px;"></div>
       </div>
@@ -1058,6 +1063,55 @@
         raw = String(raw || '');
         var cut = raw.indexOf('\nworker stderr:');
         return (cut >= 0 ? raw.slice(0, cut) : raw).split('\n')[0].replace(/^[A-Za-z]+Error: /, '');
+      }
+
+      // ── Every failure says what to do next (session 16, the error-visibility audit) ──────────
+      // The reason is the stage's own sentence, or the exception's text when the stage never phrased one;
+      // the next step is matched on it here, so an exception the backend did not foresee still ends in an
+      // action. The last entry is the fallback for everything else.
+      var KG_NEXT_STEPS = [
+        [/No space left|ENOSPC|disk (is )?full|not enough space/i, 'Free disk space, then run it again.'],
+        [/Access is denied|Permission denied|EACCES|EPERM|used by another process/i,
+          'Close what holds the folder (an Explorer window, an antivirus or sync client), then run it again.'],
+        [/No such file|cannot find the (file|path)|FileNotFound/i,
+          'A file this step needs is missing. Run Import (tab 1) to restore the kit, then run it again.'],
+        [/out of memory|OutOfMemoryError/i, 'Lower the batch size or choose CPU, then run it again.'],
+        [/no kernel image|driver version is insufficient|CUDA driver/i,
+          'Runs will use CPU, or update your NVIDIA driver to R580 or newer and run it again.'],
+        [/CUDA error|cudaError|device-side assert|cuDNN error/i,
+          'Choose CPU and run it again; if it keeps failing, copy the diagnostics and post them in the competition Discussion on Kaggle.'],
+        [/MemoryError|Cannot allocate memory/i, 'Close other programs or lower the batch size, then run it again.'],
+        [/timed out|Timeout|ConnectionError|URLError|getaddrinfo|Name or service not known|Network is unreachable|RemoteDisconnected|Connection reset/i,
+          'Check your internet connection, then run it again.'],
+        [/^Interrupted:/i, 'Start it again.'],
+        [/./, 'Run it again. If it fails the same way, copy the diagnostics and post them in the competition Discussion on Kaggle.']
+      ];
+      function kgNextStep(text) {
+        text = String(text || '');
+        for (var i = 0; i < KG_NEXT_STEPS.length; i++) {
+          if (KG_NEXT_STEPS[i][0].test(text)) { return KG_NEXT_STEPS[i][1]; }
+        }
+        return KG_NEXT_STEPS[KG_NEXT_STEPS.length - 1][1];
+      }
+      // The reason with its next step, unless it already carries one (the stages' own sentences do: "Download
+      // the starter kit again", "Run Import (tab 1) first", "Re-train, or pick another run").
+      var KG_HAS_STEP = /\b(again|first|then|re-run|Run Import|Open |Start |Press |Wait |Pick |pick another|Connect|Label |Check |Free |Choose |Update |Lower |Close |Download|Install|Restart|Retry|Try |use CPU|Report|report it|Paste|Sign in|Accept|Join)\b/i;
+      function kgWithNextStep(text) {
+        text = String(text || '').trim();
+        if (!text) { return text; }
+        return KG_HAS_STEP.test(text) ? text : text + (/[.!?]$/.test(text) ? ' ' : '. ') + kgNextStep(text);
+      }
+
+      // The last job's failure for a tab revisited after it (session 16): the note the job entry keeps per kind
+      // (_meta.last_jobs, the pid rule applied server-side) when it ended failed or interrupted and is not the
+      // job behind the tab's own success record (or is newer than it). Pure, so the node test covers it.
+      function kgLastJobFailure(lastJobs, kind, doneId, doneAt) {
+        var n = (lastJobs || {})[kind];
+        if (!n || (n.status !== 'failed' && n.status !== 'interrupted')) { return null; }
+        if (doneId && n.id === doneId) { return null; }
+        var at = n.finished_at || n.started_at || 0;
+        if (doneAt && at && at < doneAt) { return null; }
+        return n;
       }
 
       // ── Tabs: the tab bar is the pipeline stepper ─────────────────────
@@ -1580,7 +1634,7 @@
       function kgEnterProvisioning(prov) {
         el('kg-provisioning').innerHTML =
           '<div class="kg-callout info"><span class="spinner" aria-hidden="true"></span>' +
-          '<span><strong>Setting up the plugin environment.</strong> The first run takes a few minutes.' +
+          '<span><strong>Setting up the plugin environment.</strong> The first run takes several minutes: it downloads about 3 GB (PyTorch with CUDA) once.' +
           (prov && prov.state ? ' <span style="color:var(--text-muted)">Environment state: ' + esc(prov.state) + '</span>' : '') +
           '</span></div>';
         el('kg-import-btn').disabled = true;
@@ -2412,7 +2466,7 @@
           '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
           '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
           '<div style="flex:1;min-width:0"><strong>Import failed</strong>' +
-          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(kgWithNextStep(message)) + '</div>' +
           '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
         kgBindDiag(el('kg-import-banner'));
       }
@@ -2627,10 +2681,61 @@
         if (kgImported()) { kgRenderImported(kgImportState, opts); }
         else if (kgImportState.state === 'stale') { kgRenderStale(kgImportState); }
         else { kgEnterFormState(); }
+        kgRenderLastJobBanners();
+      }
+
+      // Session 16: a download or an import that failed, or whose worker died, after the last success (or with
+      // no success at all) is told on the next visit, with its reason, its next step and Copy diagnostics,
+      // instead of the bare form. Never while one is running (the live path owns the tab then).
+      function kgRenderLastJobBanners() {
+        if (kgDevMode || kgImporting || dlRunning) { return; }
+        var jobs = kgMeta.last_jobs || {};
+        var rec = kgImportState.record || {};
+        var imp = kgLastJobFailure(jobs, 'import', rec.job_id, rec.completed_at);
+        if (imp) { renderFailBanner(kgErrorText(imp.error) || 'The import did not finish.', false); }
+        var ks = kgKitState || {};
+        var dl = kgLastJobFailure(jobs, 'download_kit', ks.job_id, ks.completed_at);
+        if (dl) {
+          dlShowSection(true);
+          el('kg-dl-banner').innerHTML =
+            '<div class="kg-callout err">' + kgIcon('x-circle') +
+            '<span><strong>Download failed.</strong> ' + esc(kgWithNextStep(kgErrorText(dl.error) || 'The download did not finish.')) +
+            '<div style="margin-top: 8px;">' + kgDiagBtn() + '</div></span></div>';
+          kgBindDiag(el('kg-dl-banner'), dlBuildDiagnostics);
+        }
+      }
+
+      // Session 16: the Doctor's findings come to the participant. Once per page load, after the first config,
+      // the Import tab reads the Doctor (no Kaggle call) and names every red row in one banner with a way to
+      // the Status tab; a device probe still running is read once more after 15 s.
+      var kgDoctorChecked = false;
+      function kgDoctorAttentionCheck(again) {
+        if (kgDevMode || (kgDoctorChecked && !again)) { return; }
+        kgDoctorChecked = true;
+        API.authFetch(PLUGIN_ROOT + '/status/doctor?kaggle=0')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (doc) {
+            if (!doc) { return; }
+            var rows = stDoctorAttention(doc);
+            var box = el('kg-conn-banner');
+            if (rows.length && box) {
+              box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') +
+                '<span><strong>Something needs attention before you start:</strong> ' + esc(rows.join(', ')) + '. ' +
+                '<button type="button" class="btn btn-secondary btn-sm kgi-btn" id="kg-doctor-open" style="margin-left:6px">' +
+                '<span>Open Status</span>' + kgIcon('arrow-right', 'kgi-12') + '</button></span></div>';
+              el('kg-doctor-open').addEventListener('click', function () { showTab('status'); });
+            }
+            var d = doc.device || {};
+            if (!again && d.cuda_available !== true && d.cuda_available !== false) {
+              setTimeout(function () { kgDoctorAttentionCheck(true); }, 15000);
+            }
+          })
+          .catch(function () { /* the Doctor is advisory here; Status shows it in full */ });
       }
 
       function kgInitImportTab() {
         kgListen();
+        kgDoctorAttentionCheck(false);
         window.PluginJobs.list(PLUGIN_ID)
           .catch(function (e) { kgConn.fail(e); return []; })
           .then(function (list) {
@@ -2705,6 +2810,12 @@
         el('kg-dl-state').textContent = '';
         el('kg-dl-blurb-dl').hidden = dlMode === 'top_up';
         el('kg-dl-blurb-topup').hidden = dlMode !== 'top_up';
+        var shards = ((kgMeta.manifest || {}).kit || {}).shards || [];
+        var bytes = shards.reduce(function (n, s) { return n + (s.bytes || 0); }, 0);
+        var expect = el('kg-dl-expect');
+        if (expect) {
+          expect.textContent = bytes ? 'About ' + dlMB(bytes) + ' MB; usually about a minute on a fast connection, longer on a slow one.' : '';
+        }
         if (animate) { kglEnter(el('kg-dl-offer')); }
       }
 
@@ -2823,7 +2934,7 @@
         }).join('');
         el('kg-dl-banner').innerHTML =
           '<div class="kg-callout err' + (animate ? ' kgl-enter' : '') + '">' + kgIcon('x-circle') +
-          '<span><strong>Download failed.</strong> ' + esc(kgErrorText(job.error) || 'See the log for details.') +
+          '<span><strong>Download failed.</strong> ' + esc(kgWithNextStep(kgErrorText(job.error) || 'The download did not finish.')) +
           lines + '<div style="margin-top: 8px;">' + kgDiagBtn() + '</div></span></div>';
         kgBindDiag(el('kg-dl-banner'), dlBuildDiagnostics);
         dlShowOffer(true, false);
@@ -3742,7 +3853,7 @@
           '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
           '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
           '<div style="flex:1;min-width:0"><strong>' + esc(headline || 'Training failed') + '</strong>' +
-          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(kgWithNextStep(message)) + '</div>' +
           '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
         kgBindDiag(el('tr-banner'), trBuildDiagnostics);
       }
@@ -5196,8 +5307,47 @@
       // Tab-activation refetch: the runs list, the connection card and the test-images gate are
       // re-checked whenever the tab is shown, so a run that finished in the background is
       // selectable without a reload (the no-more-F5 rule).
+      // Session 16: the Predict + Submit tab reconciles with its record like Train does (session 14): a missed
+      // terminal event (a dropped socket, a reload at the wrong moment, a worker that died) must not leave
+      // "Predicting…" or "Submitting…" on screen. The pure selector picks the terminal record for the shown
+      // job out of a /submit/state answer; the tab wires it to a poll, to tab entry and nothing else.
+      function psReconcileFromState(st, kind, id) {
+        if (!st || !id) { return null; }
+        var rec = kind === 'predict' ? st.predict : st.submission;
+        if (!rec || rec.job_id !== id) { return null; }
+        var status = kind === 'predict' ? rec.status : rec.job_status;
+        if (!status || status === 'running' || status === 'queued') { return null; }
+        return { status: status, error: rec.error || rec.reason || '' };
+      }
+      var psReconcileTimer = null;
+      function psReconcile() {
+        if (kgDevMode || (!psPredicting && !psSubmitting)) { return Promise.resolve(false); }
+        var predict = psPredicting;
+        var id = predict ? psPredictJobId : psSubmitJobId;
+        return API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); })
+          .then(function (st) {
+            var t = psReconcileFromState(st, predict ? 'predict' : 'submit', id);
+            if (!t || (predict ? !psPredicting : !psSubmitting)) { return false; }
+            var job = kgJobRecord(id, predict ? 'predict' : 'kaggle_submit');
+            job.status = t.status === 'stale' ? 'failed' : t.status;
+            if (t.error) { job.error = t.error; }
+            kgOnRecord(job, true);   // the terminal path re-reads the record and renders it
+            return true;
+          })
+          .catch(function () { return false; });
+      }
+      function psStartReconcile() {
+        psStopReconcile();
+        if (kgDevMode) { return; }
+        psReconcileTimer = setInterval(psReconcile, TR_RECONCILE_S * 1000);
+      }
+      function psStopReconcile() {
+        if (psReconcileTimer) { clearInterval(psReconcileTimer); psReconcileTimer = null; }
+      }
+
       function psOnTabEnter() {
         if (kgDevMode) { return; }   // forced states own this tab
+        psReconcile();               // session 16: a job shown as running is checked against its record on entry
         configLoaded.then(function () {
           el('ps-device').value = (kgSession && kgSession.device) || el('ps-device').value;
           kgRefreshProjectScope();
@@ -5428,7 +5578,7 @@
           '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
           '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
           '<div style="flex:1;min-width:0"><strong>Inference failed</strong>' +
-          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(kgWithNextStep(message)) + '</div>' +
           '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
         kgBindDiag(el('ps1-banner'), psBuildDiagnostics);
       }
@@ -5446,6 +5596,7 @@
           return;
         }
         kgClearTitleProgress();
+        psStopReconcile();
         psPredicting = false;
         el('ps-spinner').style.display = 'none';
         el('ps-progress').innerHTML = '';
@@ -5512,6 +5663,7 @@
           .then(function (res) {
             if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
             psPredictJobId = res.body.job_id;
+            psStartReconcile();
             var job = kgJobRecord(psPredictJobId, 'predict');
             el('ps-progress').innerHTML = '';
             psRenderProgress(job);
@@ -5804,7 +5956,7 @@
           '<div class="alert alert-error' + (animate ? ' kgl-enter' : '') + '">' +
           '<span class="alert-icon">' + kgIcon('x-circle', 'kgi-16') + '</span>' +
           '<div style="flex:1;min-width:0"><strong>Submission failed</strong>' +
-          '<div style="margin-top:4px;font-size:12.5px">' + esc(message) + '</div>' +
+          '<div style="margin-top:4px;font-size:12.5px">' + esc(kgWithNextStep(message)) + '</div>' +
           '<div style="margin-top:8px">' + kgDiagBtn() + '</div></div></div>';
         kgBindDiag(el('ps-banner'), psBuildDiagnostics);
       }
@@ -5830,6 +5982,7 @@
           if (job.status === 'running' || job.status === 'queued') { el('ps-submit-state').textContent = 'Submitting…'; }
           return;
         }
+        psStopReconcile();
         psSubmitting = false;
         el('ps-submit-spinner').style.display = 'none';
         el('ps-submit-state').textContent = '';
@@ -5896,6 +6049,7 @@
           .then(function (res) {
             if (!res.ok || res.body.error) { throw new Error(res.body.error || 'request failed'); }
             psSubmitJobId = res.body.job_id;
+            psStartReconcile();
             var job = kgJobRecord(psSubmitJobId, 'kaggle_submit');
             el('ps-submit-state').textContent = 'Submitting…';
             kgTrack(job);
@@ -6000,6 +6154,7 @@
                 if (runningPredict && !psPredicting) {
                   psPredictJobId = runningPredict.id;
                   psPredicting = true;
+                  psStartReconcile();
                   psCheckPredictReady();
                   el('ps-spinner').style.display = 'inline-block';
                   el('ps-state').textContent = 'Predicting… (safe to navigate away)';
@@ -6017,6 +6172,7 @@
                 if (runningSubmit && !psSubmitting) {
                   psSubmitJobId = runningSubmit.id;
                   psSubmitting = true;
+                  psStartReconcile();
                   el('ps-submit-spinner').style.display = 'inline-block';
                   el('ps-submit-state').textContent = 'Submitting…';
                   kgTrack(kgJobRecord(runningSubmit.id, 'kaggle_submit'));
@@ -6734,9 +6890,20 @@
         box.innerHTML = html;
         kgBindCopy(box);
         kgBindDiag(box, stBuildDiagnostics);
-        var red = (doc.kit && doc.kit.state === 'stale') || (doc.kaggle && doc.kaggle.state === 'error') || (doc.manifest && doc.manifest.error) || stImagesMissing(doc) || stGpuMissingKernels(doc.device) ||
-          !!(doc.project_root && doc.project_root.warning);
-        if (red) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
+        if (stDoctorAttention(doc).length) { kgAccOpenInstant('st-doctor-toggle', 'st-doctor-panel'); }
+      }
+      // The Doctor's red rows, by title (session 16): what opens the Doctor panel on Status and what the Import
+      // tab names at first open, so a participant who never visits Status still hears about it. Pure.
+      function stDoctorAttention(doc) {
+        if (!doc || doc.error) { return []; }
+        var out = [];
+        if (doc.manifest && doc.manifest.error) { out.push('Manifest'); }
+        if (doc.kit && doc.kit.state === 'stale') { out.push('Kit'); }
+        if (stImagesMissing(doc)) { out.push('Table images'); }
+        if (stGpuMissingKernels(doc.device)) { out.push('CUDA in the worker'); }
+        if (doc.project_root && doc.project_root.warning) { out.push('Project root'); }
+        if (doc.kaggle && doc.kaggle.state === 'error') { out.push('Kaggle'); }
+        return out;
       }
 
       // Status flavour of Copy diagnostics: the Doctor rows, the recent runs and predictions, the raw Doctor.

@@ -264,7 +264,7 @@ def read_sample_ids(path: Path, columns: tuple[str, ...]) -> list[str]:
         reader = csv.reader(f)
         header = next(reader, None)
         if header is None or [h.strip() for h in header] != list(columns):
-            msg = f"{path.name} has the columns {header}; expected {list(columns)}."
+            msg = f"{path.name} has the columns {header}; expected {list(columns)}. {TEST_REMEDY}"
             raise PredictRefused(msg)
         return [row[0].strip() for row in reader if row and row[0].strip()]
 
@@ -528,6 +528,24 @@ def _new_record(kind: str, job_id: str, params: dict[str, Any]) -> dict[str, Any
         "heartbeat": now, "finished_at": None, "cancelled": False, "params": dict(params), "progress": {},
         "facts": {}, "checks": [], "result": None, "error": None, "log": [],
     }
+
+
+def record_refusal(kind: str, job_id: str, params: dict[str, Any], error: str) -> bool:
+    """Session 16 (the error-visibility audit): a refusal or an exception before the job's own record
+    existed (no import record, unverifiable test images, a checkpoint that fails the gate, a missing CSV)
+    still leaves a failed ``predict_state`` / ``submit_state`` record, so the tab's revisit and the Status
+    tab say what happened. Nothing is written when this job already has a record or another one is live
+    (the busy refusal must not clobber it). True when a record was written."""
+    key = "predict_state" if kind == "predict" else "submit_state"
+    cur = read_predict_record() if kind == "predict" else read_submit_record()
+    if cur and (cur.get("id") == job_id or cur.get("status") == "running"):
+        return False
+    record = _new_record(kind, job_id, dict(params))
+    record["facts"]["project_name"] = trainer.current_project() or ""
+    if kind != "predict":
+        record["predict_job_id"] = str(params.get("predict_job_id") or "")
+    _Record(key, record).finish("failed", error=error)
+    return True
 
 
 def _orphaned(record: dict[str, Any], what: str) -> dict[str, Any]:
@@ -985,7 +1003,7 @@ def run_kaggle_submit(params: dict[str, Any], ctx: Any, manifest: Manifest) -> d
 
     predict_job_id = str(params.get("predict_job_id") or "").strip()
     if not predict_job_id:
-        msg = "Missing required field 'predict_job_id'"
+        msg = "Missing required field 'predict_job_id'. Run inference first, then submit."
         raise PredictRefused(msg)
     ps = read_predict_record()
     if not ps or str(ps.get("id")) != predict_job_id or ps.get("status") != "completed":

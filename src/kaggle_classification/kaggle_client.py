@@ -102,8 +102,13 @@ REASONS = {
         "Kaggle could not be reached from the compute service (no network); the token is saved and will be "
         "checked again."
     ),
-    "write_failed": "The token could not be saved on the compute service: {detail}",
-    "error": "Kaggle answered with an error: {detail}",
+    "write_failed": (
+        "The token could not be saved on the compute service: {detail}. Check that the service's home folder is "
+        "writable, then connect again."
+    ),
+    "error": (
+        "Kaggle answered with an error: {detail}. Try again in a minute; if it keeps failing, create a new token."
+    ),
 }
 
 

@@ -112,8 +112,9 @@ class _JobCtxAdapter:
     the host's ``ctx.cancelled``.
     """
 
-    def __init__(self, sdk_ctx: JobContext) -> None:
+    def __init__(self, sdk_ctx: JobContext, kind: str = "") -> None:
         self._sdk = sdk_ctx
+        self.kind = kind
 
     @property
     def job_id(self) -> str:
@@ -135,6 +136,11 @@ class _JobCtxAdapter:
             self._sdk.progress(percent=float(progress["percent"]), label=str(progress.get("label") or ""),
                                timing=generic_timing(progress))
         self._sdk.emit("stage_progress", {"job_id": self.job_id, **progress})
+        if self.kind:
+            # The job note's heartbeat (session 16): a note without one for 15 minutes reads back as interrupted.
+            from kaggle_classification import session
+
+            session.touch_job(self.kind, self.job_id)
 
     def set_field(self, key: str, value: Any) -> None:
         if key == "run_url" and value:
@@ -195,7 +201,12 @@ class KaggleClassificationPlugin(ComputePlugin):
         _job_thread().submit(self._run_job, ctx).result()
 
     def _run_job(self, ctx: JobContext) -> None:
-        from kaggle_classification import kit, manifest, storage
+        import os
+        import time
+
+        from tlc_plugin_sdk.job_context import JobFailed
+
+        from kaggle_classification import session, storage
 
         # The worker's state root is the plugin's home from here on (storage.py rule 3).
         state_dir = getattr(ctx, "state_dir", None)
@@ -204,7 +215,27 @@ class KaggleClassificationPlugin(ComputePlugin):
 
         kind = str(ctx.params.get("kind", "")).strip()
         params = {k: v for k, v in ctx.params.items() if k != "kind"}
-        adapter = _JobCtxAdapter(ctx)
+        adapter = _JobCtxAdapter(ctx, kind=kind)
+        # The job note (session 16, the error-visibility audit): the one durable trace of this job outside
+        # the stage's own record. Running now; terminal below, whatever the stage did or did not record, so a
+        # tab revisited after a failure (or after the worker died) still says what happened.
+        now = time.time()
+        session.note_job(kind, id=adapter.job_id, kind=kind, status="running", pid=os.getpid(), started_at=now,
+                         heartbeat=now, finished_at=None, error=None)
+        try:
+            result = self._dispatch(kind, params, adapter, ctx)
+        except JobFailed as exc:
+            session.note_job(kind, status="failed", error=str(exc), finished_at=time.time())
+            raise
+        except BaseException as exc:
+            session.note_job(kind, status="failed", error=f"{type(exc).__name__}: {exc}", finished_at=time.time())
+            raise
+        session.note_job(kind, status="cancelled" if result.get("cancelled") else "completed", finished_at=time.time())
+
+    def _dispatch(self, kind: str, params: dict[str, Any], adapter: _JobCtxAdapter, ctx: JobContext) -> dict[str, Any]:
+        """One kind's stage call; returns the stage's result or raises (``ctx.fail`` raises ``JobFailed``)."""
+        from kaggle_classification import kit, manifest
+
         # Every job re-resolves the manifest at start and records what it ran under.
         current, provenance = manifest.resolve_manifest_for_job()
         adapter.set_field("manifest", provenance)
@@ -226,7 +257,7 @@ class KaggleClassificationPlugin(ComputePlugin):
                 ctx.fail(str(exc))
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
-            return
+            return result
         if kind == "import":
             from kaggle_classification import importer
 
@@ -242,7 +273,7 @@ class KaggleClassificationPlugin(ComputePlugin):
                 from kaggle_classification import trainer
 
                 trainer.prewarm_umap_async()
-            return
+            return result
         if kind == "train":
             from kaggle_classification import trainer
 
@@ -250,11 +281,16 @@ class KaggleClassificationPlugin(ComputePlugin):
                 result = trainer.run_training(params, adapter, current)
             except trainer.TrainRefused as exc:
                 # A refusal (bad table, nothing to train on, a duplicate start) is a message for the
-                # participant, not a fault: verbatim, no type prefix (the SDK's JobFailed contract).
+                # participant, not a fault: verbatim, no type prefix (the SDK's JobFailed contract). One that
+                # came before the run's own record existed still leaves a failed record (session 16).
+                trainer.record_refusal(adapter.job_id, params, str(exc))
                 ctx.fail(str(exc))
+            except Exception as exc:
+                trainer.record_refusal(adapter.job_id, params, f"{type(exc).__name__}: {exc}")
+                raise
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
-            return
+            return result
         if kind in ("predict", "kaggle_submit"):
             from kaggle_classification import predictor
 
@@ -263,9 +299,14 @@ class KaggleClassificationPlugin(ComputePlugin):
                 result = runner(params, adapter, current)
             except predictor.PredictRefused as exc:
                 # A refusal (a run that fails the provenance gate, unverifiable test images, a format
-                # check, Kaggle's rejection) is the participant's message, verbatim.
+                # check, Kaggle's rejection) is the participant's message, verbatim; before the job's own
+                # record existed it still leaves a failed record (session 16).
+                predictor.record_refusal(kind, adapter.job_id, params, str(exc))
                 ctx.fail(str(exc))
+            except Exception as exc:
+                predictor.record_refusal(kind, adapter.job_id, params, f"{type(exc).__name__}: {exc}")
+                raise
             if not result.get("cancelled"):
                 ctx.progress(percent=100.0, label="Done")
-            return
+            return result
         ctx.fail(f"Unknown job kind: {kind!r}. Expected one of download_kit, import, train, predict, kaggle_submit.")
