@@ -1177,21 +1177,26 @@ def run_local_dir(run_url: str) -> Path | None:
 def save_checkpoint(run_url: str, state_dict: dict[str, Any], name: str) -> tuple[str, str]:
     """Write ``<run>/model/<name>`` ATOMICALLY (``.tmp`` + ``os.replace``) so a cancel or crash
     mid-write never leaves a half-written file under a name Predict trusts. Returns (path, sha256).
-    A cloud run folder goes through the SDK helper (no atomic rename there)."""
+    A cloud run folder is written to a local mirror under the plugin home the same way and uploaded
+    into the run through the SDK helper; the mirror's path is returned."""
     import torch
 
     local = run_local_dir(run_url)
     if local is None:
+        # A cloud run folder: the checkpoint is written to a local mirror first (training reloads
+        # best.pt and Predict reads it from disk), then uploaded into the run through the SDK.
         from tlc_plugin_sdk.shared.model_storage import save_model_to_run
 
-        rel = save_model_to_run(run_url, state_dict, filename=name)
-        return rel, ""
-    model_dir = local / MODEL_DIR
+        model_dir = session.plugin_home() / "checkpoints" / hashlib.sha256(run_url.encode()).hexdigest()[:16]
+    else:
+        model_dir = local / MODEL_DIR
     model_dir.mkdir(parents=True, exist_ok=True)
     dest = model_dir / name
     tmp = model_dir / f"{name}.tmp"
     torch.save(state_dict, str(tmp))
     os.replace(tmp, dest)
+    if local is None:
+        save_model_to_run(run_url, None, filename=name, source_file=dest)
     return str(dest), _sha256_file(dest)
 
 
