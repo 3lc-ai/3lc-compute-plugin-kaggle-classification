@@ -11,7 +11,7 @@ not a code task. Depth on the reference material is in `docs/STUDY.md`.
 | Repo / plugin id | `kaggle-classification` (dist `3lc-compute-plugin-kaggle-classification`, package `kaggle_classification`) |
 | License | Apache-2.0. No Ultralytics anywhere. |
 | SDK contract | `3lc-compute-plugin-sdk>=0.3.1,<0.4.0` — resolves on 3lc-compute 1.0.1 (`>=0.3.1,<0.4.0`) and 1.1.0 (`>=0.3.3,<0.4.0`); `tests/test_packaging.py` asserts the overlap against the latest 3lc-compute release metadata. timm's `>=0.4.0,<0.5.0` is not mirrored: no 1.x host accepts 0.4 (STUDY G-2). |
-| tlc | `3lc>=3.3,<4.0` (the Compute Service resolves 3LC >= 3.3.0). 3.x API only: `Table.with_transform`, `tlc.integration.torch.samplers.create_sampler`, `tlc.schemas.*`, `run.add_metrics` (STUDY G-1). |
+| tlc | `3lc>=3.3,<4.0` (the Compute Service resolves 3LC >= 3.3.0). 3.x API only: `Table.with_transform`, `tlc.integration.torch.samplers.create_sampler`, `tlc.schemas.*`, `run.add_metrics` (STUDY G-1). **The plugin extra pins `3lc==3.4.1` exactly** (session 15: the hardening matrix passed on it against hosts on 3.3.0 and 3.4.1) and participants keep that pin; a floor would hand them 3.5.0 untested the day it ships (PR 1, 2026-10-21, not merged). 3lc-compute 1.1.0 adds no 3lc requirement of its own to a plugin venv. **Staff on a 3lc dev build:** a one-line requirements file holding `3lc>=3.4.1` (or the exact dev build) and `UV_OVERRIDE=<that file>` in the compute service's environment; the host passes its environment to `uv pip install`, so the override replaces the pin on that host only, and the `TLC_COMPUTE_DEV_TLC_SRC` overlay still applies after it. Recipe in `../3lc-hub-11/SETUP.md`. |
 | Model | **The Intel kit's model, exactly** (part A of the 2026-09-29 review, reversing the morning's timm decision): torchvision `resnet18(weights=None)` with `fc = Identity` and the kit's MLP head 512→256→ReLU→Dropout(0.3)→128→ReLU→Dropout(0.3)→N, torchvision's default init. Manifest-driven for reuse: `model.backbone` (`torchvision_resnet18`) and `model.head` (`kit_mlp_512_256_128_d03` \| `linear`), allowlisted in `manifest.py` (`BACKBONES` / `HEADS`); `arch: resnet18` is accepted as the legacy spelling of the kit's model. `pretrained: true` is rejected. timm is not a runtime dependency; torch and torchvision versions are recorded on every Run. Requirement: a participant using the plugin and one using `intel-kit/train.py` get similar outcomes (the parity gate in `docs/TRAIN_MIRROR.md` §10). |
 | Competition manifest | Remote `<base>/kaggle/classification-index.json` + `kaggle/<id>/manifest.json` (layout in §A3); base URL is a code constant (`manifest.MANIFEST_BASE_URL` = prod); env override `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL` for dev/local; on-disk cache with fetched-at stamp; bundled `manifests/intel-scene-v1.yaml` as last resort. Unknown fields warn, never fail. |
 | Splits | Unchanged from the Intel kit: 600 seed (100 × 6) + 6,000 `undefined` at weight 0 in `train`; `val` 1,200 (200 × 6) locked; `test` 1,800, flat, never registered. |
@@ -155,7 +155,14 @@ giving it a real class, and it enters the next revision's training set.
   weight 0.0) and `val` (all weights 1.0, URL recorded as the locked revision) via
   `Table.from_dict` with an explicit schema (`ImageSchema(url)`, `CategoricalLabelSchema(classes +
   undefined)`, `SampleWeightSchema`) at `<tlc.config.project_root_url>/<project>/datasets/<manifest.dataset_name(split)>/tables/<table>`,
-  `if_exists="raise"`; `test` never registered. The kit is validated against the manifest first
+  `if_exists="raise"`; `test` never registered. **The alias token rule (PR 2, 2026-10-21):** image URLs go
+  through the project URL alias `<KAGGLE_<COMPETITION ID>_<KIT VERSION>>` → `<kit>/data`, registered in the
+  project's `default_aliases.3lc.yaml` and in the process before the first row is written, so another machine
+  points the same tables at its own copy of the kit; a project that already maps the token elsewhere keeps it
+  and the rows stay absolute; a kit bump gets its own token; DataLoader workers re-register the process's
+  aliases. **The moved-kit rule:** the kit folder for the same kit version pointed somewhere new (Re-verify
+  with the folder, or an import that reuses the tables) re-points the alias with force and the import
+  record's `kit_dir` follows, no re-import. The kit is validated against the manifest first
   (class dirs, per-class and pool counts, val counts, test count == `sample_submission.csv` rows
   and ids, header, kit version, every image decodes) and any mismatch fails with one message
   naming every defect, before any table exists. Collisions REFUSE; an explicit `mode=reimport`
