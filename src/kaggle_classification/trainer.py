@@ -1177,21 +1177,26 @@ def run_local_dir(run_url: str) -> Path | None:
 def save_checkpoint(run_url: str, state_dict: dict[str, Any], name: str) -> tuple[str, str]:
     """Write ``<run>/model/<name>`` ATOMICALLY (``.tmp`` + ``os.replace``) so a cancel or crash
     mid-write never leaves a half-written file under a name Predict trusts. Returns (path, sha256).
-    A cloud run folder goes through the SDK helper (no atomic rename there)."""
+    A cloud run folder is written to a local mirror under the plugin home the same way and uploaded
+    into the run through the SDK helper; the mirror's path is returned."""
     import torch
 
     local = run_local_dir(run_url)
     if local is None:
+        # A cloud run folder: the checkpoint is written to a local mirror first (training reloads
+        # best.pt and Predict reads it from disk), then uploaded into the run through the SDK.
         from tlc_plugin_sdk.shared.model_storage import save_model_to_run
 
-        rel = save_model_to_run(run_url, state_dict, filename=name)
-        return rel, ""
-    model_dir = local / MODEL_DIR
+        model_dir = session.plugin_home() / "checkpoints" / hashlib.sha256(run_url.encode()).hexdigest()[:16]
+    else:
+        model_dir = local / MODEL_DIR
     model_dir.mkdir(parents=True, exist_ok=True)
     dest = model_dir / name
     tmp = model_dir / f"{name}.tmp"
     torch.save(state_dict, str(tmp))
     os.replace(tmp, dest)
+    if local is None:
+        save_model_to_run(run_url, None, filename=name, source_file=dest)
     return str(dest), _sha256_file(dest)
 
 
@@ -1283,6 +1288,32 @@ def worker_init(worker_id: int) -> None:
     seed = (torch.initial_seed() + worker_id) % 2**32
     random.seed(seed)
     np.random.seed(seed)
+
+
+class LoaderWorkerInit:
+    """Picklable DataLoader ``worker_init_fn`` for ``workers > 0``: registers the URL aliases this
+    process knows (the kit alias the tables' rows are written with) in each worker, then seeds it like
+    :func:`worker_init` when ``seed``. Workers are fresh processes on macOS and Windows (spawn) and
+    learn a project's aliases only when they open a table there, which a pickled view never does: a
+    ``<TOKEN>/...`` row would resolve against the table URL instead of the kit. Build it after the
+    tables are open, so the snapshot holds their project's aliases."""
+
+    def __init__(self, *, seed: bool) -> None:
+        import tlc
+
+        self.aliases = {str(k).strip("<>"): str(v) for k, v in tlc.url.get_registered_url_aliases().items()}
+        self.seed = seed
+
+    def __call__(self, worker_id: int) -> None:
+        import tlc
+
+        for token, path in self.aliases.items():
+            try:
+                tlc.url.register_url_alias(token=token, path=path, force=True)
+            except Exception:
+                continue
+        if self.seed:
+            worker_init(worker_id)
 
 
 def make_optimizer(name: str, params: Any, lr: float, weight_decay: float) -> Any:
@@ -1646,7 +1677,7 @@ def _train_and_collect(
     n_usable = len(sampler)
 
     def loaders() -> tuple[Any, Any]:
-        winit = worker_init if workers > 0 else None
+        winit = LoaderWorkerInit(seed=True) if workers > 0 else None
         tl = DataLoader(train_view, batch_size=batch_size, sampler=sampler, num_workers=workers,
                         drop_last=False, pin_memory=False, worker_init_fn=winit)
         vl = DataLoader(val_view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False,
@@ -2069,7 +2100,8 @@ def _collect(
     total_rows = sum(int(t.row_count) for _, t, _, _ in targets)
     done_rows = 0
     for split, table, view, url in targets:
-        loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False)
+        loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False,
+                            worker_init_fn=LoaderWorkerInit(seed=False) if workers > 0 else None)
         embs, preds, confs, losses = [], [], [], []
         with torch.no_grad():
             for images, labels_b in loader:

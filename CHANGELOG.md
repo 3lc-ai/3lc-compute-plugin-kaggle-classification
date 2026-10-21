@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased] (into 1.0.0: the rc14 hand test's bundle finding)
 
 ### Fixed
+- **Imported tables carry a URL alias for the kit's data folder.** Rows read
+  `<KAGGLE_INTEL_SCENE_V1>/train/<class>/<file>` instead of an absolute path, and the import registers the
+  alias in the project (`default_aliases.3lc.yaml`), so another machine (a GPU node, a teammate) can point
+  the same tables at its own copy of the kit. A project that already maps the token elsewhere keeps its
+  alias and the rows stay absolute, as before. DataLoader workers register the process's aliases first
+  (spawned workers on macOS would otherwise resolve the token against the table URL).
+- **A cloud run folder keeps a local checkpoint copy.** With an S3 project root the checkpoint was only
+  uploaded, and training's reload of `best.pt` read the relative `model/best.pt` from local disk
+  (`FileNotFoundError` after the last epoch). It is now written under the plugin home first and uploaded
+  from there; the local path and its sha256 are what the run records.
 - **The bundle finds a submitted run's checkpoint from the run's recorded paths.** The run list kept the 20
   newest records, so a submitted run could lose its record and the bundle reported "checkpoint missing"
   although best.pt was on disk. The checkpoint now resolves from the run record, else the predict entry's

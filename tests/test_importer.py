@@ -73,7 +73,15 @@ def test_import_registers_train_and_val_with_undefined_and_weights(project_root,
     assert len(labeled) == manifest.splits.train.labeled_per_class * manifest.num_classes
     assert all(r["weight"] == 1.0 for r in labeled)
     assert all(r["weight"] == 1.0 for r in val.table_rows)
-    assert all(Path(r["image"]).is_file() for r in rows)
+    # Rows carry the kit alias, not an absolute path, and resolve to the kit's files.
+    token = f"<{importer.kit_alias_token(manifest)}>"
+    assert token == "<KAGGLE_INTEL_SCENE_V1>"
+    assert all(str(r["image"]).startswith(f"{token}/") for r in [*rows, *val.table_rows])
+    assert all(Path(tlc.Url(r["image"]).to_absolute().to_str()).is_file() for r in rows)
+    assert result["kit_alias"] == token
+    # The alias is persisted in the project under the redirected root, never the real one.
+    aliases = (project_root / "intel-scene" / "default_aliases.3lc.yaml").read_text()
+    assert importer.kit_alias_token(manifest) in aliases and (kit_root / "data").resolve().as_posix() in aliases
     # test is never registered
     assert not tlc.Url(importer.table_url("intel-scene", manifest.dataset_name("test"), "initial")).exists()
     # every check passed, the record is in the session store with provenance and lineage

@@ -400,6 +400,38 @@ def _schema(manifest: Manifest) -> dict[str, Any]:
     }
 
 
+def kit_alias_token(manifest: Manifest) -> str:
+    """The URL alias token for the kit's data folder: ``KAGGLE_<COMPETITION>_<KIT VERSION>``."""
+    raw = f"KAGGLE_{manifest.competition.id}_{manifest.kit.version}"
+    return re.sub(r"[^A-Z0-9]+", "_", raw.upper()).strip("_")
+
+
+def register_kit_alias(manifest: Manifest, project: str, kit_root: Path) -> dict[str, Any]:
+    """Register ``<TOKEN>`` -> ``<kit_root>/data`` in the project and in this process, so the rows
+    the tables are written with read ``<TOKEN>/train/<class>/<file>`` instead of an absolute path.
+
+    The project alias is what lets another machine (a GPU node, a teammate's laptop) point the same
+    tables at its own copy of the kit. This process's alias is re-pointed first (a kit downloaded
+    again elsewhere since the last import in this worker); a project that already maps the token
+    elsewhere is never re-pointed: the process alias is removed again and the rows stay absolute."""
+    import tlc
+
+    token = kit_alias_token(manifest)
+    folder = (kit_root / DATA_DIR_NAME).resolve().as_posix()
+    tlc.url.register_url_alias(token=token, path=folder, force=True)
+    try:
+        tlc.helpers.ProjectHelper.register_project_url_alias(
+            token, folder, project_name=project, root_url=project_root_url()
+        )
+    except Exception as exc:
+        try:
+            tlc.url.unregister_url_alias(token)
+        except Exception:
+            pass
+        return {"token": token, "path": folder, "error": f"{type(exc).__name__}: {exc}"}
+    return {"token": token, "path": folder}
+
+
 def register_split(
     split: str, rows: dict[str, list[Any]], manifest: Manifest, project: str, table_name: str, description: str
 ) -> str:
@@ -937,6 +969,14 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         f"{manifest.competition.display_name}: kit {manifest.kit.version}, imported by kaggle-classification"
     )
     undefined_rows = {"train": len(scan.train_undefined), "val": 0}
+    alias: dict[str, Any] = {}
+    if not all(reused.values()):
+        alias = register_kit_alias(manifest, project, kit_root)
+        if alias.get("error"):
+            log(f"Image paths stay absolute: could not register <{alias['token']}> -> {alias['path']} "
+                f"({alias['error']})")
+        else:
+            log(f"Image paths use the alias <{alias['token']}> -> {alias['path']}")
     try:
         for i, split in enumerate(REGISTERED_SPLITS):
             if is_cancelled():
@@ -985,6 +1025,8 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         "mode": mode,
         "kit_dir": str(kit_root),
         "kit_version": manifest.kit.version,
+        # The kit's data folder alias the rows were written with (empty: reused tables, or absolute rows).
+        "kit_alias": "" if not alias or alias.get("error") else f"<{alias['token']}>",
         "tables": {
             split: {
                 "url": urls[split],
