@@ -12,6 +12,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   the same tables at its own copy of the kit. A project that already maps the token elsewhere keeps its
   alias and the rows stay absolute, as before. DataLoader workers register the process's aliases first
   (spawned workers on macOS would otherwise resolve the token against the table URL).
+- **A moved kit works again without a re-import.** Pointing the kit folder for the same kit version at a
+  new location (Re-verify with the folder, or an import that reuses the tables) re-points the project alias
+  and the import record's kit folder, so the aliased rows resolve again.
+- **The first open says what it is doing.** After the compute service reaps an idle plugin worker (five
+  minutes), the next open spends a few seconds starting it; the tabs now show "Starting the plugin. The
+  first open takes about 10 seconds." from the first settings load instead of a blank card.
+- **The settings load no longer waits on the 3LC index.** Each of its two "latest revision" lookups waits
+  at most one second (five before), so a slow or remote project root cannot push the first load past the
+  Hub's fetch timeout.
 - **A cloud run folder keeps a local checkpoint copy.** With an S3 project root the checkpoint was only
   uploaded, and training's reload of `best.pt` read the relative `model/best.pt` from local disk
   (`FileNotFoundError` after the last epoch). It is now written under the plugin home first and uploaded

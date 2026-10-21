@@ -882,3 +882,26 @@ def test_submitted_runs_are_never_dropped_by_the_run_limit(store):
     assert [r["id"] for r in kept] == [f"r{i:02d}" for i in range(25, 5, -1)] + ["r03", "r02", "r01"]
     assert len(kept) == trainer.RUNS_KEEP + 3
     assert [r["id"] for r in trainer.keep_runs(runs[:5])] == [r["id"] for r in runs[:5]]
+
+
+def test_save_checkpoint_on_a_cloud_run_folder_keeps_a_local_mirror_and_uploads_it(home, monkeypatch):
+    """PR 2 (Gudbrand's rc14 round, 2026-10-21): a cloud run folder has no local model dir, so the checkpoint
+    is written atomically under <plugin home>/checkpoints/<run hash>/, uploaded through the SDK from that
+    file, and the local path plus its sha256 are what the run records (training reloads best.pt from it)."""
+    import tlc_plugin_sdk.shared.model_storage as model_storage
+
+    calls: list[tuple] = []
+
+    def fake_upload(run_url, model_data, filename="best_model.pt", source_file=None, on_status=None):
+        calls.append((run_url, model_data, filename, Path(source_file)))
+        return f"model/{filename}"
+
+    monkeypatch.setattr(trainer, "run_local_dir", lambda url: None)
+    monkeypatch.setattr(model_storage, "save_model_to_run", fake_upload)
+    state = {"w": torch.arange(4, dtype=torch.float32)}
+    path, sha = trainer.save_checkpoint("s3://bucket/project/runs/r1", state, "best.pt")
+    p = Path(path)
+    assert p.is_file() and p.name == "best.pt" and p.parent.parent == session.plugin_home() / "checkpoints"
+    assert sha == trainer._sha256_file(p) and not list(p.parent.glob("*.tmp"))
+    assert calls == [("s3://bucket/project/runs/r1", None, "best.pt", p)]
+    assert torch.equal(torch.load(path, weights_only=True)["w"], state["w"])

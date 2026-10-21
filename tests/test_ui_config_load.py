@@ -46,3 +46,17 @@ def test_the_retry_budget_covers_a_worker_start():
     assert m
     delays = [int(x) for x in m.group(1).split(",")]
     assert len(delays) == 10 and 100_000 <= sum(delays) <= 180_000 and delays == sorted(delays)
+
+
+def test_the_first_config_load_shows_the_starting_banner():
+    """2026-10-21 (Gudbrand's rc14 round): the first open after the host reaped the idle worker showed a blank
+    card while /config imported tlc (3 to 7 s on Windows); the banner now shows from the first attempt, before
+    the fetch, and only on a first attempt (the retry banner and the success path replace it)."""
+    html = UI.read_text(encoding="utf-8")
+    m = re.search(r"function kgFetchConfig\(resolve\) \{.*?\n      \}\n", html, re.S)
+    assert m
+    body = m.group(0)
+    banner = "Starting the plugin. The first open takes about 10 seconds."
+    assert body.count(banner) == 1
+    assert body.index(banner) < body.index("API.authFetch(PLUGIN_ROOT + '/config')")
+    assert "if (!kgConfigDone && kgCfgAttempt === 0)" in body

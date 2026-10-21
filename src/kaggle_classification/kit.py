@@ -441,6 +441,16 @@ def verify_now(manifest: Manifest, kit_dir: str | Path | None = None) -> dict[st
         else:
             _update_record(manifest, verified_at=now, image_count=out["image_count"])
         out["verified_at"] = now
+        # The moved-kit rule (2026-10-21): a verified kit at a new folder for the same kit version re-points
+        # the tables' alias and the import record, so a moved kit trains again without a re-import.
+        try:
+            from kaggle_classification import importer
+
+            moved = importer.repoint_kit_alias(manifest, kit_root)
+        except Exception as exc:
+            moved = {"error": f"{type(exc).__name__}: {exc}"}
+        if moved:
+            out["alias"] = moved
     return out
 
 

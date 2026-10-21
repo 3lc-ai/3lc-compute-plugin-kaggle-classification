@@ -406,14 +406,15 @@ def kit_alias_token(manifest: Manifest) -> str:
     return re.sub(r"[^A-Z0-9]+", "_", raw.upper()).strip("_")
 
 
-def register_kit_alias(manifest: Manifest, project: str, kit_root: Path) -> dict[str, Any]:
+def register_kit_alias(manifest: Manifest, project: str, kit_root: Path, *, force: bool = False) -> dict[str, Any]:
     """Register ``<TOKEN>`` -> ``<kit_root>/data`` in the project and in this process, so the rows
     the tables are written with read ``<TOKEN>/train/<class>/<file>`` instead of an absolute path.
 
     The project alias is what lets another machine (a GPU node, a teammate's laptop) point the same
     tables at its own copy of the kit. This process's alias is re-pointed first (a kit downloaded
     again elsewhere since the last import in this worker); a project that already maps the token
-    elsewhere is never re-pointed: the process alias is removed again and the rows stay absolute."""
+    elsewhere is never re-pointed unless ``force`` (the moved-kit rule, :func:`repoint_kit_alias`):
+    the process alias is removed again and the rows stay absolute."""
     import tlc
 
     token = kit_alias_token(manifest)
@@ -421,7 +422,7 @@ def register_kit_alias(manifest: Manifest, project: str, kit_root: Path) -> dict
     tlc.url.register_url_alias(token=token, path=folder, force=True)
     try:
         tlc.helpers.ProjectHelper.register_project_url_alias(
-            token, folder, project_name=project, root_url=project_root_url()
+            token, folder, project_name=project, root_url=project_root_url(), force=force
         )
     except Exception as exc:
         try:
@@ -430,6 +431,28 @@ def register_kit_alias(manifest: Manifest, project: str, kit_root: Path) -> dict
             pass
         return {"token": token, "path": folder, "error": f"{type(exc).__name__}: {exc}"}
     return {"token": token, "path": folder}
+
+
+def repoint_kit_alias(manifest: Manifest, kit_root: Path | str, project: str | None = None) -> dict[str, Any]:
+    """The moved-kit rule (2026-10-21): the kit folder for the SAME kit version is pointed somewhere new
+    (Re-verify with the folder, or an import that reuses the tables) and the rows carry the alias, so the
+    project alias is re-pointed with force and the import record's ``kit_dir`` follows; the aliased rows
+    resolve again without a re-import. ``{}`` when there is nothing to do (no record, absolute rows,
+    another kit version, the recorded folder itself); ``{"error": ...}`` when tlc refused."""
+    record = read_record()
+    if not record or not record.get("kit_alias"):
+        return {}
+    if str(record.get("kit_version") or "") != str(manifest.kit.version):
+        return {}
+    new_root = Path(str(kit_root)).expanduser()
+    if _norm(str(new_root)) == _norm(str(record.get("kit_dir") or "")):
+        return {}
+    owner = project or str(record.get("project_name") or manifest.default_project)
+    alias = register_kit_alias(manifest, owner, new_root, force=True)
+    if alias.get("error"):
+        return alias
+    write_record({**record, "kit_dir": str(new_root)})
+    return {**alias, "repointed_from": str(record.get("kit_dir") or "")}
 
 
 def register_split(
@@ -665,6 +688,11 @@ def list_project_tables(
 # A route must not sit on the indexer's 30 s default: the fast path answers at once for revisions
 # this process has seen, and a few seconds covers one scheduler cycle for the rest.
 _LATEST_TIMEOUT_ROUTE_S = 5.0
+# GET /config (``import_state``) must answer inside the Hub's fetch budget (about 10 s) on a slow root too:
+# the first open after the worker was reaped already spends 3 to 7 s importing tlc, so its two index
+# lookups wait one second each (Gudbrand's rc14 round, 2026-10-21: an S3 root took /config past 11 s and
+# the Hub gave up). The picker and the Train preflight keep the five seconds above.
+_LATEST_TIMEOUT_CONFIG_S = 1.0
 
 
 def _norm(url: str) -> str:
@@ -770,7 +798,8 @@ def import_state(manifest: Manifest | None = None) -> dict[str, Any]:
 
 
 def _latest_url(url: str) -> str:
-    return latest_url(url, timeout=_LATEST_TIMEOUT_ROUTE_S)
+    """The config path's ``latest``: one second, never the route's five (see ``_LATEST_TIMEOUT_CONFIG_S``)."""
+    return latest_url(url, timeout=_LATEST_TIMEOUT_CONFIG_S)
 
 
 def preflight(data: dict[str, Any], manifest: Manifest) -> dict[str, Any]:
@@ -975,6 +1004,18 @@ def run_import(params: dict[str, Any], ctx: Any, manifest: Manifest) -> dict[str
         if alias.get("error"):
             log(f"Image paths stay absolute: could not register <{alias['token']}> -> {alias['path']} "
                 f"({alias['error']})")
+        else:
+            log(f"Image paths use the alias <{alias['token']}> -> {alias['path']}")
+    elif (read_record() or {}).get("kit_alias"):
+        # Every table reused and the rows carry the alias: the record keeps kit_alias, and a kit at a new
+        # folder for the same kit version re-points the alias (the moved-kit rule).
+        alias = {"token": kit_alias_token(manifest), "path": (kit_root / DATA_DIR_NAME).resolve().as_posix()}
+        moved = repoint_kit_alias(manifest, kit_root, project)
+        if moved.get("error"):
+            log(f"The rows keep the alias <{alias['token']}>, but it could not be re-pointed to {alias['path']} "
+                f"({moved['error']})")
+        elif moved:
+            log(f"The kit moved: <{alias['token']}> now -> {alias['path']} (was {moved['repointed_from']})")
         else:
             log(f"Image paths use the alias <{alias['token']}> -> {alias['path']}")
     try:

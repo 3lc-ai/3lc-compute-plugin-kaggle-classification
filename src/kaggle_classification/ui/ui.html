@@ -1732,6 +1732,13 @@
       }
 
       function kgFetchConfig(resolve) {
+        if (!kgConfigDone && kgCfgAttempt === 0) {
+          // The first open after the worker was reaped (the host reaps an idle worker after five minutes)
+          // spends 3 to 7 s importing tlc before /config answers; say so from the first attempt, not only
+          // on a retry (Gudbrand's rc14 round, 2026-10-21). Cleared on success like the retry banner.
+          kgShowCfgBanner('<div class="kg-callout info"><span class="spinner" aria-hidden="true"></span>' +
+            '<span>Starting the plugin. The first open takes about 10 seconds.</span></div>');
+        }
         API.authFetch(PLUGIN_ROOT + '/config')
         .then(function (r) {
           if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }

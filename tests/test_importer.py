@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 from helpers import FakeCtx, make_kit_tree, small_manifest_data
 
 import build_kit  # tools/ is on sys.path (conftest)
-from kaggle_classification import importer, session
+from kaggle_classification import importer, kit, session
 from kaggle_classification import manifest as manifest_mod
 from kaggle_classification.kit import FILES_INDEX_NAME, KIT_DIR_NAME
 
@@ -97,6 +98,53 @@ def test_import_registers_train_and_val_with_undefined_and_weights(project_root,
     # No revision yet: the latest train/val revision IS the seed (the Loop's Dashboard target).
     assert state["latest"] == {"train": result["tables"]["train"]["url"], "val": result["tables"]["val"]["url"]}
     assert "3LC Scene Classification Challenge" in tlc.Table.from_url(tlc.Url(result["tables"]["train"]["url"])).description
+
+
+def test_a_moved_kit_is_repointed_on_reverify_and_on_a_reusing_import(tmp_path, project_root, kit_and_manifest):
+    """The moved-kit rule (2026-10-21): the kit folder for the same kit version pointed somewhere new, by
+    Re-verify with the folder or by an import that reuses the tables, re-points the project alias with force
+    and the import record's kit_dir follows, so the aliased rows resolve again without a re-import."""
+    kit_root, manifest = kit_and_manifest
+    result, _ = _run(manifest)
+    table = tlc.Table.from_url(tlc.Url(result["tables"]["train"]["url"]))
+    first = str(next(iter(table.table_rows))["image"])
+    alias_file = project_root / "intel-scene" / "default_aliases.3lc.yaml"
+
+    def resolved(row: str) -> Path:
+        return Path(tlc.Url(row).to_absolute(table.url).to_str())
+
+    shutil.move(str(tmp_path / "tree"), str(tmp_path / "moved"))
+    moved = tmp_path / "moved" / kit_root.name
+    assert not resolved(first).is_file()   # the alias still names the old folder
+    # 1. Re-verify with the new folder: the alias and the import record follow, the rows resolve again.
+    out = kit.verify_now(manifest, kit_dir=moved)
+    assert out["ok"] and out["alias"]["repointed_from"] == str(kit_root)
+    assert out["alias"]["path"] == (moved / "data").resolve().as_posix()
+    assert importer.read_record()["kit_dir"] == str(moved)
+    text = alias_file.read_text()
+    assert (moved / "data").resolve().as_posix() in text and (kit_root / "data").resolve().as_posix() not in text
+    assert resolved(first).is_file()
+    # 2. The recorded folder itself is nothing to do.
+    assert importer.repoint_kit_alias(manifest, moved) == {}
+    # 3. Moved again: an import that reuses the tables re-points too, and the record keeps kit_alias.
+    shutil.move(str(tmp_path / "moved"), str(tmp_path / "moved2"))
+    moved2 = tmp_path / "moved2" / kit_root.name
+    result2, ctx2 = _run(manifest, kit_dir=str(moved2))
+    assert all(t["reused"] for t in result2["tables"].values())
+    assert result2["kit_alias"] == f"<{importer.kit_alias_token(manifest)}>"
+    assert importer.read_record()["kit_dir"] == str(moved2)
+    assert any(line.startswith("The kit moved:") for line in ctx2.logs)
+    assert (moved2 / "data").resolve().as_posix() in alias_file.read_text()
+    assert all(resolved(str(r["image"])).is_file() for r in table.table_rows)
+
+
+def test_the_config_path_waits_one_second_on_the_index(monkeypatch):
+    """GET /config's latest-revision lookups wait one second, not the routes' five (2026-10-21)."""
+    seen: list[float] = []
+    monkeypatch.setattr(importer, "latest_url", lambda url, *, timeout=30.0: seen.append(timeout) or url)
+    assert importer._latest_url("C:/root/p/datasets/d/tables/t") == "C:/root/p/datasets/d/tables/t"
+    assert seen == [importer._LATEST_TIMEOUT_CONFIG_S]
+    assert importer._LATEST_TIMEOUT_CONFIG_S <= 1.0 < importer._LATEST_TIMEOUT_ROUTE_S
 
 
 def test_existing_tables_are_reused_and_revalidated_like_exdark(project_root, kit_and_manifest):
