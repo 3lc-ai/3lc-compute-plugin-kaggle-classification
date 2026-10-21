@@ -1,0 +1,392 @@
+{
+ "install": {
+  "state": "succeeded",
+  "error": "",
+  "install_s": 65.5,
+  "source": "3lc-compute-plugin-kaggle-classification[kaggle-classification] @ git+https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification.git@v1.0.0",
+  "ready_s": 4.4,
+  "version": "1.0.0"
+ },
+ "plugin_home": {
+  "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification",
+  "resolved_by": "compute-home"
+ },
+ "download": {
+  "status": "completed",
+  "s": 44.0,
+  "error": ""
+ },
+ "kit_state": {
+  "state": "success",
+  "source": "download",
+  "dest_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene",
+  "kit_dir": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\data\\intel-scene\\v1\\starter_kit",
+  "kit_version": "v1",
+  "current_version": "v1",
+  "file_count": 9601,
+  "image_count": 9600,
+  "completed_at": 1792599069.468725,
+  "verified_at": 1792599069.468725,
+  "manifest_provenance": {
+   "manifest_sha256": "383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e",
+   "manifest_source": "remote",
+   "manifest_source_detail": "https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json",
+   "manifest_fetched_at": "2026-10-21T16:10:26Z",
+   "manifest_document_url": "https://competitions.dev.3lc.ai/kaggle/intel-scene/manifest.json",
+   "competition_id": "intel-scene",
+   "kit_version": "v1",
+   "schema_version": 1
+  },
+  "job_id": "e0c508a4ab1e41749445ce3f9117c407"
+ },
+ "import": {
+  "status": "completed",
+  "s": 10.0,
+  "error": ""
+ },
+ "import_state": {
+  "state": "success",
+  "kit_alias": "<KAGGLE_INTEL_SCENE_V1>",
+  "tables": {
+   "train": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects/intel-scene/datasets/intel-scene_train/tables/initial",
+   "val": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects/intel-scene/datasets/intel-scene_val/tables/initial"
+  },
+  "checks": "19/19",
+  "alias_log": [
+   "Image paths use the alias <KAGGLE_INTEL_SCENE_V1> -> C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/home/.3lc-compute/plugin-state/kaggle-classification/data/intel-scene/v1/starter_kit/data"
+  ]
+ },
+ "alias_file": "aliases:\n  KAGGLE_INTEL_SCENE_V1: C:/Users/Owner/Desktop/3LC \n    Hackathons/3lc-hub-fresh/home/.3lc-compute/plugin-state/kaggle-classification/data/intel-scene/v1/starter_kit/data\n",
+ "train": {
+  "status": "failed",
+  "s": 24.0,
+  "error": "ValueError: Tried to create Run with invalid name: 'release check 1.0.0'. Run names can not contain the following characters: <>/\\|,.:\"'?*\nworker stderr:\n  File \"C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0\\.venv\\Lib\\site-packages\\",
+  "id": "de4e6f1a8e2d4f10adf575fc4f5e9cf9"
+ },
+ "train_record": {
+  "status": "failed",
+  "device": "cuda (auto)",
+  "best": null,
+  "best_epoch": null,
+  "weights": null,
+  "checks": "0/0",
+  "run_url": null
+ },
+ "predict": {
+  "status": "failed",
+  "s": 2.0,
+  "error": "release check 1.0.0 did not finish (failed). Pick a completed run.\nworker stderr:\n              ^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0\\.venv\\Lib\\site-packages\\tlc\\helpers\\project_layout.py\", li",
+  "id": "e1a5634a92ab40dcbc119673dd938c4b"
+ },
+ "predict_state": {
+  "state": "failed",
+  "csv": "",
+  "local_score": null,
+  "checks": "0/0"
+ },
+ "doctor": {
+  "plugin": {
+   "id": "kaggle-classification",
+   "version": "1.0.0",
+   "commit": "f4ce7cb41688a5fac5c50edeb8ab895a191df491",
+   "repository_url": "https://github.com/3lc-ai/3lc-compute-plugin-kaggle-classification"
+  },
+  "versions": {
+   "sdk": "0.3.3",
+   "tlc": "3.4.1",
+   "torch": "2.14.0+cu130",
+   "torchvision": "0.29.0+cu130",
+   "kaggle": "2.2.4",
+   "python": "3.12.3",
+   "platform": "win32 \u00b7 Windows-11-10.0.26300-SP0"
+  },
+  "device": {
+   "cuda_available": true,
+   "device_class": "cuda",
+   "probe": "done"
+  },
+  "gpu": {
+   "gpu_name": "NVIDIA GeForce RTX 5070 Ti",
+   "capability": "12.0",
+   "arch_list": [
+    "sm_75",
+    "sm_80",
+    "sm_86",
+    "sm_90",
+    "sm_100",
+    "sm_120"
+   ],
+   "torch": "2.14.0+cu130",
+   "kernels_ok": true,
+   "reason": "",
+   "driver": "617.42",
+   "driver_min": 580,
+   "driver_too_old": false
+  },
+  "manifest": {
+   "manifest_source": "remote",
+   "manifest_sha256": "383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e",
+   "competition_id": "intel-scene",
+   "kit_version": "v1",
+   "refresh_state": "done",
+   "error": null
+  },
+  "kit": {
+   "state": "success",
+   "kit_version": "v1",
+   "image_count": 9600,
+   "source": "download"
+  },
+  "kit_fallback": {
+   "url": "https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing",
+   "file": "intel-scene-v1-starter_kit.zip",
+   "sha256": "ae4e5937fb5e11c5773790677921f6cfcea1e725c20e1b7fe48e4b843d9b5015",
+   "bytes": 112270148
+  },
+  "images": {
+   "train": "ok",
+   "val": "ok"
+  },
+  "project_root": {
+   "current": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects",
+   "others": [],
+   "warning": ""
+  },
+  "plugin_home": {
+   "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification",
+   "resolved_by": "compute-home"
+  },
+  "uv": {
+   "plugin_venv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0\\.venv",
+    "uv": "0.13.4",
+    "home": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312",
+    "python": "3.12.3",
+    "leaks_pythonhome": false
+   },
+   "host_venv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+    "uv": "0.13.0",
+    "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+    "python": "3.12",
+    "leaks_pythonhome": false
+   },
+   "pythonhome_in_worker": null,
+   "leaky_versions": [
+    "0.11.7",
+    "0.11.8"
+   ]
+  },
+  "records": {
+   "runs": 1,
+   "project_runs": 1,
+   "ledger_predict": 0,
+   "ledger_submit": 0,
+   "ledger_path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\ledger.jsonl"
+  },
+  "kaggle": null
+ },
+ "bundle_preview": {
+  "members": [
+   "README.txt",
+   "import_record.json",
+   "ledger.jsonl",
+   "manifest_provenance.json",
+   "plugin.json",
+   "project/intel-scene/datasets/intel-scene_train/tables/initial/object.3lc.json",
+   "project/intel-scene/datasets/intel-scene_train/tables/initial/row_cache.parquet",
+   "project/intel-scene/datasets/intel-scene_val/tables/initial/object.3lc.json",
+   "project/intel-scene/datasets/intel-scene_val/tables/initial/row_cache.parquet",
+   "project/intel-scene/files.json",
+   "runs/de4e6f1a8e2d4f10adf575fc4f5e9cf9.json",
+   "train_revisions.json"
+  ],
+  "bytes": 182440,
+  "checkpoints": {
+   "mode": "all",
+   "requested": [],
+   "default_runs": [],
+   "included": [],
+   "skipped": [],
+   "max": 2
+  },
+  "runs": [
+   {
+    "id": "de4e6f1a8e2d4f10adf575fc4f5e9cf9",
+    "run_url": null,
+    "folder": null
+   }
+  ]
+ },
+ "bundle": {
+  "http": 200,
+  "content_type": "application/zip",
+  "bytes": 123496,
+  "members": 12,
+  "best_pt": [],
+  "has_ledger": true,
+  "has_plugin_json": true
+ },
+ "total_s": 151.8,
+ "train2": {
+  "status": "completed",
+  "s": 68.1,
+  "error": "",
+  "id": "bcfa878ddbf343e29bfba790da2badf4"
+ },
+ "train2_record": {
+  "status": "completed",
+  "device": "cuda (auto)",
+  "best": 51.08,
+  "best_epoch": 2,
+  "weights": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\projects\\intel-scene\\runs\\release-check-1-0-0\\model\\best.pt",
+  "checks": "9/9",
+  "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects/intel-scene/runs/release-check-1-0-0",
+  "reducer": "umap",
+  "elapsed_s": null,
+  "runs_listed": [
+   [
+    "release-check-1-0-0",
+    "completed"
+   ],
+   [
+    "release check 1.0.0",
+    "failed"
+   ]
+  ]
+ },
+ "predict2": {
+  "status": "completed",
+  "s": 10.0,
+  "error": "",
+  "id": "486e8509ea73421aabec1e7fb7b1ad5a"
+ },
+ "predict2_state": {
+  "state": "predicted",
+  "csv": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\predictions\\release-check-1-0-0\\submission_20261021_111424.csv",
+  "local_score": {
+   "kind": "val",
+   "value": 51.08,
+   "recorded": 51.08,
+   "delta": 0.0,
+   "rows": 1200,
+   "table_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects/intel-scene/datasets/intel-scene_val/tables/initial",
+   "ok": true,
+   "tolerance_pp": 0.25
+  },
+  "checks": "10/10",
+  "sanity": {
+   "images": 1800,
+   "mean_confidence": 0.414,
+   "low_confidence": 1385,
+   "low_confidence_threshold": 0.5,
+   "per_class": {
+    "buildings": 186,
+    "forest": 257,
+    "glacier": 58,
+    "mountain": 620,
+    "sea": 269,
+    "street": 410
+   },
+   "skew_low_pct": 5,
+   "skew_high_pct": 50,
+   "skewed": [
+    "glacier 3 %"
+   ],
+   "warning": "The predicted-class distribution is skewed (glacier 3 % of 1,800 predictions; expected between 5 % and 50 % per class). Are these fully-trained weights? (Submitting is still fine.)"
+  }
+ },
+ "doctor2": {
+  "records": {
+   "runs": 2,
+   "project_runs": 2,
+   "ledger_predict": 1,
+   "ledger_submit": 0,
+   "ledger_path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification\\ledger.jsonl"
+  },
+  "images": {
+   "train": "ok",
+   "val": "ok"
+  },
+  "project_root": {
+   "current": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects",
+   "others": [],
+   "warning": ""
+  },
+  "manifest_sha256": "383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e",
+  "kit_fallback_url": "https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing",
+  "uv": {
+   "plugin_venv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\managed-plugins\\kaggle-classification\\1.0.0\\.venv",
+    "uv": "0.13.4",
+    "home": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python312",
+    "python": "3.12.3",
+    "leaks_pythonhome": false
+   },
+   "host_venv": {
+    "path": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\.venv",
+    "uv": "0.13.0",
+    "home": "C:\\Users\\Owner\\AppData\\Roaming\\uv\\python\\cpython-3.12-windows-x86_64-none",
+    "python": "3.12",
+    "leaks_pythonhome": false
+   },
+   "pythonhome_in_worker": null,
+   "leaky_versions": [
+    "0.11.7",
+    "0.11.8"
+   ]
+  },
+  "plugin_home": "C:\\Users\\Owner\\Desktop\\3LC Hackathons\\3lc-hub-fresh\\home\\.3lc-compute\\plugin-state\\kaggle-classification",
+  "disk_free_gb": 1017.2
+ },
+ "history": {
+  "runs": [
+   [
+    "release-check-1-0-0",
+    "completed"
+   ],
+   [
+    "release check 1.0.0",
+    "failed"
+   ]
+  ],
+  "history": []
+ },
+ "bundle2_preview": {
+  "bytes": 45897331,
+  "checkpoints": {
+   "mode": "all",
+   "requested": [],
+   "default_runs": [],
+   "included": [
+    {
+     "train_job_id": "bcfa878ddbf343e29bfba790da2badf4",
+     "run_name": "release-check-1-0-0",
+     "run_url": "C:/Users/Owner/Desktop/3LC Hackathons/3lc-hub-fresh/projects/intel-scene/runs/release-check-1-0-0",
+     "sha256": "af5b4eda0fe42ecb8d0333886ef360ba4dbf096077fd22683fa41d0125c81a3b",
+     "bytes": 45442563,
+     "public_score": null,
+     "ref": null,
+     "verified_against": [
+      "the run record",
+      "the Run"
+     ],
+     "name": "project/intel-scene/runs/release-check-1-0-0/model/best.pt"
+    }
+   ],
+   "skipped": [],
+   "max": 2
+  },
+  "members": 20
+ },
+ "bundle2": {
+  "http": 200,
+  "bytes": 45780432,
+  "members": 20,
+  "best_pt": [
+   "project/intel-scene/runs/release-check-1-0-0/model/best.pt"
+  ],
+  "has_ledger": true
+ },
+ "total2_s": 84.5
+}

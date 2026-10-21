@@ -18,7 +18,7 @@
 #   PROJECT_ROOT=<dir>     the 3LC project root for both services; default ./projects in this folder,
 #                          the same on every start so the plugin's runs stay in one place
 #   MANIFEST_BASE=<url>    the competition manifest tier; default https://competitions.dev.3lc.ai
-#   TEST_CATALOG=<url>     the plugin catalog listing the release candidate (default: the 1.0.0rc14 test catalog)
+#   TEST_CATALOG=<url>     the plugin catalog listing the release (default: the 1.0.0 release catalog on the default branch)
 #   UV_CACHE_DIR=<dir>     reuse an existing uv cache (otherwise a fresh one under ./home)
 
 set -u
@@ -31,7 +31,7 @@ OBJECT_PORT="${OBJECT_PORT:-5015}"
 COMPUTE_PORT="${COMPUTE_PORT:-5020}"
 PROJECT_ROOT="${PROJECT_ROOT:-$ROOT/projects}"
 MANIFEST_BASE="${MANIFEST_BASE:-https://competitions.dev.3lc.ai}"
-TEST_CATALOG="${TEST_CATALOG:-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/catalog-test.json}"
+TEST_CATALOG="${TEST_CATALOG:-https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/catalog.json}"
 DEFAULT_CATALOG="https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json"
 
 say() { echo "$*"; echo "$*" >> "$ROOT/start_tester.last.log"; }

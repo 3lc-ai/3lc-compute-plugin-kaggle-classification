@@ -276,6 +276,28 @@ uninstall + reinstall fails with "Access is denied" until the orphan is stopped.
 | G testers' checklist | TESTING.md section 10 |
 | H anti-cheat review | docs/PREDICT_MIRROR.md section 15 |
 
+## Run 15 — the 1.0.0 release check on `3lc-hub-fresh` rebuilt from scratch (2026-10-21, 11:09 → 11:16)
+
+The environment: the rc14 `3lc-hub-fresh` renamed aside (`3lc-hub-fresh-rc14-20261021`, kept), a new folder
+built as TESTING.md step 2 says (uv 0.13.0, CPython 3.12.3, 3lc-compute 1.1.0 with 3lc 3.4.1 and SDK 0.3.3),
+the new `tester/start_tester.ps1` (default catalog `HEAD/catalog.json`, default root `<folder>\projects`),
+the 3LC API key file byte-copied from the old home. The steps ran through the host's own install route and
+`/run` (the in-process host, as run 14 did), then the real services came up with the start script. The record:
+`docs/campaign/release_check_1.0.0.json`.
+
+| Step | Result |
+|---|---|
+| Install 1.0.0 from `HEAD/catalog.json` | PASS: `succeeded` in 65.5 s + ready 4.4 s; the plugin venv's uv 0.13.4, no PYTHONHOME leak; version 1.0.0, commit `f4ce7cb` |
+| Download the kit from the dev CDN | PASS: completed in 44.0 s; 9,601 files, 9,600 images, kit v1, source `download` |
+| Import | PASS: completed in 10.0 s, 19/19 checks; rows `<KAGGLE_INTEL_SCENE_V1>/…`, `projects\intel-scene\default_aliases.3lc.yaml` written with the kit's data folder |
+| Train "release check 1.0.0" | **FAIL, a finding**: tlc refuses a Run name with a dot (`<>/\|,.:"'?*`), the error surfaced from the worker after 24 s; the record is `failed` with the reason and Predict refused it ("did not finish (failed). Pick a completed run."), as session 16 intends. Fixed on `develop` for 1.0.1: the run name is checked before the run starts |
+| Train `release-check-1-0-0`, 2 epochs | PASS: completed in 68.1 s on `cuda (auto)`, best val accuracy 51.08 % at epoch 2, 9/9 provenance checks, reducer umap |
+| Predict | PASS: completed in 10.0 s, 10/10 checks, the val check reproduced 51.08 % (delta 0.0), 1,800 rows, state `predicted` |
+| Doctor | PASS, every row: Plugin v1.0.0 · f4ce7cb; Compute service; SDK 0.3.3 · 3lc 3.4.1; torch 2.14.0+cu130 · torchvision 0.29.0+cu130; CUDA: RTX 5070 Ti, compute capability 12.0, sm_120 kernels, driver 617.42 (R580 needed); Manifest `remote` sha256 `383cab9a…` intel-scene kit v1; Kit v1 success 9,600 images; **Kit fallback: the Drive folder link**; Kaggle not checked; Plugin home `compute-home`; Project root one root, no warning; Free disk space; Python 3.12.3; uv ok; Table images train ok · val ok; Records 2 runs · 1 prediction · 0 submissions |
+| Verification bundle, checkpoints=all | PASS: 45.8 MB, 20 members, `project/intel-scene/runs/release-check-1-0-0/model/best.pt` included and verified against the run record and the Run (sha256 `af5b4eda…`), `ledger.jsonl` and `plugin.json` present; the failed run's record included |
+| The services with the start script | PASS: object :5015 and compute :5020 answer (403 / 404 without the Hub token), project root `<folder>\projects`, the plugin registered at boot |
+| The imported table in the Dashboard (images through the alias) | **Not checked here**: the Dashboard needs the Hub login, which this session cannot do. Rishikesh: connect the services on https://hub.3lc.ai/gettingstarted/, open `intel-scene_train/initial` in the Dashboard and confirm the images render |
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps

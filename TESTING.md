@@ -1,4 +1,4 @@
-# TESTING.md: try the Kaggle Classification plugin (release candidate 1.0.0rc14)
+# TESTING.md: try the Kaggle Classification plugin (release 1.0.0)
 
 ## Quick start for testers
 
@@ -12,7 +12,7 @@ does not match.
 | **You need** | uv 0.11.9 or newer (`uv --version`; `uv self update`), Python 3.12 (step 1 installs it), for a GPU an NVIDIA driver R580 or newer (`nvidia-smi`) | uv 0.11.9 or newer, Python 3.12 (step 1 installs it); no GPU driver needed |
 | | a 3LC account whose API key is from the **same workspace** you sign in to on hub.3lc.ai, and a Kaggle account | the same |
 | **1. Install** | `mkdir C:\3lc-tester; cd C:\3lc-tester; uv python install 3.12; uv venv --python 3.12 .venv; uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple "3lc-compute==1.1.0"` | `mkdir -p ~/3lc-tester && cd ~/3lc-tester && uv python install 3.12 && uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python --index-url https://pypi.org/simple "3lc-compute==1.1.0"` |
-| **2. Download and run the tester script** | `iwr -UseBasicParsing https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.ps1 -OutFile start_tester.ps1; powershell -ExecutionPolicy Bypass -File .\start_tester.ps1` | `curl -fsSLO https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.sh && chmod +x start_tester.sh && ./start_tester.sh` |
+| **2. Download and run the tester script** | `iwr -UseBasicParsing https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/tester/start_tester.ps1 -OutFile start_tester.ps1; powershell -ExecutionPolicy Bypass -File .\start_tester.ps1` | `curl -fsSLO https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/tester/start_tester.sh && chmod +x start_tester.sh && ./start_tester.sh` |
 | | the first start asks for your 3LC API key once; two service windows open; every start keeps the tables and runs in `C:\3lc-tester\projects` | the first start asks for your 3LC API key once; every start keeps the tables and runs in `~/3lc-tester/projects` |
 | **3. Connect** | https://hub.3lc.ai/gettingstarted/: object service `http://127.0.0.1:5015`, compute service `http://127.0.0.1:5020`, allow local network access | the same |
 | **4. Install the plugin** | Hub **Plugins > Available > Kaggle Classification > Install**; the first install takes a few minutes (a multi-gigabyte CUDA stack) | the same (no CUDA stack on macOS) |
@@ -87,8 +87,8 @@ folder, because it redirects `HOME` there.)
 
 Download the one for your OS into the tester folder (next to `.venv`):
 
-- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.ps1
-- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/release/1.0.0rc14/tester/start_tester.sh
+- Windows: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/tester/start_tester.ps1
+- macOS / Linux: https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/tester/start_tester.sh
 
 What the script does: it starts the 3LC object service and the 3LC compute service with their home
 folder redirected to `.\home` under the tester folder, points the compute service at the test tier of
@@ -153,7 +153,7 @@ no 3LC login). Send `start_tester.last.log` and the newest file in `logs\`.
 ## 6. Install the plugin
 
 1. In the Hub open **Plugins → Available**. The card **Kaggle Classification** shows version
-   **1.0.0rc14**. On the first start the compute service first installs its eight stock plugins
+   **1.0.0**. On the first start the compute service first installs its eight stock plugins
    (about a minute with a fast connection, longer on a slow one); the card appears once that is done,
    so reload the page if the list is still empty after a minute.
 2. Click **Install**. The compute service builds the plugin’s own Python environment (torch is the
@@ -166,7 +166,7 @@ chips (resnet18 · from scratch · 150px / 6 classes · 6,000 unlabeled / Scored
 Loop” row, four tabs, **1 Import · 2 Train · 3 Predict + Submit · 4 Status**: and the Import tab
 open with a **Download starter kit** button. From your second visit on, the header collapses to one
 line (**Show details** expands it). The footer reads `3LC Kaggle Classification plugin
-v1.0.0rc14`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
+v1.0.0`. **If not:** a screenshot, and the newest `logs\compute-*.log`. If the page says
 “Setting up the plugin environment. The first run takes a few minutes.” wait: that is the
 first-use provisioning, it continues by itself.
 
@@ -310,7 +310,7 @@ Open **4 Status**.
   callout “Connect your Kaggle account on the Predict + Submit tab…” (expected; after 7.5b it shows your
   username and “No Kaggle submissions yet” or the unlaunched note instead). “Updated just now” with a
   refresh button; click it and the line resets.
-- Expand **Doctor** at the bottom: one row per fact, Plugin (v1.0.0rc14 and a commit), Compute
+- Expand **Doctor** at the bottom: one row per fact, Plugin (v1.0.0 and a commit), Compute
   service (v1.1.0), SDK · 3lc (0.3.3 · 3.3 or newer), torch · torchvision (**2.14.0** · **0.29.0**, with
   `+cu130` on Windows / Linux), CUDA in the worker, Manifest (remote or cache · a sha256 · intel-scene
   kit v1, “cache” means the last fetched copy, the same document; if the server could not be reached, the
@@ -388,7 +388,7 @@ Mac or a machine without an NVIDIA GPU; tick each one in your feedback.
 Paste this into your message, filled in (one per problem is better than one for everything):
 
 ```text
-Plugin test · 1.0.0rc14
+Plugin test · 1.0.0
 OS / GPU:            (e.g. Windows 11, RTX 3060 · macOS 15, M2 · Ubuntu 24.04, no GPU)
 Step that differed:  (7.1 … 7.9, or "install" / "connect")
 What I expected:     (from the "You should see" line)
