@@ -841,7 +841,8 @@ def _predict_core(ck, inputs, sample_ids, val_url, params, rec, log, set_progres
         seen[0] += len(preds)
         progress("val", seen[0], n_val)
 
-    val_loader = DataLoader(val_view, batch_size=BATCH_SIZE, shuffle=False, num_workers=workers, pin_memory=False)
+    val_loader = DataLoader(val_view, batch_size=BATCH_SIZE, shuffle=False, num_workers=workers, pin_memory=False,
+                            worker_init_fn=trainer.LoaderWorkerInit(seed=False) if workers > 0 else None)
     if not _forward_batches(model, val_loader, device, on_val, is_cancelled):
         return _cancelled(rec, log, model)
     progress("val", n_val, n_val, force=True)

@@ -164,7 +164,8 @@ def test_edited_revision_survives_start_over_reimport_kit_reset_and_rollback(pro
     kit.run_download({"dest_dir": str(dest)}, FakeCtx(), manifest)
     assert tlc.Url(train_url).exists()
     _assert_revision_intact(rev_url, expected, rows)
-    assert all(Path(r["image"]).is_file() for r in tlc.Table.from_url(tlc.Url(rev_url)).table_rows)
+    assert all(Path(tlc.Url(r["image"]).to_absolute().to_str()).is_file()
+               for r in tlc.Table.from_url(tlc.Url(rev_url)).table_rows)
 
     # 4. Failure rollback during a further re-import: only the tables THAT job created go.
     real = importer.register_split

@@ -1285,6 +1285,32 @@ def worker_init(worker_id: int) -> None:
     np.random.seed(seed)
 
 
+class LoaderWorkerInit:
+    """Picklable DataLoader ``worker_init_fn`` for ``workers > 0``: registers the URL aliases this
+    process knows (the kit alias the tables' rows are written with) in each worker, then seeds it like
+    :func:`worker_init` when ``seed``. Workers are fresh processes on macOS and Windows (spawn) and
+    learn a project's aliases only when they open a table there, which a pickled view never does: a
+    ``<TOKEN>/...`` row would resolve against the table URL instead of the kit. Build it after the
+    tables are open, so the snapshot holds their project's aliases."""
+
+    def __init__(self, *, seed: bool) -> None:
+        import tlc
+
+        self.aliases = {str(k).strip("<>"): str(v) for k, v in tlc.url.get_registered_url_aliases().items()}
+        self.seed = seed
+
+    def __call__(self, worker_id: int) -> None:
+        import tlc
+
+        for token, path in self.aliases.items():
+            try:
+                tlc.url.register_url_alias(token=token, path=path, force=True)
+            except Exception:
+                continue
+        if self.seed:
+            worker_init(worker_id)
+
+
 def make_optimizer(name: str, params: Any, lr: float, weight_decay: float) -> Any:
     import torch
 
@@ -1646,7 +1672,7 @@ def _train_and_collect(
     n_usable = len(sampler)
 
     def loaders() -> tuple[Any, Any]:
-        winit = worker_init if workers > 0 else None
+        winit = LoaderWorkerInit(seed=True) if workers > 0 else None
         tl = DataLoader(train_view, batch_size=batch_size, sampler=sampler, num_workers=workers,
                         drop_last=False, pin_memory=False, worker_init_fn=winit)
         vl = DataLoader(val_view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False,
@@ -2069,7 +2095,8 @@ def _collect(
     total_rows = sum(int(t.row_count) for _, t, _, _ in targets)
     done_rows = 0
     for split, table, view, url in targets:
-        loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False)
+        loader = DataLoader(view, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=False,
+                            worker_init_fn=LoaderWorkerInit(seed=False) if workers > 0 else None)
         embs, preds, confs, losses = [], [], [], []
         with torch.no_grad():
             for images, labels_b in loader:
