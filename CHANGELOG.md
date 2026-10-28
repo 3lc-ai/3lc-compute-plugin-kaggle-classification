@@ -9,6 +9,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **A run name with a dot (or any of `< > / \ | , . : " ' ? *`) is refused before the run starts**, with the
   characters named and the fix in the sentence. Found by the 1.0.0 release check: tlc refuses such Run names,
   and the refusal came out of the worker as a raw error after the tables were opened.
+- **Submit to Kaggle waits while inference re-runs.** It stayed enabled with the previous prediction, and the
+  submission it started was refused because that prediction was being replaced.
+- **The submission message can't exceed Kaggle's limit.** The field takes its length limit from the competition
+  manifest; a longer message was refused only when the submission started.
+- **Start training never runs with a value out of range.** It stayed enabled until the field lost focus.
+- **Import & validate waits for the kit folder you typed to be checked.** Editing the folder after a passing
+  check left it enabled for the old folder for half a second.
+- **The plugin's first setup no longer reads as missing test images**, and the train table and test images are
+  checked again once the setup is done.
+- **A train table URL filled in by the page is checked.** Clearing the field filled in the imported table's URL
+  but left Start training waiting.
+
+### Changed
+
+#### Actions that cannot run yet
+
+- **Every job button says why it cannot run yet, and what to do.** Import & validate, Download starter kit,
+  Start training, Run inference and Submit to Kaggle are disabled until they can run; the line under the
+  buttons and their tooltip name the first thing missing ("Choose a run to enable Run inference.", "Connect
+  your Kaggle account to enable Submit to Kaggle."). Connect and Export verification bundle say why in their
+  tooltip.
+- **While the plugin environment is set up, every job button waits and says so**, instead of a start that is
+  refused.
+- **Required fields use the Hub's style**: a red * on the label and a red wash while empty, on the starter kit
+  folder, the train table URL, the training parameters and the Kaggle token.
 
 ## [1.0.0] — 2026-10-21 (sessions 15 to 16: the rc14 hand test's bundle finding, Gudbrand's round, the error-visibility audit)
 

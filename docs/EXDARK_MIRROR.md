@@ -152,3 +152,20 @@ around the form, never instead of it; item 5's stale view keeps Re-import… wit
 14's notice sits above the kit folder). The only visual addition rc12 keeps is item 12, the collapsible
 checks list, in rc10's slot. rc12 also bans the em dash from every participant surface
 (`tests/test_copy_rules.py`).
+
+## 6. PBI 19074 divergence (2026-10-28): actions that cannot run yet say why. Back-port to ExDark
+
+The Hub-wide rule for plugin pages (PBI 19074, the convention Thomas set on the Machines plugin): a job button
+that cannot run is disabled and says why, as what to do to enable it. ExDark disables the same buttons without a
+reason. This is a deliberate difference in every tab; it supersedes the enable rules in `docs/TRAIN_MIRROR.md`
+#29 and #30 and `docs/PREDICT_MIRROR.md` #32.
+
+| # | ExDark | Ours |
+|---|---|---|
+| 1 | Import & validate, Start training, Run inference and Submit to Kaggle compute `disabled` with no reason | Each has one blocker that returns the first unmet requirement as "<do this> to enable <the button's label>." ("Enter the starter kit folder, or download the kit, to enable Import & validate."); the gate sets `disabled`, the tooltip and a muted line under the button row (`.kg-why`, `aria-describedby`), always one line high so the page never moves; the click handler asks the same blocker |
+| 2 | Download starter kit, Connect and Export verification bundle have no gate | Download gets the line too (its only reason is the environment setup); Connect ("Paste your Kaggle token to enable Connect.") and Export (the bundle preview's refusal) get the tooltip only: Connect's row starts with the token field, and Export is a secondary action whose refusal already shows under it |
+| 3 | Field validity is checked on blur; Start stays enabled with a value out of range until then | Start reads the fields as they are on every input ("Set epochs between 1 and 50 to enable Start training."); the red message under the field still waits for blur. "Fix the highlighted fields first." and the other click-time messages are gone |
+| 4 | Plain labels; the kit folder alone has the required `*` | The Hub's required style: `required` on the kit folder, the train table URL (with a placeholder), the six bounded training fields (placeholder = the served range, label `*`) and the Kaggle token, so an empty one shows the red wash |
+| 5 | First-use provisioning disables Import and Download directly; a failed start re-enables them | One provisioning flag every blocker checks first after demo mode ("Wait while the plugin environment is set up to enable …"); leaving provisioning re-gates every button and re-runs the shown tab's checks. The test-images check treats a provisioning answer as provisioning, not as missing images |
+| 6 | Submit stays enabled while inference re-runs; the message length is checked only by the job | Submit waits for inference to finish; `#ps-message` takes `maxlength` from the manifest's `submission.message_max_chars`, and a longer value set in code blocks Submit with its reason |
+| 7 | `?kgdev` notes "demo state · actions disabled" beside each job button | Demo mode stays the first condition of every blocker ("Open the page without ?kgdev to enable …"), shown on the reason line; the note stays only beside Export, which has no line |
