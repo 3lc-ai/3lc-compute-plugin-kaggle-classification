@@ -221,7 +221,7 @@ def test_fragment_is_the_exdark_train_tab():
         "Open run in Dashboard", "Open run in Projects", "Start new run", "Training was interrupted",
         "Watch run in Projects", 'id="tr-run-watch"',
         "Training cancelled after", "Stop this training run?", "Training… (safe to navigate away)",
-        "Cancelling… (stops at the next checkpoint)", "Fix the highlighted fields first.", "Tables verified: ",
+        "Cancelling… (stops at the next checkpoint)", "function trStartBlocker", "Tables verified: ",
         "excluded as undefined", "will be skipped until you label", "cannot be learned in this run",
         "No usable rows: every row is undefined or at weight 0.", "is not derived from the imported train table",
         "more rows than the competition split", "runs averaged ", "Estimated from a reference ",
@@ -488,6 +488,46 @@ def test_fragment_is_the_exdark_status_tab():
         assert f"mode === '{state}'" in html, state
     assert "if (mode && mode.indexOf('status-') === 0) { stDevForce(mode); return; }" in html
     assert "'st-export-btn'].forEach" in html
+
+
+def test_actions_that_cannot_run_yet_say_why():
+    """PBI 19074: a job button that cannot run is disabled with a reason, as what to do to enable it. One
+    blocker per action (demo mode first, then provisioning), applied by one gate; a form's main action also
+    shows the reason on a line under its button row that is always in the layout (never hidden)."""
+    html = FRAGMENT.read_text(encoding="utf-8")
+    for btn, line in (("kg-dl-btn", "kg-dl-why"), ("kg-import-btn", "kg-import-why"), ("tr-start-btn", "tr-start-why"),
+                      ("ps-predict-btn", "ps-predict-why"), ("ps-submit-btn", "ps-submit-why")):
+        assert f'id="{btn}"' in html and f'aria-describedby="{line}"' in html, btn
+        assert f'<div id="{line}" class="form-help kg-why"></div>' in html, line
+    assert ".kgc .kg-why { margin-top: 6px; line-height: 1.5; min-height: 1.5em; }" in html
+    for needle in (
+        "function kgCommonBlocker(btn)", "if (kgDevMode) { return kgBlocked(btn, 'Open the page without ?kgdev'); }",
+        "if (kgProvisioning) { return kgBlocked(btn, 'Wait while the plugin environment is set up'); }",
+        "function kgBlocked(btn, todo) { return todo + ' to enable ' + kgBtnLabel(btn) + '.'; }",
+        "btn.disabled = !!busy || !!reason;", "function kgGateAll()",
+        "function kgImportBlocker()", "function dlBlocker()", "function trStartBlocker()",
+        "function psPredictBlocker()", "function psSubmitBlocker()", "function psConnectBlocker()",
+        "function stExportBlocker()",
+        # the fixes in the gated paths
+        "if (psPredicting) { return kgBlocked(btn, 'Wait for inference to finish'); }",
+        "el('ps-message').maxLength = max;", "el('ps-message').addEventListener('input', psCheckSubmitReady);",
+        "el('tr-form').addEventListener('input', trCheckReady);",
+        "el('kg-import-form').addEventListener('input', kgCheckReady);",
+        "kgApplyDerivedUrls([id]).then(function () { trVerifyTables(); });",
+        "if (info && info.status === 'provisioning' && !info.ok && !info.state) {",
+        "kgProvisioning = true;", "kgProvisioning = false;",
+    ):
+        assert needle in html, needle
+    # The re-enables that used to override a gate are gone: every job's end runs the gate instead.
+    for gone in (
+        "el('kg-dl-btn').disabled = false;", "el('kg-dl-btn').disabled = !!kgDevMode;", "btn.disabled = !!kgDevMode;",
+        "el('kg-import-btn').disabled = true;", "Paste the token first.", "Fix the highlighted fields first.",
+        "Import needs a passing preflight.",
+    ):
+        assert gone not in html, gone
+    # Never hidden: no reason line is ever hidden or taken out of the layout.
+    for line in ("kg-dl-why", "kg-import-why", "tr-start-why", "ps-predict-why", "ps-submit-why"):
+        assert f"el('{line}').hidden" not in html and f"el('{line}').style.display" not in html, line
 
 
 def test_every_interpolated_value_in_an_innerhtml_template_is_escaped():

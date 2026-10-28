@@ -282,6 +282,9 @@
 .kgc .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .kgc .form-label.required::after { content: " *"; color: var(--danger, #ef4444); }
 .kgc .form-help { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+/* PBI 19074: the line under a main button's row saying why it cannot run yet. Always in the layout, one line high,
+   so the page does not move as the reason comes and goes. */
+.kgc .kg-why { margin-top: 6px; line-height: 1.5; min-height: 1.5em; }
 .kgc .form-control { font: inherit; font-size: 12.5px; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); }
 .kgc .btn { font: inherit; font-size: 12.5px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); cursor: pointer; text-decoration: none; }
 .kgc .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -442,9 +445,10 @@
             reading the kit they were imported from.</p>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" id="kg-dl-btn" class="btn btn-primary btn-sm kgi-btn"></button>
+            <button type="button" id="kg-dl-btn" class="btn btn-primary btn-sm kgi-btn" aria-describedby="kg-dl-why"></button>
             <span id="kg-dl-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
+          <div id="kg-dl-why" class="form-help kg-why"></div>
         </div>
         <div id="kg-dl-progress" style="margin-top: 10px;"></div>
         <div class="kg-log-details" id="kg-dl-log-details" style="display: none;">
@@ -477,7 +481,7 @@
             <div class="form-group">
               <label class="form-label required" for="kg-kit">Starter kit folder</label>
               <input id="kg-kit" name="kit_dir" type="text" class="form-control"
-                     placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false">
+                     placeholder="C:\path\to\starter_kit" autocomplete="off" spellcheck="false" required>
               <div class="form-help">Path on the machine running the compute service.
                 Browsing from another computer? The starter kit must be unzipped on the
                 service’s machine, and this is its path there.</div>
@@ -505,10 +509,11 @@
 
         <hr class="divider">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button type="button" id="kg-import-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Import &amp; validate</button>
+          <button type="button" id="kg-import-btn" class="btn btn-primary btn-lg kgi-btn" aria-describedby="kg-import-why" disabled>Import &amp; validate</button>
           <span class="spinner" id="kg-import-spinner" style="display: none;"></span>
           <span id="kg-import-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
+        <div id="kg-import-why" class="form-help kg-why"></div>
         <div class="form-help" style="margin-top: 6px;">Checks every image and registers the two tables: about 10 seconds.</div>
       </form>
       <!-- The outcome (progress, checks, table rows, log) follows the form (rc11): the Imported view and a
@@ -565,7 +570,7 @@
           <div class="form-group kg-pick-wrap">
             <label class="form-label required" for="tr-train-url">Train table URL</label>
             <div class="kg-url-row">
-              <input id="tr-train-url" name="train_table_url" type="text" class="form-control" autocomplete="off" spellcheck="false">
+              <input id="tr-train-url" name="train_table_url" type="text" class="form-control" placeholder="Paste a train table URL" autocomplete="off" spellcheck="false" required>
               <button type="button" class="btn btn-ghost btn-sm kgi-btn" id="tr-train-pick"
                       title="Pick a table revision" aria-label="Pick a table revision"
                       aria-haspopup="listbox" aria-expanded="false"><svg class="kgi" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l6 3-6 3-6-3z"/><path d="M2 8.75l6 3 6-3"/><path d="M2 11.75l6 3 6-3"/></svg></button>
@@ -591,31 +596,31 @@
         <div class="kg-sec-head" role="heading" aria-level="3">Training parameters</div>
         <div class="kg-form-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           <div class="form-group" data-field="epochs">
-            <label class="form-label" for="tr-epochs">Epochs</label>
-            <input id="tr-epochs" name="epochs" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
+            <label class="form-label required" for="tr-epochs">Epochs</label>
+            <input id="tr-epochs" name="epochs" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off" required>
             <div class="form-help">Passes over the usable rows. <span id="tr-epochs-ref"></span>
               <span data-range="epochs"></span></div>
             <div id="tr-duration"></div>
             <div class="kg-field-slot" data-for="tr-epochs"></div>
           </div>
           <div class="form-group" data-field="batch_size">
-            <label class="form-label" for="tr-batch">Batch size</label>
-            <input id="tr-batch" name="batch_size" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
+            <label class="form-label required" for="tr-batch">Batch size</label>
+            <input id="tr-batch" name="batch_size" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off" required>
             <div class="form-help">Images per training step. Raise it until GPU memory runs out;
               lower it on CUDA out-of-memory. 16 fits any card at <span id="tr-batch-px"></span>px.
               <span data-range="batch_size"></span></div>
             <div class="kg-field-slot" data-for="tr-batch"></div>
           </div>
           <div class="form-group" data-field="lr">
-            <label class="form-label" for="tr-lr">Learning rate</label>
-            <input id="tr-lr" name="learning_rate" type="number" class="form-control" step="0.00001" inputmode="decimal" autocomplete="off">
+            <label class="form-label required" for="tr-lr">Learning rate</label>
+            <input id="tr-lr" name="learning_rate" type="number" class="form-control" step="0.00001" inputmode="decimal" autocomplete="off" required>
             <div class="form-help">Initial learning rate for Adam. Higher learns faster but can diverge;
               <span id="tr-lr-sched"></span> <span data-range="lr"></span></div>
             <div class="kg-field-slot" data-for="tr-lr"></div>
           </div>
           <div class="form-group" data-field="weight_decay">
-            <label class="form-label" for="tr-wd">Weight decay</label>
-            <input id="tr-wd" name="weight_decay" type="number" class="form-control" step="0.001" inputmode="decimal" autocomplete="off">
+            <label class="form-label required" for="tr-wd">Weight decay</label>
+            <input id="tr-wd" name="weight_decay" type="number" class="form-control" step="0.001" inputmode="decimal" autocomplete="off" required>
             <div class="form-help">L2 penalty on the weights (the optimizer’s <code>weight_decay</code>). 0 is the
               baseline; a small value regularises a from-scratch model. <span data-range="weight_decay"></span></div>
             <div class="kg-field-slot" data-for="tr-wd"></div>
@@ -661,15 +666,15 @@
                     <code>cpu (fallback: …)</code>. Use these settings never copies a run’s device.</div>
                 </div>
                 <div class="form-group" data-field="workers">
-                  <label class="form-label" for="tr-workers">Workers</label>
-                  <input id="tr-workers" name="workers" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
+                  <label class="form-label required" for="tr-workers">Workers</label>
+                  <input id="tr-workers" name="workers" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off" required>
                   <div class="form-help">Dataloader worker processes. <span id="tr-workers-note"></span>
                     <span data-range="workers"></span></div>
                   <div class="kg-field-slot" data-for="tr-workers"></div>
                 </div>
                 <div class="form-group" data-field="seed">
-                  <label class="form-label" for="tr-seed">Seed</label>
-                  <input id="tr-seed" name="seed" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off">
+                  <label class="form-label required" for="tr-seed">Seed</label>
+                  <input id="tr-seed" name="seed" type="number" class="form-control" step="1" inputmode="numeric" autocomplete="off" required>
                   <div class="form-help">Random seed for the initialisation, the augmentation and the
                     sampler. The same seed, data and settings reproduce a run; the Run records it.
                     <span data-range="seed"></span></div>
@@ -701,11 +706,12 @@
 
         <hr class="divider">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button type="button" id="tr-start-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Start training</button>
+          <button type="button" id="tr-start-btn" class="btn btn-primary btn-lg kgi-btn" aria-describedby="tr-start-why" disabled>Start training</button>
           <button type="button" id="tr-cancel-btn" class="btn btn-secondary" disabled>Cancel</button>
           <span class="spinner" id="tr-spinner" style="display: none;"></span>
           <span id="tr-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
         </div>
+        <div id="tr-start-why" class="form-help kg-why"></div>
         <div class="form-help" style="margin-top: 6px;">The first epoch takes about 15 seconds on a GPU, a few minutes on CPU; the ETA appears after it. The analysis pass at the end adds about a minute.</div>
       </form>
 
@@ -801,10 +807,11 @@
             </div>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" id="ps-predict-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Run inference</button>
+            <button type="button" id="ps-predict-btn" class="btn btn-primary btn-lg kgi-btn" aria-describedby="ps-predict-why" disabled>Run inference</button>
             <span class="spinner" id="ps-spinner" style="display: none;"></span>
             <span id="ps-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
+          <div id="ps-predict-why" class="form-help kg-why"></div>
           <div class="form-help" style="margin-top: 6px;">Checks the run on the val split, then predicts every test image: about 10 seconds on a GPU, one to two minutes on CPU.</div>
         </form>
         <div id="ps-progress" style="margin-top: 12px;"></div>
@@ -836,10 +843,11 @@
             </div>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" id="ps-submit-btn" class="btn btn-primary btn-lg kgi-btn" disabled>Submit to Kaggle</button>
+            <button type="button" id="ps-submit-btn" class="btn btn-primary btn-lg kgi-btn" aria-describedby="ps-submit-why" disabled>Submit to Kaggle</button>
             <span class="spinner" id="ps-submit-spinner" style="display: none;"></span>
             <span id="ps-submit-state" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
+          <div id="ps-submit-why" class="form-help kg-why"></div>
           <div class="form-help" style="margin-top: 6px;">Uploads the CSV and reads Kaggle's verdict back: usually 3 to 25 seconds.</div>
         </div>
         <div id="ps-banner" style="margin-top: 12px;"></div>
@@ -947,6 +955,31 @@
 
       // el() is scoped to this fragment (the Hub may mount several plugin pages in one document).
       var el = function (id) { return ROOT_EL.querySelector('#' + id); };
+
+      // ── Actions that cannot run yet (PBI 19074) ──────────────────────
+      // A job button that cannot run is disabled and says why, as what to do to enable it: in its tooltip,
+      // and for a form's main action on the line under its button row (the element its aria-describedby
+      // names: always in the layout, only its text changes). Each action has one blocker that returns the
+      // first unmet requirement, or ''; its gate applies it with kgApplyGate and runs on input, after values
+      // set in code, and when a job starts and ends. Demo mode stays the first condition of every blocker.
+      var kgProvisioning = false;   // the plugin environment is being set up: no job can start yet
+      function kgBtnLabel(btn) { return String((btn && btn.textContent) || '').replace(/\s+/g, ' ').trim(); }
+      function kgBlocked(btn, todo) { return todo + ' to enable ' + kgBtnLabel(btn) + '.'; }
+      function kgCommonBlocker(btn) {
+        if (kgDevMode) { return kgBlocked(btn, 'Open the page without ?kgdev'); }
+        if (kgProvisioning) { return kgBlocked(btn, 'Wait while the plugin environment is set up'); }
+        return '';
+      }
+      function kgApplyGate(btn, busy, reason) {
+        if (!btn) { return; }
+        btn.disabled = !!busy || !!reason;
+        btn.title = reason;
+        var line = btn.getAttribute('aria-describedby');
+        if (line && el(line)) { el(line).textContent = reason; }
+      }
+      function kgGateAll() {
+        kgCheckReady(); dlGate(); trCheckReady(); psCheckPredictReady(); psCheckSubmitReady(); psConnectGate(); stExportGate();
+      }
 
       // ── Job start (host dispatch) ─────────────────────────────────────
       // ExDark validates through its own /validate/<kind> first; here the preflight is the gate
@@ -1637,15 +1670,23 @@
           '<span><strong>Setting up the plugin environment.</strong> The first run takes several minutes: it downloads about 3 GB (PyTorch with CUDA) once.' +
           (prov && prov.state ? ' <span style="color:var(--text-muted)">Environment state: ' + esc(prov.state) + '</span>' : '') +
           '</span></div>';
-        el('kg-import-btn').disabled = true;
-        el('kg-dl-btn').disabled = true;
+        // PBI 19074: every job button waits, and says so, until the environment is set up.
+        kgProvisioning = true;
+        kgGateAll();
         if (kgProvisionTimer) { return; }
         kgProvisionTimer = setTimeout(function poll() {
           kgProvisionTimer = null;
           API.authFetch(PLUGIN_ROOT + '/config').then(function (r) { return r.json(); }).then(function (cfg) {
             if (cfg && cfg.status === 'provisioning' && !cfg._meta) { kgProvisionTimer = setTimeout(poll, 5000); return; }
             el('kg-provisioning').innerHTML = '';
-            kgFetchConfig(function () { kgInitImportTab(); });
+            kgProvisioning = false;
+            kgGateAll();
+            kgFetchConfig(function () {
+              kgInitImportTab();
+              // A check that a provisioning answer cut short (the train table, the test images) runs again.
+              if (kgShownTab === 'train') { trOnTabEnter(); }
+              if (kgShownTab === 'submit') { psOnTabEnter(); }
+            });
           }).catch(function () { kgProvisionTimer = setTimeout(poll, 5000); });
         }, 5000);
       }
@@ -1703,6 +1744,7 @@
         if (el('kg-dl-dest')) { el('kg-dl-dest').textContent = String(kgMeta.kit_dest || ''); }
         kgRenderLoopLinks();
         kgRenderManifestNote();
+        kgGateAll();   // the saved values were set in code, which fires no input event
       }
 
       // rc11: re-read GET /config after a job or a Verify so every Import fact comes from the one payload
@@ -1950,6 +1992,7 @@
       var kgPreflightTimer = null;
       var kgPreflightSeq = 0;
       var kgLastPreflightKit = null;
+      var kgPreflightLost = false;   // the last check could not reach the compute service (PBI 19074)
       var kgImporting = false;
 
       var KG_HINT_HTML =
@@ -2086,9 +2129,26 @@
         kgRenderGlance(null);
       }
 
-      function kgCheckReady() {
+      // Why Import & validate cannot run yet (PBI 19074), or ''.
+      function kgImportBlocker() {
         var btn = el('kg-import-btn');
-        btn.disabled = kgImporting || !(kgPreflight && kgPreflight.all_ok) || !!kgDevMode;
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        var kit = kgCleanPath(el('kg-kit').value);
+        if (!kit) { return kgBlocked(btn, 'Enter the starter kit folder, or download the kit,'); }
+        // A folder typed since the last check is not checked yet (the check runs 500 ms after typing stops).
+        if (kgPreflightKind === 'checking' || kit !== kgLastPreflightKit) { return kgBlocked(btn, 'Wait while the kit folder is checked'); }
+        if (kgPreflightKind === 'error') { return kgBlocked(btn, 'Fix the problem shown under the kit folder'); }
+        if (kgPreflightKind === 'mismatch') { return kgBlocked(btn, 'Choose a starter kit folder that matches the competition'); }
+        if (kgPreflightLost) { return kgBlocked(btn, 'Wait for the compute service to reconnect'); }
+        if (!(kgPreflight && kgPreflight.all_ok)) {
+          return kgBlocked(btn, dlRunning ? 'Wait for the starter kit download to finish' : 'Wait while the kit folder is checked');
+        }
+        return '';
+      }
+
+      function kgCheckReady() {
+        kgApplyGate(el('kg-import-btn'), kgImporting, kgImportBlocker());
         // Guide pulse: the kit folder is the one required field.
         el('kg-kit').classList.toggle('guide-next', !el('kg-kit').value.trim() && !kgImporting);
       }
@@ -2099,6 +2159,7 @@
         if (!force && kit === kgLastPreflightKit) { return; }
         kgLastPreflightKit = kit;
         kgPreflight = null;
+        kgPreflightLost = false;
         kgCheckReady();
         if (!kit) { kgRenderPreflight(null); return; }
         var seq = ++kgPreflightSeq;
@@ -2124,6 +2185,7 @@
             if (seq !== kgPreflightSeq) { return; }
             if (kgConn.fail(e, function () { kgRunPreflight(true); })) {
               kgRenderPreflight(null);
+              kgPreflightLost = true;
               kgCheckReady();
               return;
             }
@@ -2151,6 +2213,9 @@
         clearTimeout(kgPreflightTimer);
         setTimeout(kgRunPreflight, 0);
       });
+      // PBI 19074: a typed folder is not the checked one, so Import waits for its check.
+      el('kg-import-form').addEventListener('input', kgCheckReady);
+      el('kg-import-form').addEventListener('change', kgCheckReady);
 
       // ── Import form = the session's editor ───────────────────────────
       var kgCfgSaveTimer = null;
@@ -2527,14 +2592,12 @@
         if (opts.kit) {
           kit = opts.kit; project = opts.project || ''; table = opts.table || '';
         } else {
+          // PBI 19074: the button's own blocker decides (it is disabled with the reason while one applies).
+          if (kgImportBlocker()) { kgCheckReady(); return; }
           kit = kgCleanPath(el('kg-kit').value);
           if (kit !== el('kg-kit').value) { el('kg-kit').value = kit; }
           project = el('kg-project').value.trim();
           table = el('kg-table').value.trim();
-          if (!kit || !(kgPreflight && kgPreflight.all_ok)) {
-            el('kg-import-state').textContent = 'Import needs a passing preflight. The kit folder above hasn’t validated yet.';
-            return;
-          }
           kgImportCfgSettled();
         }
         if (!kit) {
@@ -2745,6 +2808,7 @@
             var dl = running.filter(function (j) { return /shard|extract|verifying files|download/i.test(((j.progress || {}).label || '') + (j.subtitle || '')); })[0];
             if (dl && !dlRunning) {
               dlJobId = dl.id; dlRunning = true;
+              dlGate();
               var djob = kgJobRecord(dl.id, 'download_kit');
               dlShowSection(true); el('kg-dl-offer').hidden = true;
               dlRenderProgress(djob);
@@ -2799,6 +2863,10 @@
 
       function dlShowSection(show) { el('kg-dl-section').hidden = !show; }
 
+      // Why the starter-kit download cannot start yet (PBI 19074), or ''.
+      function dlBlocker() { return kgCommonBlocker(el('kg-dl-btn')); }
+      function dlGate() { kgApplyGate(el('kg-dl-btn'), dlRunning, dlBlocker()); }
+
       function dlShowOffer(resume, animate, mode) {
         dlMode = mode === 'top_up' ? 'top_up' : '';
         el('kg-dl-offer').hidden = false;
@@ -2806,7 +2874,7 @@
         el('kg-dl-btn').innerHTML = dlMode === 'top_up'
           ? KG_BTN_TOPUP
           : (resume ? KG_BTN_DL_RESUME : KG_BTN_DL);
-        el('kg-dl-btn').disabled = !!kgDevMode;
+        dlGate();
         el('kg-dl-state').textContent = '';
         el('kg-dl-blurb-dl').hidden = dlMode === 'top_up';
         el('kg-dl-blurb-topup').hidden = dlMode !== 'top_up';
@@ -3002,6 +3070,7 @@
 
       function dlTerminal(job, animate) {
         dlRunning = false;
+        kgGateAll();
         kgClearTitleProgress();
         el('kg-dl-progress').innerHTML = '';
         dlLastChecks = job.checks || null;
@@ -3029,6 +3098,7 @@
 
       function dlStart() {
         if (kgDevMode || dlRunning) { return; }
+        if (dlBlocker()) { dlGate(); return; }
         dlRunning = true;
         el('kg-dl-banner').innerHTML = '';
         // U1: a red not-found on the kit\'s own path is stale the moment a download for that
@@ -3043,7 +3113,7 @@
           kgRenderPreflight(null);
           kgCheckReady();
         }
-        el('kg-dl-btn').disabled = true;
+        dlGate();
         el('kg-dl-state').textContent = 'Starting…';
         dlLogReset();
         kgStartJob('download_kit', {})
@@ -3058,7 +3128,7 @@
           })
           .catch(function (e) {
             dlRunning = false;
-            el('kg-dl-btn').disabled = false;
+            kgGateAll();   // a provisioning answer keeps it disabled with its reason
             el('kg-dl-state').textContent = kgConn.fail(e)
               ? 'Download didn’t start (service unreachable). Try again once reconnected.'
               : 'Download request failed: ' + e.message;
@@ -3166,7 +3236,8 @@
         var ov = kgSession.overrides || (kgSession.overrides = {});
         if (!v) {
           if (key in ov) { delete ov[key]; kgSessionSave(); }
-          kgApplyDerivedUrls([id]);
+          // The derived URL lands after the caller checked the empty field: check what landed (PBI 19074).
+          kgApplyDerivedUrls([id]).then(function () { trVerifyTables(); });
           return;
         }
         var disp = kgOverrideDisposition(id, v);
@@ -3523,6 +3594,7 @@
               TR_BOUNDS[id] = [key, b[0], b[1]];
               node.min = String(b[0]);
               node.max = String(b[1]);
+              node.placeholder = b[0] + '–' + b[1];   // a blank required field shows the Hub's red wash
             }
             if (key in defaults) {
               node.defaultValue = String(defaults[key]);
@@ -3537,6 +3609,7 @@
           if (group && TR_FIELDS.indexOf(key) !== -1) { group.hidden = !trIsEditable(key); }
         });
         trRenderDurationHint();
+        trCheckReady();   // values and bounds were set in code
       }
 
       // Switching the optimizer applies its usual learning rate when the LR field still holds the
@@ -4043,6 +4116,7 @@
       var trGateTimer = null;
       var trGateSeq = 0;            // stale-response guard
       var trLastGateKey = null;
+      var trGateWhy = '';           // a failed gate as what to do, for Start's reason (PBI 19074)
       var trRunning = false;
       var trCancelling = false;
 
@@ -4056,20 +4130,23 @@
         var rev = (useLatest ? info.latest : info.base) || info.base || {};
         var summary = rev.summary || {};
         var maxRows = info.max_rows || null;
-        var problems = [], help = [], noProjectHint = true, headline = '';
+        var problems = [], help = [], noProjectHint = true, headline = '', why = '';
 
         if (rev.error) {
           problems.push(esc(rev.error));
           headline = 'Could not read the revision.';
+          why = 'Fix the problem shown under the train table';
         }
         if (rev.descends_from_seed === false) {
           headline = headline || 'This revision is not derived from the imported train table.';
+          why = why || 'Pick a revision of the imported train table';
           problems.push('Only revisions of ' + esc(kgTableRef(info.seed_url) || 'the imported train table') +
                         ' can be trained on. Pick one in the field above.');
         }
         if (rev.foreign_rows > 0) {
           // Part B3: a merged / concatenated table can descend from the seed and still carry val or test rows.
           headline = headline || 'This revision contains rows from outside the kit’s train folder.';
+          why = why || 'Pick a revision of the imported train table';
           problems.push(fmtCount(rev.foreign_rows) + ' row' + (rev.foreign_rows === 1 ? '' : 's') +
                         ' point at images outside the kit’s train folder' +
                         (rev.kit_train_dir ? ' (' + esc(midTrunc(kgCleanPath(rev.kit_train_dir), 40)) + ')' : '') +
@@ -4078,10 +4155,12 @@
         }
         if (info.label_map_ok === false) {
           headline = headline || 'This table’s class map is not the imported one.';
+          why = why || 'Pick a revision of the imported train table';
           problems.push('Label edits must keep the competition classes. Pick a revision of the imported train table.');
         }
         if (maxRows && typeof rev.rows === 'number' && rev.rows > maxRows) {
           headline = headline || 'This table has more rows than the competition split.';
+          why = why || 'Pick a revision with at most ' + fmtCount(maxRows) + ' rows';
           problems.push('Train table has ' + fmtCount(rev.rows) + ' rows. The competition train split has ' +
                         fmtCount(maxRows) + '.');
           help.push('Training runs on the competition split, so rows cannot be added. Removing rows is fine, ' +
@@ -4094,8 +4173,10 @@
         }
         if (!problems.length && summary.labeled_in_use === 0) {
           headline = 'No usable rows: every row is undefined or at weight 0.';
+          why = 'Label images in the Dashboard';
           problems.push('Label images in the Dashboard first, then retrain with Use latest revision on.');
         }
+        trGateWhy = why;
         if (problems.length) {
           trGate = null;
           trRenderGate({ ok: false, noProjectHint: noProjectHint, headline: headline, problems: problems, help: help });
@@ -4203,6 +4284,7 @@
         trLastGateKey = key;
         trGate = null;
         trTableInfo = null;
+        trGateWhy = '';
         trCheckReady();
         if (!trainUrl) { trRenderGate(null); return; }
         // Split identity before existence (DP-11): a cross-split URL is individually valid on
@@ -4210,10 +4292,12 @@
         if (kgManifest && kgManifest.competition) {
           var got = kgUrlSeg(trainUrl, 'dataset');
           if (got !== kgSplitDataset('train')) {
+            trGateWhy = 'Pick a revision of the imported train table';
             trRenderGate({ ok: false, noProjectHint: true,
                            headline: 'This URL doesn’t match its split.',
                            problems: [esc('Train table URL points at ' + (got || 'an unrecognized dataset') +
                                           '; expected ' + kgSplitDataset('train') + '.')] });
+            trCheckReady();
             return;
           }
         }
@@ -4225,16 +4309,21 @@
             if (seq !== trGateSeq) { return; }   // superseded by newer input
             if (res && res.status === 'provisioning' && !res.url) { kgEnterProvisioning(res.provisioning); return; }
             if (res.split_ok === false) {
+              trGateWhy = 'Pick a revision of the imported train table';
               trRenderGate({ ok: false, noProjectHint: true, headline: 'This URL doesn’t match its split.',
                              problems: [esc(res.error || '')] });
+              trCheckReady();
               return;
             }
             if (res.error && !res.base) {
+              trGateWhy = 'Fix the problem shown under the train table';
               trRenderGate({ ok: false, noProjectHint: true, headline: 'Could not verify the table.',
                              problems: [esc(res.error)] });
+              trCheckReady();
               return;
             }
             if (!res.exists) {
+              trGateWhy = 'Run Import (tab 1)';
               trRenderGate({ ok: false, headline: 'These tables aren’t on disk yet.',
                              problems: ['train table not found on disk (<code title="' + esc(trainUrl) +
                                         '">' + esc(midTrunc(trainUrl, 64)) + '</code>).'] });
@@ -4251,11 +4340,13 @@
             if (seq !== trGateSeq) { return; }
             if (kgConn.fail(e, function () { trVerifyTables(true); })) {
               trRenderGate(null);
+              trGateWhy = 'Wait for the compute service to reconnect';
               trCheckReady();
               return;
             }
             trGate = null;
             trTableInfo = null;
+            trGateWhy = 'Fix the problem shown under the train table';
             trRenderGate({ ok: false, noProjectHint: true, headline: 'Could not verify the tables: ' + esc(e.message) + '.' });
             trCheckReady();
           });
@@ -4490,9 +4581,40 @@
         return Object.keys(trInvalid).some(function (id) { return trInvalid[id]; });
       }
 
+      // Whether a bounded field's current value is outside the served bounds (blank counts unless allowed).
+      function trFieldBad(id) {
+        var spec = TR_BOUNDS[id];
+        if (!spec) { return false; }
+        var raw = el(id).value;
+        var v = parseFloat(raw);
+        return raw === '' ? !spec[3] : (isNaN(v) || v < spec[1] || v > spec[2]);
+      }
+
+      // Why Start training cannot run yet (PBI 19074), or ''. The fields are read as they are now: the red
+      // message under a field still waits for blur, but Start never waits for it.
+      function trStartBlocker() {
+        var btn = el('tr-start-btn');
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        var url = el('tr-train-url').value.trim();
+        if (!url) { return kgBlocked(btn, 'Import the competition tables, or paste a train table URL,'); }
+        if (url !== trLastGateKey || trGateKind === 'checking') { return kgBlocked(btn, 'Wait while the train table is checked'); }
+        if (!(trGate && trGate.ok)) { return kgBlocked(btn, trGateWhy || 'Wait while the train table is checked'); }
+        var bad = Object.keys(TR_FIELD_KEYS).filter(function (id) {
+          var key = TR_FIELD_KEYS[id];
+          return (key === 'workers' || trIsEditable(key)) && trFieldBad(id);
+        })[0];
+        if (bad) {
+          var label = ROOT_EL.querySelector('label[for="' + bad + '"]');
+          var spec = TR_BOUNDS[bad];
+          return kgBlocked(btn, 'Set ' + (label ? label.textContent.trim().toLowerCase() : spec[0]) +
+                                ' between ' + spec[1] + ' and ' + spec[2]);
+        }
+        return '';
+      }
+
       function trCheckReady() {
-        el('tr-start-btn').disabled =
-          trRunning || !(trGate && trGate.ok) || trAnyInvalid() || !!kgDevMode;
+        kgApplyGate(el('tr-start-btn'), trRunning, trStartBlocker());
       }
 
       function trValidateField(id) {
@@ -4501,8 +4623,7 @@
         if (!spec || (fkey && fkey !== 'workers' && !trIsEditable(fkey))) { trInvalid[id] = false; trCheckReady(); return true; }
         var slot = ROOT_EL.querySelector('.kg-field-slot[data-for="' + id + '"]');
         var raw = el(id).value;
-        var v = parseFloat(raw);
-        var bad = raw === '' ? !spec[3] : (isNaN(v) || v < spec[1] || v > spec[2]);
+        var bad = trFieldBad(id);
         trInvalid[id] = bad;
         if (slot) {
           slot.innerHTML = bad
@@ -4516,37 +4637,20 @@
         return !bad;
       }
 
-      function trValidateAll() {
-        var firstBad = null;
-        Object.keys(TR_FIELD_KEYS).forEach(function (id) {
-          var key = TR_FIELD_KEYS[id];
-          if (key !== 'workers' && !trIsEditable(key)) { trInvalid[id] = false; return; }
-          if (!trValidateField(id) && !firstBad) { firstBad = id; }
-        });
-        return firstBad;
-      }
-
       Object.keys(TR_FIELD_KEYS).forEach(function (id) {
         el(id).addEventListener('blur', function () { trValidateField(id); });
         el(id).addEventListener('input', function () {
           if (trInvalid[id]) { trValidateField(id); }   // fixing clears immediately
         });
       });
+      // PBI 19074: every edit re-gates Start (a typed URL waits for its check, a field out of range blocks at once).
+      el('tr-form').addEventListener('input', trCheckReady);
+      el('tr-form').addEventListener('change', trCheckReady);
       trCheckReady();   // Start stays disabled until the gate goes green
 
       el('tr-start-btn').addEventListener('click', function () {
-        if (kgDevMode || trRunning) { return; }
-        var firstBad = trValidateAll();
-        if (firstBad) {
-          el(firstBad).focus();
-          el('tr-state').textContent = 'Fix the highlighted fields first.';
-          return;
-        }
-        // Safety net, the button is disabled until the gate goes green.
-        if (!(trGate && trGate.ok)) {
-          el('tr-state').textContent = 'Training needs a verified train table. Check the URL above.';
-          return;
-        }
+        // The button's own blocker decides; it is disabled with the reason while one applies.
+        if (trRunning || trStartBlocker()) { trCheckReady(); return; }
         saveTabConfig('train');
         if (kgSession) { kgSession.device = el('tr-device').value.trim(); kgSessionSave(); }
         var body = {
@@ -5126,7 +5230,9 @@
       // the manifest's daily limit (D7) and slug (D8), one Kaggle status read-back after submit (D12).
       var psPredictJobId = null, psSubmitJobId = null;
       var psRuns = [];
+      var psRunsState = 'loading';     // the runs list: 'loading' until it answers, 'loaded', or 'failed' (PBI 19074)
       var psGate = null;               // the test-images gate (green only)
+      var psGateLost = false;          // the last test-images check could not reach the compute service
       var psGateKind = 'idle', psGateSeq = 0;
       var psPredicting = false, psSubmitting = false;
       var psStep2Enabled = false;
@@ -5172,6 +5278,9 @@
       }
       function psApplyManifest() {
         var f = psManifestFacts();
+        var max = psMessageMax();
+        if (max) { el('ps-message').maxLength = max; } else { el('ps-message').removeAttribute('maxlength'); }
+        psCheckSubmitReady();
         Array.prototype.forEach.call(ROOT_EL.querySelectorAll('.kg-contract-imgsz'), function (span) {
           span.textContent = String(f.imgsz);
         });
@@ -5260,7 +5369,8 @@
             '<span>' + esc(run.reason || 'This run cannot be used for a submission.') + '</span></div>' : '');
       }
       function psFillRuns(runs, kept) {
-        psRuns = runs || [];
+        psRuns = Array.isArray(runs) ? runs : [];   // a provisioning answer is not a list
+        psRunsState = 'loaded';
         var sel = el('ps-run');
         sel.innerHTML = '';
         var ph = document.createElement('option');
@@ -5284,6 +5394,7 @@
         var btn = el('ps-run-refresh');
         if (manual && btn) { btn.classList.add('kg-spin'); }
         var settle = function () { if (btn) { btn.classList.remove('kg-spin'); } };
+        if (psRunsState !== 'loaded') { psRunsState = 'loading'; psCheckPredictReady(); }
         API.authFetch(PLUGIN_ROOT + '/runs')
           .then(function (r) { return r.json(); })
           .then(function (runs) {
@@ -5295,6 +5406,7 @@
           .catch(function (e) {
             kgConn.fail(e, psLoadRuns);
             el('ps-run').options[0].textContent = 'Could not load runs. Retry.';
+            if (psRunsState !== 'loaded') { psRunsState = 'failed'; psCheckPredictReady(); }
           })
           .then(settle, settle);
       }
@@ -5400,12 +5512,15 @@
         if (!force && psGate && psGate.ok) { return; }
         var seq = ++psGateSeq;
         psGate = null;
-        psCheckPredictReady();
+        psGateLost = false;
         psRenderGate({ checking: true });
+        psCheckPredictReady();
         API.authFetch(PLUGIN_ROOT + '/predict/preflight')
           .then(function (r) { return r.json(); })
           .then(function (info) {
             if (seq !== psGateSeq) { return; }
+            // Provisioning is an expected state, not missing test images (the check runs again after it).
+            if (info && info.status === 'provisioning' && !info.ok && !info.state) { kgEnterProvisioning(info.provisioning); return; }
             psRenderTestLocked(info);
             if (info && info.state === 'idle') { psGate = null; psRenderGate(null); }
             else if (info && info.ok) { psGate = { ok: true, info: info }; psRenderGate({ ok: true, count: info.count }); }
@@ -5420,6 +5535,7 @@
             if (seq !== psGateSeq) { return; }
             if (kgConn.fail(e, function () { psVerifyTestInputs(true); })) {
               psRenderGate(null);
+              psGateLost = true;
               psCheckPredictReady();
               return;
             }
@@ -5430,9 +5546,24 @@
           });
       }
 
+      // Why Run inference cannot run yet (PBI 19074), or ''.
+      function psPredictBlocker() {
+        var btn = el('ps-predict-btn');
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        if (psRunsState === 'loading') { return kgBlocked(btn, 'Wait while the runs load'); }
+        if (psRunsState === 'failed') { return kgBlocked(btn, 'Refresh the runs list'); }
+        if (!psRuns.some(function (r) { return r.usable; })) { return kgBlocked(btn, 'Train a run (tab 2)'); }
+        if (!el('ps-run').value) { return kgBlocked(btn, 'Choose a run'); }
+        if (psGateKind === 'checking') { return kgBlocked(btn, 'Wait while the test images are checked'); }
+        if (psGateLost) { return kgBlocked(btn, 'Wait for the compute service to reconnect'); }
+        if (psGateKind === 'idle') { return kgBlocked(btn, 'Import the starter kit'); }
+        if (!(psGate && psGate.ok)) { return kgBlocked(btn, 'Restore the kit’s test images (Import, tab 1)'); }
+        return '';
+      }
+
       function psCheckPredictReady() {
-        el('ps-predict-btn').disabled =
-          psPredicting || !(psGate && psGate.ok) || !el('ps-run').value || !!kgDevMode;
+        kgApplyGate(el('ps-predict-btn'), psPredicting, psPredictBlocker());
       }
 
       // ── Step 1 in-progress + results panel ──────────────────────────
@@ -5602,6 +5733,7 @@
         el('ps-progress').innerHTML = '';
         el('ps-state').textContent = '';
         psCheckPredictReady();
+        psCheckSubmitReady();
         API.authFetch(PLUGIN_ROOT + '/submit/state').then(function (r) { return r.json(); })
           .catch(function () { return { state: 'empty' }; })
           .then(function (state) {
@@ -5641,7 +5773,8 @@
       }
 
       el('ps-predict-btn').addEventListener('click', function () {
-        if (kgDevMode) { return; }
+        // The button's own blocker decides; it is disabled with the reason while one applies.
+        if (psPredicting || psPredictBlocker()) { psCheckPredictReady(); return; }
         var run = psSelectedRun();
         if (!run) { return; }
         // The device is a session fact shared with Train's field (ExDark mirrors them on blur).
@@ -5651,6 +5784,7 @@
         var body = { train_job_id: run.job_id, device: el('ps-device').value.trim() };
         psPredicting = true;
         psCheckPredictReady();
+        psCheckSubmitReady();   // the CSV Submit would send is being replaced
         el('ps-predict-btn').innerHTML = KG_BTN_PREDICT;
         el('ps-spinner').style.display = 'inline-block';
         el('ps-state').textContent = 'Starting…';
@@ -5673,6 +5807,7 @@
           .catch(function (e) {
             psPredicting = false;
             psCheckPredictReady();
+            psCheckSubmitReady();
             el('ps-spinner').style.display = 'none';
             el('ps-state').textContent = kgConn.fail(e)
               ? 'Inference didn’t start (service unreachable). Start again once reconnected.'
@@ -5718,19 +5853,38 @@
         if (typeof s.submissions_used_today !== 'number') { return { limit: limit, left: null }; }
         return { limit: limit, left: Math.max(0, limit - s.submissions_used_today) };
       }
-      function psConnBlocked() {
-        return !!(psConnState &&
-                  (psConnState.state === 'no_credentials' || psConnState.state === 'not_joined'));
-      }
       function psBudgetExhausted() {
         var b = psBudget();
         return !!(b && b.left === 0);
       }
-      function psCheckSubmitReady() {
-        el('ps-submit-btn').disabled =
-          psSubmitting || !psStep2Enabled || !psBasis || psConnBlocked() ||
-          psBudgetExhausted() || !!kgDevMode;
+      // The longest submission message Kaggle takes, from the manifest (the submit job refuses a longer one).
+      function psMessageMax() {
+        return ((kgManifest || {}).submission || {}).message_max_chars || 0;
       }
+
+      // Why Submit to Kaggle cannot run yet (PBI 19074), or ''.
+      function psSubmitBlocker() {
+        var btn = el('ps-submit-btn');
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        // A running inference replaces the prediction Submit would send (the job would refuse it).
+        if (psPredicting) { return kgBlocked(btn, 'Wait for inference to finish'); }
+        if (!psStep2Enabled || !psBasis) { return kgBlocked(btn, 'Run inference'); }
+        var conn = (psConnState || {}).state;
+        if (conn === 'no_credentials') { return kgBlocked(btn, 'Connect your Kaggle account'); }
+        if (conn === 'not_joined') { return kgBlocked(btn, 'Join the competition on Kaggle'); }
+        if (psBudgetExhausted()) { return kgBlocked(btn, 'Wait for the daily limit to reset (00:00 UTC)'); }
+        var max = psMessageMax();
+        if (max && el('ps-message').value.trim().length > max) {
+          return kgBlocked(btn, 'Shorten the submission message to ' + fmtCount(max) + ' characters');
+        }
+        return '';
+      }
+
+      function psCheckSubmitReady() {
+        kgApplyGate(el('ps-submit-btn'), psSubmitting, psSubmitBlocker());
+      }
+      el('ps-message').addEventListener('input', psCheckSubmitReady);
 
       // D8: the competition slug, locked from the manifest.
       function psRenderSlugLocked() {
@@ -5797,7 +5951,7 @@
           '<span style="opacity:.85">Get a token at kaggle.com › Settings › API › Create New Token, then paste it here.</span></span></div>' +
           '<div class="kg-kconnect">' +
           '<input id="ps-kg-token" name="kaggle_token" type="password" class="form-control" placeholder="KGAT_…" autocomplete="off" spellcheck="false" ' +
-          'autocapitalize="off" spellcheck="false" aria-label="Kaggle access token"' + (kgDevMode ? ' disabled' : '') + '>' +
+          'autocapitalize="off" spellcheck="false" aria-label="Kaggle access token" required' + (kgDevMode ? ' disabled' : '') + '>' +
           '<button type="button" id="ps-kg-connect" class="btn btn-primary kgi-btn"' + (kgDevMode ? ' disabled' : '') + '>' +
           kgIcon('check-circle', 'kgi-16') + '<span>Connect</span></button>' +
           '<span class="spinner" id="ps-kg-spinner" style="display:none"></span></div>' +
@@ -5821,6 +5975,23 @@
         field.addEventListener('keydown', function (e) {
           if (e.key === 'Enter') { e.preventDefault(); psConnect(); }
         });
+        field.addEventListener('input', psConnectGate);
+        psConnectGate();
+      }
+
+      // Why Connect cannot run yet (PBI 19074), or ''. Its reason is the tooltip only: the card's own line
+      // already says to paste the token, and the row starts with the field, not the button.
+      var psConnecting = false;
+      function psConnectBlocker() {
+        var btn = el('ps-kg-connect'), field = el('ps-kg-token');
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        if (!field || !field.value.trim()) { return kgBlocked(btn, 'Paste your Kaggle token'); }
+        return '';
+      }
+      function psConnectGate() {
+        if (!el('ps-kg-connect')) { return; }
+        kgApplyGate(el('ps-kg-connect'), psConnecting, psConnectBlocker());
       }
 
       function psConnectMsg(kind, text) {
@@ -5835,12 +6006,13 @@
         if (kgDevMode) { return; }
         var field = el('ps-kg-token'), btn = el('ps-kg-connect'), sp = el('ps-kg-spinner');
         if (!field || !btn) { return; }
+        if (psConnecting || psConnectBlocker()) { psConnectGate(); return; }
         var token = field.value;
-        if (!token.trim()) { psConnectMsg('err', 'Paste the token first.'); field.focus(); return; }
-        btn.disabled = true; field.disabled = true; if (sp) { sp.style.display = ''; }
+        psConnecting = true; psConnectGate(); field.disabled = true; if (sp) { sp.style.display = ''; }
         psConnectMsg('', 'Saving the token on the compute service and checking it with Kaggle…');
         function restore() {
-          btn.disabled = false; field.disabled = false; if (sp) { sp.style.display = 'none'; }
+          psConnecting = false; field.disabled = false; if (sp) { sp.style.display = 'none'; }
+          psConnectGate();
           field.focus();
         }
         API.authFetch(PLUGIN_ROOT + '/kaggle/connect', {
@@ -5852,6 +6024,7 @@
           .then(function (res) {
             if (res && res.ok) {
               field.value = '';   // the browser keeps nothing
+              psConnecting = false;
               psRenderConnState(res.connection && res.connection.state ? res.connection
                                 : { state: 'ready', username: res.username || '' });
               stDoctorLoaded = false;
@@ -6014,7 +6187,7 @@
       }
 
       el('ps-submit-btn').addEventListener('click', function () {
-        if (kgDevMode || !psBasis) { return; }
+        if (psSubmitting || psSubmitBlocker()) { psCheckSubmitReady(); return; }
         psRenderSubmitConfirm();
       });
 
@@ -6039,6 +6212,8 @@
 
       function psSubmitNow() {
         if (kgDevMode || !psBasis || psSubmitting) { return; }
+        // Confirmed, but asked again: something may have changed since (an inference started, the limit).
+        if (psSubmitBlocker()) { el('ps-banner').innerHTML = ''; psCheckSubmitReady(); return; }
         psSubmitting = true;
         psCheckSubmitReady();
         el('ps-submit-spinner').style.display = 'inline-block';
@@ -6156,6 +6331,7 @@
                   psPredicting = true;
                   psStartReconcile();
                   psCheckPredictReady();
+                  psCheckSubmitReady();
                   el('ps-spinner').style.display = 'inline-block';
                   el('ps-state').textContent = 'Predicting… (safe to navigate away)';
                   var job = kgJobRecord(runningPredict.id, 'predict');
@@ -6173,6 +6349,7 @@
                   psSubmitJobId = runningSubmit.id;
                   psSubmitting = true;
                   psStartReconcile();
+                  psCheckSubmitReady();
                   el('ps-submit-spinner').style.display = 'inline-block';
                   el('ps-submit-state').textContent = 'Submitting…';
                   kgTrack(kgJobRecord(runningSubmit.id, 'kaggle_submit'));
@@ -6964,6 +7141,8 @@
       // recent submission), and the resulting member count and size. null = the rule's default.
       var stBundleSel = null;
       var stBundleBusy = false;
+      var stBundleError = '';      // the preview's refusal of the current selection (PBI 19074)
+      var stExporting = false;
       function stBundleQuery() {
         if (stBundleSel === null) { return 'checkpoints=default'; }
         return stBundleSel.length
@@ -6986,6 +7165,8 @@
       function stRenderBundlePreview(pv) {
         var box = el('st-bundle-runs');
         if (!box) { return; }
+        stBundleError = (pv && pv.error) ? String(pv.error) : '';
+        stExportGate();
         if (!pv) { box.innerHTML = ''; return; }
         if (pv.error) {
           box.innerHTML = '<div class="kg-callout warn">' + kgIcon('alert-triangle') + '<span>' + esc(pv.error) + '</span></div>';
@@ -7047,11 +7228,22 @@
         });
       }
 
+      // Why Export verification bundle cannot run yet (PBI 19074), or ''. A secondary action: the tooltip only,
+      // the refusal itself shows in the preview under the button.
+      function stExportBlocker() {
+        var btn = el('st-export-btn');
+        var common = kgCommonBlocker(btn);
+        if (common) { return common; }
+        if (stBundleError) { return 'Fix the problem below to enable ' + kgBtnLabel(btn) + ': ' + stBundleError; }
+        return '';
+      }
+      function stExportGate() { kgApplyGate(el('st-export-btn'), stExporting, stExportBlocker()); }
+
       // ── Export verification bundle (D5): the zip streams like Download CSV ────────────
       function stExportBundle() {
-        var btn = el('st-export-btn');
         var note = el('st-export-note');
-        btn.disabled = true;
+        stExporting = true;
+        stExportGate();
         note.innerHTML = '<span class="spinner" aria-hidden="true"></span> Building the bundle…';
         API.authFetch(PLUGIN_ROOT + '/status/bundle?' + stBundleQuery())
           .then(function (r) {
@@ -7079,9 +7271,12 @@
             note.innerHTML = '<div class="kg-callout err" style="margin-top:6px">' + kgIcon('x-circle') +
               '<span>' + esc(e.message || String(e)) + '</span></div>';
           })
-          .then(function () { btn.disabled = !!kgDevMode; });
+          .then(function () { stExporting = false; stExportGate(); });
       }
-      el('st-export-btn').addEventListener('click', function () { if (!kgDevMode) { stExportBundle(); } });
+      el('st-export-btn').addEventListener('click', function () {
+        if (stExporting || stExportBlocker()) { stExportGate(); return; }
+        stExportBundle();
+      });
       kgBindAccordion('st-doctor-toggle', 'st-doctor-panel');
 
       function stRenderUpdated() {
@@ -7351,12 +7546,14 @@
       // computed from it once the config lands (apply() re-runs then, like ExDark's).
 
       // Fixture pages must never start real work: every job-firing button renders disabled with
-      // a note. The ready-recalc functions OR in kgDevMode so no later recalc can re-enable, and
-      // the click handlers guard on it as the hard backstop.
+      // a note (on its reason line where it has one). Every blocker returns the demo state first, so
+      // no later recalc can re-enable, and the click handlers guard on it as the hard backstop.
       function kgDevDisableActions() {
+        kgGateAll();   // every blocker's first condition is the demo state (PBI 19074)
         ['kg-import-btn', 'kg-dl-btn', 'tr-start-btn', 'ps-predict-btn', 'ps-submit-btn', 'st-export-btn'].forEach(function (id) {
           var btn = el(id);
           btn.disabled = true;
+          if (btn.getAttribute('aria-describedby')) { return; }   // its reason line says so already
           var note = document.createElement('span');
           note.textContent = 'demo state · actions disabled';
           note.style.cssText = 'font-size: 11px; font-style: italic; color: var(--text-muted); white-space: nowrap;';
@@ -7613,6 +7810,12 @@
         // once it lands so the forced state sticks (and so the derived numbers are the manifest's).
         configLoaded.then(function () { setTimeout(apply, 0); });
       }
+
+      // PBI 19074: a reason names the button as it reads ("Re-run training" after a failure), so a relabel
+      // re-runs that button's gate.
+      [['kg-import-btn', kgCheckReady], ['kg-dl-btn', dlGate], ['tr-start-btn', trCheckReady], ['ps-predict-btn', psCheckPredictReady]]
+        .forEach(function (g) { new MutationObserver(function () { g[1](); }).observe(el(g[0]), { childList: true }); });
+      kgGateAll();
 
       // ── Dispatch, LAST ───────────────────────────────────────────────
       showTab(savedTab || 'import');

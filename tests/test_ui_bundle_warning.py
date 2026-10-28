@@ -29,6 +29,8 @@ function fmtCount(n) { return String(n); }
 function stFmtMB(b) { return String(b) + ' B'; }
 function stLoadBundlePreview() {}
 var stBundleSel = null;
+var stBundleError = '';
+function stExportGate() {}
 """
 
 
