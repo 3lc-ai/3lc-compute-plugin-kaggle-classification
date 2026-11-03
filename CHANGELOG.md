@@ -3,7 +3,7 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] (into 1.0.1)
+## [1.0.1] — 2026-11-03 (a hotfix from 1.0.0: Kaggle Connect on a fresh install, the run-name check)
 
 ### Fixed
 - **Kaggle Connect works on a fresh install again.** kaggle imports `six` without declaring it, and
