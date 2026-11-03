@@ -81,6 +81,11 @@ $venvUv = ''
 $cfgLine = Get-Content -LiteralPath (Join-Path $venv 'pyvenv.cfg') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\s*uv\s*=' } | Select-Object -First 1
 if ($cfgLine -and $cfgLine -match '=\s*(\S+)') { $venvUv = $Matches[1] }
 if ($venvUv -in @('0.11.7', '0.11.8')) { Say "The venv was created by uv $venvUv, whose launchers leak PYTHONHOME into every child process (the plugin build fails): update uv (uv self update) and recreate the venv (TESTING.md step 2)."; exit 1 }
+# The hackathon runs on 3lc-compute 1.1.0 exactly. The venv records the installed version in its dist-info folder name.
+$computeVersion = ''
+$distInfo = Get-ChildItem -LiteralPath (Join-Path $venv 'Lib\site-packages') -Directory -Filter '3lc_compute-*.dist-info' -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($distInfo -and $distInfo.Name -match '^3lc_compute-(.+)\.dist-info$') { $computeVersion = $Matches[1] }
+if ($computeVersion -ne '1.1.0') { Say "The venv has $(if ($computeVersion) { "3lc-compute $computeVersion" } else { 'no 3lc-compute' }); the hackathon uses 3lc-compute 1.1.0 exactly. Run: uv pip install --python .\.venv\Scripts\python.exe --index-url https://pypi.org/simple `"3lc-compute==1.1.0`" (TESTING.md step 2), then start again."; exit 1 }
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Say "uv is not on PATH - the compute service needs it to build the plugin's environment (TESTING.md step 1)."; exit 1 }
 $busy = @(Get-NetTCPConnection -LocalPort $ObjectPort, $ComputePort -State Listen -ErrorAction SilentlyContinue)
 if ($busy.Count) {

@@ -72,6 +72,13 @@ venv_uv=$(sed -n 's/^[[:space:]]*uv[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/
 case "$venv_uv" in
   0.11.7|0.11.8) say "The venv was created by uv $venv_uv, whose launchers leak PYTHONHOME into every child process (the plugin build fails): update uv (uv self update) and recreate the venv (TESTING.md step 2)."; exit 1 ;;
 esac
+# The hackathon runs on 3lc-compute 1.1.0 exactly. The venv records the installed version in its dist-info folder name.
+compute_version=$(for d in "$VENV"/lib/python*/site-packages/3lc_compute-*.dist-info; do [ -d "$d" ] && basename "$d"; done | sed -n 's/^3lc_compute-\(.*\)\.dist-info$/\1/p' | head -n 1)
+if [ "$compute_version" != "1.1.0" ]; then
+  found="no 3lc-compute"; [ -n "$compute_version" ] && found="3lc-compute $compute_version"
+  say "The venv has $found; the hackathon uses 3lc-compute 1.1.0 exactly. Run: uv pip install --python .venv/bin/python --index-url https://pypi.org/simple \"3lc-compute==1.1.0\" (TESTING.md step 2), then start again."
+  exit 1
+fi
 command -v uv >/dev/null 2>&1 || { say "uv is not on PATH - the compute service needs it to build the plugin's environment (TESTING.md step 1)."; exit 1; }
 for port in "$OBJECT_PORT" "$COMPUTE_PORT"; do
   if listening "$port"; then say "Already listening on :$port. Stop it (--stop), or set OBJECT_PORT / COMPUTE_PORT."; exit 1; fi

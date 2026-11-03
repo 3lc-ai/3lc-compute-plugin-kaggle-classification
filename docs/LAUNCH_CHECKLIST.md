@@ -31,6 +31,9 @@ Doctor on the production manifest) by 2026-10-31. The on-the-day rows below run 
       100 before launch whatever had been submitted).
 - [ ] **Not joined.** An account that has not accepted the competition rules gets the "competition not
       joined" card, and Submit is refused before any upload.
+- [ ] **The compute service is 1.1.0.** Participants are pinned to `3lc-compute==1.1.0` for the hackathon
+      (TESTING.md step 2; the start scripts refuse any other version). On the prod install the Doctor's
+      Compute service row reads `v1.1.0`; Hub 1.2's frontend works with 1.1 services (Gudbrand, 2026-11-03).
 - [ ] **The manifest tier.** The production manifest base URL (docs/PROMOTION.md) serves the index and
       the manifest; the Doctor's Manifest row reads `remote` with the production URL.
 - [ ] **The kit fallback on prod.** The served manifest is the regenerated 1.0.0 one: its `kit_fallback_url`

@@ -55,6 +55,9 @@ nothing either way: the competition is unlaunched.
 Create an empty folder and work inside it (examples: `C:\3lc-tester` on Windows, `~/3lc-tester`
 on macOS / Linux).
 
+Install `3lc-compute==1.1.0` exactly, as below, even when a newer release is out: the hackathon runs on
+1.1.0, and the start script (step 3) refuses any other version with the command that fixes it.
+
 **Windows (PowerShell):**
 
 ```powershell
