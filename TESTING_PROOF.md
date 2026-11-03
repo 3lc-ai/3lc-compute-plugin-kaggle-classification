@@ -318,6 +318,26 @@ did), against the hosted `HEAD/catalog.json`. The record: `docs/campaign/release
 | Connect with a real token | PASS: `ok`, the username, the token written to `home\.kaggle\access_token`; the card `ready` (the competition title, Kaggle's daily limit 100, submissions used today) |
 | Doctor with Kaggle | PASS: plugin 1.0.1 · `5aa7ded`, SDK 0.3.3 · 3lc 3.4.1, kaggle 2.2.5, Kaggle `ready`, manifest `remote` |
 
+## Run 17 — the LAUNCH_CHECKLIST prod checks after the 1.0.1 promotion — BLOCKED (2026-11-03)
+
+A new tester folder `3lc-hub-prod-check` (3lc-compute 1.1.0), no `TLC_COMPUTE_PLUGIN_CATALOG_URLS` and no
+`KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`: the host's built-in catalog
+(`https://3lc-public-examples-2-2.s3.amazonaws.com/hub/catalog.json`) and the plugin's production manifest
+tier. The 3LC API key file byte-copied from `3lc-hub-fresh`. The record: `docs/campaign/prod_check_2026-11-03.log`.
+
+| Check | Result |
+|---|---|
+| The built-in catalog | **FAIL, the blocker**: last modified 2026-10-26 08:35 UTC, it lists kaggle-classification `1.0.0` only (`@v1.0.0`); 1.0.1 is not in it |
+| Fresh install from it | it installs 1.0.0 (`f4ce7cb`), `succeeded` in 20.2 s + ready 4.5 s; the venv has kaggle 2.2.5 and no `six` |
+| `KaggleApi` in a fresh interpreter | **FAIL**: `ModuleNotFoundError: No module named 'six'` (the 1.0.0 defect) |
+| Kaggle Connect | `abc` refused with the format sentence; a real token **FAILS**: "Kaggle answered with an error: ModuleNotFoundError: No module named 'six'. Try again in a minute; if it keeps failing, create a new token." |
+| Prod manifest | PASS: 3,258 bytes, sha256 `383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e`; `tools/verify_cdn.py https://competitions.3lc.ai` PASS (the index and five shards, 113,741,154 bytes, every sha256) |
+| `kit_fallback_url` on prod | PASS: `https://drive.google.com/drive/folders/1mUleAk1PZtxyCooUVH-n6JfGEKn7Uc8N?usp=sharing`; the Doctor's Kit fallback row shows the same link |
+| Doctor | no red row, Manifest `remote` from `https://competitions.3lc.ai/kaggle/intel-scene/manifest.json`, CUDA RTX 5070 Ti sm_120 kernels, driver 621.01; but the Kaggle row reads `no_credentials` although the token was written: the Doctor shows the import failure as "not connected", not as an error |
+
+The fix is the built-in catalog, not the plugin: its kaggle-classification entry needs the 1.0.1 entry of this
+repo's `catalog.json` (newest first, `@v1.0.1`). Then this run repeats.
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
