@@ -3,16 +3,9 @@
 All notable changes to `3lc-compute-plugin-kaggle-classification` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [Unreleased] (into 1.0.1)
+## [Unreleased] (PR 4, after the hackathon: the UI is frozen for the event)
 
 ### Fixed
-- **Kaggle Connect works on a fresh install again.** kaggle imports `six` without declaring it, and
-  python-dateutil 3.0.0 (2026-10-21) stopped bringing it, so every install after that failed at import (the
-  retry reported a circular import). The extra now pins `kaggle==2.2.5`, `kagglesdk==0.1.38` and
-  `six==1.17.0`, and a test imports `KaggleApi` in a fresh interpreter.
-- **A run name with a dot (or any of `< > / \ | , . : " ' ? *`) is refused before the run starts**, with the
-  characters named and the fix in the sentence. Found by the 1.0.0 release check: tlc refuses such Run names,
-  and the refusal came out of the worker as a raw error after the tables were opened.
 - **Submit to Kaggle waits while inference re-runs.** It stayed enabled with the previous prediction, and the
   submission it started was refused because that prediction was being replaced.
 - **The submission message can't exceed Kaggle's limit.** The field takes its length limit from the competition
@@ -38,6 +31,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
   refused.
 - **Required fields use the Hub's style**: a red * on the label and a red wash while empty, on the starter kit
   folder, the train table URL, the training parameters and the Kaggle token.
+
+## [1.0.1] — 2026-11-03 (a hotfix from 1.0.0: Kaggle Connect on a fresh install, the run-name check)
+
+### Fixed
+- **Kaggle Connect works on a fresh install again.** kaggle imports `six` without declaring it, and
+  python-dateutil 3.0.0 (2026-10-21) stopped bringing it, so every install after that failed at import (the
+  retry reported a circular import). The extra now pins `kaggle==2.2.5`, `kagglesdk==0.1.38` and
+  `six==1.17.0`, and a test imports `KaggleApi` in a fresh interpreter.
+- **A run name with a dot (or any of `< > / \ | , . : " ' ? *`) is refused before the run starts**, with the
+  characters named and the fix in the sentence. Found by the 1.0.0 release check: tlc refuses such Run names,
+  and the refusal came out of the worker as a raw error after the tables were opened.
 
 ## [1.0.0] — 2026-10-21 (sessions 15 to 16: the rc14 hand test's bundle finding, Gudbrand's round, the error-visibility audit)
 
