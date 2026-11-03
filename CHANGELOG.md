@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased] (into 1.0.1)
 
 ### Fixed
+- **Kaggle Connect works on a fresh install again.** kaggle imports `six` without declaring it, and
+  python-dateutil 3.0.0 (2026-10-21) stopped bringing it, so every install after that failed at import (the
+  retry reported a circular import). The extra now pins `kaggle==2.2.5`, `kagglesdk==0.1.38` and
+  `six==1.17.0`, and a test imports `KaggleApi` in a fresh interpreter.
 - **A run name with a dot (or any of `< > / \ | , . : " ' ? *`) is refused before the run starts**, with the
   characters named and the fix in the sentence. Found by the 1.0.0 release check: tlc refuses such Run names,
   and the refusal came out of the worker as a raw error after the tables were opened.

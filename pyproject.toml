@@ -54,7 +54,13 @@ kaggle-classification = [
     "umap-learn==0.5.12",
     "scikit-learn",
     # Kaggle API client for the entered-check, submission upload, and status (session 4+).
-    "kaggle>=2.2.3,<3",
+    # Pinned EXACTLY in 1.0.1 (2026-11-03) to the pair verified to import and connect. Every kaggle 2.2.x
+    # imports `six` (kaggle/models/upload_file.py) without declaring it; python-dateutil brought it until
+    # 3.0.0 (2026-10-21) dropped it, and a fresh 1.0.0 install then failed Kaggle Connect at import.
+    # tests/test_packaging.py imports KaggleApi in a fresh interpreter.
+    "kaggle==2.2.5",
+    "kagglesdk==0.1.38",
+    "six==1.17.0",
     # The competition manifest is YAML.
     "pyyaml>=6",
 ]
