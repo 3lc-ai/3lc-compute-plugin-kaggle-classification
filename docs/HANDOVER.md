@@ -1,13 +1,18 @@
-# HANDOVER.md: the Kaggle Classification plugin 1.0.0, handed to Gudbrand (2026-10-21)
+# HANDOVER.md: the Kaggle Classification plugin 1.0.0, handed to Gudbrand (2026-10-21), and the 1.0.1 hotfix (2026-11-03)
 
-Written for the promotion to prod and the launch. Everything here is current as of the 1.0.0 release;
+Written for the promotion to prod and the launch. Everything here is current as of the 1.0.1 release;
 the rationale behind the decisions is in docs/PLAN.md, the test evidence in TESTING_PROOF.md.
+
+**1.0.1 replaces 1.0.0 for every install:** kaggle imports `six` without declaring it and python-dateutil
+3.0.0 (2026-10-21) stopped bringing it, so every fresh 1.0.0 install failed Kaggle Connect; 1.0.1 pins
+`kaggle==2.2.5`, `kagglesdk==0.1.38` and `six==1.17.0` and adds the run-name check, nothing else.
 
 ## 1. What 1.0.0 is
 
-- **The release:** tag `v1.0.0` (commit `f4ce7cb`), the final release, no suffix. The catalog hubs consume
+- **The release:** tag `v1.0.1` (commit `5aa7ded`, branch `hotfix/1.0.1`), a hotfix cut from `v1.0.0`
+  (`f4ce7cb`). The catalog hubs consume
   is `https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-kaggle-classification/HEAD/catalog.json`
-  (its newest entry is 1.0.0, pinned to the tag). The tester kit (TESTING.md, `tester/start_tester.ps1`
+  (its newest entry is 1.0.1, pinned to the tag). The tester kit (TESTING.md, `tester/start_tester.ps1`
   and `.sh` on the default branch) defaults to that catalog.
 - **What it does:** one plugin for the 3LC Hub that runs the image-classification hackathon end to end on a
   participant's own machine: Import (the starter kit from the CDN, verified per file, registered as the
@@ -19,7 +24,8 @@ the rationale behind the decisions is in docs/PLAN.md, the test evidence in TEST
   verification bundle for the organizers).
 - **Hosts and pins:** 3lc-compute 1.1.0 or newer (`min_service_version`), SDK window `>=0.3.1,<0.4.0`; the
   plugin's own venv pins `3lc==3.4.1`, `torch==2.14.0`, `torchvision==0.29.0` (the CUDA 13.0 index on
-  Windows and Linux, PyPI on macOS), `umap-learn==0.5.12`. Participants keep the exact 3lc pin; a staff host
+  Windows and Linux, PyPI on macOS), `umap-learn==0.5.12`, and since 1.0.1 `kaggle==2.2.5`,
+  `kagglesdk==0.1.38`, `six==1.17.0`. Participants keep the exact 3lc pin; a staff host
   on a 3lc dev build overrides it with `UV_OVERRIDE` (docs/PLAN.md §A, tlc row; `3lc-hub-11/SETUP.md`).
 - **The competition manifest:** served from the CDN tier the compute service is pointed at
   (`KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`; the start scripts default to the dev tier, production builds
@@ -36,9 +42,10 @@ the rationale behind the decisions is in docs/PLAN.md, the test evidence in TEST
 
 ## 2. What was tested
 
-- **The unit suite:** 435 tests (`uv run pytest` in the heavy venv), a divergence guard first: version and
-  description parity, the SDK window against the latest 3lc-compute, the wheel contents, import weight,
-  licence headers, the manifest-literal census (no competition constant in code), the copy rules.
+- **The unit suite:** 436 tests on the 1.0.1 tag, none skipped (`uv run pytest` in the heavy venv), a
+  divergence guard first: version and description parity, the SDK window against the latest 3lc-compute,
+  the wheel contents, import weight, licence headers, the manifest-literal census (no competition constant
+  in code), the copy rules, and since 1.0.1 `KaggleApi` imported in a fresh interpreter.
 - **The hardening campaign (TESTING_PROOF.md run 14, 2026-10-12 to 13, docs/TEST_PLAN.md sections A to H,
   records in docs/campaign/):** the environment matrix (upgrade with state, same-version reinstall,
   uninstall and reinstall, service restart, CPU-only, Python 3.11, a host on 3lc 3.3.0, a folder with spaces
@@ -69,6 +76,12 @@ the rationale behind the decisions is in docs/PLAN.md, the test evidence in TEST
   the bundle with best.pt verified against the record and the Run; the Dashboard and the Hub dataset
   overview render the images through the alias; one submission (#57489771, public 0.50666) with Status
   correct.
+- **The 1.0.1 release check (TESTING_PROOF.md run 16, 2026-11-03):** a new tester folder
+  (`3lc-hub-fresh-101`, 3lc-compute 1.1.0); 1.0.1 installed from `HEAD/catalog.json` (25 s + ready 4 s,
+  commit `5aa7ded`); in the plugin venv kaggle 2.2.5, kagglesdk 0.1.38, six 1.17.0, python-dateutil 4.0.0;
+  `KaggleApi` imports in a fresh interpreter, twice; Connect refuses `abc` with the format sentence, then a
+  real token gives `ready` (the competition, the daily limit, the submissions used today); the Doctor's
+  Kaggle row `ready`, the manifest `remote`.
 - **The reference machine:** Windows 11, NVIDIA GeForce RTX 5070 Ti (compute capability 12.0, sm_120
   kernels in the cu130 build), driver 617.42.
 
@@ -149,7 +162,7 @@ second week of November 2026.
 
 ## 5. The launch checklist (docs/LAUNCH_CHECKLIST.md)
 
-Before launch, on a tester environment with 1.0.0 from the hosted catalog pointed at prod: the production
+Before launch, on a tester environment with 1.0.1 from the hosted catalog pointed at prod: the production
 manifest resolves (the Doctor's Manifest row `remote` with the production URL) and the Kit fallback row shows
 the Drive link. On the day the competition opens, in order, recording each result with its date in
 TESTING_PROOF.md: the Kaggle submission list check for the organizers (every `submit` entry's `kaggle.ref` in
@@ -159,13 +172,12 @@ the Status tab's live section (`connected: true`, submissions, the best public s
 leaderboard read, the daily cap from Kaggle's side, the "competition not joined" card, the manifest tier
 and the kit fallback on prod.
 
-## 6. Open item for 1.0.1
+## 6. Open items after 1.0.1
 
-- **A run name with a character tlc forbids** (`< > / \ | , . : " ' ? *`, a dot the likely one) was refused
-  by tlc inside the job on 1.0.0, after the tables were opened; the record is failed with the reason and
-  Predict refuses the run, so nothing is silent, but the participant loses a minute. Fixed on `develop`
-  (commit `47e7625`): the name is checked before the run starts, with the characters named and the fix in
-  the sentence. It ships with whatever the testers find next; a 1.0.1 tag follows RELEASING.md.
+- **Shipped in 1.0.1:** the run-name check (a name with any of `< > / \ | , . : " ' ? *` is refused before
+  the run starts, with the characters named) and the Kaggle pins above.
+- **PR 4** (Thomas Hagen, PBI 19074, "actions that cannot run yet say why") is merged on `develop` and stays
+  unreleased until after the hackathon: untested, and the UI is frozen for the event.
 - **PR 1** (`3lc>=3.4.1,<4`) stays open and unmerged: participants keep the exact pin; the staff path is
   `UV_OVERRIDE`. Gudbrand's uv error text from the dev host would close it either way.
 

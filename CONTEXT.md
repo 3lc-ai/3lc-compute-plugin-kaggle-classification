@@ -2,6 +2,15 @@
 
 One line per term. Depth: docs/PLAN.md (decisions), docs/STUDY.md (references).
 
+## Session handoff (2026-11-03, the 1.0.1 hotfix)
+
+- **1.0.1 = tag `v1.0.1` (`5aa7ded`), a hotfix cut from `v1.0.0`** on branch `hotfix/1.0.1` with exactly two changes: the run-name check (`47e7625`) and the kaggle/kagglesdk/six pins with the fresh-interpreter test (`ad9744b`). The catalog entry is on `develop` (`HEAD/catalog.json` serves 1.0.1 first). Decided by Rishikesh, 2026-11-03.
+- **Why:** every fresh 1.0.0 install failed Kaggle Connect at import. kaggle 2.2.x imports `six` without declaring it; python-dateutil 3.0.0 (2026-10-21 23:41 UTC, after the release check) and 4.0.0 (2026-11-01) dropped `six`. The first import raises `No module named 'six'`, every retry in the same worker the misleading "partially initialized module ... circular import". Not a kaggle version bug: 2.2.4 fails the same way. Hot fix for an installed 1.0.0: `uv pip install --python <venv>\Scripts\python.exe six==1.17.0 kaggle==2.2.5 kagglesdk==0.1.38`, then restart the compute service.
+- **PR 4 (Thomas Hagen, PBI 19074, "actions that cannot run yet say why") stays on `develop`, unreleased, until after the hackathon:** untested, and the UI is frozen for the event. Its CHANGELOG entries stay under Unreleased. PR 3 (Frederik's lock-only re-lock) is on `develop` too and did not go into 1.0.1.
+- **Verified (TESTING_PROOF run 16):** 1.0.1 installed from `HEAD/catalog.json` into the new tester folder `3lc-hub-fresh-101` (25 s), `KaggleApi` imports in a fresh interpreter, Connect refuses `abc` and accepts a real token (`ready`), the Doctor's Kaggle row `ready`. The suite on the tag: 436 passed, none skipped. docs/HANDOVER.md says 1.0.1.
+- **Dropped:** "Kaggle stderr silencing" was a planned 1.0.1 item that was never written; not in 1.0.1.
+- **Expected, no change:** Kaggle's ListSubmissions answers 403 until the competition launches (the Status tab says the list becomes available after launch); first on docs/LAUNCH_CHECKLIST.md at kickoff.
+
 ## Session handoff (2026-10-21, post-release)
 
 - **1.0.0 handed to Gudbrand** with `docs/HANDOVER.md`; waiting on his promotion to prod (PROMOTION §5, the fallback-link check) and on Nicolai's Mac test. The next inputs are their findings, for 1.0.1 (`develop` already carries the run-name check, untagged); then the prod verification and docs/LAUNCH_CHECKLIST.md. `3lc-hub-fresh` (1.0.0, the release-check state) has its services stopped, ports 5015 and 5020 free; the rc14 environment stays as `3lc-hub-fresh-rc14-20261021`.

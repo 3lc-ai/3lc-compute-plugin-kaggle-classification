@@ -299,6 +299,25 @@ the 3LC API key file byte-copied from the old home. The steps ran through the ho
 | The imported table in the Dashboard (images through the alias) | PASS (Rishikesh, 2026-10-21, through the Hub on the running services): `intel-scene_train/initial` opens and the images render from the aliased rows, in the Dashboard and in the Hub's dataset overview |
 | Submit (a competition host) | PASS (Rishikesh): one submission from the 1.0.0 prediction, Kaggle ref 57489771, public score 0.50666; the Status tab correct (the submission in History with its score, the Runs table, Kaggle live) |
 
+## Run 16 — the 1.0.1 hotfix check on a new tester folder `3lc-hub-fresh-101` — COMPLETE, PASS (2026-11-03)
+
+The trigger: a fresh 1.0.0 install failed Kaggle Connect with "cannot import name 'KaggleApi' from partially
+initialized module" (kaggle imports `six` undeclared; python-dateutil 3.0.0 stopped bringing it). The
+environment: a new folder built as TESTING.md step 2 says (uv 0.13.7, CPython 3.12, 3lc-compute 1.1.0 with
+3lc 3.4.2 and SDK 0.3.3), the 3LC API key file byte-copied from `3lc-hub-fresh`, the user's uv cache through
+`UV_CACHE_DIR`. The steps ran through the host's own install route (the in-process host, as runs 14 and 15
+did), against the hosted `HEAD/catalog.json`. The record: `docs/campaign/release_check_1.0.1.log`.
+
+| Step | Result |
+|---|---|
+| Install 1.0.1 from `HEAD/catalog.json` | PASS: `succeeded` in 25.3 s + ready 4.4 s; version 1.0.1, source `@v1.0.1`, commit `5aa7ded` |
+| The plugin venv | kaggle 2.2.5, kagglesdk 0.1.38, six 1.17.0, python-dateutil 4.0.0, 3lc 3.4.1, torch 2.14.0+cu130 |
+| `KaggleApi` in a fresh interpreter (`python -I`), twice | PASS, both exit 0 (kaggle prints its "Authentication required" help on import when no token exists; no error) |
+| Connection card before a token | PASS: `no_credentials` with the one-sentence help and the token path under the redirected home |
+| Connect with `abc` | PASS: refused, "That doesn't look like a Kaggle access token: it should start with KGAT_ ..." |
+| Connect with a real token | PASS: `ok`, the username, the token written to `home\.kaggle\access_token`; the card `ready` (the competition title, Kaggle's daily limit 100, submissions used today) |
+| Doctor with Kaggle | PASS: plugin 1.0.1 · `5aa7ded`, SDK 0.3.3 · 3lc 3.4.1, kaggle 2.2.5, Kaggle `ready`, manifest `remote` |
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
