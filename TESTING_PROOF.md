@@ -338,6 +338,29 @@ tier. The 3LC API key file byte-copied from `3lc-hub-fresh`. The record: `docs/c
 The fix is the built-in catalog, not the plugin: its kaggle-classification entry needs the 1.0.1 entry of this
 repo's `catalog.json` (newest first, `@v1.0.1`). Then this run repeats.
 
+## Run 18 — the LAUNCH_CHECKLIST prod checks, repeated once the built-in catalog lists 1.0.1 — COMPLETE, PASS (2026-11-03)
+
+A new tester folder `3lc-hub-prod-check-2` built as TESTING.md step 2 says (`3lc-compute==1.1.0`), no
+`TLC_COMPUTE_PLUGIN_CATALOG_URLS` and no `KAGGLE_CLASSIFICATION_MANIFEST_BASE_URL`, the 3LC API key file
+byte-copied from `3lc-hub-fresh`. The built-in catalog was last modified 2026-11-03 15:33 UTC (`generated_at`
+15:31:01Z) and lists 1.0.1 (`@v1.0.1`) first, then 1.0.0. The record:
+`docs/campaign/prod_check_1.0.1_2026-11-03.log`.
+
+| Check | Result |
+|---|---|
+| The start script on this venv | PASS: the 3lc-compute 1.1.0 check lets it through (it stopped at the busy-port check, on purpose) |
+| Fresh install from the built-in catalog | PASS: the host offers 1.0.1; `succeeded` in 15.2 s + ready 5.6 s; version 1.0.1, commit `5aa7ded` |
+| Compute service version | PASS: `GET /health` answers `3lc-compute` `1.1.0` (`plugin_install_policy` `catalog-only`); the host venv's distribution is 1.1.0 |
+| The plugin venv | kaggle 2.2.5, kagglesdk 0.1.38, six 1.17.0, python-dateutil 4.0.0 |
+| `KaggleApi` in a fresh interpreter (`python -I`) | PASS, exit 0 |
+| Kaggle Connect | PASS: `abc` refused with the format sentence; a real token `ok`, the card `ready` |
+| Prod manifest | PASS: Manifest `remote` from `https://competitions.3lc.ai/kaggle/intel-scene/manifest.json`, sha256 `383cab9a0e8630015a05bdd4532ae2e78f192d2835b7b89bab92e70a5604754e`, intel-scene kit v1, no fallback active |
+| Kit fallback | PASS: the Drive folder link, `intel-scene-v1-starter_kit.zip`, 112,270,148 bytes, sha256 `ae4e5937…5015` |
+| Doctor | PASS, green: no red row; Kaggle `ready`; plugin 1.0.1 · SDK 0.3.3 · 3lc 3.4.1 · torch 2.14.0+cu130; CUDA RTX 5070 Ti (12.0) with kernels, driver 621.01; project root one root, no warning; uv 0.13.7 for both venvs, no PYTHONHOME leak; kit `empty` (not downloaded, expected) |
+
+Afterwards the Kaggle token written by Connect was deleted from `3lc-hub-prod-check-2` and from run 17's
+`3lc-hub-prod-check`.
+
 ## What run 7 adds (session 6)
 
 The driver (`proof_tester.py`, `EXPECTED_VERSION = "1.0.0rc7"`) now reads the bundle's preview first, keeps
