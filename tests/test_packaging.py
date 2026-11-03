@@ -12,6 +12,7 @@ against the artifact (an editable install never reads its own metadata back).
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -211,6 +212,22 @@ def test_package_import_is_light():
     )
     proc = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True)
     assert proc.returncode == 0, f"heavy modules imported at package import: {proc.stdout} {proc.stderr}"
+
+
+def test_kaggle_client_imports_in_a_fresh_interpreter():
+    """1.0.0 failed Kaggle Connect on every fresh install once python-dateutil 3.0.0 stopped bringing
+    `six`, which kaggle imports without declaring. The extra pins the verified pair and declares `six`;
+    the import runs in a fresh interpreter because a failed first import leaves a partial module behind
+    and the retry reports a misleading circular import."""
+    extra = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"]["optional-dependencies"]["kaggle-classification"]
+    for name in ("kaggle", "kagglesdk", "six"):
+        assert any(re.fullmatch(rf"{name}==[\w.]+", d) for d in extra), f"{name} is not pinned exactly"
+    if importlib.util.find_spec("kaggle") is None:   # not importorskip: it would import kaggle and skip on the bug
+        pytest.skip("the extra is not installed in this venv")
+    code = "from kaggle.api.kaggle_api_extended import KaggleApi; print(KaggleApi.__name__)"
+    proc = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True)
+    assert proc.returncode == 0, f"KaggleApi does not import: {proc.stderr[-800:]}"
 
 
 def test_license_headers_and_no_agpl_text():
